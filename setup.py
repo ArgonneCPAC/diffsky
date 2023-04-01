@@ -18,7 +18,7 @@ setup(
     author_email="ahearin@anl.gov",
     description="Library for differentiable generation of synthetic skies",
     long_description="Library for differentiable generation of synthetic skies",
-    install_requires=["numpy", "jax", "diffmah", "diffstar", "dsps"],
+    install_requires=["numpy", "jax"],
     packages=find_packages(),
     url="https://github.com/ArgonneCPAC/diffsky",
     package_data={"diffsky": ("tests/testing_data/*.dat",)},
