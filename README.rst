@@ -8,6 +8,11 @@ To install diffsky into your environment from the source code::
     $ cd /path/to/root/diffsky
     $ python setup.py install
 
+## Documentation
+
+Online documentation for diffsky is available at 
+[diffsky.readthedocs.io](https://diffsky.readthedocs.io/en/latest/).
+
 Testing
 -------
 To run the suite of unit tests::
