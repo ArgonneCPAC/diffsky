@@ -11,7 +11,7 @@ To install diffsky into your environment from the source code::
 ## Documentation
 
 Online documentation for diffsky is available at 
-[diffsky.readthedocs.io](https://diffsky.readthedocs.io/en/latest/).
+`diffsky.readthedocs.io <https://diffsky.readthedocs.io/en/latest/>`_.
 
 Testing
 -------
