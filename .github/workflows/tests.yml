@@ -26,14 +26,16 @@ jobs:
       - name: configure conda and install code
         shell: bash -l {0}
         run: |
-          conda config --set always_yes yes
-          conda install --quiet \
+          mamba install --quiet \
             --file=requirements.txt
           python -m pip install --no-deps -e .
-          conda install -y -q \
+          mamba install -y -q \
             flake8 \
             pytest \
             pytest-xdist
+          # use upstream main for dsps
+          conda uninstall dsps --force
+          pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
 
       - name: lint
         shell: bash -l {0}
