@@ -1,2 +1,5 @@
 numpy
 jax
+diffmah
+diffstar
+dsps
