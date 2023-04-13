@@ -32,7 +32,8 @@ jobs:
           mamba install -y -q \
             flake8 \
             pytest \
-            pytest-xdist
+            pytest-xdist \
+            pytest-cov
           # use upstream main for dsps
           conda uninstall dsps --force
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
@@ -45,4 +46,7 @@ jobs:
       - name: test
         shell: bash -l {0}
         run: |
-          pytest -vvs diffsky
+          pytest -v diffsky --cov --cov-report=xml
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
