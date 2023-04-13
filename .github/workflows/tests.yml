@@ -34,6 +34,7 @@ jobs:
             pytest \
             pytest-xdist \
             pytest-cov
+
           # use upstream main for dsps
           conda uninstall dsps --force
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
