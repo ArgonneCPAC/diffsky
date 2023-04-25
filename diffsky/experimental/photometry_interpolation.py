@@ -56,11 +56,18 @@ def get_interpolated_photometry(
     gal_logsm_obs : array of shape (n_gals, )
         Base-10 log of the stellar mass of each galaxy at z_obs
 
+    gal_sfr_table : ndarray of shape (n_gals, n_t_table_gals)
+        Star formation history of each galaxy in units of Msun/yr,
+        tabulated at the input gal_t_table
+
     gal_lgmet_obs : array of shape (n_gals, )
         log10(Z) of each galaxy at z_obs
 
     gal_lgmet_scatter : float
         Lognormal scatter in the metallicity distribution function
+
+    cosmo_params : 4-element tuple
+        NamedTuple of cosmological parameters Om0, w0, wa, h
 
     dust_trans_factors_obs : array of shape (n_gals, n_obs_filters), optional
         Fraction of the flux transmitted by dust through each observer-frame filter
