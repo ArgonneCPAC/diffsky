@@ -7,7 +7,7 @@ from jax import numpy as jnp
 from dsps.metallicity.mzr import mzr_model, DEFAULT_MZR_PDICT
 from dsps.constants import SFR_MIN
 from dsps.sed.stellar_age_weights import _calc_logsm_table_from_sfh_table
-
+from dsps.experimental.diffburst import _compute_bursty_age_weights_pop
 
 DEFAULT_MZR_PARAMS = jnp.array(list(DEFAULT_MZR_PDICT.values()))
 _linterp_vmap = jjit(vmap(jnp.interp, in_axes=(None, None, 0)))
@@ -30,6 +30,8 @@ def get_obs_photometry_singlez(
     ssp_lg_age,
     gal_t_table,
     gal_sfr_table,
+    gal_fburst,
+    gal_dburst,
     cosmo_params,
     z_obs,
     met_params=DEFAULT_MZR_PARAMS,
@@ -51,7 +53,7 @@ def get_obs_photometry_singlez(
 
     gal_lgmet = mzr_model(gal_logsm_t_obs, t_obs, *met_params[:-1])
 
-    smooth_ssp_weights = calc_ssp_weights_sfh_table_lognormal_mdf_vmap(
+    _res = calc_ssp_weights_sfh_table_lognormal_mdf_vmap(
         gal_t_table,
         gal_sfr_table,
         gal_lgmet,
@@ -60,4 +62,11 @@ def get_obs_photometry_singlez(
         ssp_lg_age,
         t_obs,
     )
-    return smooth_ssp_weights
+    weights, lgmet_weights, smooth_age_weights = _res
+
+    ssp_lg_age_yr = ssp_lg_age + 9.0
+    bursty_age_weights = _compute_bursty_age_weights_pop(
+        ssp_lg_age_yr, smooth_age_weights, gal_fburst, gal_dburst
+    )
+
+    return weights, lgmet_weights, smooth_age_weights, bursty_age_weights
