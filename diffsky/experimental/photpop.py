@@ -49,6 +49,11 @@ def get_obs_photometry_singlez(
     met_params=DEFAULT_MZR_PARAMS,
     lgmet_scatter=0.2,
 ):
+    n_gals = gal_sfr_table.shape[0]
+    n_met = ssp_lgmet.shape[0]
+    n_age = ssp_lg_age.shape[0]
+    n_filters = filter_waves.shape[0]
+
     t_obs = _age_at_z_kern(z_obs, *cosmo_params)
     lgt_obs = jnp.log10(t_obs)
     lgt_table = jnp.log10(gal_t_table)
@@ -74,13 +79,31 @@ def get_obs_photometry_singlez(
         ssp_lg_age,
         t_obs,
     )
-    weights, lgmet_weights, smooth_age_weights = _res
+    lgmet_weights, smooth_age_weights = _res[1:]
 
     ran_key, burst_key, att_curve_key = jran.split(ran_key, 3)
 
     gal_fburst, gal_dburst = _mc_burst(
         burst_key, gal_logsm_t_obs, gal_logssfr_t_obs, burst_params_pop
     )
+
+    ssp_lg_age_yr = ssp_lg_age + 9.0
+    bursty_age_weights = _compute_bursty_age_weights_pop(
+        ssp_lg_age_yr, smooth_age_weights, gal_fburst, gal_dburst
+    )
+
+    _w_age = bursty_age_weights.reshape((n_gals, 1, n_age))
+    _w_met = lgmet_weights.reshape((n_gals, n_met, 1))
+    _w = _w_age * _w_met
+    _norm = jnp.sum(_w, axis=(1, 2))
+    weights = _w / _norm
+
+    _ssp_fluxes = ssp_obs_photflux_table.reshape((1, n_met, n_age, n_filters))
+    w = weights.reshape((n_gals, n_met, n_age, 1))
+    gal_obsflux_per_mstar = jnp.sum(w * _ssp_fluxes, axis=(1, 2))
+
+    _gal_mstar = 10 ** gal_logsm_t_obs.reshape((n_gals, 1))
+    gal_obsflux_nodust = gal_obsflux_per_mstar * _gal_mstar
 
     frac_trans = _compute_dust_transmission_fractions(
         att_curve_key,
@@ -92,13 +115,17 @@ def get_obs_photometry_singlez(
         att_curve_params_pop,
         fracuno_pop_u_params,
     )
+    gal_obsflux = gal_obsflux_nodust * frac_trans
 
-    ssp_lg_age_yr = ssp_lg_age + 9.0
-    bursty_age_weights = _compute_bursty_age_weights_pop(
-        ssp_lg_age_yr, smooth_age_weights, gal_fburst, gal_dburst
+    return (
+        weights,
+        lgmet_weights,
+        smooth_age_weights,
+        bursty_age_weights,
+        frac_trans,
+        gal_obsflux_nodust,
+        gal_obsflux,
     )
-
-    return weights, lgmet_weights, smooth_age_weights, bursty_age_weights, frac_trans
 
 
 @jjit

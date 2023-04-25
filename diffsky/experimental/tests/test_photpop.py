@@ -1,6 +1,7 @@
 """
 """
 from jax import random as jran
+from jax import numpy as jnp
 import numpy as np
 from ..photpop import get_obs_photometry_singlez
 from dsps.cosmology import DEFAULT_COSMOLOGY
@@ -48,9 +49,18 @@ def test_photpop_evaluates():
         DEFAULT_COSMOLOGY,
         z_obs,
     )
-    weights, lgmet_weights, smooth_age_weights, bursty_age_weights, frac_trans = res
+    (
+        weights,
+        lgmet_weights,
+        smooth_age_weights,
+        bursty_age_weights,
+        frac_trans,
+        gal_obsflux_nodust,
+        gal_obsflux,
+    ) = res
     assert weights.shape == (n_gals, n_met, n_age)
     assert np.all(np.isfinite(weights))
+    assert np.allclose(np.sum(weights, axis=(1, 2)), 1.0, rtol=1e-4)
 
     assert bursty_age_weights.shape == (n_gals, n_age)
     assert np.all(np.isfinite(bursty_age_weights))
@@ -60,3 +70,9 @@ def test_photpop_evaluates():
     assert np.all(np.isfinite(frac_trans))
     assert np.all(frac_trans >= 0)
     assert np.all(frac_trans <= 1)
+
+    assert gal_obsflux_nodust.shape == (n_gals, n_filters)
+    assert np.all(np.isfinite(gal_obsflux_nodust))
+
+    assert gal_obsflux.shape == (n_gals, n_filters)
+    assert np.all(np.isfinite(gal_obsflux))
