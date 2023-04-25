@@ -4,6 +4,7 @@ from jax import random as jran
 import numpy as np
 from ..photpop import get_obs_photometry_singlez
 from dsps.cosmology import DEFAULT_COSMOLOGY
+from ..nagaraj22_dust import TAU_PARAMS, DELTA_PARAMS
 
 
 def test_photpop_evaluates():
@@ -23,6 +24,7 @@ def test_photpop_evaluates():
     z_obs = 0.5
 
     burst_params = (0.0,)
+    att_curve_params = (TAU_PARAMS, DELTA_PARAMS)
     ran_key = jran.PRNGKey(0)
 
     res = get_obs_photometry_singlez(
@@ -33,6 +35,7 @@ def test_photpop_evaluates():
         gal_t_table,
         gal_sfr_table,
         burst_params,
+        att_curve_params,
         DEFAULT_COSMOLOGY,
         z_obs,
     )
