@@ -1,11 +1,11 @@
 """
 """
 from jax import random as jran
-from jax import numpy as jnp
 import numpy as np
 from ..photpop import get_obs_photometry_singlez
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from ..nagaraj22_dust import TAU_PARAMS, DELTA_PARAMS
+from ..diffburstpop import DEFAULT_LGFBURST_PARAMS
 
 
 def test_photpop_evaluates():
@@ -29,7 +29,7 @@ def test_photpop_evaluates():
 
     z_obs = 0.5
 
-    burst_params = (0.0,)
+    burst_params = DEFAULT_LGFBURST_PARAMS
     att_curve_params = (TAU_PARAMS, DELTA_PARAMS)
     fracuno_pop_u_params = (0.0,)
     ran_key = jran.PRNGKey(0)

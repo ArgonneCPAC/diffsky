@@ -9,9 +9,10 @@ from dsps.metallicity.mzr import mzr_model, DEFAULT_MZR_PDICT
 from dsps.constants import SFR_MIN
 from dsps.sed.stellar_age_weights import _calc_logsm_table_from_sfh_table
 from dsps.experimental.diffburst import _compute_bursty_age_weights_pop
+from dsps.experimental.diffburst import DEFAULT_DBURST
 
 from .dustpop import _compute_dust_transmission_fractions
-from .burstpop import _mc_burst
+from .diffburstpop import _get_lgfburst
 
 DEFAULT_MZR_PARAMS = jnp.array(list(DEFAULT_MZR_PDICT.values()))
 _linterp_vmap = jjit(vmap(jnp.interp, in_axes=(None, None, 0)))
@@ -79,9 +80,10 @@ def get_obs_photometry_singlez(
 
     ran_key, burst_key, att_curve_key = jran.split(ran_key, 3)
 
-    gal_fburst, gal_dburst = _mc_burst(
-        burst_key, gal_logsm_t_obs, gal_logssfr_t_obs, burst_params_pop
+    gal_fburst = 10 ** _get_lgfburst(
+        gal_logsm_t_obs, gal_logssfr_t_obs, burst_params_pop
     )
+    gal_dburst = jnp.zeros(n_gals) + DEFAULT_DBURST
 
     ssp_lg_age_yr = ssp_lg_age + 9.0
     bursty_age_weights = _compute_bursty_age_weights_pop(
