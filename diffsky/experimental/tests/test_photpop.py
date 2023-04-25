@@ -1,9 +1,9 @@
 """
 """
+from jax import random as jran
 import numpy as np
 from ..photpop import get_obs_photometry_singlez
 from dsps.cosmology import DEFAULT_COSMOLOGY
-from dsps.experimental.diffburst import DEFAULT_DBURST
 
 
 def test_photpop_evaluates():
@@ -20,19 +20,19 @@ def test_photpop_evaluates():
     n_gals = 50
     gal_sfr_table = np.random.uniform(0, 1, size=(n_gals, n_t))
 
-    gal_fburst = np.random.uniform(0, 0.1, n_gals)
-    gal_dburst = np.zeros(n_gals) + DEFAULT_DBURST
-
     z_obs = 0.5
 
+    burst_params = (0.0,)
+    ran_key = jran.PRNGKey(0)
+
     res = get_obs_photometry_singlez(
+        ran_key,
         ssp_obsmag_table,
         ssp_lgmet,
         ssp_lg_age,
         gal_t_table,
         gal_sfr_table,
-        gal_fburst,
-        gal_dburst,
+        burst_params,
         DEFAULT_COSMOLOGY,
         z_obs,
     )

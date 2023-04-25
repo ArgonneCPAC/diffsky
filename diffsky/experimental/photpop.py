@@ -2,12 +2,14 @@
 """
 from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
 from jax import vmap, jit as jjit
+from jax import random as jran
 from dsps.cosmology.flat_wcdm import _age_at_z_kern
 from jax import numpy as jnp
 from dsps.metallicity.mzr import mzr_model, DEFAULT_MZR_PDICT
 from dsps.constants import SFR_MIN
 from dsps.sed.stellar_age_weights import _calc_logsm_table_from_sfh_table
 from dsps.experimental.diffburst import _compute_bursty_age_weights_pop
+from dsps.experimental.diffburst import DEFAULT_DBURST
 
 DEFAULT_MZR_PARAMS = jnp.array(list(DEFAULT_MZR_PDICT.values()))
 _linterp_vmap = jjit(vmap(jnp.interp, in_axes=(None, None, 0)))
@@ -25,13 +27,13 @@ _calc_logsm_table_from_sfh_table_vmap = jjit(
 
 @jjit
 def get_obs_photometry_singlez(
+    ran_key,
     ssp_obsmag_table,
     ssp_lgmet,
     ssp_lg_age,
     gal_t_table,
     gal_sfr_table,
-    gal_fburst,
-    gal_dburst,
+    burst_params,
     cosmo_params,
     z_obs,
     met_params=DEFAULT_MZR_PARAMS,
@@ -64,9 +66,24 @@ def get_obs_photometry_singlez(
     )
     weights, lgmet_weights, smooth_age_weights = _res
 
+    ran_key, burst_key = jran.split(ran_key, 2)
+    gal_fburst, gal_dburst = _mc_burst(
+        burst_key, gal_logsm_t_obs, gal_logssfr_t_obs, burst_params
+    )
     ssp_lg_age_yr = ssp_lg_age + 9.0
     bursty_age_weights = _compute_bursty_age_weights_pop(
         ssp_lg_age_yr, smooth_age_weights, gal_fburst, gal_dburst
     )
 
     return weights, lgmet_weights, smooth_age_weights, bursty_age_weights
+
+
+@jjit
+def _mc_burst(ran_key, gal_logsm, gal_logssfr, params):
+    n = gal_logsm.shape[0]
+    fburst_key, dburst_key = jran.split(ran_key, 2)
+    fburst = jran.uniform(fburst_key, minval=0, maxval=0.1, shape=(n,))
+    dburst = jran.uniform(
+        dburst_key, minval=DEFAULT_DBURST, maxval=DEFAULT_DBURST + 0.1, shape=(n,)
+    )
+    return fburst, dburst
