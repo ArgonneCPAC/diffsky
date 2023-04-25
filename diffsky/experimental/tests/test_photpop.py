@@ -16,7 +16,7 @@ def test_photpop_evaluates():
     gal_t_table = np.linspace(0.05, 13.8, n_t)
 
     n_filters = 3
-    ssp_obsmag_table = np.random.uniform(0, 1, size=(n_met, n_age, n_filters))
+    ssp_obs_photflux_table = np.random.uniform(0, 1, size=(n_met, n_age, n_filters))
 
     n_filter_wave = 200
     _lam = np.linspace(1_000, 10_000, n_filter_wave)
@@ -37,7 +37,7 @@ def test_photpop_evaluates():
         ran_key,
         filter_waves,
         filter_trans,
-        ssp_obsmag_table,
+        ssp_obs_photflux_table,
         ssp_lgmet,
         ssp_lg_age,
         gal_t_table,

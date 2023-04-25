@@ -36,7 +36,7 @@ def get_obs_photometry_singlez(
     ran_key,
     filter_waves,
     filter_trans,
-    ssp_obsmag_table,
+    ssp_obs_photflux_table,
     ssp_lgmet,
     ssp_lg_age,
     gal_t_table,
