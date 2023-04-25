@@ -11,11 +11,7 @@ from dsps.sed.stellar_age_weights import _calc_logsm_table_from_sfh_table
 from dsps.experimental.diffburst import _compute_bursty_age_weights_pop
 from dsps.experimental.diffburst import DEFAULT_DBURST
 
-from dsps.dust.utils import get_filter_effective_wavelength
-from dsps.dust.att_curves import UV_BUMP_W0, UV_BUMP_DW
-from dsps.dust.att_curves import _frac_transmission_from_k_lambda, sbl18_k_lambda
-
-from .nagaraj22_dust import _get_median_dust_params_kern
+from .dustpop import _compute_dust_transmission_fractions
 
 DEFAULT_MZR_PARAMS = jnp.array(list(DEFAULT_MZR_PDICT.values()))
 _linterp_vmap = jjit(vmap(jnp.interp, in_axes=(None, None, 0)))
@@ -137,81 +133,3 @@ def _mc_burst(ran_key, gal_logsm, gal_logssfr, params):
         dburst_key, minval=DEFAULT_DBURST, maxval=DEFAULT_DBURST + 0.1, shape=(n,)
     )
     return fburst, dburst
-
-
-@jjit
-def mc_generate_dust_params_kern(
-    ran_key, logsm, logssfr, redshift, att_curve_params_pop
-):
-    delta_key, av_key = jran.split(ran_key, 2)
-    n = logsm.size
-
-    tau_params_pop, delta_params_pop = att_curve_params_pop
-    median_eb, median_delta, median_av = _get_median_dust_params_kern(
-        logsm, logssfr, redshift, tau_params_pop, delta_params_pop
-    )
-    delta_lgav = jran.uniform(av_key, minval=-0.2, maxval=0.2, shape=(n,))
-    lgav = delta_lgav + jnp.log10(median_av)
-    gal_av = 10**lgav
-
-    gal_delta = median_delta + jran.uniform(
-        delta_key, minval=-0.1, maxval=0.1, shape=(n,)
-    )
-    gal_eb = median_eb + jran.uniform(delta_key, minval=-0.15, maxval=0.15, shape=(n,))
-
-    gal_att_curve_params = jnp.array((gal_eb, gal_delta, gal_av)).T
-
-    return gal_att_curve_params
-
-
-@jjit
-def _compute_dust_transmission_fractions(
-    att_curve_key,
-    z_obs,
-    logsm_t_obs,
-    logssfr_t_obs,
-    filter_waves,
-    filter_trans,
-    att_curve_params_pop,
-    fracuno_pop_u_params,
-):
-    gal_att_curve_params = mc_generate_dust_params_kern(
-        att_curve_key, logsm_t_obs, logssfr_t_obs, z_obs, att_curve_params_pop
-    )
-    n_gals = logsm_t_obs.shape[0]
-    gal_frac_unobscured = jnp.zeros(n_gals) + 0.01
-
-    transmission_fractions = _get_effective_attenuation_vmap(
-        filter_waves, filter_trans, z_obs, gal_att_curve_params, gal_frac_unobscured
-    )
-    return transmission_fractions.T
-
-
-@jjit
-def _get_effective_attenuation_sbl18(
-    filter_wave, filter_trans, redshift, dust_params, frac_unobscured
-):
-    """Attenuation factor at the effective wavelength of the filter"""
-
-    lambda_eff_angstrom = get_filter_effective_wavelength(
-        filter_wave, filter_trans, redshift
-    )
-    lambda_eff_micron = lambda_eff_angstrom / 10_000
-
-    dust_Eb, dust_delta, dust_Av = dust_params
-    dust_x0_microns = UV_BUMP_W0
-    bump_width_microns = UV_BUMP_DW
-    k_lambda = sbl18_k_lambda(
-        lambda_eff_micron, dust_x0_microns, bump_width_microns, dust_Eb, dust_delta
-    )
-    attenuation_factor = _frac_transmission_from_k_lambda(
-        k_lambda, dust_Av, frac_unobscured
-    )
-    return attenuation_factor
-
-
-_A = (None, None, None, 0, 0)
-_B = (0, 0, None, None, None)
-_get_effective_attenuation_vmap = jjit(
-    vmap(vmap(_get_effective_attenuation_sbl18, _A), _B)
-)
