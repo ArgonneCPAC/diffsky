@@ -38,8 +38,10 @@ BPOP_BOUNDS_DICT = OrderedDict(
 )
 LGFRACUNO_LGSM_K = 5.0
 LGFRACUNO_SSFR_K = 3.0
+FUNO_PLAW_SLOPE = 3.0
 
 BPOP_DEFAULT_PARMS = jnp.array(list(BPOP_DEFAULT_PDICT.values()))
+
 
 @jjit
 def _get_funo_u_b_from_galpop(logsm, logssfr, fracuno_pop_params):
@@ -117,11 +119,17 @@ def monte_carlo_frac_unobs(ran_key, u_b, npts):
 
 
 @jjit
+def _get_b_from_u_params(logsm, logssfr, lgfuno_pop_params):
+    funo_u_b = _get_funo_u_b_from_galpop(logsm, logssfr, lgfuno_pop_params)
+    b = _get_b_from_u_b(funo_u_b)
+    return b
+
+
+@jjit
 def mc_funobs(ran_key, logsm, logssfr, lgfuno_pop_params):
     n_gals = logsm.shape[0]
     a = jnp.zeros(n_gals)
-    g = jnp.zeros(n_gals) + 3.0
-    funo_u_b = _get_funo_u_b_from_galpop(logsm, logssfr, lgfuno_pop_params)
-    b = _get_b_from_u_b(funo_u_b)
+    g = jnp.zeros(n_gals) + FUNO_PLAW_SLOPE
+    b = _get_b_from_u_params(logsm, logssfr, lgfuno_pop_params)
     frac_unobs = b - powerlaw_rvs(ran_key, a, b, g)
     return frac_unobs
