@@ -53,15 +53,15 @@ def _compute_dust_transmission_fractions(
     n_gals = logsm_t_obs.shape[0]
     gal_frac_unobscured = jnp.zeros(n_gals) + 0.01
 
-    transmission_fractions = _get_effective_attenuation_vmap(
+    gal_frac_trans = _get_effective_attenuation_vmap(
         filter_waves, filter_trans, z_obs, gal_att_curve_params, gal_frac_unobscured
     )
-    return transmission_fractions.T
+    return gal_frac_trans.T
 
 
 @jjit
 def _get_effective_attenuation_sbl18(
-    filter_wave, filter_trans, redshift, dust_params, frac_unobscured
+    filter_wave, filter_trans, redshift, att_curve_params, frac_unobscured
 ):
     """Attenuation factor at the effective wavelength of the filter"""
 
@@ -70,7 +70,7 @@ def _get_effective_attenuation_sbl18(
     )
     lambda_eff_micron = lambda_eff_angstrom / 10_000
 
-    dust_Eb, dust_delta, dust_Av = dust_params
+    dust_Eb, dust_delta, dust_Av = att_curve_params
     dust_x0_microns = UV_BUMP_W0
     bump_width_microns = UV_BUMP_DW
     k_lambda = sbl18_k_lambda(
