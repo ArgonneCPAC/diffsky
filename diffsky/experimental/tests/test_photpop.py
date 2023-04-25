@@ -30,6 +30,7 @@ def test_photpop_evaluates():
 
     burst_params = (0.0,)
     att_curve_params = (TAU_PARAMS, DELTA_PARAMS)
+    fracuno_pop_u_params = (0.0,)
     ran_key = jran.PRNGKey(0)
 
     res = get_obs_photometry_singlez(
@@ -43,13 +44,19 @@ def test_photpop_evaluates():
         gal_sfr_table,
         burst_params,
         att_curve_params,
+        fracuno_pop_u_params,
         DEFAULT_COSMOLOGY,
         z_obs,
     )
-    weights, lgmet_weights, smooth_age_weights, bursty_age_weights = res
+    weights, lgmet_weights, smooth_age_weights, bursty_age_weights, frac_trans = res
     assert weights.shape == (n_gals, n_met, n_age)
     assert np.all(np.isfinite(weights))
 
     assert bursty_age_weights.shape == (n_gals, n_age)
     assert np.all(np.isfinite(bursty_age_weights))
     assert np.allclose(np.sum(bursty_age_weights, axis=1), 1.0, rtol=1e-4)
+
+    assert frac_trans.shape == (n_gals, n_filters)
+    assert np.all(np.isfinite(frac_trans))
+    assert np.all(frac_trans >= 0)
+    assert np.all(frac_trans <= 1)
