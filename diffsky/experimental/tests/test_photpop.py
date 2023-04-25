@@ -18,6 +18,11 @@ def test_photpop_evaluates():
     n_filters = 3
     ssp_obsmag_table = np.random.uniform(0, 1, size=(n_met, n_age, n_filters))
 
+    n_filter_wave = 200
+    _lam = np.linspace(1_000, 10_000, n_filter_wave)
+    filter_waves = np.array([_lam for __ in range(n_filters)])
+    filter_trans = np.ones((n_filters, n_filter_wave))
+
     n_gals = 50
     gal_sfr_table = np.random.uniform(0, 1, size=(n_gals, n_t))
 
@@ -29,6 +34,8 @@ def test_photpop_evaluates():
 
     res = get_obs_photometry_singlez(
         ran_key,
+        filter_waves,
+        filter_trans,
         ssp_obsmag_table,
         ssp_lgmet,
         ssp_lg_age,

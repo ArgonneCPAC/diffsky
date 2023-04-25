@@ -30,6 +30,8 @@ _calc_logsm_table_from_sfh_table_vmap = jjit(
 @jjit
 def get_obs_photometry_singlez(
     ran_key,
+    filter_waves,
+    filter_trans,
     ssp_obsmag_table,
     ssp_lgmet,
     ssp_lg_age,
