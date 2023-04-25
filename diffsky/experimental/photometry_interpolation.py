@@ -1,8 +1,8 @@
 """
 """
-from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
+from dsps.sed.ssp_weights import calc_ssp_weights_sfh_table_lognormal_mdf
 from jax import vmap, jit as jjit
-from dsps.cosmology import age_at_z
+from dsps.cosmology.flat_wcdm import age_at_z
 from jax import numpy as jnp
 
 
