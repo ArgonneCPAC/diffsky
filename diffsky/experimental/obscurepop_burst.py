@@ -121,6 +121,15 @@ def get_params_from_u_params(u_params):
 
 @jjit
 def _get_b_from_u_params(logsm, logfb, lgfuno_pop_u_params):
+    """This function seems to return a very shallow sigmoid between 0.515<funo_b<0.522.
+
+    The following two evaluations show the buggy behavior:
+        1. _get_b_from_u_params(-18.0, lgfbarr, params)
+        2. _get_b_from_u_params(18.0, lgfbarr, params)
+
+    See dev_obscurepop_burst.ipynb
+
+    """
     lgfuno_pop_params = get_params_from_u_params(lgfuno_pop_u_params)
     funo_b = _get_funo_b_from_galpop(logsm, logfb, lgfuno_pop_params)
     return funo_b
@@ -128,6 +137,10 @@ def _get_b_from_u_params(logsm, logfb, lgfuno_pop_u_params):
 
 @jjit
 def mc_funobs(ran_key, logsm, logfb, lgfuno_pop_params):
+    """This function does not seem to produce distributions
+    that actually vary with logsm. See dev_obscurepop_burst.ipynb
+
+    """
     n_gals = logsm.shape[0]
     a = jnp.zeros(n_gals)
     g = jnp.zeros(n_gals) + LGFUNO_PLAW_SLOPE
