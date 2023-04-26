@@ -46,6 +46,69 @@ def get_obs_photometry_singlez(
     met_params=DEFAULT_MZR_PARAMS,
     lgmet_scatter=0.2,
 ):
+    """Compute apparent magnitudes of galaxies at a single redshift
+
+    Parameters
+    ----------
+    ran_key : jax.random.PRNGKey
+
+    filter_waves : array of shape (n_filters, n_trans_curve)
+        Wavelength of the filter transmission curves in Angstroms
+
+    filter_trans : array of shape (n_filters, n_trans_curve)
+        Transmission curves defining fractional transmission of the filters
+
+    ssp_obs_photflux_table : ndarray of shape (n_met, n_age, n_filters)
+
+    ssp_lgmet : ndarray of shape (n_met, )
+        Array of log10(Z) of the SSP templates
+
+    ssp_lg_age : ndarray of shape (n_ages, )
+        Array of log10(age/Gyr) of the SSP templates
+
+    gal_t_table : ndarray of shape (n_t, )
+        Age of the universe in Gyr at which the input galaxy SFH and metallicity
+        have been tabulated
+
+    gal_sfr_table : ndarray of shape (n_gals, n_t)
+        Star formation history in Msun/yr evaluated at the input gal_t_table
+
+    burst_params_pop : ndarray of shape (n_burst_params, )
+
+    att_curve_params_pop : ndarray of shape (n_att_curve_params, )
+
+    fracuno_pop_u_params : ndarray of shape (n_funo_params, )
+
+    cosmo_params : 4-element sequence, (Om0, w0, wa, h)
+
+    z_obs : float
+
+    Returns
+    -------
+    weights : ndarray of shape (n_gals, n_met, n_ages)
+        SSP weights of the joint distribution of stellar age and metallicity
+
+    lgmet_weights : ndarray of shape (n_gals, n_met)
+        SSP weights of the distribution of stellar metallicity
+
+    smooth_age_weights : ndarray of shape (n_gals, n_ages)
+        SSP weights of the distribution of stellar age for the smooth SFH
+
+    bursty_age_weights : ndarray of shape (n_gals, n_ages)
+        SSP weights of the distribution of stellar age for the SFH that includes bursts
+
+    frac_trans : ndarray of shape (n_gals, n_filters)
+        Fraction of the flux transmitted through dust for each galaxy in each filter
+
+    gal_obsflux_nodust : ndarray of shape (n_gals, n_filters)
+        Flux in Lsun of each galaxy in each filter, ignoring dust attenuation
+        gal_obsmags_nodust = -2.5*log10(gal_obsflux_nodust)
+
+    gal_obsflux : ndarray of shape (n_gals, n_filters)
+        Flux in Lsun of each galaxy in each filter, including dust attenuation
+        gal_obsmags = -2.5*log10(gal_obsflux)
+
+    """
     n_gals = gal_sfr_table.shape[0]
     n_met = ssp_lgmet.shape[0]
     n_age = ssp_lg_age.shape[0]
