@@ -9,6 +9,7 @@ from dsps.dust.att_curves import UV_BUMP_W0, UV_BUMP_DW
 from dsps.dust.att_curves import _frac_transmission_from_k_lambda, sbl18_k_lambda
 
 from .nagaraj22_dust import _get_median_dust_params_kern
+from .obscurepop_burst import mc_funobs
 
 
 @jjit
@@ -38,23 +39,25 @@ def mc_generate_dust_params_kern(
 
 @jjit
 def _compute_dust_transmission_fractions(
-    att_curve_key,
+    dust_key,
     z_obs,
     logsm_t_obs,
     logssfr_t_obs,
+    gal_lgfburst,
     filter_waves,
     filter_trans,
     att_curve_params_pop,
-    fracuno_pop_u_params,
+    lgfuno_pop_u_params,
 ):
+    att_curve_key, funo_key = jran.split(dust_key, 2)
     gal_att_curve_params = mc_generate_dust_params_kern(
         att_curve_key, logsm_t_obs, logssfr_t_obs, z_obs, att_curve_params_pop
     )
-    n_gals = logsm_t_obs.shape[0]
-    gal_frac_unobscured = jnp.zeros(n_gals) + 0.01
+
+    gal_frac_unobs = mc_funobs(funo_key, logsm_t_obs, gal_lgfburst, lgfuno_pop_u_params)
 
     gal_frac_trans = _get_effective_attenuation_vmap(
-        filter_waves, filter_trans, z_obs, gal_att_curve_params, gal_frac_unobscured
+        filter_waves, filter_trans, z_obs, gal_att_curve_params, gal_frac_unobs
     )
     return gal_frac_trans.T
 

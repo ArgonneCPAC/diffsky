@@ -78,10 +78,10 @@ def get_obs_photometry_singlez(
     )
     lgmet_weights, smooth_age_weights = _res[1:]
 
-    ran_key, burst_key, att_curve_key = jran.split(ran_key, 3)
+    ran_key, burst_key, dust_key = jran.split(ran_key, 3)
 
-    lgf_burst = _get_lgfburst(gal_logsm_t_obs, gal_logssfr_t_obs, burst_params_pop)
-    gal_fburst = 10**lgf_burst
+    gal_lgf_burst = _get_lgfburst(gal_logsm_t_obs, gal_logssfr_t_obs, burst_params_pop)
+    gal_fburst = 10**gal_lgf_burst
     gal_dburst = jnp.zeros(n_gals) + DEFAULT_DBURST
 
     ssp_lg_age_yr = ssp_lg_age + 9.0
@@ -103,10 +103,11 @@ def get_obs_photometry_singlez(
     gal_obsflux_nodust = gal_obsflux_per_mstar * _gal_mstar
 
     frac_trans = _compute_dust_transmission_fractions(
-        att_curve_key,
+        dust_key,
         z_obs,
         gal_logsm_t_obs,
         gal_logssfr_t_obs,
+        gal_lgf_burst,
         filter_waves,
         filter_trans,
         att_curve_params_pop,
