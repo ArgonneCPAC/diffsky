@@ -112,11 +112,17 @@ def _get_u_p_from_p_scalar(p, bounds):
 
 
 _get_p_from_u_p_vmap = jjit(vmap(_get_p_from_u_p_scalar, in_axes=(0, 0)))
+_get_u_p_from_p_vmap = jjit(vmap(_get_u_p_from_p_scalar, in_axes=(0, 0)))
 
 
 @jjit
 def get_params_from_u_params(u_params):
     return _get_p_from_u_p_vmap(u_params, BPOP_BOUNDS)
+
+
+@jjit
+def get_u_params_from_params(params):
+    return _get_u_p_from_p_vmap(params, BPOP_BOUNDS)
 
 
 @jjit
@@ -136,7 +142,7 @@ def _get_b_from_u_params(logsm, logfb, lgfuno_pop_u_params):
 
 
 @jjit
-def mc_funobs(ran_key, logsm, logfb, lgfuno_pop_params):
+def mc_funobs(ran_key, logsm, logfb, lgfuno_pop_u_params):
     """This function does not seem to produce distributions
     that actually vary with logsm. See dev_obscurepop_burst.ipynb
 
@@ -144,6 +150,11 @@ def mc_funobs(ran_key, logsm, logfb, lgfuno_pop_params):
     n_gals = logsm.shape[0]
     a = jnp.zeros(n_gals)
     g = jnp.zeros(n_gals) + LGFUNO_PLAW_SLOPE
-    b = _get_b_from_u_params(logsm, logfb, lgfuno_pop_params)
+    b = _get_b_from_u_params(logsm, logfb, lgfuno_pop_u_params)
     frac_unobs = b - powerlaw_rvs(ran_key, a, b, g)
     return frac_unobs
+
+
+BPOP_DEFAULT_U_PARAMS = get_u_params_from_params(
+    jnp.array(list(BPOP_DEFAULT_PDICT.values()))
+)
