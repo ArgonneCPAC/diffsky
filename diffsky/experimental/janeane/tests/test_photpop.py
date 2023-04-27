@@ -25,7 +25,7 @@ def test_photpop_evaluates():
     filter_waves = np.array([_lam for __ in range(n_filters)])
     filter_trans = np.ones((n_filters, n_filter_wave))
 
-    n_gals = 50
+    n_gals = 250
     gal_sfr_table = np.random.uniform(0, 1, size=(n_gals, n_t))
 
     z_obs = 0.5
