@@ -156,7 +156,7 @@ def get_obs_photometry_singlez(
     _w_met = lgmet_weights.reshape((n_gals, n_met, 1))
     _w = _w_age * _w_met
     _norm = jnp.sum(_w, axis=(1, 2))
-    weights = _w / _norm
+    weights = _w / _norm.reshape((n_gals, 1, 1))
 
     _ssp_fluxes = ssp_obs_photflux_table.reshape((1, n_met, n_age, n_filters))
     w = weights.reshape((n_gals, n_met, n_age, 1))
