@@ -111,7 +111,7 @@ def get_obs_photometry_singlez(
     """
     n_gals = gal_sfr_table.shape[0]
     n_met = ssp_lgmet.shape[0]
-    n_age = ssp_lg_age.shape[0]
+    n_age = ssp_lg_age_gyr.shape[0]
     n_filters = filter_waves.shape[0]
 
     t_obs = _age_at_z_kern(z_obs, *cosmo_params)
