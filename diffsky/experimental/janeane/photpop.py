@@ -35,7 +35,7 @@ def get_obs_photometry_singlez(
     filter_trans,
     ssp_obs_photflux_table,
     ssp_lgmet,
-    ssp_lg_age,
+    ssp_lg_age_gyr,
     gal_t_table,
     gal_sfr_table,
     burst_params_pop,
@@ -63,7 +63,7 @@ def get_obs_photometry_singlez(
     ssp_lgmet : ndarray of shape (n_met, )
         Array of log10(Z) of the SSP templates
 
-    ssp_lg_age : ndarray of shape (n_ages, )
+    ssp_lg_age_gyr : ndarray of shape (n_ages, )
         Array of log10(age/Gyr) of the SSP templates
 
     gal_t_table : ndarray of shape (n_t, )
@@ -136,7 +136,7 @@ def get_obs_photometry_singlez(
         gal_lgmet,
         lgmet_scatter,
         ssp_lgmet,
-        ssp_lg_age,
+        ssp_lg_age_gyr,
         t_obs,
     )
     lgmet_weights, smooth_age_weights = _res[1:]
@@ -147,7 +147,7 @@ def get_obs_photometry_singlez(
     gal_fburst = 10**gal_lgf_burst
     gal_dburst = jnp.zeros(n_gals) + DEFAULT_DBURST
 
-    ssp_lg_age_yr = ssp_lg_age + 9.0
+    ssp_lg_age_yr = ssp_lg_age_gyr + 9.0
     bursty_age_weights = _compute_bursty_age_weights_pop(
         ssp_lg_age_yr, smooth_age_weights, gal_fburst, gal_dburst
     )
