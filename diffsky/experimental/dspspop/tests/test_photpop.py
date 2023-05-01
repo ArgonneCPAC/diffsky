@@ -54,22 +54,29 @@ def test_newphotpop_evaluates():
 
     (
         weights,
-        bursty_age_weights,
+        lgmet_weights,
         smooth_age_weights,
-        age_weights_burst,
+        bursty_age_weights,
         frac_trans,
         gal_obsflux_nodust,
         gal_obsflux,
     ) = res
 
     assert weights.shape == (n_gals, n_met, n_age)
-    assert bursty_age_weights.shape == (n_gals, n_age)
-
     assert np.all(np.isfinite(weights))
-    assert np.all(np.isfinite(bursty_age_weights))
-
-    assert np.allclose(1.0, np.sum(bursty_age_weights, axis=1), atol=1e-3)
     assert np.allclose(1.0, np.sum(weights, axis=(1, 2)), atol=1e-3)
+
+    assert lgmet_weights.shape == (n_gals, n_met)
+    assert np.all(np.isfinite(lgmet_weights))
+    assert np.allclose(1.0, np.sum(lgmet_weights, axis=1), atol=1e-3)
+
+    assert smooth_age_weights.shape == (n_gals, n_age)
+    assert np.all(np.isfinite(smooth_age_weights))
+    assert np.allclose(1.0, np.sum(smooth_age_weights, axis=1), atol=1e-3)
+
+    assert bursty_age_weights.shape == (n_gals, n_age)
+    assert np.all(np.isfinite(bursty_age_weights))
+    assert np.allclose(1.0, np.sum(bursty_age_weights, axis=1), atol=1e-3)
 
     assert frac_trans.shape == (n_gals, n_age, n_filters)
     assert np.all(np.isfinite(frac_trans))
@@ -78,6 +85,13 @@ def test_newphotpop_evaluates():
 
     assert gal_obsflux_nodust.shape == (n_gals, n_filters)
     assert np.all(np.isfinite(gal_obsflux_nodust))
+    assert np.all(gal_obsflux_nodust >= 0)
+    assert np.any(gal_obsflux_nodust > 0)
 
     assert gal_obsflux.shape == (n_gals, n_filters)
     assert np.all(np.isfinite(gal_obsflux))
+    assert np.all(gal_obsflux >= 0)
+    assert np.any(gal_obsflux > 0)
+
+    assert np.all(gal_obsflux <= gal_obsflux_nodust)
+    assert np.any(gal_obsflux < gal_obsflux_nodust)

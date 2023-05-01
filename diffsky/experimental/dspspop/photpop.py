@@ -74,11 +74,17 @@ def get_obs_photometry_singlez(
     gal_sfr_table : ndarray of shape (n_gals, n_t)
         Star formation history in Msun/yr evaluated at the input gal_t_table
 
-    burst_params_pop : ndarray of shape (n_burst_params, )
+    lgfburst_pop_u_params : ndarray of shape (n_lgfburst_params, )
+        Unbounded parameters of the lgfburstpop model
 
-    att_curve_params_pop : ndarray of shape (n_att_curve_params, )
+    burstshapepop_u_params : ndarray of shape (n_burstshapepop_params, )
+        Unbounded parameters of the burstshapepop model
+
+    att_curve_params_pop : 2-element tuple of bounded parameters
+        att_curve_params_pop = (tau_params, delta_params)
 
     fracuno_pop_u_params : ndarray of shape (n_funo_params, )
+        unbounded parameters of the boris_dust model
 
     cosmo_params : 4-element sequence, (Om0, w0, wa, h)
 
@@ -190,9 +196,9 @@ def get_obs_photometry_singlez(
 
     return (
         weights,
-        bursty_age_weights,
+        lgmet_weights,
         smooth_age_weights,
-        burst_weights,
+        bursty_age_weights,
         frac_trans,
         gal_obsflux_nodust,
         gal_obsflux,
