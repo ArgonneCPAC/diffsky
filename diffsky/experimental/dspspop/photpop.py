@@ -44,7 +44,8 @@ def get_obs_photometry_singlez(
     gal_sfr_table,
     lgfburst_pop_u_params,
     burstshapepop_u_params,
-    att_curve_params_pop,
+    lgav_u_params,
+    dust_delta_u_params,
     fracuno_pop_u_params,
     cosmo_params,
     z_obs,
@@ -84,8 +85,11 @@ def get_obs_photometry_singlez(
     burstshapepop_u_params : ndarray of shape (n_burstshapepop_params, )
         Unbounded parameters of the burstshapepop model
 
-    att_curve_params_pop : 2-element tuple of bounded parameters
-        att_curve_params_pop = (tau_params, delta_params)
+    lgav_u_params : ndarray of shape (n_lgavpop_params, )
+        Unbounded parameters of the lgav model
+
+    dust_delta_u_params : ndarray of shape (n_dust_deltapop_params, )
+        Unbounded parameters of the dust_delta model
 
     fracuno_pop_u_params : ndarray of shape (n_funo_params, )
         unbounded parameters of the boris_dust model
@@ -184,7 +188,8 @@ def get_obs_photometry_singlez(
         ssp_lg_age_gyr,
         filter_waves,
         filter_trans,
-        att_curve_params_pop,
+        lgav_u_params,
+        dust_delta_u_params,
         fracuno_pop_u_params,
     )
 

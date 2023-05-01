@@ -5,10 +5,11 @@ import numpy as np
 from dsps.cosmology import DEFAULT_COSMOLOGY
 
 from ..photpop import get_obs_photometry_singlez
-from ..nagaraj22_dust import TAU_PARAMS, DELTA_PARAMS
 from ..boris_dust import DEFAULT_PARAMS as DEFAULT_BORIS_PARAMS
 from ..lgfburstpop import DEFAULT_LGFBURST_U_PARAMS
 from ..burstshapepop import DEFAULT_BURSTSHAPE_U_PARAMS
+from ..lgavpop import DEFAULT_LGAV_U_PARAMS
+from ..dust_deltapop import DEFAULT_DUST_DELTA_U_PARAMS
 
 
 def test_newphotpop_evaluates():
@@ -32,7 +33,6 @@ def test_newphotpop_evaluates():
 
     z_obs = 0.5
 
-    att_curve_params = (TAU_PARAMS, DELTA_PARAMS)
     ran_key = jran.PRNGKey(0)
 
     res = get_obs_photometry_singlez(
@@ -46,7 +46,8 @@ def test_newphotpop_evaluates():
         gal_sfr_table,
         DEFAULT_LGFBURST_U_PARAMS,
         DEFAULT_BURSTSHAPE_U_PARAMS,
-        att_curve_params,
+        DEFAULT_LGAV_U_PARAMS,
+        DEFAULT_DUST_DELTA_U_PARAMS,
         DEFAULT_BORIS_PARAMS,
         DEFAULT_COSMOLOGY,
         z_obs,
