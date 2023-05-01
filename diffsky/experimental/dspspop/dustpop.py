@@ -1,38 +1,29 @@
 """
 """
 from jax import jit as jjit
-from jax import random as jran
 from jax import numpy as jnp
 from jax import vmap
 from dsps.dust.utils import get_filter_effective_wavelength
 from dsps.dust.att_curves import UV_BUMP_W0, UV_BUMP_DW
 from dsps.dust.att_curves import _frac_transmission_from_k_lambda, sbl18_k_lambda
 
-from .nagaraj22_dust import _get_median_dust_params_kern
 from .boris_dust import _get_funo_from_u_params_galpop
+from .lgavpop import _get_lgav_galpop_from_u_params
+from .dust_deltapop import _get_dust_delta_galpop_from_u_params
 
 
 @jjit
-def mc_generate_dust_params_kern(
-    ran_key, logsm, logssfr, redshift, att_curve_params_pop
+def _median_dust_params_kern(
+    ran_key, logsm, logssfr, lgav_u_params, dust_delta_u_params
 ):
-    delta_key, av_key = jran.split(ran_key, 2)
-    n = logsm.size
-
-    tau_params_pop, delta_params_pop = att_curve_params_pop
-    median_eb, median_delta, median_av = _get_median_dust_params_kern(
-        logsm, logssfr, redshift, tau_params_pop, delta_params_pop
+    gal_lgav = _get_lgav_galpop_from_u_params(logsm, logssfr, lgav_u_params)
+    gal_av = 10**gal_lgav
+    gal_dust_delta = _get_dust_delta_galpop_from_u_params(
+        logsm, logssfr, dust_delta_u_params
     )
-    delta_lgav = jran.uniform(av_key, minval=-0.2, maxval=0.2, shape=(n,))
-    lgav = delta_lgav + jnp.log10(median_av)
-    gal_av = 10**lgav
+    gal_eb = _eb_from_delta_kc13(gal_dust_delta)
 
-    gal_delta = median_delta + jran.uniform(
-        delta_key, minval=-0.1, maxval=0.1, shape=(n,)
-    )
-    gal_eb = median_eb + jran.uniform(delta_key, minval=-0.15, maxval=0.15, shape=(n,))
-
-    gal_att_curve_params = jnp.array((gal_eb, gal_delta, gal_av)).T
+    gal_att_curve_params = jnp.array((gal_eb, gal_dust_delta, gal_av)).T
 
     return gal_att_curve_params
 
@@ -47,11 +38,16 @@ def _compute_dust_transmission_fractions(
     ssp_lg_age_gyr,
     filter_waves,
     filter_trans,
-    att_curve_params_pop,
+    lgav_u_params,
+    dust_delta_u_params,
     funo_u_params,
 ):
-    gal_att_curve_params = mc_generate_dust_params_kern(
-        att_curve_key, gal_logsm_t_obs, gal_logssfr_t_obs, z_obs, att_curve_params_pop
+    gal_att_curve_params = _median_dust_params_kern(
+        att_curve_key,
+        gal_logsm_t_obs,
+        gal_logssfr_t_obs,
+        lgav_u_params,
+        dust_delta_u_params,
     )
 
     gal_frac_unobs = _get_funo_from_u_params_galpop(
@@ -94,3 +90,8 @@ _B = (0, 0, None, None, None)
 _get_effective_attenuation_vmap = jjit(
     vmap(vmap(_get_effective_attenuation_sbl18, _A), _B)
 )
+
+
+@jjit
+def _eb_from_delta_kc13(delta):
+    return 0.85 - 1.9 * delta
