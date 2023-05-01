@@ -12,7 +12,11 @@ from dsps.sed.stellar_age_weights import _calc_logsm_table_from_sfh_table
 from .dustpop import _compute_dust_transmission_fractions
 from .lgfburstpop import _get_lgfburst_galpop_from_u_params
 from .burstshapepop import _get_burstshape_galpop_from_params
-from .flexburst import _age_weights_from_u_params_vmap
+from dsps.experimental.diffburst import _age_weights_from_u_params
+
+
+_A = (None, 0)
+_age_weights_from_u_params_vmap = jjit(vmap(_age_weights_from_u_params, in_axes=_A))
 
 DEFAULT_MZR_PARAMS = jnp.array(list(DEFAULT_MZR_PDICT.values()))
 _linterp_vmap = jjit(vmap(jnp.interp, in_axes=(None, None, 0)))
