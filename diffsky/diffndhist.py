@@ -103,7 +103,7 @@ def tw_ndhist(nddata, ndsig, ndbins_lo, ndbins_hi):
 def _tw_ndhist_weighted_sum_kern(nddata, ndsig, y, ndlo, ndhi):
     """
     For an individual scalar point in n-dimensions
-    we calculate w * y: where p is the product of the weights across all dimensions
+    we calculate w * y: where w is the product of the weights across all dimensions
     for a single n-dimensional bin, and y is the quantity we are summing
     """
     w = jnp.prod(_tw_bin_weight_lax_kern_vmap(nddata, ndsig, ndlo, ndhi))
