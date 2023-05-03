@@ -1,5 +1,4 @@
-"""
-"""
+"""JAX kernels for N-dimensional triweighted histograms"""
 from jax import numpy as jnp
 from jax import vmap
 from jax import jit as jjit
@@ -45,10 +44,11 @@ _tw_bin_weight_lax_kern_vmap = jjit(vmap(_tw_bin_weight_lax_kern, in_axes=_A))
 def _tw_ndhist_kern(nddata, ndsig, ndlo, ndhi):
     """
     For an individual scalar point in n-dimensions
-    we take the product of the weights across all dimensions
+    we calculate w: the product of the weights across all dimensions
     for a single n-dimensional bin
     """
-    return jnp.prod(_tw_bin_weight_lax_kern_vmap(nddata, ndsig, ndlo, ndhi))
+    w = jnp.prod(_tw_bin_weight_lax_kern_vmap(nddata, ndsig, ndlo, ndhi))
+    return w
 
 
 # Vectorize from a single n-dimensional point to many n-dimensional points
@@ -90,5 +90,79 @@ def tw_ndhist(nddata, ndsig, ndbins_lo, ndbins_hi):
     ndhist : ndarray of shape (nbins, )
         Weighted histogram of nddata
 
+    Notes
+    -----
+    The tw_ndhist function can be used to calculate quantities such as
+    the number density of points that fall within a cell of N-dimensional data
+
     """
     return _tw_ndhist_vmap(nddata, ndsig, ndbins_lo, ndbins_hi)
+
+
+@jjit
+def _tw_ndhist_weighted_sum_kern(nddata, ndsig, y, ndlo, ndhi):
+    """
+    For an individual scalar point in n-dimensions
+    we calculate w * y: where p is the product of the weights across all dimensions
+    for a single n-dimensional bin, and y is the quantity we are summing
+    """
+    w = jnp.prod(_tw_bin_weight_lax_kern_vmap(nddata, ndsig, ndlo, ndhi))
+    return w * y
+
+
+# Vectorize from a single n-dimensional point to many n-dimensional points
+_tw_ndhist_weighted_sum_vmap = jjit(
+    vmap(_tw_ndhist_weighted_sum_kern, in_axes=(0, 0, 0, None, None))
+)
+
+
+@jjit
+def _tw_ndhist_weighted_kern(nddata, ndsig, y, ndlo, ndhi):
+    """Sum contributions from all the n-dimensional points
+    again for a single n-dimensional bin
+    """
+    return jnp.sum(_tw_ndhist_weighted_sum_vmap(nddata, ndsig, y, ndlo, ndhi))
+
+
+# Repeat the _tw_ndhist_weighted_kern kernel for many bins at once
+_tw_ndhist_weighted_vmap = jjit(
+    vmap(_tw_ndhist_weighted_kern, in_axes=(None, None, None, 0, 0))
+)
+
+
+@jjit
+def tw_ndhist_weighted(nddata, ndsig, ydata, ndbins_lo, ndbins_hi):
+    """Calculate sum of ydata for those points in nddata
+    that fall within arbitrary N-dimensional bins
+
+    Parameters
+    ----------
+    nddata : ndarray of shape (npts, ndim)
+        Collection of npts data points residing in an ndim-dimensional space
+
+    ndsig : ndarray of shape (npts, ndim)
+        Triweight scatter for each point in each dimension
+
+    ydata : ndarray of shape (npts, )
+        Quantity to be summed
+
+    ndbins_lo : ndarray of shape (nbins, ndim)
+        Lower bound in each dimension for each bin
+
+    ndbins_hi : ndarray of shape (nbins, ndim)
+        Upper bound in each dimension for each bin
+
+    Returns
+    -------
+    ndhist : ndarray of shape (nbins, )
+        Weighted histogram of nddata
+
+    Notes
+    -----
+    The tw_ndhist_weighted function and the tw_ndhist together
+    can be used to calculate quantities such as < y | x0, x1, ..., x2 >,
+    the average value of y for those points x that fall
+    within a cell of N-dimensional data
+
+    """
+    return _tw_ndhist_weighted_vmap(nddata, ndsig, ydata, ndbins_lo, ndbins_hi)
