@@ -24,7 +24,7 @@ DEFAULT_DUST_DELTA_PDICT = OrderedDict(
 
 LGSM_X0_BOUNDS = (8.0, 12.0)
 LGSSFR_X0_BOUNDS = (-13.0, -7.0)
-DUST_DELTA_BOUNDS = (-1.1, 0.0)
+DUST_DELTA_BOUNDS = (-1.1, 0.4)
 DUST_DELTA_BOUNDS_PDICT = OrderedDict(
     dust_delta_logsm_x0_x0=LGSM_X0_BOUNDS,
     dust_delta_logsm_x0_q=LGSM_X0_BOUNDS,

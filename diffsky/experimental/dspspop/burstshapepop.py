@@ -24,8 +24,8 @@ DEFAULT_BURSTSHAPE_PDICT = OrderedDict(
     burstshape_u_lgyr_max_logsm_ylo=DEFAULT_U_LGYR_MAX - 10,
     burstshape_u_lgyr_max_logsm_yhi=DEFAULT_U_LGYR_MAX + 10,
 )
-U_LGYR_PEAK_BOUNDS = (DEFAULT_U_LGYR_PEAK - 500, DEFAULT_U_LGYR_PEAK + 500)
-U_LGYR_MAX_BOUNDS = (DEFAULT_U_LGYR_MAX - 500, DEFAULT_U_LGYR_MAX + 500)
+U_LGYR_PEAK_BOUNDS = (DEFAULT_U_LGYR_PEAK - 2500, DEFAULT_U_LGYR_PEAK + 2500)
+U_LGYR_MAX_BOUNDS = (DEFAULT_U_LGYR_MAX - 2500, DEFAULT_U_LGYR_MAX + 2500)
 DEFAULT_BURSTSHAPE_BOUNDS_PDICT = OrderedDict(
     burstshape_u_lgyr_peak_x0_logsm_x0=(8, 12.0),
     burstshape_u_lgyr_peak_q_logsm_x0=(-13.0, -8.0),
