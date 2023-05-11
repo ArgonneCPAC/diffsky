@@ -6,7 +6,7 @@ Installation
 To install diffsky into your environment from the source code::
 
     $ cd /path/to/root/diffsky
-    $ python setup.py install
+    $ pip install .
 
 ## Documentation
 
