@@ -1,7 +1,6 @@
 """
 """
 from jax import jit as jjit
-from jax import numpy as jnp
 from jax import lax
 
 
@@ -14,4 +13,4 @@ def _sigmoid(x, x0, k, ymin, ymax):
 @jjit
 def _inverse_sigmoid(y, x0, k, ylo, yhi):
     lnarg = (yhi - ylo) / (y - ylo) - 1
-    return x0 - jnp.log(lnarg) / k
+    return x0 - lax.log(lnarg) / k
