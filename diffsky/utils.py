@@ -2,12 +2,13 @@
 """
 from jax import jit as jjit
 from jax import numpy as jnp
+from jax import lax
 
 
 @jjit
 def _sigmoid(x, x0, k, ymin, ymax):
     height_diff = ymax - ymin
-    return ymin + height_diff / (1 + jnp.exp(-k * (x - x0)))
+    return ymin + height_diff * lax.logistic(k * (x - x0))
 
 
 @jjit
