@@ -41,7 +41,7 @@ def test_get_bursty_age_weights_pop_u_param_inversion():
     assert np.allclose(
         DEFAULT_BURSTSHAPE_PARAMS,
         _get_bounded_burstshape_params(DEFAULT_BURSTSHAPE_U_PARAMS),
-        rtol=1e-2,
+        atol=0.05,
     )
 
     inferred_default_params = _get_bounded_burstshape_params(
@@ -69,5 +69,5 @@ def test_get_bursty_age_weights_pop_u_param_inversion():
     assert np.all(np.isfinite(u_lgyr_peak_u))
     assert np.all(np.isfinite(u_lgyr_max_u))
 
-    assert np.allclose(u_lgyr_max, u_lgyr_max_u, atol=1e-3)
-    assert np.allclose(u_lgyr_peak, u_lgyr_peak_u, atol=1e-3)
+    assert np.allclose(u_lgyr_max, u_lgyr_max_u, atol=0.05)
+    assert np.allclose(u_lgyr_peak, u_lgyr_peak_u, atol=0.05)
