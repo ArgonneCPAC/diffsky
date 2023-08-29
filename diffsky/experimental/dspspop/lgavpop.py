@@ -1,11 +1,12 @@
 """
 """
-import numpy as np
 from collections import OrderedDict
-from jax import jit as jjit
-from jax import vmap
-from jax import numpy as jnp
 
+import numpy as np
+from jax import jit as jjit
+from jax import lax
+from jax import numpy as jnp
+from jax import vmap
 
 LGSM_K = 5.0
 LGSSFR_K = 5.0
@@ -97,7 +98,7 @@ def _get_lgav_galpop_from_params(gal_logsm, gal_logssfr, lgav_pop_params):
 @jjit
 def _sigmoid(x, x0, k, ymin, ymax):
     height_diff = ymax - ymin
-    return ymin + height_diff / (1 + jnp.exp(-k * (x - x0)))
+    return ymin + height_diff / (1 + lax.exp(-k * (x - x0)))
 
 
 @jjit

@@ -1,9 +1,11 @@
 """
 """
-from jax import jit as jjit
-from jax import numpy as jnp
-from dsps.utils import _sigmoid, _tw_sigmoid
 from collections import OrderedDict
+
+from dsps.utils import _sigmoid, _tw_sigmoid
+from jax import jit as jjit
+from jax import lax
+from jax import numpy as jnp
 
 TAU_PDICT = OrderedDict(
     taueff_ssfr_x0=-9.5,
@@ -76,7 +78,7 @@ def _taueff_to_delta(taueff, delta_x0, delta_k, delta_ylo, delta_yhi):
 
 @jjit
 def _av_from_tau(tau):
-    logarg = (1 - jnp.exp(-tau)) / tau
+    logarg = (1 - lax.exp(-tau)) / tau
     Av = -2.5 * jnp.log10(logarg)
     return Av
 

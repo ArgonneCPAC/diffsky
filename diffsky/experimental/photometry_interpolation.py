@@ -1,10 +1,10 @@
 """
 """
-from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
-from jax import vmap, jit as jjit
 from dsps.cosmology import age_at_z
+from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
+from jax import jit as jjit
 from jax import numpy as jnp
-
+from jax import vmap
 
 _a = (None, 0, 0, None, None, None, 0)
 calc_ssp_weights_sfh_table_lognormal_mdf_vmap = jjit(
