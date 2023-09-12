@@ -11,7 +11,10 @@ from ..dust_deltapop import (
     _get_dust_delta_galpop_from_u_params,
     _get_unbounded_dust_delta_params,
 )
-from ..dustpop import _compute_dust_transmission_fractions
+from ..dustpop import (
+    _compute_dust_transmission_fractions,
+    _frac_dust_transmission_kernel,
+)
 from ..lgavpop import DEFAULT_LGAV_U_PARAMS
 
 
@@ -60,7 +63,7 @@ def test_get_bursty_age_weights_pop_u_param_inversion():
 def test_compute_dust_transmission_fractions():
     att_curve_key = 0
     ngals = 20
-    z_obs = np.linspace(0.1, 1, ngals)
+    z_obs = 0.1
     logsm = np.linspace(8, 12, ngals)
     logssfr = np.linspace(-13, -8, ngals)
     gal_logfburst = np.zeros(ngals) - 3.0
@@ -74,9 +77,9 @@ def test_compute_dust_transmission_fractions():
     )
     filter_trans = np.ones((n_filters, n_wave))
 
-    gal_frac_trans = _compute_dust_transmission_fractions(
+    args = (
         att_curve_key,
-        0.1,
+        z_obs,
         logsm,
         logssfr,
         gal_logfburst,
@@ -87,4 +90,12 @@ def test_compute_dust_transmission_fractions():
         DEFAULT_DUST_DELTA_U_PARAMS,
         DEFAULT_FUNO_U_PARAMS,
     )
+    _res = _frac_dust_transmission_kernel(*args)
+    gal_frac_trans, gal_att_curve_params, gal_frac_unobs = _res
+
     assert gal_frac_trans.shape == (ngals, n_age, n_filters)
+    assert gal_att_curve_params.shape == (ngals, 3)
+    assert gal_frac_unobs.shape == (ngals, n_age)
+
+    gal_frac_trans2 = _compute_dust_transmission_fractions(*args)
+    assert np.allclose(gal_frac_trans, gal_frac_trans2)

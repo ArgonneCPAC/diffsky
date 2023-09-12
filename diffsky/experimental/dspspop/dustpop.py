@@ -98,6 +98,75 @@ def _compute_dust_transmission_fractions(
 
 
 @jjit
+def _frac_dust_transmission_kernel(
+    att_curve_key,
+    z_obs,
+    gal_logsm_t_obs,
+    gal_logssfr_t_obs,
+    gal_logfburst,
+    ssp_lg_age_gyr,
+    filter_waves,
+    filter_trans,
+    lgav_u_params,
+    dust_delta_u_params,
+    funo_u_params,
+):
+    """Calculate fraction of flux transmitted through dust for a collection of filters
+
+    Parameters
+    ----------
+    att_curve_key : jax.random.PRNGKey
+
+    z_obs : float
+
+    gal_logsm_t_obs : ndarray, shape (n_gals, )
+
+    gal_logssfr_t_obs : ndarray, shape (n_gals, )
+
+    gal_logfburst : ndarray, shape (n_gals, )
+
+    ssp_lg_age_gyr : ndarray, shape (n_age, )
+
+    filter_waves : ndarray, shape (n_filters, n_wave)
+
+    filter_trans : ndarray, shape (n_filters, n_wave)
+
+    lgav_u_params : ndarray
+
+    dust_delta_u_params : ndarray
+
+    funo_u_params : ndarray
+
+    Returns
+    -------
+    gal_frac_trans : ndarray, shape (n_gals, n_age, n_filters)
+
+    gal_att_curve_params : ndarray, shape (n_gals, 3)
+
+    gal_frac_unobs : ndarray, shape (n_gals, n_age)
+
+    """
+    gal_att_curve_params = _median_dust_params_kern(
+        att_curve_key,
+        gal_logsm_t_obs,
+        gal_logssfr_t_obs,
+        lgav_u_params,
+        dust_delta_u_params,
+    )
+
+    gal_frac_unobs = _get_funo_from_u_params_galpop(
+        gal_logsm_t_obs, gal_logfburst, gal_logssfr_t_obs, ssp_lg_age_gyr, funo_u_params
+    )
+
+    gal_frac_trans = _get_effective_attenuation_vmap(
+        filter_waves, filter_trans, z_obs, gal_att_curve_params, gal_frac_unobs
+    )
+    gal_frac_trans = jnp.swapaxes(gal_frac_trans, 0, 2)
+    gal_frac_trans = jnp.swapaxes(gal_frac_trans, 0, 1)
+    return gal_frac_trans, gal_att_curve_params, gal_frac_unobs
+
+
+@jjit
 def _get_effective_attenuation_sbl18(
     filter_wave, filter_trans, redshift, att_curve_params, frac_unobscured
 ):
