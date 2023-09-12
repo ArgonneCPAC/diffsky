@@ -1,13 +1,18 @@
 """
 """
 import numpy as np
-from ..dust_deltapop import _get_dust_delta_galpop_from_params
-from ..dust_deltapop import _get_dust_delta_galpop_from_u_params
-from ..dust_deltapop import DEFAULT_DUST_DELTA_U_PARAMS, DEFAULT_DUST_DELTA_PARAMS
+
+from ..boris_dust import DEFAULT_U_PARAMS as DEFAULT_FUNO_U_PARAMS
 from ..dust_deltapop import (
+    DEFAULT_DUST_DELTA_PARAMS,
+    DEFAULT_DUST_DELTA_U_PARAMS,
     _get_bounded_dust_delta_params,
+    _get_dust_delta_galpop_from_params,
+    _get_dust_delta_galpop_from_u_params,
     _get_unbounded_dust_delta_params,
 )
+from ..dustpop import _compute_dust_transmission_fractions
+from ..lgavpop import DEFAULT_LGAV_U_PARAMS
 
 
 def test_get_bursty_age_weights_pop_evaluates():
@@ -50,3 +55,36 @@ def test_get_bursty_age_weights_pop_u_param_inversion():
     assert np.all(np.isfinite(gal_dust_delta_u))
 
     assert np.allclose(gal_dust_delta, gal_dust_delta_u, rtol=1e-4)
+
+
+def test_compute_dust_transmission_fractions():
+    att_curve_key = 0
+    ngals = 20
+    z_obs = np.linspace(0.1, 1, ngals)
+    logsm = np.linspace(8, 12, ngals)
+    logssfr = np.linspace(-13, -8, ngals)
+    gal_logfburst = np.zeros(ngals) - 3.0
+
+    n_age = 50
+    ssp_lg_age_gyr = np.linspace(5, 10.5, n_age) - 9
+
+    n_filters, n_wave = 5, 1000
+    filter_waves = np.tile(np.linspace(100, 2_000, n_wave), n_filters).reshape(
+        (n_filters, n_wave)
+    )
+    filter_trans = np.ones((n_filters, n_wave))
+
+    gal_frac_trans = _compute_dust_transmission_fractions(
+        att_curve_key,
+        0.1,
+        logsm,
+        logssfr,
+        gal_logfburst,
+        ssp_lg_age_gyr,
+        filter_waves,
+        filter_trans,
+        DEFAULT_LGAV_U_PARAMS,
+        DEFAULT_DUST_DELTA_U_PARAMS,
+        DEFAULT_FUNO_U_PARAMS,
+    )
+    assert gal_frac_trans.shape == (ngals, n_age, n_filters)

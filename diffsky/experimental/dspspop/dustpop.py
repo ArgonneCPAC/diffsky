@@ -1,15 +1,19 @@
 """
 """
+from dsps.dust.att_curves import (
+    UV_BUMP_DW,
+    UV_BUMP_W0,
+    _frac_transmission_from_k_lambda,
+    sbl18_k_lambda,
+)
+from dsps.dust.utils import get_filter_effective_wavelength
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
-from dsps.dust.utils import get_filter_effective_wavelength
-from dsps.dust.att_curves import UV_BUMP_W0, UV_BUMP_DW
-from dsps.dust.att_curves import _frac_transmission_from_k_lambda, sbl18_k_lambda
 
 from .boris_dust import _get_funo_from_u_params_galpop
-from .lgavpop import _get_lgav_galpop_from_u_params
 from .dust_deltapop import _get_dust_delta_galpop_from_u_params
+from .lgavpop import _get_lgav_galpop_from_u_params
 
 
 @jjit
@@ -42,6 +46,37 @@ def _compute_dust_transmission_fractions(
     dust_delta_u_params,
     funo_u_params,
 ):
+    """Calculate fraction of flux transmitted through dust for a collection of filters
+
+    Parameters
+    ----------
+    att_curve_key : jax.random.PRNGKey
+
+    z_obs : float
+
+    gal_logsm_t_obs : ndarray, shape (n_gals, )
+
+    gal_logssfr_t_obs : ndarray, shape (n_gals, )
+
+    gal_logfburst : ndarray, shape (n_gals, )
+
+    ssp_lg_age_gyr : ndarray, shape (n_age, )
+
+    filter_waves : ndarray, shape (n_filters, n_wave)
+
+    filter_trans : ndarray, shape (n_filters, n_wave)
+
+    lgav_u_params : ndarray
+
+    dust_delta_u_params : ndarray
+
+    funo_u_params : ndarray
+
+    Returns
+    -------
+    gal_frac_trans : ndarray, shape (n_gals, n_age, n_filters)
+
+    """
     gal_att_curve_params = _median_dust_params_kern(
         att_curve_key,
         gal_logsm_t_obs,
