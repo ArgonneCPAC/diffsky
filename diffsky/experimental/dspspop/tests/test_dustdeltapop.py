@@ -13,7 +13,7 @@ from ..dust_deltapop import (
 )
 from ..dustpop import (
     _compute_dust_transmission_fractions,
-    _frac_dust_transmission_kernel,
+    _frac_dust_transmission_lightcone_kernel,
 )
 from ..lgavpop import DEFAULT_LGAV_U_PARAMS
 
@@ -64,6 +64,7 @@ def test_compute_dust_transmission_fractions():
     att_curve_key = 0
     ngals = 20
     z_obs = 0.1
+    gal_z_obs = np.zeros(ngals) + z_obs
     logsm = np.linspace(8, 12, ngals)
     logssfr = np.linspace(-13, -8, ngals)
     gal_logfburst = np.zeros(ngals) - 3.0
@@ -79,6 +80,26 @@ def test_compute_dust_transmission_fractions():
 
     args = (
         att_curve_key,
+        gal_z_obs,
+        logsm,
+        logssfr,
+        gal_logfburst,
+        ssp_lg_age_gyr,
+        filter_waves,
+        filter_trans,
+        DEFAULT_LGAV_U_PARAMS,
+        DEFAULT_DUST_DELTA_U_PARAMS,
+        DEFAULT_FUNO_U_PARAMS,
+    )
+    _res = _frac_dust_transmission_lightcone_kernel(*args)
+    gal_frac_trans, gal_att_curve_params, gal_frac_unobs = _res
+
+    assert gal_frac_trans.shape == (ngals, n_age, n_filters)
+    assert gal_att_curve_params.shape == (ngals, 3)
+    assert gal_frac_unobs.shape == (ngals, n_age)
+
+    args2 = (
+        att_curve_key,
         z_obs,
         logsm,
         logssfr,
@@ -90,12 +111,5 @@ def test_compute_dust_transmission_fractions():
         DEFAULT_DUST_DELTA_U_PARAMS,
         DEFAULT_FUNO_U_PARAMS,
     )
-    _res = _frac_dust_transmission_kernel(*args)
-    gal_frac_trans, gal_att_curve_params, gal_frac_unobs = _res
-
-    assert gal_frac_trans.shape == (ngals, n_age, n_filters)
-    assert gal_att_curve_params.shape == (ngals, 3)
-    assert gal_frac_unobs.shape == (ngals, n_age)
-
-    gal_frac_trans2 = _compute_dust_transmission_fractions(*args)
+    gal_frac_trans2 = _compute_dust_transmission_fractions(*args2)
     assert np.allclose(gal_frac_trans, gal_frac_trans2)

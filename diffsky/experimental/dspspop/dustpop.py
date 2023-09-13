@@ -98,9 +98,9 @@ def _compute_dust_transmission_fractions(
 
 
 @jjit
-def _frac_dust_transmission_kernel(
+def _frac_dust_transmission_lightcone_kernel(
     att_curve_key,
-    z_obs,
+    gal_z_obs,
     gal_logsm_t_obs,
     gal_logssfr_t_obs,
     gal_logfburst,
@@ -111,13 +111,14 @@ def _frac_dust_transmission_kernel(
     dust_delta_u_params,
     funo_u_params,
 ):
-    """Calculate fraction of flux transmitted through dust for a collection of filters
+    """Calculate fraction of flux transmitted through dust for galaxies on a lightcone
+    observed through a collection of filters
 
     Parameters
     ----------
     att_curve_key : jax.random.PRNGKey
 
-    z_obs : float
+    gal_z_obs : ndarray, shape (n_gals, )
 
     gal_logsm_t_obs : ndarray, shape (n_gals, )
 
@@ -158,8 +159,8 @@ def _frac_dust_transmission_kernel(
         gal_logsm_t_obs, gal_logfburst, gal_logssfr_t_obs, ssp_lg_age_gyr, funo_u_params
     )
 
-    gal_frac_trans = _get_effective_attenuation_vmap(
-        filter_waves, filter_trans, z_obs, gal_att_curve_params, gal_frac_unobs
+    gal_frac_trans = _get_effective_attenuation_lightcone_vmap(
+        filter_waves, filter_trans, gal_z_obs, gal_att_curve_params, gal_frac_unobs
     )
     gal_frac_trans = jnp.swapaxes(gal_frac_trans, 0, 2)
     gal_frac_trans = jnp.swapaxes(gal_frac_trans, 0, 1)
@@ -193,6 +194,11 @@ _A = (None, None, None, 0, 0)
 _B = (0, 0, None, None, None)
 _get_effective_attenuation_vmap = jjit(
     vmap(vmap(_get_effective_attenuation_sbl18, _A), _B)
+)
+
+_C = (None, None, 0, 0, 0)
+_get_effective_attenuation_lightcone_vmap = jjit(
+    vmap(vmap(_get_effective_attenuation_sbl18, _C), _B)
 )
 
 
