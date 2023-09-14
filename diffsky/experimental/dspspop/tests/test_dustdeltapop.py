@@ -12,8 +12,8 @@ from ..dust_deltapop import (
     _get_unbounded_dust_delta_params,
 )
 from ..dustpop import (
-    _compute_dust_transmission_fractions,
     _frac_dust_transmission_lightcone_kernel,
+    _frac_dust_transmission_singlez_kernel,
 )
 from ..lgavpop import DEFAULT_LGAV_U_PARAMS
 
@@ -111,5 +111,5 @@ def test_compute_dust_transmission_fractions():
         DEFAULT_DUST_DELTA_U_PARAMS,
         DEFAULT_FUNO_U_PARAMS,
     )
-    gal_frac_trans2 = _compute_dust_transmission_fractions(*args2)
+    gal_frac_trans2 = _frac_dust_transmission_singlez_kernel(*args2)[0]
     assert np.allclose(gal_frac_trans, gal_frac_trans2)

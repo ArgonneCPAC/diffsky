@@ -1,19 +1,19 @@
 """
 """
-from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
-from jax import vmap, jit as jjit
-from jax import random as jran
-from dsps.cosmology.flat_wcdm import _age_at_z_kern
-from jax import numpy as jnp
-from dsps.metallicity.mzr import mzr_model, DEFAULT_MZR_PDICT
 from dsps.constants import SFR_MIN
-from dsps.sed.stellar_age_weights import _calc_logsm_table_from_sfh_table
-
-from .dustpop import _compute_dust_transmission_fractions
-from .lgfburstpop import _get_lgfburst_galpop_from_u_params
-from .burstshapepop import _get_burstshape_galpop_from_params
+from dsps.cosmology.flat_wcdm import _age_at_z_kern
 from dsps.experimental.diffburst import _age_weights_from_u_params
+from dsps.metallicity.mzr import DEFAULT_MZR_PDICT, mzr_model
+from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
+from dsps.sed.stellar_age_weights import _calc_logsm_table_from_sfh_table
+from jax import jit as jjit
+from jax import numpy as jnp
+from jax import random as jran
+from jax import vmap
 
+from .burstshapepop import _get_burstshape_galpop_from_params
+from .dustpop import _frac_dust_transmission_singlez_kernel
+from .lgfburstpop import _get_lgfburst_galpop_from_u_params
 
 _A = (None, 0)
 _age_weights_from_u_params_vmap = jjit(vmap(_age_weights_from_u_params, in_axes=_A))
@@ -179,7 +179,7 @@ def get_obs_photometry_singlez(
     _norm = jnp.sum(_w, axis=(1, 2))
     weights = _w / _norm.reshape((n_gals, 1, 1))
 
-    frac_trans = _compute_dust_transmission_fractions(
+    frac_trans, att_curve_params, frac_unobs = _frac_dust_transmission_singlez_kernel(
         dust_key,
         z_obs,
         gal_logsm_t_obs,

@@ -33,7 +33,7 @@ def _median_dust_params_kern(
 
 
 @jjit
-def _compute_dust_transmission_fractions(
+def _frac_dust_transmission_singlez_kernel(
     att_curve_key,
     z_obs,
     gal_logsm_t_obs,
@@ -94,7 +94,7 @@ def _compute_dust_transmission_fractions(
     )
     gal_frac_trans = jnp.swapaxes(gal_frac_trans, 0, 2)
     gal_frac_trans = jnp.swapaxes(gal_frac_trans, 0, 1)
-    return gal_frac_trans
+    return gal_frac_trans, gal_att_curve_params, gal_frac_unobs
 
 
 @jjit
