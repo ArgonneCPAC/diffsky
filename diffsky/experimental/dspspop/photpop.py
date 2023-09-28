@@ -394,7 +394,7 @@ def get_obs_photometry_and_params_singlez(
 
     burstshape_params = _get_burstshape_params_from_u_params_vmap(burstshape_u_params)
     gal_lgyr_peak, gal_lgyr_max = burstshape_params
-    gal_eb, gal_dust_delta, gal_av = att_curve_params
+    gal_eb, gal_dust_delta, gal_av = att_curve_params.T
 
     return (
         gal_fburst,
