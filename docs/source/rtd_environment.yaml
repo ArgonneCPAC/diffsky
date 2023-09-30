@@ -1,0 +1,20 @@
+name: rtd311
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pandoc>=3.1,<4.0
+  - nbsphinx
+  - jupyter
+  - matplotlib
+  - sphinx=7.2.4
+  - sphinx-copybutton
+  - numpy
+  - jax
+  - jaxlib
+  - diffmah
+  - diffstar
+  - dsps
+  - h5py
