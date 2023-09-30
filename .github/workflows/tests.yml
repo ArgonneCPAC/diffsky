@@ -13,6 +13,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
@@ -22,22 +24,24 @@ jobs:
           show-channel-urls: true
           miniforge-version: latest
           miniforge-variant: Mambaforge
+          use-mamba: true
 
       - name: configure conda and install code
         shell: bash -l {0}
         run: |
+          conda config --set always_yes yes
           mamba install --quiet \
             --file=requirements.txt
-          python -m pip install --no-deps -e .
           mamba install -y -q \
             flake8 \
             pytest \
             pytest-xdist \
-            pytest-cov
-
-          # use upstream main for dsps
-          conda uninstall dsps --force
-          pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
+            pytest-cov \
+            pip \
+            setuptools \
+            "setuptools_scm>=7,<8" \
+            python-build
+          python -m pip install --no-build-isolation --no-deps -e .
 
       - name: test
         shell: bash -l {0}
@@ -46,3 +50,27 @@ jobs:
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
+
+      - name: test versions
+        shell: bash -el {0}
+        run: |
+          pip uninstall diffsky --yes
+          [[ $(python setup.py --version) != "0.0.0" ]] || exit 1
+
+          rm -rf dist/*
+          python setup.py sdist
+          pip install --no-deps --no-build-isolation dist/*.tar.gz
+          pushd ..
+          python -c "import diffsky; assert diffsky.__version__ != '0.0.0'"
+          popd
+          pip uninstall diffsky --yes
+
+          rm -rf dist/*
+          python -m build --sdist . --outdir dist
+          pip install --no-deps --no-build-isolation dist/*.tar.gz
+          pushd ..
+          python -c "import diffsky; assert diffsky.__version__ != '0.0.0'"
+          popd
+          pip uninstall diffsky --yes
+
+          python -m pip install -v --no-deps --no-build-isolation -e .
