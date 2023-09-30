@@ -5,9 +5,7 @@ from collections import OrderedDict
 import numpy as np
 from dsps.experimental.diffburst import DEFAULT_U_PARAMS as DEFAULT_FLEXBURST_U_PARAMS
 from jax import jit as jjit
-from jax import lax
-from jax import numpy as jnp
-from jax import vmap
+from jax import lax, vmap
 
 LGSM_K = 5.0
 LGSSFR_K = 5.0
