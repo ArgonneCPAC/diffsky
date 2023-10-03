@@ -1,14 +1,35 @@
 diffsky
 ============
 
+Code for producing mock catalogs based on 
+`diffstar.readthedocs.io <https://diffstar.readthedocs.io/en/latest/>`_ 
+and `dsps.readthedocs.io <https://dsps.readthedocs.io/en/latest/>`_.
+
 Installation
 ------------
+The latest release of diffsky is available for installation with pip or conda:
+
+```
+$ conda install diffsky
+```
+
 To install diffsky into your environment from the source code::
 
     $ cd /path/to/root/diffsky
     $ pip install .
 
-## Documentation
+
+Conda environment
+~~~~~~~~~~~~~~~~~
+For a typical development environment in conda:
+
+```
+$ conda create -n diffstuff python=3.9 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
+```
+
+
+Documentation
+-------------
 
 Online documentation for diffsky is available at 
 `diffsky.readthedocs.io <https://diffsky.readthedocs.io/en/latest/>`_.
