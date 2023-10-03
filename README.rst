@@ -2,8 +2,8 @@ diffsky
 ============
 
 Code for producing mock catalogs based on 
-`diffstar.readthedocs.io <https://diffstar.readthedocs.io/en/latest/>`_ 
-and `dsps.readthedocs.io <https://dsps.readthedocs.io/en/latest/>`_.
+`diffstar <https://diffstar.readthedocs.io/en/latest/>`_ 
+and `dsps <https://dsps.readthedocs.io/en/latest/>`_.
 
 Installation
 ------------
