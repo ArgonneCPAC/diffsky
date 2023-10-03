@@ -7,11 +7,10 @@ and `dsps.readthedocs.io <https://dsps.readthedocs.io/en/latest/>`_.
 
 Installation
 ------------
-The latest release of diffsky is available for installation with pip or conda:
+The latest release of diffsky is available for installation with pip or conda::
 
-```
-$ conda install diffsky
-```
+    $ conda install diffsky
+
 
 To install diffsky into your environment from the source code::
 
@@ -21,11 +20,9 @@ To install diffsky into your environment from the source code::
 
 Conda environment
 ~~~~~~~~~~~~~~~~~
-For a typical development environment in conda:
+For a typical development environment in conda::
 
-```
-$ conda create -n diffstuff python=3.9 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
-```
+    $ conda create -n diffsky_env python=3.9 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
 
 
 Documentation
