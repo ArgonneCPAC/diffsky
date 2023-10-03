@@ -15,34 +15,18 @@ and `DSPS <https://github.com/ArgonneCPAC/dsps>`_.
 Installation
 ------------
 
-Installing dependencies
+For a typical development environment with conda-forge::
+
+    $ conda create -c conda-forge -n diffsky_env python=3.9 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
+
+
+Managing dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Beginning from an environment that includes numpy and a recent version of jax, 
-you can install the additional dependencies available on conda-forge as follows:
+The above command will create a new environment with all the latest releases
+of the Diff+ codes. However, depending on your analysis, 
+you may need to install a specific branch of diffsky and/one of its dependencies.
+You can do this by cloning the GitHub repo of the code for which you need a custom 
+version, checking out the appropriate version, and running::
 
-       conda install -c conda-forge diffmah diffstar dsps
-
-Depending on the mock you are making, 
-note that for one or more of these dependencies, 
-you may need to install the main branch of the code.
-You can do this by cloning the GitHub repository and running the standard::
-
-       python setup.py install
-
-command or its usual variants, such as::
-
-       python setup.py install --prefix=/PATH/TO/INSTALL/DIRECTORY
-
-or::
-
-       pip install .
-
-Installing diffsky
-~~~~~~~~~~~~~~~~~~
-
-Once you have the dependencies installed, 
-``diffsky`` can be installed as usual::
-
-       python setup.py install
-
+    $ pip install . --no-deps

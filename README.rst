@@ -7,9 +7,9 @@ and `dsps <https://dsps.readthedocs.io/en/latest/>`_.
 
 Installation
 ------------
-The latest release of diffsky is available for installation with pip or conda::
+The latest release of diffsky is available for installation with pip or conda-forge::
 
-    $ conda install diffsky
+    $ conda install -c conda-forge diffsky
 
 
 To install diffsky into your environment from the source code::
@@ -22,7 +22,7 @@ Conda environment
 ~~~~~~~~~~~~~~~~~
 For a typical development environment in conda::
 
-    $ conda create -n diffsky_env python=3.9 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
+    $ conda create -c conda-forge -n diffsky_env python=3.9 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
 
 
 Documentation
