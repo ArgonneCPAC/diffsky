@@ -1,15 +1,21 @@
 Installation instructions
 =========================
 
-For a typical development environment with conda-forge::
+To install lsstdesc-diffsky into an existing environment with conda-forge::
+
+    $ conda install -c conda-forge diffsky
+    
+
+To create a new environment from scratch::
 
     $ conda create -c conda-forge -n diffsky_env python=3.9 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
+
 
 Managing dependencies
 ---------------------
 
-The above command will create a new environment with all the latest releases
-of the diffsky dependency chain. This includes `numpy <https://numpy.org/>`__ and 
+The above commands will install all the latest releases of the diffsky dependency chain. 
+This includes `numpy <https://numpy.org/>`__ and 
 `jax <https://jax.readthedocs.io/en/latest/>`__, 
 and also a collection of libraries implementing 
 the differentiable modeling ingredients: 
