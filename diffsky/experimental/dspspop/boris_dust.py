@@ -1,11 +1,12 @@
 """
 """
-from jax import jit as jjit
-from jax import vmap
-import numpy as np
-from jax import numpy as jnp
-from dsps.utils import _sigmoid, _inverse_sigmoid, powerlaw_rvs
 from collections import OrderedDict
+
+import numpy as np
+from dsps.utils import _inverse_sigmoid, _sigmoid, powerlaw_rvs
+from jax import jit as jjit
+from jax import numpy as jnp
+from jax import vmap
 
 powerlaw_rvs_vmap = jjit(vmap(powerlaw_rvs, in_axes=(None, 0, 0, 0)))
 
@@ -195,9 +196,31 @@ def _age_dep_funo_from_params_kern(
 N_PARAMS = len(DEFAULT_PARAMS)
 _a = [0, 0, 0, None, *[None] * N_PARAMS]
 _b = [None, None, None, 0, *[None] * N_PARAMS]
-_age_dep_funo_from_params_vmap = jjit(
-    vmap(vmap(_age_dep_funo_from_params_kern, in_axes=_b), in_axes=_a)
+_age_dep_funo_from_params_singlegal = jjit(
+    vmap(_age_dep_funo_from_params_kern, in_axes=_b)
 )
+_age_dep_funo_from_params_vmap = jjit(
+    vmap(_age_dep_funo_from_params_singlegal, in_axes=_a)
+)
+
+
+@jjit
+def _get_funo_from_params_singlegal(
+    gal_logsm, gal_logfburst, gal_logssfr, ssp_lg_age_gyr, funo_params
+):
+    return _age_dep_funo_from_params_singlegal(
+        gal_logsm, gal_logfburst, gal_logssfr, ssp_lg_age_gyr, *funo_params
+    )
+
+
+@jjit
+def _get_funo_from_u_params_singlegal(
+    gal_logsm, gal_logfburst, gal_logssfr, ssp_lg_age_gyr, funo_u_params
+):
+    funo_params = get_params_from_u_params(funo_u_params)
+    return _age_dep_funo_from_params_singlegal(
+        gal_logsm, gal_logfburst, gal_logssfr, ssp_lg_age_gyr, *funo_params
+    )
 
 
 @jjit
