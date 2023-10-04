@@ -28,3 +28,9 @@ def test_get_funo_from_u_params_singlegal():
     assert funo.shape == (n_age,)
     assert np.all(funo >= 0)
     assert np.all(funo <= 1)
+
+    params = get_params_from_u_params(DEFAULT_BORIS_U_PARAMS)
+    funo2 = _get_funo_from_params_singlegal(
+        logsm, logfburst, logssfr, ssp_lg_age_gyr, params
+    )
+    assert np.allclose(funo, funo2, rtol=1e-3)
