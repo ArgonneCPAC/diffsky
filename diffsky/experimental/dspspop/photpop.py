@@ -3,7 +3,7 @@
 from dsps.constants import SFR_MIN
 from dsps.cosmology.flat_wcdm import _age_at_z_kern
 from dsps.experimental.diffburst import _age_weights_from_u_params
-from dsps.metallicity.mzr import DEFAULT_MZR_PDICT, mzr_model
+from dsps.metallicity.mzr import DEFAULT_MET_PDICT, mzr_model
 from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
 from dsps.sed.stellar_age_weights import _calc_logsm_table_from_sfh_table
 from jax import jit as jjit
@@ -18,7 +18,7 @@ from .lgfburstpop import _get_lgfburst_galpop_from_u_params
 _A = (None, 0)
 _age_weights_from_u_params_vmap = jjit(vmap(_age_weights_from_u_params, in_axes=_A))
 
-DEFAULT_MZR_PARAMS = jnp.array(list(DEFAULT_MZR_PDICT.values()))
+DEFAULT_MET_PARAMS = jnp.array(list(DEFAULT_MET_PDICT.values()))
 _linterp_vmap = jjit(vmap(jnp.interp, in_axes=(None, None, 0)))
 
 _g = (None, 0, 0, None, None, None, None)
@@ -49,8 +49,7 @@ def get_obs_photometry_singlez(
     fracuno_pop_u_params,
     cosmo_params,
     z_obs,
-    met_params=DEFAULT_MZR_PARAMS,
-    lgmet_scatter=0.2,
+    met_params=DEFAULT_MET_PARAMS,
 ):
     """Compute apparent magnitudes of galaxies at a single redshift
 
@@ -143,7 +142,8 @@ def get_obs_photometry_singlez(
     gal_logsfr_t_obs = _linterp_vmap(lgt_obs, lgt_table, gal_logsfr_table)
     gal_logssfr_t_obs = gal_logsfr_t_obs - gal_logsm_t_obs
 
-    gal_lgmet = mzr_model(gal_logsm_t_obs, t_obs, *met_params[:-1])
+    mzr_params, lgmet_scatter = met_params[:-1], met_params[-1]
+    gal_lgmet = mzr_model(gal_logsm_t_obs, t_obs, *mzr_params)
 
     _res = calc_ssp_weights_sfh_table_lognormal_mdf_vmap(
         gal_t_table,
