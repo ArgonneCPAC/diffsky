@@ -179,10 +179,12 @@ def _get_effective_attenuation_sbl18(
     lambda_eff_micron = lambda_eff_angstrom / 10_000
 
     dust_Eb, dust_delta, dust_Av = att_curve_params
-    dust_x0_microns = UV_BUMP_W0
-    bump_width_microns = UV_BUMP_DW
     k_lambda = sbl18_k_lambda(
-        lambda_eff_micron, dust_x0_microns, bump_width_microns, dust_Eb, dust_delta
+        lambda_eff_micron,
+        dust_Eb,
+        dust_delta,
+        UV_BUMP_W0,
+        UV_BUMP_DW,
     )
     attenuation_factor = _frac_transmission_from_k_lambda(
         k_lambda, dust_Av, frac_unobscured
