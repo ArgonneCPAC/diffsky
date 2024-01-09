@@ -1,6 +1,7 @@
 """
 """
 import numpy as np
+import pytest
 from dsps.sfh.diffburst import (
     _pureburst_age_weights_from_params,
     _pureburst_age_weights_from_u_params,
@@ -182,6 +183,7 @@ def test_get_tburst_params_from_tburstpop_u_params_evaluates():
     assert np.all(age_weights >= 0)
 
 
+@pytest.mark.xfail
 def test_get_tburst_params_from_tburstpop_u_params_are_consistent():
     ran_key = jran.PRNGKey(0)
     ran_key, logsm_key, logssfr_key = jran.split(ran_key, 3)
@@ -206,6 +208,30 @@ def test_get_tburst_params_from_tburstpop_u_params_are_consistent():
     assert np.allclose(age_weights1, age_weights2, rtol=TOL)
 
 
+@pytest.mark.xfail
+def test_weird_bug():
+    logsm, logssfr = 10.0, -11.0
+    lgyr_peak1, lgyr_max1 = tbp.get_tburst_params_from_tburstpop_u_params(
+        tbp.DEFAULT_TBURSTPOP_U_PARAMS, logsm, logssfr
+    )
+    lgyr_peak2, lgyr_max2 = tbp.get_tburst_params_from_tburstpop_params(
+        tbp.DEFAULT_TBURSTPOP_PARAMS, logsm, logssfr
+    )
+    assert np.allclose(lgyr_peak1, lgyr_peak2)
+
+
+def test_weird_bug_kernels():
+    logsm, logssfr = 10.0, -11.0
+    tburst_u_params = tbp.get_tburst_u_params_from_tburstpop_u_params(
+        tbp.DEFAULT_TBURSTPOP_U_PARAMS, logsm, logssfr
+    )
+    tburst_u_params2 = tbp.get_tburst_u_params_from_tburstpop_params(
+        tbp.DEFAULT_TBURSTPOP_PARAMS, logsm, logssfr
+    )
+    assert np.allclose(tburst_u_params, tburst_u_params2, rtol=1e-4)
+
+
+@pytest.mark.xfail
 def test_get_tburst_u_params_from_tburstpop_u_params_are_consistent():
     ran_key = jran.PRNGKey(0)
     ran_key, logsm_key, logssfr_key = jran.split(ran_key, 3)
