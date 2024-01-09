@@ -4,6 +4,7 @@ from collections import namedtuple
 
 from dsps.constants import SFR_MIN
 from dsps.cosmology.flat_wcdm import _age_at_z_kern
+from dsps.metallicity.mzr import DEFAULT_MET_PARAMS, mzr_model
 from dsps.photometry.photometry_kernels import calc_obs_mag
 from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
 from dsps.utils import cumulative_mstar_formed
@@ -23,7 +24,7 @@ from .dustpop import (
 )
 from .tw_utils import _tw_gauss
 
-LGMET, LGMET_SCATTER = -2.0, 0.25
+LGMET_SCATTER = 0.20
 TCURVE_WIDTH = 50.0
 
 MICRON_PER_AA = 1 / 10_000
@@ -79,11 +80,12 @@ def calc_approx_singlemag_singlegal(
     t_obs = _age_at_z_kern(z_obs, *cosmo_params)
 
     logsm_obs, logssfr_obs = _compute_tobs_properties(t_obs, t_table, sfr_table)
+    lgmet = mzr_model(logsm_obs, t_obs, *DEFAULT_MET_PARAMS[:-1])
 
     ssp_weights = calc_ssp_weights_sfh_table_lognormal_mdf(
         t_table,
         sfr_table,
-        LGMET,
+        lgmet,
         LGMET_SCATTER,
         ssp_data.ssp_lgmet,
         ssp_data.ssp_lg_age_gyr,
@@ -199,11 +201,12 @@ def calc_singlemag_singlegal(
     t_obs = _age_at_z_kern(z_obs, *cosmo_params)
 
     logsm_obs, logssfr_obs = _compute_tobs_properties(t_obs, t_table, sfr_table)
+    lgmet = mzr_model(logsm_obs, t_obs, *DEFAULT_MET_PARAMS[:-1])
 
     ssp_weights = calc_ssp_weights_sfh_table_lognormal_mdf(
         t_table,
         sfr_table,
-        LGMET,
+        lgmet,
         LGMET_SCATTER,
         ssp_data.ssp_lgmet,
         ssp_data.ssp_lg_age_gyr,
