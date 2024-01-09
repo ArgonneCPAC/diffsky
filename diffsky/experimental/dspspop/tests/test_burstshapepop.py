@@ -1,17 +1,23 @@
 """
 """
 import numpy as np
-from ..burstshapepop import _get_burstshape_galpop_from_params
-from ..burstshapepop import _get_burstshape_galpop_from_u_params
-from ..burstshapepop import DEFAULT_BURSTSHAPE_PARAMS, DEFAULT_BURSTSHAPE_U_PARAMS
-from ..burstshapepop import _get_bounded_burstshape_params
-from ..burstshapepop import _get_unbounded_burstshape_params
-from dsps.experimental.diffburst import _age_weights_from_u_params
-from jax import vmap
+from dsps.sfh.diffburst import _pureburst_age_weights_from_u_params
 from jax import jit as jjit
+from jax import vmap
 
-_B = (None, 0)
-_age_weights_from_u_params_vmap = jjit(vmap(_age_weights_from_u_params, in_axes=_B))
+from ..burstshapepop import (
+    DEFAULT_BURSTSHAPE_PARAMS,
+    DEFAULT_BURSTSHAPE_U_PARAMS,
+    _get_bounded_burstshape_params,
+    _get_burstshape_galpop_from_params,
+    _get_burstshape_galpop_from_u_params,
+    _get_unbounded_burstshape_params,
+)
+
+_B = (None, 0, 0)
+_pureburst_age_weights_from_u_params_vmap = jjit(
+    vmap(_pureburst_age_weights_from_u_params, in_axes=_B)
+)
 
 
 def test_get_bursty_age_weights_pop_evaluates():
@@ -29,7 +35,9 @@ def test_get_bursty_age_weights_pop_evaluates():
     assert u_lgyr_max.shape == (n_gals,)
     u_params = np.array((u_lgyr_peak, u_lgyr_max)).T
 
-    age_weights = _age_weights_from_u_params_vmap(lgyr, u_params)
+    age_weights = _pureburst_age_weights_from_u_params_vmap(
+        lgyr, u_lgyr_peak, u_lgyr_max
+    )
     assert age_weights.shape == (n_gals, n_age)
     assert np.all(np.isfinite(age_weights))
     assert np.allclose(np.sum(age_weights, axis=1), 1.0, rtol=1e-4)
