@@ -33,7 +33,6 @@ def test_get_bursty_age_weights_pop_evaluates():
     )
     assert u_lgyr_peak.shape == (n_gals,)
     assert u_lgyr_max.shape == (n_gals,)
-    u_params = np.array((u_lgyr_peak, u_lgyr_max)).T
 
     age_weights = _pureburst_age_weights_from_u_params_vmap(
         lgyr, u_lgyr_peak, u_lgyr_max
