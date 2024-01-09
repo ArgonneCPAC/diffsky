@@ -43,7 +43,7 @@ jobs:
             "setuptools_scm>=7,<8" \
             python-build
           pip uninstall dsps --yes
-          pip install --no-deps dsps
+          pip install --no-deps dsps==0.3.6
           python -m pip install --no-build-isolation --no-deps -e .
 
       - name: test
