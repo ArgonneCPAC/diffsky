@@ -2,12 +2,15 @@
 """
 from collections import OrderedDict, namedtuple
 
+from dsps.sfh.diffburst import (
+    DEFAULT_BURST_U_PARAMS,
+    _get_tburst_params_from_tburst_u_params,
+)
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
 
 from ..utils import _inverse_sigmoid, _sigmoid
-from .diffburst import DEFAULT_BURST_U_PARAMS, _get_tburst_params_from_tburst_u_params
 
 LGSM_K = 5.0
 LGSSFR_K = 5.0

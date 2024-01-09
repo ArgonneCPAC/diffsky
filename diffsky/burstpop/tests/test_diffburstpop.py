@@ -1,9 +1,9 @@
 """
 """
 import numpy as np
+from dsps.sfh import diffburst
 from jax import random as jran
 
-from .. import diffburst
 from .. import diffburstpop as dbp
 from ..fburstpop import FburstPopUParams
 from ..tburstpop import TburstPopUParams

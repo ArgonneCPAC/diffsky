@@ -1,13 +1,13 @@
 """
 """
 import numpy as np
-from jax import random as jran
-
-from .. import tburstpop as tbp
-from ..diffburst import (
+from dsps.sfh.diffburst import (
     _pureburst_age_weights_from_params,
     _pureburst_age_weights_from_u_params,
 )
+from jax import random as jran
+
+from .. import tburstpop as tbp
 
 TOL = 1e-2
 

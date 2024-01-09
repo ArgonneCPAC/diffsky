@@ -2,9 +2,9 @@
 """
 from collections import namedtuple
 
+from dsps.sfh.diffburst import BurstParams, calc_bursty_age_weights
 from jax import jit as jjit
 
-from .diffburst import BurstParams, calc_bursty_age_weights
 from .fburstpop import (
     DEFAULT_FBURSTPOP_PARAMS,
     get_bounded_fburstpop_params,
