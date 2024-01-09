@@ -4,7 +4,7 @@
 
 def test_diffsky_has_main_branch_dsps():
     try:
-        from dsps.experimental import diffburst  # noqa
+        from dsps.sfh import diffburst  # noqa
 
         HAS_DSPS_MAIN = True
     except ImportError:

@@ -2,10 +2,10 @@
 """
 from dsps.constants import SFR_MIN
 from dsps.cosmology.flat_wcdm import _age_at_z_kern
-from dsps.experimental.diffburst import _age_weights_from_u_params
 from dsps.metallicity.mzr import DEFAULT_MET_PDICT, mzr_model
 from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
 from dsps.sed.stellar_age_weights import _calc_logsm_table_from_sfh_table
+from dsps.sfh.diffburst import _pureburst_age_weights_from_u_params
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -15,8 +15,10 @@ from .burstshapepop import _get_burstshape_galpop_from_params
 from .dustpop import _frac_dust_transmission_singlez_kernel
 from .lgfburstpop import _get_lgfburst_galpop_from_u_params
 
-_A = (None, 0)
-_age_weights_from_u_params_vmap = jjit(vmap(_age_weights_from_u_params, in_axes=_A))
+_A = (None, 0, 0)
+_pureburst_age_weights_from_u_params_vmap = jjit(
+    vmap(_pureburst_age_weights_from_u_params, in_axes=_A)
+)
 
 DEFAULT_MET_PARAMS = jnp.array(list(DEFAULT_MET_PDICT.values()))
 _linterp_vmap = jjit(vmap(jnp.interp, in_axes=(None, None, 0)))
@@ -168,7 +170,9 @@ def get_obs_photometry_singlez(
     )
     burstshape_u_params = jnp.array(burstshape_u_params).T
     ssp_lg_age_yr = ssp_lg_age_gyr + 9
-    burst_weights = _age_weights_from_u_params_vmap(ssp_lg_age_yr, burstshape_u_params)
+    burst_weights = _pureburst_age_weights_from_u_params_vmap(
+        ssp_lg_age_yr, burstshape_u_params[:, 0], burstshape_u_params[:, 1]
+    )
 
     _fb = gal_fburst.reshape((n_gals, 1))
     bursty_age_weights = _fb * burst_weights + (1 - _fb) * smooth_age_weights

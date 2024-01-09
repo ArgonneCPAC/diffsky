@@ -3,13 +3,17 @@
 from collections import OrderedDict
 
 import numpy as np
-from dsps.experimental.diffburst import DEFAULT_U_PARAMS as DEFAULT_FLEXBURST_U_PARAMS
+from dsps.sfh.diffburst import DEFAULT_BURST_U_PARAMS
 from jax import jit as jjit
 from jax import lax, vmap
 
 LGSM_K = 5.0
 LGSSFR_K = 5.0
-DEFAULT_U_LGYR_PEAK, DEFAULT_U_LGYR_MAX = DEFAULT_FLEXBURST_U_PARAMS
+
+
+DEFAULT_U_LGYR_PEAK = DEFAULT_BURST_U_PARAMS.u_lgyr_peak
+DEFAULT_U_LGYR_MAX = DEFAULT_BURST_U_PARAMS.u_lgyr_max
+
 DEFAULT_BURSTSHAPE_PDICT = OrderedDict(
     burstshape_u_lgyr_peak_x0_logsm_x0=10.0,
     burstshape_u_lgyr_peak_q_logsm_x0=-11.0,

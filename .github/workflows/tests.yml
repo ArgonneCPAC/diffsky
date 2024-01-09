@@ -27,6 +27,7 @@ jobs:
           use-mamba: true
 
       - name: configure conda and install code
+      # Test against conda-forge for all dependencies except use main branch for dsps
         shell: bash -l {0}
         run: |
           conda config --set always_yes yes
@@ -41,6 +42,8 @@ jobs:
             setuptools \
             "setuptools_scm>=7,<8" \
             python-build
+          pip uninstall dsps --yes
+          pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
           python -m pip install --no-build-isolation --no-deps -e .
 
       - name: test
