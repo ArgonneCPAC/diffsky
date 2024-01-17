@@ -3,7 +3,7 @@
 import numpy as np
 from jax import random as jran
 
-from ...hmf_kernels import DEFAULT_HMF_KERN_PARAMS, lg_hmf_kern
+from ...kernels.hmf_kernels import DEFAULT_HMF_KERN_PARAMS, lg_hmf_kern
 from ..fit_hmf_kernels import _loss_func, _mse, hmf_kernel_fitter
 
 

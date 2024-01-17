@@ -6,8 +6,8 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import value_and_grad
 
-from ..hmf_kernels import DEFAULT_HMF_KERN_PARAMS as P_INIT
-from ..hmf_kernels import HMF_Params, lg_hmf_kern
+from ..kernels.hmf_kernels import DEFAULT_HMF_KERN_PARAMS as P_INIT
+from ..kernels.hmf_kernels import HMF_Params, lg_hmf_kern
 from .fitting_helpers import jax_adam_wrapper
 
 

@@ -3,7 +3,7 @@
 import numpy as np
 from jax import random as jran
 
-from ...ccshmf_kernels import DEFAULT_CCSHMF_KERN_PARAMS, lg_ccshmf_kern
+from ...kernels.ccshmf_kernels import DEFAULT_CCSHMF_KERN_PARAMS, lg_ccshmf_kern
 from ..fit_ccshmf_kernels import _loss_func, _mse, cshmf_kernel_fitter
 
 

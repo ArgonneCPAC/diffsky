@@ -3,7 +3,7 @@
 import numpy as np
 from jax import random as jran
 
-from ..ccshmf import DEFAULT_CCSHMF_PARAMS, predict_ccshmf
+from ..ccshmf_model import DEFAULT_CCSHMF_PARAMS, predict_ccshmf
 from ..mc_subs import (
     _compute_mean_subhalo_counts,
     generate_subhalopop,

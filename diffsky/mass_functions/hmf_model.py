@@ -7,7 +7,7 @@ from collections import OrderedDict, namedtuple
 
 from jax import jit as jjit
 
-from .hmf_kernels import lg_hmf_kern
+from .kernels.hmf_kernels import lg_hmf_kern
 from .utils import _sig_slope, _sigmoid
 
 YTP_XTP = 3.0

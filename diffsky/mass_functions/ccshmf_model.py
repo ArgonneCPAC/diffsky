@@ -7,7 +7,7 @@ from collections import OrderedDict, namedtuple
 
 from jax import jit as jjit
 
-from .ccshmf_kernels import lg_ccshmf_kern
+from .kernels.ccshmf_kernels import lg_ccshmf_kern
 from .utils import _sig_slope
 
 # Ytp model params

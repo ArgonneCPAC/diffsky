@@ -3,7 +3,7 @@
 import numpy as np
 from jax import random as jran
 
-from ...ccshmf import (
+from ...ccshmf_model import (
     DEFAULT_CCSHMF_PARAMS,
     CCSHMF_Params,
     YLO_Params,

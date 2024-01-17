@@ -11,7 +11,7 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
 
-from .utils import _sig_slope
+from ..utils import _sig_slope
 
 XTP = -1.0
 K = 10

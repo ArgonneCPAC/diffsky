@@ -5,7 +5,7 @@ from glob import glob
 
 import numpy as np
 
-from ..ccshmf import DEFAULT_CCSHMF_PARAMS, predict_ccshmf
+from ..ccshmf_model import DEFAULT_CCSHMF_PARAMS, predict_ccshmf
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 TESTING_DATA_DRN = os.path.join(_THIS_DRNAME, "testing_data")

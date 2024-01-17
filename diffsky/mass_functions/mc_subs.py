@@ -10,8 +10,8 @@ from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
-from .ccshmf import DEFAULT_CCSHMF_PARAMS, predict_ccshmf
-from .ccshmf_kernels import DEFAULT_CCSHMF_KERN_PARAMS, lg_ccshmf_kern
+from .ccshmf_model import DEFAULT_CCSHMF_PARAMS, predict_ccshmf
+from .kernels.ccshmf_kernels import DEFAULT_CCSHMF_KERN_PARAMS, lg_ccshmf_kern
 from .measure_ccshmf import get_lgmu_cutoff
 
 N_LGMU_TABLE = 100

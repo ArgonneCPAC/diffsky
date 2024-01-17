@@ -6,8 +6,8 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import value_and_grad
 
-from ..ccshmf import DEFAULT_CCSHMF_PARAMS as P_INIT
-from ..ccshmf import CCSHMF_Params, predict_ccshmf
+from ..ccshmf_model import DEFAULT_CCSHMF_PARAMS as P_INIT
+from ..ccshmf_model import CCSHMF_Params, predict_ccshmf
 from .fitting_helpers import jax_adam_wrapper
 
 
