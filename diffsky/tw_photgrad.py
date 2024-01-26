@@ -17,7 +17,7 @@ from .burstpop import (
     DEFAULT_DIFFBURSTPOP_PARAMS,
     calc_bursty_age_weights_from_diffburstpop_params,
 )
-from .dustpop import (
+from .dustpop.tw_dustpop import (
     DEFAULT_DUSTPOP_PARAMS,
     calc_dust_ftrans_singlegal_multiwave_from_dustpop_params,
     calc_dust_ftrans_singlegal_singlewave_from_dustpop_params,

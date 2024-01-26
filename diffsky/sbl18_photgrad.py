@@ -16,11 +16,15 @@ from jax import value_and_grad, vmap
 from .burstpop import (
     DEFAULT_DIFFBURSTPOP_PARAMS,
     calc_bursty_age_weights_from_diffburstpop_params,
+    get_bounded_diffburstpop_params,
+    get_unbounded_diffburstpop_params,
 )
-from .dustpop import (
+from .dustpop.sbl18_dustpop import (
     DEFAULT_DUSTPOP_PARAMS,
     calc_dust_ftrans_singlegal_multiwave_from_dustpop_params,
     calc_dust_ftrans_singlegal_singlewave_from_dustpop_params,
+    get_bounded_dustpop_params,
+    get_unbounded_dustpop_params,
 )
 from .tw_utils import _tw_gauss
 
@@ -33,6 +37,26 @@ SPSPopParams = namedtuple("SPSPopParams", ["burstpop_params", "dustpop_params"])
 DEFAULT_SPSPOP_PARAMS = SPSPopParams(
     DEFAULT_DIFFBURSTPOP_PARAMS, DEFAULT_DUSTPOP_PARAMS
 )
+
+SPSPopUParams = namedtuple("SPSPopUParams", ["u_burstpop_params", "u_dustpop_params"])
+
+
+@jjit
+def get_bounded_spspop_params(spspop_u_params):
+    burstpop_params = get_bounded_diffburstpop_params(spspop_u_params.u_burstpop_params)
+    dustpop_params = get_bounded_dustpop_params(spspop_u_params.u_dustpop_params)
+    return SPSPopParams(burstpop_params, dustpop_params)
+
+
+@jjit
+def get_unbounded_spspop_params(spspop_params):
+    burstpop_params = get_unbounded_diffburstpop_params(spspop_params.burstpop_params)
+    dustpop_params = get_unbounded_dustpop_params(spspop_params.dustpop_params)
+    return SPSPopUParams(burstpop_params, dustpop_params)
+
+
+DEFAULT_SPSPOP_U_PARAMS = get_unbounded_spspop_params(DEFAULT_SPSPOP_PARAMS)
+
 NFILTER_WAVE = 1_000
 
 
