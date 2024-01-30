@@ -1,0 +1,57 @@
+name: Test for Warnings
+
+on:
+  workflow_dispatch: null
+  schedule:
+    # Runs "First of every month at 3:15am Central"
+    - cron: '15 8 1 * *'
+
+jobs:
+  tests:
+    name: tests
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.9
+          channels: conda-forge,defaults
+          channel-priority: strict
+          show-channel-urls: true
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          use-mamba: true
+
+      - name: configure conda and install code
+      # Test against current main branch of all diff+ dependencies
+        shell: bash -l {0}
+        run: |
+          conda config --set always_yes yes
+          mamba install --quiet \
+            --file=requirements.txt
+          mamba install -y -q \
+            flake8 \
+            pytest \
+            pytest-xdist \
+            pytest-cov \
+            pip \
+            setuptools \
+            "setuptools_scm>=7,<8" \
+            python-build
+          pip uninstall diffmah --yes
+          pip uninstall diffstar --yes
+          pip uninstall dsps --yes
+          pip install --no-deps git+https://github.com/ArgonneCPAC/diffmah.git
+          pip install --no-deps git+https://github.com/ArgonneCPAC/diffstar.git
+          pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
+          python -m pip install --no-build-isolation --no-deps -e .
+
+      - name: test that no warnings are raised
+        shell: bash -l {0}
+        run: |
+          export PYTHONWARNINGS=error
+          pytest -v diffsky --cov --cov-report=xml
