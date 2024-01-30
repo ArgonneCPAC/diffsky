@@ -51,15 +51,6 @@ def sbl18_dust_transmission(
     """
     k_lambda = sbl18_k_lambda(wave_micron, uv_bump_ampl, delta)
 
-    # Add the UV bump
-    uv_bump = _drude_bump(
-        wave_micron, UV_BUMP_W0_MICRON, UV_BUMP_DW_MICRON, uv_bump_ampl
-    )
-    k_lambda = k_lambda + uv_bump
-
-    # Apply power-law slope modification
-    k_lambda = k_lambda * power_law_vband_norm(wave_micron, delta)
-
     # Compute the transmission fraction
     A_lambda = _att_curve_from_k_lambda(k_lambda, av)
     ftrans = 10.0 ** (-0.4 * A_lambda)
