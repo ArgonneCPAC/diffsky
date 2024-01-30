@@ -12,19 +12,7 @@ UV_BUMP_DW_MICRON = 0.0350  # Width of UV bump in micron
 
 
 @jjit
-def sbl18_dust_transmission(
-    wave_micron,
-    av,
-    delta,
-    funo,
-    uv_bump_ampl,
-    xtp=-1.0,
-    ytp=1.15,
-    x0=0.5,
-    tw_h=0.5,
-    lo=-0.65,
-    hi=-1.95,
-):
+def sbl18_dust_transmission(wave_micron, av, delta, funo, uv_bump_ampl):
     """Salim+18-based dust attention model
 
     Parameters
@@ -50,15 +38,6 @@ def sbl18_dust_transmission(
 
     """
     k_lambda = sbl18_k_lambda(wave_micron, uv_bump_ampl, delta)
-
-    # Add the UV bump
-    uv_bump = _drude_bump(
-        wave_micron, UV_BUMP_W0_MICRON, UV_BUMP_DW_MICRON, uv_bump_ampl
-    )
-    k_lambda = k_lambda + uv_bump
-
-    # Apply power-law slope modification
-    k_lambda = k_lambda * power_law_vband_norm(wave_micron, delta)
 
     # Compute the transmission fraction
     A_lambda = _att_curve_from_k_lambda(k_lambda, av)
