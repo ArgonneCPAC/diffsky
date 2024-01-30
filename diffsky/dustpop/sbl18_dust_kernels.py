@@ -12,19 +12,7 @@ UV_BUMP_DW_MICRON = 0.0350  # Width of UV bump in micron
 
 
 @jjit
-def sbl18_dust_transmission(
-    wave_micron,
-    av,
-    delta,
-    funo,
-    uv_bump_ampl,
-    xtp=-1.0,
-    ytp=1.15,
-    x0=0.5,
-    tw_h=0.5,
-    lo=-0.65,
-    hi=-1.95,
-):
+def sbl18_dust_transmission(wave_micron, av, delta, funo, uv_bump_ampl):
     """Salim+18-based dust attention model
 
     Parameters
