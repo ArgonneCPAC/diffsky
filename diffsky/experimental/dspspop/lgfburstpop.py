@@ -1,10 +1,13 @@
 """
 """
+
 from collections import OrderedDict
 
 import numpy as np
 from jax import jit as jjit
 from jax import lax, vmap
+
+from ...utils import _sigmoid
 
 LGSM_K = 5.0
 LGSSFR_K = 5.0
@@ -93,12 +96,6 @@ def _get_lgfburst_galpop_from_params(gal_logsm, gal_logssfr, lgfburst_pop_params
         lgfburst_logssfr_ms,
     )
     return lgfburst
-
-
-@jjit
-def _sigmoid(x, x0, k, ymin, ymax):
-    height_diff = ymax - ymin
-    return ymin + height_diff / (1 + lax.exp(-k * (x - x0)))
 
 
 @jjit

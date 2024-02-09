@@ -1,14 +1,10 @@
 """
 """
+
 import numpy as np
 from jax import jit as jjit
-from jax import lax
 
-
-@jjit
-def _sigmoid(x, x0, k, ylo, yhi):
-    height_diff = yhi - ylo
-    return ylo + height_diff / (1 + lax.exp(-k * (x - x0)))
+from ..utils import _sigmoid
 
 
 @jjit
