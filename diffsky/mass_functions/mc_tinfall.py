@@ -1,8 +1,9 @@
 """The mc_infall_time function is a Monte Carlo generator of subhalo infall times"""
+
 from jax import jit as jjit
-from jax import lax
 from scipy.stats import argus
 
+from ..utils import _sigmoid
 from .utils import get_1d_arrays
 
 ARGUS_CHI = 1.5
@@ -44,12 +45,6 @@ def mc_time_since_infall(lgmu, t_obs):
         time_since_infall = time_since_infall[0]
 
     return time_since_infall
-
-
-@jjit
-def _sigmoid(x, x0, k, ylo, yhi):
-    height_diff = yhi - ylo
-    return ylo + height_diff * lax.logistic(k * (x - x0))
 
 
 @jjit
