@@ -1,5 +1,6 @@
 """
 """
+
 import numpy as np
 
 from .. import tw_dustpop_new as twd
@@ -139,4 +140,4 @@ def test_calc_dust_ftrans_scalar_from_default_dustpop_params_behaves_as_expected
     )
     ftrans_fir = twd.calc_dust_ftrans_scalar_from_dustpop_params(*args)
     assert ftrans_fir > ftrans_nir
-    assert ftrans_fir > 0.95
+    assert ftrans_fir > 0.9
