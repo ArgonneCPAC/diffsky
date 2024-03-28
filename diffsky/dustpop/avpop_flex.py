@@ -1,5 +1,6 @@
 """
 """
+
 from collections import OrderedDict, namedtuple
 
 from jax import jit as jjit
@@ -22,15 +23,15 @@ DEFAULT_AVPOP_PDICT = OrderedDict(
     lgav_logsm_x0_q=10.5,
     lgav_logsm_x0_ms=9.5,
     lgav_logsm_ylo_x0=-10.25,
-    lgav_logsm_ylo_q_z_ylo=-2.0,
-    lgav_logsm_ylo_ms_z_ylo=-0.75,
-    lgav_logsm_ylo_q_z_yhi=-2.0,
-    lgav_logsm_ylo_ms_z_yhi=-0.75,
+    lgav_logsm_ylo_q_z_ylo=0.0,
+    lgav_logsm_ylo_ms_z_ylo=0.0,
+    lgav_logsm_ylo_q_z_yhi=0.0,
+    lgav_logsm_ylo_ms_z_yhi=0.0,
     lgav_logsm_yhi_x0=-11.25,
-    lgav_logsm_yhi_q_z_ylo=-3.0,
-    lgav_logsm_yhi_ms_z_ylo=-1.0,
-    lgav_logsm_yhi_q_z_yhi=-3.0,
-    lgav_logsm_yhi_ms_z_yhi=-1.0,
+    lgav_logsm_yhi_q_z_ylo=0.0,
+    lgav_logsm_yhi_ms_z_ylo=0.0,
+    lgav_logsm_yhi_q_z_yhi=0.0,
+    lgav_logsm_yhi_ms_z_yhi=0.0,
     lgav_z_x0=1.0,
     av_boost_logsm_lo_q=0.25,
     av_boost_logsm_hi_q=0.25,
