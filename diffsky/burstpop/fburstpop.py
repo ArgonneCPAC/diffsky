@@ -1,5 +1,6 @@
 """
 """
+
 from collections import OrderedDict, namedtuple
 
 from jax import jit as jjit
@@ -16,11 +17,11 @@ DEFAULT_FBURSTPOP_PDICT = OrderedDict(
     lgfburst_logsm_x0_q=10.5,
     lgfburst_logsm_x0_ms=9.5,
     lgfburst_logsm_ylo_x0=-10.25,
-    lgfburst_logsm_ylo_q=-3.0,
-    lgfburst_logsm_ylo_ms=-2.0,
+    lgfburst_logsm_ylo_q=-4.5,
+    lgfburst_logsm_ylo_ms=-4.5,
     lgfburst_logsm_yhi_x0=-11.25,
-    lgfburst_logsm_yhi_q=-4.0,
-    lgfburst_logsm_yhi_ms=-2.5,
+    lgfburst_logsm_yhi_q=-4.5,
+    lgfburst_logsm_yhi_ms=-4.5,
 )
 
 _LGSM_X0_BOUNDS = (8.0, 12.0)
