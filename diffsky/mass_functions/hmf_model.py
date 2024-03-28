@@ -3,6 +3,7 @@ the cumulative Host Halo Mass Function (HMF), <Nhalos(>mp) | z>,
 here mp is the peak historical mass of the main progenitor halo.
 
 """
+
 from collections import OrderedDict, namedtuple
 
 from jax import jit as jjit
@@ -47,12 +48,18 @@ DEFAULT_HMF_PARAMS = HMF_Params(**DEFAULT_HMF_PDICT)
 
 @jjit
 def predict_hmf(params, logmp, redshift):
+    hmf_params = _get_singlez_hmf_params(params, redshift)
+    return lg_hmf_kern(hmf_params, logmp)
+
+
+@jjit
+def _get_singlez_hmf_params(params, redshift):
     ytp = _ytp_vs_redshift(params.ytp_params, redshift)
     x0 = _x0_vs_redshift(params.x0_params, redshift)
     lo = _lo_vs_redshift(params.lo_params, redshift)
     hi = _hi_vs_redshift(params.hi_params, redshift)
     hmf_params = HMF_Params(ytp, x0, lo, hi)
-    return lg_hmf_kern(hmf_params, logmp)
+    return hmf_params
 
 
 @jjit
