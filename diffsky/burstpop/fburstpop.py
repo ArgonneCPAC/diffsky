@@ -26,7 +26,7 @@ DEFAULT_FBURSTPOP_PDICT = OrderedDict(
 
 _LGSM_X0_BOUNDS = (8.0, 12.0)
 _LGSSFR_X0_BOUNDS = (-13.0, -7.0)
-_LGFBURST_BOUNDS = (-5.0, -1.0)
+_LGFBURST_BOUNDS = (-6.0, -2.0)
 FBURSTPOP_BOUNDS_PDICT = OrderedDict(
     lgfburst_logsm_x0_x0=_LGSM_X0_BOUNDS,
     lgfburst_logsm_x0_q=_LGSM_X0_BOUNDS,
