@@ -17,7 +17,7 @@ DT_LO_LGMU_LO, DT_LO_LGMU_HI = 0.65, 0.4
 DT_HI_LGMU_LO, DT_HI_LGMU_HI = 0.875, 0.45
 
 
-def mc_time_since_infall(lgmu, t_obs):
+def mc_time_since_infall(lgmu, t_obs, random_state=None):
     """Monte Carlo generator of subhalo t_infall
 
     Parameters
@@ -36,7 +36,7 @@ def mc_time_since_infall(lgmu, t_obs):
     """
     lgmu, t_obs = get_1d_arrays(lgmu, t_obs)
 
-    u_infall = 1 - argus.rvs(ARGUS_CHI, size=lgmu.size)
+    u_infall = 1 - argus.rvs(ARGUS_CHI, size=lgmu.size, random_state=random_state)
     dt_argus = _get_dt_argus(lgmu, t_obs)
     dimless_infall_time = u_infall * dt_argus
     time_since_infall = dimless_infall_time * t_obs
