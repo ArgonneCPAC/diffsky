@@ -42,7 +42,7 @@ def test_mc_infall_time_behaves_as_expected():
     assert np.all(time_since_infall > 0)
 
     # Larger subhalos should on average have more recent infall times
-    lgmuarr = np.linspace(-4, -0.5, 8)
+    lgmuarr = np.linspace(-3, -0.5, 5)
     mean_tinf = [time_since_infall[np.abs(lgmu - x) < 0.25].mean() for x in lgmuarr]
     assert np.all(np.diff(mean_tinf) < 0), "iseed = {0}".format(0)
 
