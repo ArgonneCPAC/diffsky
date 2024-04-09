@@ -6,12 +6,13 @@ import typing
 import numpy as np
 from diffmah.defaults import DiffmahParams
 from diffmah.monte_carlo_diffmah_hiz import mc_diffmah_params_hiz
-from diffsky.mass_functions.mc_hosts import mc_host_halos_singlez
-from diffsky.mass_functions.mc_subs import generate_subhalopop
-from diffsky.mass_functions.mc_tinfall import mc_time_since_infall
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.cosmology.flat_wcdm import _age_at_z_kern
 from jax import random as jran
+
+from diffsky.mass_functions.mc_hosts import mc_host_halos_singlez
+from diffsky.mass_functions.mc_subs import generate_subhalopop
+from diffsky.mass_functions.mc_tinfall import mc_time_since_infall
 
 
 class SubhaloCatalog(typing.NamedTuple):
@@ -88,7 +89,9 @@ def mc_subhalo_catalog_singlez(ran_key, lgmp_min, redshift, volume_com):
 
     n_cens = hosts_logmh_at_z.size
 
-    mah_params = [np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_diffmah)]
+    mah_params = DiffmahParams(
+        *[np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_diffmah)]
+    )
 
     log_mpeak_penultimate_infall = np.concatenate((hosts_logmh_at_z, subs_logmh_at_z))
     log_mpeak_ultimate_infall = np.concatenate((hosts_logmh_at_z, subs_logmh_at_z))
