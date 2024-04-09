@@ -100,10 +100,10 @@ def mc_subhalo_catalog_singlez(ran_key, lgmp_min, redshift, volume_com):
     log_mhost_ultimate_infall = np.concatenate((hosts_logmh_at_z, subs_lgmhost))
 
     t_penultimate_infall = np.concatenate(
-        (np.zeros(n_cens) + t_obs, subs_time_since_infall)
+        (np.zeros(n_cens) + t_obs, t_obs - subs_time_since_infall)
     )
     t_ultimate_infall = np.concatenate(
-        (np.zeros(n_cens) + t_obs, subs_time_since_infall)
+        (np.zeros(n_cens) + t_obs, t_obs - subs_time_since_infall)
     )
 
     upids = np.concatenate((np.zeros(n_cens) - 1.0, hosts_halo_id[subs_host_halo_indx]))
