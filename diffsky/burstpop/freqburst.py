@@ -39,13 +39,13 @@ FREQBURST_BOUNDS_PDICT = OrderedDict(
     lgfreqburst_logsm_yhi_ms=_LGFREQBURST_BOUNDS,
 )
 
-FreqburstPopParams = namedtuple("FreqburstPopParams", DEFAULT_FREQBURST_PDICT.keys())
+FreqburstParams = namedtuple("FreqburstParams", DEFAULT_FREQBURST_PDICT.keys())
 _FREQBURST_UPNAMES = ["u_" + key for key in DEFAULT_FREQBURST_PDICT.keys()]
-FreqburstPopUParams = namedtuple("FreqburstPopUParams", _FREQBURST_UPNAMES)
+FreqburstUParams = namedtuple("FreqburstUParams", _FREQBURST_UPNAMES)
 
 
-DEFAULT_FREQBURST_PARAMS = FreqburstPopParams(**DEFAULT_FREQBURST_PDICT)
-FREQBURST_PBOUNDS = FreqburstPopParams(**FREQBURST_BOUNDS_PDICT)
+DEFAULT_FREQBURST_PARAMS = FreqburstParams(**DEFAULT_FREQBURST_PDICT)
+FREQBURST_PBOUNDS = FreqburstParams(**FREQBURST_BOUNDS_PDICT)
 
 
 @jjit
@@ -120,7 +120,7 @@ def get_bounded_freqburst_params(u_params):
     params = _get_bounded_freqburst_params_kern(
         jnp.array(u_params), jnp.array(FREQBURST_PBOUNDS)
     )
-    freqburst_params = FreqburstPopParams(*params)
+    freqburst_params = FreqburstParams(*params)
     return freqburst_params
 
 
@@ -132,10 +132,10 @@ def get_unbounded_freqburst_params(params):
     u_params = _get_unbounded_freqburst_params_kern(
         jnp.array(params), jnp.array(FREQBURST_PBOUNDS)
     )
-    freqburst_u_params = FreqburstPopUParams(*u_params)
+    freqburst_u_params = FreqburstUParams(*u_params)
     return freqburst_u_params
 
 
-DEFAULT_FREQBURST_U_PARAMS = FreqburstPopUParams(
+DEFAULT_FREQBURST_U_PARAMS = FreqburstUParams(
     *get_unbounded_freqburst_params(DEFAULT_FREQBURST_PARAMS)
 )
