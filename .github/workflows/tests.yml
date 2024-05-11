@@ -41,6 +41,7 @@ jobs:
             pip \
             setuptools \
             "setuptools_scm>=7,<8" \
+            matplotlib \
             python-build
           pip uninstall dsps --yes
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
