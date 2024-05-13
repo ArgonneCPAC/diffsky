@@ -28,11 +28,11 @@ def make_avpop_flex_comparison_plots(
     Parameters
     ----------
     params : namedtuple
-        Instance of fburstpop.FburstPopParams
+        Instance of avpop_flex.AvPopParams
 
     params2 : namedtuple, optional
-        Instance of fburstpop.FburstPopParams
-        Default is set by DEFAULT_FBURSTPOP_PARAMS
+        Instance of avpop_flex.AvPopParams
+        Default is set by DEFAULT_AVPOP_PARAMS
 
     fname : string, optional
         filename of the output figure
