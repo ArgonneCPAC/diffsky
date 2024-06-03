@@ -2,12 +2,13 @@
 hmf.predict_hmf, the HMF of a host halo population as a function of mass and redshift
 
 """
+
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import value_and_grad
 
 from ..hmf_model import DEFAULT_HMF_PARAMS as P_INIT
-from ..hmf_model import HMF_Params, predict_hmf
+from ..hmf_model import HMF_Params, predict_cuml_hmf
 from .fitting_helpers import jax_adam_wrapper
 
 
@@ -20,7 +21,7 @@ def _mse(pred, target):
 @jjit
 def _loss_func_single_redshift(params, loss_data):
     redshift, target_lgmp, target_hmf = loss_data
-    pred_hmf = predict_hmf(params, target_lgmp, redshift)
+    pred_hmf = predict_cuml_hmf(params, target_lgmp, redshift)
     loss = _mse(pred_hmf, target_hmf)
     return loss
 

@@ -1,11 +1,12 @@
 """
 """
+
 import numpy as np
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 
-from .hmf_model import DEFAULT_HMF_PARAMS, predict_hmf
+from .hmf_model import DEFAULT_HMF_PARAMS, predict_cuml_hmf
 
 N_LGMU_TABLE = 200
 U_TABLE = jnp.linspace(0, 1, N_LGMU_TABLE)
@@ -14,7 +15,7 @@ LGMH_MAX = 17.0
 
 @jjit
 def _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com):
-    nhalos_per_mpc3 = 10 ** predict_hmf(hmf_params, lgmp_min, redshift)
+    nhalos_per_mpc3 = 10 ** predict_cuml_hmf(hmf_params, lgmp_min, redshift)
     nhalos_tot = nhalos_per_mpc3 * volume_com
     return nhalos_tot
 
@@ -24,7 +25,7 @@ def _get_hmf_cdf_interp_tables(hmf_params, lgmp_min, redshift, volume_com):
     dlgmp = LGMH_MAX - lgmp_min
     lgmp_table = U_TABLE * dlgmp + lgmp_min
 
-    cdf_table = volume_com * 10 ** predict_hmf(hmf_params, lgmp_table, redshift)
+    cdf_table = volume_com * 10 ** predict_cuml_hmf(hmf_params, lgmp_table, redshift)
     cdf_table = cdf_table - cdf_table[0]
     cdf_table = cdf_table / cdf_table[-1]
 
