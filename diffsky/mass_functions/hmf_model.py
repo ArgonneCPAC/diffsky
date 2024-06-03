@@ -6,7 +6,9 @@ here mp is the peak historical mass of the main progenitor halo.
 
 from collections import OrderedDict, namedtuple
 
+from jax import grad
 from jax import jit as jjit
+from jax import vmap
 
 from .kernels.hmf_kernels import lg_hmf_kern
 from .utils import _sig_slope, _sigmoid
@@ -84,3 +86,14 @@ def _lo_vs_redshift(params, redshift):
 def _hi_vs_redshift(params, redshift):
     p = (params.hi_ytp, params.hi_x0, params.hi_k, params.hi_ylo, params.hi_yhi)
     return _sig_slope(redshift, HI_XTP, *p)
+
+
+@jjit
+def _diff_hmf_grad_kern(params, logmp, redshift):
+    lgcuml_nd_pred = predict_cuml_hmf(params, logmp, redshift)
+    cuml_nd_pred = 10**lgcuml_nd_pred
+    return -cuml_nd_pred
+
+
+_A = (None, 0, None)
+predict_differential_hmf = jjit(vmap(grad(_diff_hmf_grad_kern, argnums=1), in_axes=_A))
