@@ -1,5 +1,6 @@
 """
 """
+
 import numpy as np
 from jax import random as jran
 
@@ -10,7 +11,7 @@ from ...hmf_model import (
     Lo_Params,
     X0_Params,
     Ytp_Params,
-    predict_hmf,
+    predict_cuml_hmf,
 )
 from ..fit_hmf_model import _loss_func_multi_z, hmf_fitter
 
@@ -38,7 +39,7 @@ def test_get_random_params():
     nhalos = 100
     logmparr = np.linspace(10, 15, nhalos)
     redshift = 1.0
-    hmf_pred = predict_hmf(ran_hmf_params, logmparr, redshift)
+    hmf_pred = predict_cuml_hmf(ran_hmf_params, logmparr, redshift)
     assert hmf_pred.shape == (nhalos,)
     assert np.all(np.isfinite(hmf_pred))
 
@@ -49,12 +50,12 @@ def test_hmf_fitter_correctly_minimizes_loss():
 
     target_lgmp = np.linspace(11, 15.0, 20)
     target_redshift = 0.1
-    target_hmf = predict_hmf(ran_params, target_lgmp, target_redshift)
+    target_hmf = predict_cuml_hmf(ran_params, target_lgmp, target_redshift)
     loss_data_0 = target_redshift, target_lgmp, target_hmf
 
     target_lgmp = np.linspace(11, 14.0, 10)
     target_redshift = 1.1
-    target_hmf = predict_hmf(ran_params, target_lgmp, target_redshift)
+    target_hmf = predict_cuml_hmf(ran_params, target_lgmp, target_redshift)
     loss_data_1 = target_redshift, target_lgmp, target_hmf
 
     loss_data = [loss_data_0, loss_data_1]

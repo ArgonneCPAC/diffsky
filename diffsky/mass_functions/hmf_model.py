@@ -47,13 +47,13 @@ DEFAULT_HMF_PARAMS = HMF_Params(**DEFAULT_HMF_PDICT)
 
 
 @jjit
-def predict_hmf(params, logmp, redshift):
-    hmf_params = _get_singlez_hmf_params(params, redshift)
+def predict_cuml_hmf(params, logmp, redshift):
+    hmf_params = _get_singlez_cuml_hmf_params(params, redshift)
     return lg_hmf_kern(hmf_params, logmp)
 
 
 @jjit
-def _get_singlez_hmf_params(params, redshift):
+def _get_singlez_cuml_hmf_params(params, redshift):
     ytp = _ytp_vs_redshift(params.ytp_params, redshift)
     x0 = _x0_vs_redshift(params.x0_params, redshift)
     lo = _lo_vs_redshift(params.lo_params, redshift)

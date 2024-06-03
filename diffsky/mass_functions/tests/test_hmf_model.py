@@ -1,11 +1,12 @@
 """
 """
+
 import os
 from glob import glob
 
 import numpy as np
 
-from ..hmf_model import DEFAULT_HMF_PARAMS, predict_hmf
+from ..hmf_model import DEFAULT_HMF_PARAMS, predict_cuml_hmf
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 TESTING_DATA_DRN = os.path.join(_THIS_DRNAME, "testing_data")
@@ -19,7 +20,7 @@ def infer_redshift_from_bname(bn):
 def test_lg_hmf_kern_evaluates():
     lgmp_arr = np.linspace(10, 15, 500)
     redshift = 0.0
-    hmf = predict_hmf(DEFAULT_HMF_PARAMS, lgmp_arr, redshift)
+    hmf = predict_cuml_hmf(DEFAULT_HMF_PARAMS, lgmp_arr, redshift)
     assert hmf.shape == hmf.shape
     assert np.all(np.isfinite(hmf))
 
@@ -33,26 +34,26 @@ def test_predict_hmf_returns_finite_valued_expected_shape():
     redshift = 1.0
     nhalos = 100
     lgmp_arr = np.linspace(10, 15, nhalos)
-    pred = predict_hmf(DEFAULT_HMF_PARAMS, lgmp_arr, redshift)
+    pred = predict_cuml_hmf(DEFAULT_HMF_PARAMS, lgmp_arr, redshift)
     assert pred.shape == lgmp_arr.shape
     assert np.all(np.isfinite(pred))
 
     lgmp = 12.0
-    pred = predict_hmf(DEFAULT_HMF_PARAMS, lgmp, redshift)
+    pred = predict_cuml_hmf(DEFAULT_HMF_PARAMS, lgmp, redshift)
     assert pred.shape == ()
     assert np.all(np.isfinite(pred))
 
     nhalos = 5
     zarr = np.linspace(0, 5, nhalos)
     lgmp = 12.0
-    pred = predict_hmf(DEFAULT_HMF_PARAMS, lgmp, zarr)
+    pred = predict_cuml_hmf(DEFAULT_HMF_PARAMS, lgmp, zarr)
     assert pred.shape == (nhalos,)
     assert np.all(np.isfinite(pred))
 
     nhalos = 5
     zarr = np.linspace(0, 5, nhalos)
     lgmp_arr = np.linspace(10, 15, nhalos)
-    pred = predict_hmf(DEFAULT_HMF_PARAMS, lgmp_arr, zarr)
+    pred = predict_cuml_hmf(DEFAULT_HMF_PARAMS, lgmp_arr, zarr)
     assert pred.shape == (nhalos,)
     assert np.all(np.isfinite(pred))
 
@@ -68,6 +69,6 @@ def test_predict_hmf_accurately_approximates_simulation_data():
         bn = os.path.basename(fn)
         redshift = infer_redshift_from_bname(bn)
 
-        hmf_pred = predict_hmf(DEFAULT_HMF_PARAMS, lgmp_target, redshift)
+        hmf_pred = predict_cuml_hmf(DEFAULT_HMF_PARAMS, lgmp_target, redshift)
 
         assert _mse(hmf_pred, hmf_target) < 0.01
