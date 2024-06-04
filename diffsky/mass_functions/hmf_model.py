@@ -1,6 +1,7 @@
-"""The predict_hmf function gives a differentiable prediction for
-the cumulative Host Halo Mass Function (HMF), <Nhalos(>mp) | z>,
-here mp is the peak historical mass of the main progenitor halo.
+"""The predict_cuml_hmf and predict_differential_hmf functions
+give differentiable implementations for the cumulative and differential mass functions,
+respectively, for simulated host halos. These are both functions of mp,
+the peak historical mass of the main progenitor halo.
 
 """
 
@@ -50,6 +51,26 @@ DEFAULT_HMF_PARAMS = HMF_Params(**DEFAULT_HMF_PDICT)
 
 @jjit
 def predict_cuml_hmf(params, logmp, redshift):
+    """Predict the cumulative comoving number density of host halos
+
+    Parameters
+    ----------
+    params : namedtuple
+        Fitting function parameters.
+        Use DEFAULT_HMF_PARAMS for SMDPL-calibrated behavior.
+
+    logmp : array, shape (n_halos, )
+        Base-10 log of halo mass in units of Msun/h
+
+    redshift : float
+
+    Returns
+    -------
+    lg_cuml_hmf : array, shape (n_halos, )
+        Base-10 log of cumulative comoving number density n(>logmp)
+        in units of comoving (h/Mpc)**3
+
+    """
     hmf_params = _get_singlez_cuml_hmf_params(params, redshift)
     return lg_hmf_kern(hmf_params, logmp)
 
@@ -96,4 +117,30 @@ def _diff_hmf_grad_kern(params, logmp, redshift):
 
 
 _A = (None, 0, None)
-predict_differential_hmf = jjit(vmap(grad(_diff_hmf_grad_kern, argnums=1), in_axes=_A))
+_predict_differential_hmf = jjit(vmap(grad(_diff_hmf_grad_kern, argnums=1), in_axes=_A))
+
+
+@jjit
+def predict_differential_hmf(params, logmp, redshift):
+    """Predict the differential comoving number density of host halos
+
+    Parameters
+    ----------
+    params : namedtuple
+        Fitting function parameters.
+        Use DEFAULT_HMF_PARAMS for SMDPL-calibrated behavior.
+
+    logmp : array, shape (n_halos, )
+        Base-10 log of halo mass in units of Msun/h
+
+    redshift : float
+
+    Returns
+    -------
+    lg_hmf : array, shape (n_halos, )
+        Base-10 log of differential comoving number density dn(logmp)/dlogmp
+        in units of comoving (h/Mpc)**3 / dex
+
+    """
+    lg_hmf = _predict_differential_hmf(params, logmp, redshift)
+    return lg_hmf
