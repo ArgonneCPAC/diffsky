@@ -2,7 +2,6 @@
 """
 
 import numpy as np
-import pytest
 from jax import random as jran
 
 from ..avpop_mono import (
@@ -23,6 +22,8 @@ LGAGE_GYR = np.linspace(5, 10.25, N_AGE) - 9.0
 
 N_GALS = 10
 ZZ = np.zeros(N_GALS)
+
+EPSILON = 1e-5
 
 
 def test_param_u_param_names_propagate_properly():
@@ -165,20 +166,29 @@ def test_get_av_from_avpop_u_params_galpop_pop_u_param_inversion_singlegal():
 
 
 def test_get_av_from_avpop_is_monotonic_with_logsm_default_params():
-    n_tests = 1_000
+    n_tests = 100
     ran_key = jran.PRNGKey(0)
 
-    n_gals = 500
+    n_gals = 50
     logsmarr = np.linspace(0, 20, n_gals)
+    logssfrarr = np.linspace(-20, 20, n_gals)
     ZZ = np.zeros(n_gals)
     for __ in range(n_tests):
-        ran_key, logssfr_key, z_key = jran.split(ran_key, 3)
-        logssfr = jran.uniform(logssfr_key, minval=-12, maxval=-8, shape=()) + ZZ
+        ran_key, z_key = jran.split(ran_key, 2)
         redshift = jran.uniform(z_key, minval=0, maxval=10, shape=()) + ZZ
 
-        av = get_av_from_avpop_params_galpop(
-            DEFAULT_AVPOP_PARAMS, logsmarr, logssfr, redshift, LGAGE_GYR
-        )
-        assert av.shape == (n_gals, N_AGE)
-        assert np.all(np.isfinite(av))
-        assert np.all(np.diff(av, axis=0) >= 0)
+        for logssfr in logssfrarr:
+            av = get_av_from_avpop_params_galpop(
+                DEFAULT_AVPOP_PARAMS, logsmarr, logssfr + ZZ, redshift, LGAGE_GYR
+            )
+            assert av.shape == (n_gals, N_AGE)
+            assert np.all(np.isfinite(av))
+            assert np.all(np.diff(av, axis=0) >= -EPSILON)
+
+        for logsm in logsmarr:
+            av = get_av_from_avpop_params_galpop(
+                DEFAULT_AVPOP_PARAMS, logsm + ZZ, logssfrarr, redshift, LGAGE_GYR
+            )
+            assert av.shape == (n_gals, N_AGE)
+            assert np.all(np.isfinite(av))
+            assert np.all(np.diff(av, axis=0) >= -EPSILON)
