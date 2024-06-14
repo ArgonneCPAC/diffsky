@@ -31,14 +31,14 @@ DEFAULT_AVPOP_PDICT = OrderedDict(
     suav_logsm_yhi_q_z_yhi=-0.25,
     suav_logsm_yhi_ms_z_yhi=-0.25,
     suav_z_x0=1.0,
-    delta_u_av=0.2,
+    delta_suav_age=0.2,
 )
 
 LGSM_X0_BOUNDS = (9.0, 11.0)
 LGSSFR_X0_BOUNDS = (-12.0, -8.0)
 SUAV_BOUNDS = (-3.0, 3.0)
 REDSHIFT_BOUNDS = (0.0, 5.0)
-DELTA_U_AV_BOUNDS = (0.0, 1.0)
+DELTA_SUAV_AGE_BOUNDS = (0.0, 1.0)
 
 AVPOP_PBOUNDS_PDICT = OrderedDict(
     suav_logsm_x0=LGSM_X0_BOUNDS,
@@ -52,7 +52,7 @@ AVPOP_PBOUNDS_PDICT = OrderedDict(
     suav_logsm_yhi_q_z_yhi=SUAV_BOUNDS,
     suav_logsm_yhi_ms_z_yhi=SUAV_BOUNDS,
     suav_z_x0=REDSHIFT_BOUNDS,
-    delta_u_av=DELTA_U_AV_BOUNDS,
+    delta_suav_age=DELTA_SUAV_AGE_BOUNDS,
 )
 
 
@@ -118,8 +118,8 @@ def get_av_from_avpop_params_scalar(avpop_params, logsm, logssfr, redshift, lg_a
         redshift, avpop_params.suav_z_x0, REDSHIFT_K, suav_z_ylo, suav_z_yhi
     )
 
-    delta_u_av = _young_star_av_boost_kern(lg_age_gyr, avpop_params.u_av_boost_ostars)
-    u_av = u_av + delta_u_av
+    delta_suav_age = _young_star_av_boost_kern(lg_age_gyr, avpop_params.delta_suav_age)
+    u_av = u_av + delta_suav_age
 
     av = nn.softplus(u_av)
 
@@ -164,6 +164,38 @@ def get_unbounded_avpop_params(params):
     )
     u_params = _get_suav_u_params_kern(jnp.array(params), jnp.array(AVPOP_PBOUNDS))
     return AvPopUParams(*u_params)
+
+
+_AGE = (None, None, None, None, 0)
+_POP = (None, 0, 0, 0, None)
+get_av_from_avpop_params_galpop = jjit(
+    vmap(vmap(get_av_from_avpop_params_scalar, in_axes=_AGE), in_axes=_POP)
+)
+get_av_from_avpop_params_singlegal = jjit(
+    vmap(get_av_from_avpop_params_scalar, in_axes=_AGE)
+)
+
+
+@jjit
+def get_av_from_avpop_u_params_singlegal(
+    avpop_u_params, logsm, logssfr, redshift, lgage_gyr
+):
+    avpop_params = get_bounded_avpop_params(avpop_u_params)
+    av = get_av_from_avpop_params_singlegal(
+        avpop_params, logsm, logssfr, redshift, lgage_gyr
+    )
+    return av
+
+
+@jjit
+def get_av_from_avpop_u_params_galpop(
+    avpop_u_params, logsm, logssfr, redshift, lgage_gyr
+):
+    avpop_params = get_bounded_avpop_params(avpop_u_params)
+    av = get_av_from_avpop_params_galpop(
+        avpop_params, logsm, logssfr, redshift, lgage_gyr
+    )
+    return av
 
 
 DEFAULT_AVPOP_U_PARAMS = AvPopUParams(*get_unbounded_avpop_params(DEFAULT_AVPOP_PARAMS))

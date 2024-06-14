@@ -2,12 +2,13 @@
 """
 
 import numpy as np
+import pytest
 from jax import random as jran
 
-from ..avpop_flex import (
+from ..avpop_mono import (
     DEFAULT_AVPOP_PARAMS,
     DEFAULT_AVPOP_U_PARAMS,
-    LGAV_BOUNDS,
+    SUAV_BOUNDS,
     get_av_from_avpop_params_galpop,
     get_av_from_avpop_params_singlegal,
     get_av_from_avpop_u_params_galpop,
@@ -131,8 +132,8 @@ def test_get_av_from_avpop_u_params_galpop_u_param_inversion_galpop():
 
         assert np.allclose(av, av_u, rtol=1e-4)
 
-        assert np.all(LGAV_BOUNDS[0] <= np.log10(av))
-        assert np.all(np.log10(av) < LGAV_BOUNDS[1])
+        assert np.all(SUAV_BOUNDS[0] <= np.log10(av))
+        assert np.all(np.log10(av) < SUAV_BOUNDS[1])
 
 
 def test_get_av_from_avpop_u_params_galpop_pop_u_param_inversion_singlegal():
@@ -159,5 +160,25 @@ def test_get_av_from_avpop_u_params_galpop_pop_u_param_inversion_singlegal():
 
         assert np.allclose(av, av_u, rtol=1e-4)
 
-        assert np.all(LGAV_BOUNDS[0] <= np.log10(av))
-        assert np.all(np.log10(av) < LGAV_BOUNDS[1])
+        assert np.all(SUAV_BOUNDS[0] <= np.log10(av))
+        assert np.all(np.log10(av) < SUAV_BOUNDS[1])
+
+
+def test_get_av_from_avpop_is_monotonic_with_logsm_default_params():
+    n_tests = 1_000
+    ran_key = jran.PRNGKey(0)
+
+    n_gals = 500
+    logsmarr = np.linspace(0, 20, n_gals)
+    ZZ = np.zeros(n_gals)
+    for __ in range(n_tests):
+        ran_key, logssfr_key, z_key = jran.split(ran_key, 3)
+        logssfr = jran.uniform(logssfr_key, minval=-12, maxval=-8, shape=()) + ZZ
+        redshift = jran.uniform(z_key, minval=0, maxval=10, shape=()) + ZZ
+
+        av = get_av_from_avpop_params_galpop(
+            DEFAULT_AVPOP_PARAMS, logsmarr, logssfr, redshift, LGAGE_GYR
+        )
+        assert av.shape == (n_gals, N_AGE)
+        assert np.all(np.isfinite(av))
+        assert np.all(np.diff(av, axis=0) >= 0)
