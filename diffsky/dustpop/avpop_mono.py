@@ -18,8 +18,6 @@ LGAGE_K = 5.0
 BOUNDING_K = 0.1
 
 LGAGE_GYR_X0 = 6.5 - 9.0
-LGSM_X0 = 10.0
-LGSSFR_X0 = -10.5
 
 DEFAULT_AVPOP_PDICT = OrderedDict(
     suav_logsm_x0=10.0,
@@ -103,7 +101,13 @@ def double_sigmoid_monotonic(u_params, x, y, x0, y0, xk, yk, z_bounds):
 @jjit
 def get_av_from_avpop_params_scalar(avpop_params, logsm, logssfr, redshift, lg_age_gyr):
 
-    DSM_ARGS = LGSM_X0, LGSSFR_X0, LGSM_K, LGSSFR_K, SUAV_BOUNDS
+    DSM_ARGS = (
+        avpop_params.suav_logsm_x0,
+        avpop_params.suav_logssfr_x0,
+        LGSM_K,
+        LGSSFR_K,
+        SUAV_BOUNDS,
+    )
     params_z_ylo = (
         avpop_params.suav_logsm_ylo_q_z_ylo,
         avpop_params.suav_logsm_ylo_ms_z_ylo,
