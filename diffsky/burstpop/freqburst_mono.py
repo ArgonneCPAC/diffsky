@@ -10,8 +10,6 @@ from jax import numpy as jnp
 from jax import vmap
 
 BOUNDING_K = 0.1
-LGSM_X0 = 10.0
-LGSSFR_X0 = -10.5
 LGSM_K = 5.0
 LGSSFR_K = 5.0
 
