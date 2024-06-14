@@ -41,18 +41,19 @@ LGSSFR_X0_BOUNDS = (-12.0, -8.0)
 SUAV_BOUNDS = (-3.0, 3.0)
 REDSHIFT_BOUNDS = (0.0, 5.0)
 DELTA_SUAV_AGE_BOUNDS = (0.0, 1.0)
+U_BOUNDS = (-100.0, 100.0)
 
 AVPOP_PBOUNDS_PDICT = OrderedDict(
     suav_logsm_x0=LGSM_X0_BOUNDS,
     suav_logssfr_x0=LGSSFR_X0_BOUNDS,
-    suav_logsm_ylo_q_z_ylo=SUAV_BOUNDS,
-    suav_logsm_ylo_ms_z_ylo=SUAV_BOUNDS,
-    suav_logsm_yhi_q_z_ylo=SUAV_BOUNDS,
-    suav_logsm_yhi_ms_z_ylo=SUAV_BOUNDS,
-    suav_logsm_ylo_q_z_yhi=SUAV_BOUNDS,
-    suav_logsm_ylo_ms_z_yhi=SUAV_BOUNDS,
-    suav_logsm_yhi_q_z_yhi=SUAV_BOUNDS,
-    suav_logsm_yhi_ms_z_yhi=SUAV_BOUNDS,
+    suav_logsm_ylo_q_z_ylo=U_BOUNDS,
+    suav_logsm_ylo_ms_z_ylo=U_BOUNDS,
+    suav_logsm_yhi_q_z_ylo=U_BOUNDS,
+    suav_logsm_yhi_ms_z_ylo=U_BOUNDS,
+    suav_logsm_ylo_q_z_yhi=U_BOUNDS,
+    suav_logsm_ylo_ms_z_yhi=U_BOUNDS,
+    suav_logsm_yhi_q_z_yhi=U_BOUNDS,
+    suav_logsm_yhi_ms_z_yhi=U_BOUNDS,
     suav_z_x0=REDSHIFT_BOUNDS,
     delta_suav_age=DELTA_SUAV_AGE_BOUNDS,
 )
@@ -69,9 +70,7 @@ AVPOP_PBOUNDS = AvPopParams(**AVPOP_PBOUNDS_PDICT)
 
 
 @jjit
-def double_sigmoid_monotonic(
-    u_params, x, y, x0=10.0, y0=-10.5, xk=5.0, yk=5.0, z_bounds=(-3.0, 3.0)
-):
+def double_sigmoid_monotonic(u_params, x, y, x0, y0, xk, yk, z_bounds):
     """4-D parameter space controlling double-sigmoid function z(x, y)
     such that ∂z/∂x>0 and ∂z/∂y>0 for all points (x, y)
 
@@ -103,21 +102,23 @@ def double_sigmoid_monotonic(
 
 @jjit
 def get_av_from_avpop_params_scalar(avpop_params, logsm, logssfr, redshift, lg_age_gyr):
-    u_params_z_ylo = (
+
+    DSM_ARGS = LGSM_X0, LGSSFR_X0, LGSM_K, LGSSFR_K, SUAV_BOUNDS
+    params_z_ylo = (
         avpop_params.suav_logsm_ylo_q_z_ylo,
         avpop_params.suav_logsm_ylo_ms_z_ylo,
         avpop_params.suav_logsm_yhi_q_z_ylo,
         avpop_params.suav_logsm_yhi_ms_z_ylo,
     )
-    suav_z_ylo = double_sigmoid_monotonic(u_params_z_ylo, logsm, logssfr)
+    suav_z_ylo = double_sigmoid_monotonic(params_z_ylo, logsm, logssfr, *DSM_ARGS)
 
-    u_params_z_yhi = (
+    params_z_yhi = (
         avpop_params.suav_logsm_ylo_q_z_yhi,
         avpop_params.suav_logsm_ylo_ms_z_yhi,
         avpop_params.suav_logsm_yhi_q_z_yhi,
         avpop_params.suav_logsm_yhi_ms_z_yhi,
     )
-    suav_z_yhi = double_sigmoid_monotonic(u_params_z_yhi, logsm, logssfr)
+    suav_z_yhi = double_sigmoid_monotonic(params_z_yhi, logsm, logssfr, *DSM_ARGS)
 
     suav = _sigmoid(
         redshift, avpop_params.suav_z_x0, REDSHIFT_K, suav_z_ylo, suav_z_yhi

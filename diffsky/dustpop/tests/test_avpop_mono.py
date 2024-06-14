@@ -3,10 +3,12 @@
 
 import numpy as np
 from jax import random as jran
+from jax.nn import softplus
 
 from ..avpop_mono import (
     DEFAULT_AVPOP_PARAMS,
     DEFAULT_AVPOP_U_PARAMS,
+    DELTA_SUAV_AGE_BOUNDS,
     SUAV_BOUNDS,
     AvPopUParams,
     get_av_from_avpop_params_galpop,
@@ -184,11 +186,15 @@ def test_get_av_from_avpop_is_monotonic_with_logsm_and_logssfr():
 
         redshift = jran.uniform(z_key, minval=0, maxval=10, shape=()) + ZZ
 
+        suav_max = SUAV_BOUNDS[1] + DELTA_SUAV_AGE_BOUNDS[1]
+        av_max = softplus(suav_max)
         for logssfr in logssfrarr:
             av = get_av_from_avpop_params_galpop(
                 avpop_params, logsmarr, logssfr + ZZ, redshift, LGAGE_GYR
             )
             assert av.shape == (n_gals, N_AGE)
+            assert np.all(av >= 0.0)
+            assert np.all(av <= av_max)
             assert np.all(np.isfinite(av))
             assert np.all(np.diff(av, axis=0) >= -EPSILON)
 
@@ -197,5 +203,7 @@ def test_get_av_from_avpop_is_monotonic_with_logsm_and_logssfr():
                 avpop_params, logsm + ZZ, logssfrarr, redshift, LGAGE_GYR
             )
             assert av.shape == (n_gals, N_AGE)
+            assert np.all(av >= 0.0)
+            assert np.all(av <= av_max)
             assert np.all(np.isfinite(av))
             assert np.all(np.diff(av, axis=0) >= -EPSILON)
