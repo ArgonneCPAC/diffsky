@@ -2,11 +2,14 @@
 """
 
 import numpy as np
+from jax import nn
 from jax import random as jran
 
 from ..freqburst_mono import (
     DEFAULT_FREQBURST_PARAMS,
     DEFAULT_FREQBURST_U_PARAMS,
+    SUFQB_BOUNDS,
+    FreqburstUParams,
     get_bounded_freqburst_params,
     get_freqburst_from_freqburst_params,
     get_freqburst_from_freqburst_u_params,
@@ -14,6 +17,7 @@ from ..freqburst_mono import (
 )
 
 TOL = 1e-2
+EPSILON = 1e-5
 
 
 def test_param_u_param_names_propagate_properly():
@@ -115,3 +119,44 @@ def test_freqburst_u_param_inversion():
     assert np.all(np.isfinite(gal_freqburst_u))
 
     assert np.allclose(gal_freqburst, gal_freqburst_u, rtol=1e-4)
+
+
+def test_get_freqburst_from_freqburst_params_is_monotonic_with_logsm_and_logssfr():
+    n_tests = 100
+    ran_key = jran.PRNGKey(0)
+
+    n_gals = 50
+    logsmarr = np.linspace(0, 20, n_gals)
+    logssfrarr = np.linspace(-20, 20, n_gals)
+    n_pars = len(DEFAULT_FREQBURST_PARAMS)
+    ZZ = np.zeros(n_gals)
+
+    for __ in range(n_tests):
+        ran_key, u_p_key = jran.split(ran_key, 2)
+
+        ran_u_params = jran.uniform(u_p_key, minval=-10, maxval=10, shape=(n_pars,))
+        freqb_params = get_bounded_freqburst_params(FreqburstUParams(*ran_u_params))
+
+        sufq_max = SUFQB_BOUNDS[1]
+        fqb_max = nn.softplus(sufq_max)
+        assert fqb_max < 1
+
+        for logssfr in logssfrarr:
+            fqb = get_freqburst_from_freqburst_params(
+                freqb_params, logsmarr, logssfr + ZZ
+            )
+            assert fqb.shape == (n_gals,)
+            assert np.all(np.isfinite(fqb))
+            assert np.all(fqb >= 0.0)
+            assert np.all(fqb <= fqb_max)
+            assert np.all(np.diff(fqb) <= EPSILON)
+
+        for logsm in logsmarr:
+            fqb = get_freqburst_from_freqburst_params(
+                freqb_params, logsm + ZZ, logssfrarr
+            )
+            assert fqb.shape == (n_gals,)
+            assert np.all(np.isfinite(fqb))
+            assert np.all(fqb >= 0.0)
+            assert np.all(fqb <= fqb_max)
+            assert np.all(np.diff(fqb) >= -EPSILON)
