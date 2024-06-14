@@ -18,8 +18,6 @@ LGAGE_K = 5.0
 BOUNDING_K = 0.1
 
 LGAGE_GYR_X0 = 6.5 - 9.0
-LGSM_X0 = 10.0
-LGSSFR_X0 = -10.5
 
 DEFAULT_AVPOP_PDICT = OrderedDict(
     suav_logsm_x0=10.0,
