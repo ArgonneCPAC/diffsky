@@ -3,92 +3,109 @@
 
 from collections import OrderedDict, namedtuple
 
+from dsps.utils import _inverse_sigmoid, _sigmoid
 from jax import jit as jjit
+from jax import nn
 from jax import numpy as jnp
 from jax import vmap
 
-from ..utils import _inverse_sigmoid, _sigmoid
-
+BOUNDING_K = 0.1
+LGSM_X0 = 10.0
+LGSSFR_X0 = -10.5
 LGSM_K = 5.0
 LGSSFR_K = 5.0
 
 DEFAULT_FREQBURST_PDICT = OrderedDict(
-    lgfreqburst_logsm_x0_x0=10.0,
-    lgfreqburst_logsm_x0_q=10.5,
-    lgfreqburst_logsm_x0_ms=9.5,
-    lgfreqburst_logsm_ylo_x0=-10.25,
-    lgfreqburst_logsm_ylo_q=-1.0,
-    lgfreqburst_logsm_ylo_ms=-1.0,
-    lgfreqburst_logsm_yhi_x0=-11.25,
-    lgfreqburst_logsm_yhi_q=-1.0,
-    lgfreqburst_logsm_yhi_ms=-1.0,
+    sufqb_logsm_x0=10.0,
+    sufqb_logssfr_x0=-10.25,
+    sufqb_logsm_ylo_q=-0.25,
+    sufqb_logsm_ylo_ms=-0.25,
+    sufqb_logsm_yhi_q=-0.25,
+    sufqb_logsm_yhi_ms=-0.25,
 )
 
-_LGSM_X0_BOUNDS = (8.0, 12.0)
-_LGSSFR_X0_BOUNDS = (-13.0, -7.0)
-_LGFREQBURST_BOUNDS = (-4.0, 0.0)
-FREQBURST_BOUNDS_PDICT = OrderedDict(
-    lgfreqburst_logsm_x0_x0=_LGSM_X0_BOUNDS,
-    lgfreqburst_logsm_x0_q=_LGSM_X0_BOUNDS,
-    lgfreqburst_logsm_x0_ms=_LGSM_X0_BOUNDS,
-    lgfreqburst_logsm_ylo_x0=_LGSSFR_X0_BOUNDS,
-    lgfreqburst_logsm_ylo_q=_LGFREQBURST_BOUNDS,
-    lgfreqburst_logsm_ylo_ms=_LGFREQBURST_BOUNDS,
-    lgfreqburst_logsm_yhi_x0=_LGSSFR_X0_BOUNDS,
-    lgfreqburst_logsm_yhi_q=_LGFREQBURST_BOUNDS,
-    lgfreqburst_logsm_yhi_ms=_LGFREQBURST_BOUNDS,
+LGSM_X0_BOUNDS = (9.0, 11.0)
+LGSSFR_X0_BOUNDS = (-12.0, -8.0)
+SUFQB_BOUNDS = (-5.0, -1.0)
+U_BOUNDS = (-100.0, 100.0)
+
+FREQBURST_PBOUNDS_PDICT = OrderedDict(
+    sufqb_logsm_x0=LGSM_X0_BOUNDS,
+    sufqb_logssfr_x0=LGSSFR_X0_BOUNDS,
+    sufqb_logsm_ylo_q=U_BOUNDS,
+    sufqb_logsm_ylo_ms=U_BOUNDS,
+    sufqb_logsm_yhi_q=U_BOUNDS,
+    sufqb_logsm_yhi_ms=U_BOUNDS,
 )
+
 
 FreqburstParams = namedtuple("FreqburstParams", DEFAULT_FREQBURST_PDICT.keys())
-_FREQBURST_UPNAMES = ["u_" + key for key in DEFAULT_FREQBURST_PDICT.keys()]
+
+_FREQBURST_UPNAMES = ["u_" + key for key in FREQBURST_PBOUNDS_PDICT.keys()]
 FreqburstUParams = namedtuple("FreqburstUParams", _FREQBURST_UPNAMES)
 
 
 DEFAULT_FREQBURST_PARAMS = FreqburstParams(**DEFAULT_FREQBURST_PDICT)
-FREQBURST_PBOUNDS = FreqburstParams(**FREQBURST_BOUNDS_PDICT)
+FREQBURST_PBOUNDS = FreqburstParams(**FREQBURST_PBOUNDS_PDICT)
 
 
 @jjit
-def get_lgfreqburst_from_freqburst_u_params(freqburst_u_params, logsm, logssfr):
+def double_sigmoid_monotonic(u_params, x, y, x0, y0, xk, yk, z_bounds):
+    """4-D parameter space controlling double-sigmoid function z(x, y)
+    such that ∂z/∂x<0 and ∂z/∂y>0 for all points (x, y)
+
+    """
+    u_x_lo_y_lo, u_x_lo_y_hi, u_x_hi_y_lo, u_x_hi_y_hi = u_params
+
+    # (hi-x, lo-y) can be anything inside the z-bounds
+    x_hi_y_lo = _sigmoid(u_x_hi_y_lo, 0.0, BOUNDING_K, *z_bounds)
+
+    # (lo-x, lo-y) must be larger than (hi-x, lo-y)
+    x_lo_y_lo = _sigmoid(u_x_lo_y_lo, 0.0, BOUNDING_K, x_hi_y_lo, z_bounds[1])
+
+    # compute lower bound of z appropriate for the x-value
+    ylo = _sigmoid(x, x0, xk, x_lo_y_lo, x_hi_y_lo)
+
+    # Lowest value of z must be larger than ylo
+    x_hi_y_hi = _sigmoid(u_x_hi_y_hi, 0.0, BOUNDING_K, ylo, z_bounds[1])
+
+    # z must increase beyond its lowest value of x_hi_y_hi
+    x_lo_y_hi = _sigmoid(u_x_lo_y_hi, 0.0, BOUNDING_K, x_hi_y_hi, z_bounds[1])
+
+    # compute upper bound of z
+    yhi = _sigmoid(x, x0, xk, x_lo_y_hi, x_hi_y_hi)
+
+    z = _sigmoid(y, y0, yk, ylo, yhi)
+
+    return z
+
+
+@jjit
+def get_freqburst_from_freqburst_params(freqburst_params, logsm, logssfr):
+    DSM_ARGS = (
+        freqburst_params.sufqb_logsm_x0,
+        freqburst_params.sufqb_logssfr_x0,
+        LGSM_K,
+        LGSSFR_K,
+        SUFQB_BOUNDS,
+    )
+
+    params = (
+        freqburst_params.sufqb_logsm_ylo_q,
+        freqburst_params.sufqb_logsm_ylo_ms,
+        freqburst_params.sufqb_logsm_yhi_q,
+        freqburst_params.sufqb_logsm_yhi_ms,
+    )
+    sufqb = double_sigmoid_monotonic(params, logsm, logssfr, *DSM_ARGS)
+    freq_burst = nn.softplus(sufqb)
+    return freq_burst
+
+
+@jjit
+def get_freqburst_from_freqburst_u_params(freqburst_u_params, logsm, logssfr):
     freqburst_params = get_bounded_freqburst_params(freqburst_u_params)
-    lgfreqburst = get_lgfreqburst_from_freqburst_params(
-        freqburst_params, logsm, logssfr
-    )
-    return lgfreqburst
-
-
-@jjit
-def get_lgfreqburst_from_freqburst_params(freqburst_params, logsm, logssfr):
-    lgfreqburst_logssfr_x0 = _sigmoid(
-        logsm,
-        freqburst_params.lgfreqburst_logsm_x0_x0,
-        LGSM_K,
-        freqburst_params.lgfreqburst_logsm_ylo_x0,
-        freqburst_params.lgfreqburst_logsm_yhi_x0,
-    )
-    lgfreqburst_logssfr_q = _sigmoid(
-        logsm,
-        freqburst_params.lgfreqburst_logsm_x0_q,
-        LGSM_K,
-        freqburst_params.lgfreqburst_logsm_ylo_q,
-        freqburst_params.lgfreqburst_logsm_yhi_q,
-    )
-    lgfreqburst_logssfr_ms = _sigmoid(
-        logsm,
-        freqburst_params.lgfreqburst_logsm_x0_ms,
-        LGSSFR_K,
-        freqburst_params.lgfreqburst_logsm_ylo_ms,
-        freqburst_params.lgfreqburst_logsm_yhi_ms,
-    )
-
-    lgfreqburst = _sigmoid(
-        logssfr,
-        lgfreqburst_logssfr_x0,
-        LGSSFR_K,
-        lgfreqburst_logssfr_q,
-        lgfreqburst_logssfr_ms,
-    )
-    return lgfreqburst
+    freqburst = get_freqburst_from_freqburst_params(freqburst_params, logsm, logssfr)
+    return freqburst
 
 
 @jjit
