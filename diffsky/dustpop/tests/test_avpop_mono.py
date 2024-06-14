@@ -8,6 +8,7 @@ from ..avpop_mono import (
     DEFAULT_AVPOP_PARAMS,
     DEFAULT_AVPOP_U_PARAMS,
     SUAV_BOUNDS,
+    AvPopUParams,
     get_av_from_avpop_params_galpop,
     get_av_from_avpop_params_singlegal,
     get_av_from_avpop_u_params_galpop,
@@ -165,21 +166,27 @@ def test_get_av_from_avpop_u_params_galpop_pop_u_param_inversion_singlegal():
         assert np.all(np.log10(av) < SUAV_BOUNDS[1])
 
 
-def test_get_av_from_avpop_is_monotonic_with_logsm_default_params():
+def test_get_av_from_avpop_is_monotonic_with_logsm_and_logssfr():
     n_tests = 100
     ran_key = jran.PRNGKey(0)
 
     n_gals = 50
     logsmarr = np.linspace(0, 20, n_gals)
     logssfrarr = np.linspace(-20, 20, n_gals)
+    n_pars = len(DEFAULT_AVPOP_PARAMS)
     ZZ = np.zeros(n_gals)
+
     for __ in range(n_tests):
-        ran_key, z_key = jran.split(ran_key, 2)
+        ran_key, z_key, u_p_key = jran.split(ran_key, 3)
+
+        ran_u_params = jran.uniform(u_p_key, minval=-10, maxval=10, shape=(n_pars,))
+        avpop_params = get_bounded_avpop_params(AvPopUParams(*ran_u_params))
+
         redshift = jran.uniform(z_key, minval=0, maxval=10, shape=()) + ZZ
 
         for logssfr in logssfrarr:
             av = get_av_from_avpop_params_galpop(
-                DEFAULT_AVPOP_PARAMS, logsmarr, logssfr + ZZ, redshift, LGAGE_GYR
+                avpop_params, logsmarr, logssfr + ZZ, redshift, LGAGE_GYR
             )
             assert av.shape == (n_gals, N_AGE)
             assert np.all(np.isfinite(av))
@@ -187,7 +194,7 @@ def test_get_av_from_avpop_is_monotonic_with_logsm_default_params():
 
         for logsm in logsmarr:
             av = get_av_from_avpop_params_galpop(
-                DEFAULT_AVPOP_PARAMS, logsm + ZZ, logssfrarr, redshift, LGAGE_GYR
+                avpop_params, logsm + ZZ, logssfrarr, redshift, LGAGE_GYR
             )
             assert av.shape == (n_gals, N_AGE)
             assert np.all(np.isfinite(av))
