@@ -33,7 +33,7 @@ def test_param_u_param_names_propagate_properly():
 def test_get_bounded_deltapop_params_fails_when_passing_params():
     try:
         get_bounded_deltapop_params(DEFAULT_DELTAPOP_PARAMS)
-        raise NameError("get_bounded_deltapop_params should not accept u_params")
+        raise NameError("get_bounded_deltapop_params should not accept params")
     except AttributeError:
         pass
 
