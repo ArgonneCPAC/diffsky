@@ -33,7 +33,7 @@ def test_param_u_param_names_propagate_properly():
 def test_get_bounded_fburstpop_params_fails_when_passing_params():
     try:
         get_bounded_fburstpop_params(DEFAULT_FBURSTPOP_PARAMS)
-        raise NameError("get_bounded_fburstpop_params should not accept u_params")
+        raise NameError("get_bounded_fburstpop_params should not accept params")
     except AttributeError:
         pass
 
@@ -62,7 +62,7 @@ def test_get_lgfburst_from_fburstpop_u_params_fails_when_passing_params():
     try:
         get_lgfburst_from_fburstpop_u_params(DEFAULT_FBURSTPOP_PARAMS, logsm, logssfr)
         raise NameError(
-            "get_lgfburst_from_fburstpop_u_params should not accept u_params"
+            "get_lgfburst_from_fburstpop_u_params should not accept params"
         )
     except AttributeError:
         pass
