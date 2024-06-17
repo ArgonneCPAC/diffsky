@@ -34,7 +34,7 @@ def test_param_u_param_names_propagate_properly():
 def test_get_bounded_freqburst_params_fails_when_passing_params():
     try:
         get_bounded_freqburst_params(DEFAULT_FREQBURST_PARAMS)
-        raise NameError("get_bounded_freqburst_params should not accept u_params")
+        raise NameError("get_bounded_freqburst_params should not accept params")
     except AttributeError:
         pass
 
@@ -69,7 +69,7 @@ def test_get_lgfreqburst_from_freqburst_u_params_fails_when_passing_params():
             DEFAULT_FREQBURST_PARAMS, logsm, logssfr
         )
         raise NameError(
-            "get_lgfreqburst_from_freqburst_u_params should not accept u_params"
+            "get_lgfreqburst_from_freqburst_u_params should not accept params"
         )
     except AttributeError:
         pass
