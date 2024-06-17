@@ -38,7 +38,7 @@ def test_param_u_param_names_propagate_properly():
 def test_get_bounded_tburstpop_params_fails_when_passing_params():
     try:
         tbp.get_bounded_tburstpop_params(tbp.DEFAULT_TBURSTPOP_PARAMS)
-        raise NameError("get_bounded_tburstpop_params should not accept u_params")
+        raise NameError("get_bounded_tburstpop_params should not accept params")
     except AttributeError:
         pass
 
