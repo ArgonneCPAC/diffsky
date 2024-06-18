@@ -1,3 +1,8 @@
+0.1.2 (unreleased)
+-------------------
+- New population models of dust and bursty SFH
+
+
 0.1.1 (2023-10-04)
 -------------------
 - Update calls to dsps v0.3.4
