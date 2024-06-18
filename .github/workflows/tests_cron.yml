@@ -54,7 +54,7 @@ jobs:
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffstar.git
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
           python -m pip install --no-build-isolation --no-deps -e .
-          conda info
+          conda list
 
 
       - name: test
