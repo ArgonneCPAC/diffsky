@@ -22,7 +22,7 @@ Conda environment
 ~~~~~~~~~~~~~~~~~
 For a typical development environment in conda-forge::
 
-    $ conda create -c conda-forge -n diffsky_env python=3.9 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
+    $ conda create -c conda-forge -n diffsky_env python=3.11 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
 
 
 Documentation

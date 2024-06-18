@@ -32,7 +32,7 @@ def test_param_u_param_names_propagate_properly():
 def test_get_bounded_funopop_params_fails_when_passing_params():
     try:
         get_bounded_funopop_params(DEFAULT_FUNOPOP_PARAMS)
-        raise NameError("get_bounded_funopop_params should not accept u_params")
+        raise NameError("get_bounded_funopop_params should not accept params")
     except AttributeError:
         pass
 

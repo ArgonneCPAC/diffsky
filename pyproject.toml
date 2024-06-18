@@ -26,7 +26,7 @@ authors = [
 ]
 description = "Library for differentiable generation of synthetic skies"
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = {file = "LICENSE.rst"}
 classifiers = [
     "Programming Language :: Python :: 3",

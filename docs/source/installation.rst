@@ -8,7 +8,7 @@ To install lsstdesc-diffsky into an existing environment with conda-forge::
 
 To create a new environment from scratch::
 
-    $ conda create -c conda-forge -n diffsky_env python=3.9 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
+    $ conda create -c conda-forge -n diffsky_env python=3.11 numpy jax pytest ipython jupyter matplotlib scipy h5py diffmah diffstar dsps diffsky
 
 
 Managing dependencies
