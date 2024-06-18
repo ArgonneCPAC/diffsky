@@ -35,7 +35,7 @@ jobs:
         shell: bash -l {0}
         run: |
           conda config --set always_yes yes
-          mamba install --quiet \
+          mamba install \
             --file=requirements.txt
           mamba install -y -q \
             flake8 \
@@ -54,6 +54,8 @@ jobs:
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffstar.git
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
           python -m pip install --no-build-isolation --no-deps -e .
+          conda info
+
 
       - name: test
         shell: bash -l {0}
