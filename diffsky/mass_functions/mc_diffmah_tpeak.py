@@ -4,7 +4,7 @@
 import typing
 
 import numpy as np
-from diffmah.diffmah_kernels import DiffmahParams
+from diffmah.diffmah_kernels import DiffmahParams, _log_mah_kern
 from diffmah.diffmahpop_kernels.diffmahpop_params_monocensat import (
     DEFAULT_DIFFMAHPOP_PARAMS,
 )
@@ -23,17 +23,18 @@ from .mc_subs import generate_subhalopop
 
 
 class SubhaloCatalog(typing.NamedTuple):
+    halo_ids: np.ndarray
     mah_params: np.ndarray
-    log_mpeak_penultimate_infall: np.ndarray
-    log_mpeak_ultimate_infall: np.ndarray
-    log_mhost_penultimate_infall: np.ndarray
-    log_mhost_ultimate_infall: np.ndarray
+    lgmp_pen_inf: np.ndarray
+    lgmp_ult_inf: np.ndarray
+    lgmhost_pen_inf: np.ndarray
+    lgmhost_ult_inf: np.ndarray
     t_obs: np.ndarray
-    t_penultimate_infall: np.ndarray
-    t_ultimate_infall: np.ndarray
+    t_pen_inf: np.ndarray
+    t_ult_inf: np.ndarray
     upids: np.ndarray
-    penultimate_indx: np.ndarray
-    ultimate_indx: np.ndarray
+    pen_indx: np.ndarray
+    ult_indx: np.ndarray
 
 
 def mc_subhalo_catalog_singlez(
@@ -68,13 +69,13 @@ def mc_subhalo_catalog_singlez(
     SubhaloCatalog : namedtuple
 
         mah_params: np.ndarray, shape (n_halos, 4)
-        log_mpeak_penultimate_infall: np.ndarray, shape (n_halos, )
-        log_mpeak_ultimate_infall: np.ndarray, shape (n_halos, )
-        log_mhost_penultimate_infall: np.ndarray, shape (n_halos, )
-        log_mhost_ultimate_infall: np.ndarray, shape (n_halos, )
+        lgmp_pen_inf: np.ndarray, shape (n_halos, )
+        lgmp_ult_inf: np.ndarray, shape (n_halos, )
+        lgmhost_pen_inf: np.ndarray, shape (n_halos, )
+        lgmhost_ult_inf: np.ndarray, shape (n_halos, )
         t_obs: float
-        t_penultimate_infall: np.ndarray, shape (n_halos, )
-        t_ultimate_infall: np.ndarray, shape (n_halos, )
+        t_pen_inf: np.ndarray, shape (n_halos, )
+        t_ult_inf: np.ndarray, shape (n_halos, )
         upids: np.ndarray, shape (n_halos, )
         penultimate_indx: np.ndarray, shape (n_halos, )
         ultimate_indx: np.ndarray, shape (n_halos, )
@@ -103,22 +104,35 @@ def mc_subhalo_catalog_singlez(
 
     n_sats = subs_logmh_at_z.size
     _ZS = np.zeros(n_sats)
+    halo_ids = np.arange(n_cens + n_sats).astype(int)
     subs_diffmah, subs_t_peak = mc_diffmah_params_satpop(
         diffmahpop_params, subs_logmh_at_z, t_obs + _ZS, sub_key2
     )
+
+    # For every sub, get diffmah params of its host halo
+    subs_host_diffmah = DiffmahParams(*[x[subs_host_halo_indx] for x in hosts_diffmah])
+    subs_host_t_peak = hosts_t_peak[subs_host_halo_indx]
 
     mah_params = DiffmahParams(
         *[np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_diffmah)]
     )
 
-    log_mpeak_penultimate_infall = np.concatenate((hosts_logmh_at_z, subs_logmh_at_z))
-    log_mpeak_ultimate_infall = np.concatenate((hosts_logmh_at_z, subs_logmh_at_z))
+    subs_lgmp_pen_inf = _log_mah_kern(subs_diffmah, subs_t_peak, subs_t_peak, lgt0)
+    subs_lgmp_ult_inf = subs_lgmp_pen_inf
 
-    log_mhost_penultimate_infall = np.concatenate((hosts_logmh_at_z, subs_lgmhost))
-    log_mhost_ultimate_infall = np.concatenate((hosts_logmh_at_z, subs_lgmhost))
+    subs_lgmhost_pen_inf = _log_mah_kern(
+        subs_host_diffmah, subs_t_peak, subs_host_t_peak, lgt0
+    )
+    subs_lgmhost_ult_inf = subs_lgmhost_pen_inf
 
-    t_penultimate_infall = np.concatenate((hosts_t_peak, subs_t_peak))
-    t_ultimate_infall = np.concatenate((hosts_t_peak, subs_t_peak))
+    lgmp_pen_inf = np.concatenate((hosts_logmh_at_z, subs_lgmp_pen_inf))
+    lgmp_ult_inf = np.concatenate((hosts_logmh_at_z, subs_lgmp_ult_inf))
+
+    lgmhost_pen_inf = np.concatenate((hosts_logmh_at_z, subs_lgmhost_pen_inf))
+    lgmhost_ult_inf = np.concatenate((hosts_logmh_at_z, subs_lgmhost_ult_inf))
+
+    t_pen_inf = np.concatenate((hosts_t_peak, subs_t_peak))
+    t_ult_inf = np.concatenate((hosts_t_peak, subs_t_peak))
 
     upids = np.concatenate(
         (np.zeros(n_cens).astype(int) - 1, hosts_halo_id[subs_host_halo_indx])
@@ -129,14 +143,15 @@ def mc_subhalo_catalog_singlez(
     )
     ultimate_indx = np.concatenate((np.arange(n_cens).astype(int), subs_host_halo_indx))
     subcat = SubhaloCatalog(
+        halo_ids,
         mah_params,
-        log_mpeak_penultimate_infall,
-        log_mpeak_ultimate_infall,
-        log_mhost_penultimate_infall,
-        log_mhost_ultimate_infall,
+        lgmp_pen_inf,
+        lgmp_ult_inf,
+        lgmhost_pen_inf,
+        lgmhost_ult_inf,
         t_obs,
-        t_penultimate_infall,
-        t_ultimate_infall,
+        t_pen_inf,
+        t_ult_inf,
         upids,
         penultimate_indx,
         ultimate_indx,

@@ -16,6 +16,11 @@ def test_mc_subhalo_catalog_singlez():
     volume_com = Lbox**3
     args = ran_key, lgmp_min, redshift, volume_com
 
-    subhalo_catalog = mc_subhalo_catalog_singlez(*args)
-    for x in subhalo_catalog:
+    subcat = mc_subhalo_catalog_singlez(*args)
+    for x in subcat:
         assert np.all(np.isfinite(x))
+
+    n_gals = subcat.lgmp_pen_inf.size
+    assert subcat.lgmp_pen_inf.shape == (n_gals,)
+    for mah_p in subcat.mah_params:
+        assert mah_p.shape == (n_gals,)
