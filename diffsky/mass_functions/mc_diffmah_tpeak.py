@@ -41,7 +41,7 @@ class SubhaloCatalog(typing.NamedTuple):
     ult_host_indx: np.ndarray
 
 
-def mc_subhalo_catalog_singlez(
+def mc_subhalos(
     ran_key,
     lgmp_min,
     redshift,

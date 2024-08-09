@@ -4,7 +4,7 @@
 import numpy as np
 from jax import random as jran
 
-from ..mc_diffmah_tpeak import mc_subhalo_catalog_singlez
+from ..mc_diffmah_tpeak import mc_subhalos
 
 
 def test_mc_subhalo_catalog_singlez():
@@ -16,7 +16,7 @@ def test_mc_subhalo_catalog_singlez():
     volume_com = Lbox**3
     args = ran_key, lgmp_min, redshift, volume_com
 
-    subcat = mc_subhalo_catalog_singlez(*args)
+    subcat = mc_subhalos(*args)
     for x in subcat:
         assert np.all(np.isfinite(x))
 
