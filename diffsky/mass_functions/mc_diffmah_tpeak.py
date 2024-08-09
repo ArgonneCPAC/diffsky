@@ -28,6 +28,7 @@ class SubhaloCatalog(typing.NamedTuple):
     t_peak: np.ndarray
     host_mah_params: np.ndarray
     host_t_peak: np.ndarray
+    lgmp_at_t_obs: np.ndarray
     lgmp_pen_inf: np.ndarray
     lgmp_ult_inf: np.ndarray
     lgmhost_pen_inf: np.ndarray
@@ -155,6 +156,7 @@ def mc_subhalo_catalog_singlez(
     mah_params = DiffmahParams(
         *[np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_diffmah)]
     )
+    lgmp_at_t_obs = np.array(_log_mah_kern(mah_params, t_obs, t_peak, lgt0))
 
     host_mah_params = DiffmahParams(
         *[np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_host_diffmah)]
@@ -190,6 +192,7 @@ def mc_subhalo_catalog_singlez(
         t_peak,
         host_mah_params,
         host_t_peak,
+        lgmp_at_t_obs,
         lgmp_pen_inf,
         lgmp_ult_inf,
         lgmhost_pen_inf,
