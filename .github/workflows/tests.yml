@@ -1,4 +1,4 @@
-name: tests
+name: test-latest-releases
 
 on:
   push:
@@ -43,6 +43,8 @@ jobs:
             "setuptools_scm>=7,<8" \
             matplotlib \
             python-build
+          pip uninstall diffmah --yes
+          pip install --no-deps git+https://github.com/ArgonneCPAC/diffmah.git
           pip uninstall dsps --yes
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
           python -m pip install --no-build-isolation --no-deps -e .
