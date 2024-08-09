@@ -14,6 +14,13 @@ def test_param_u_param_names_propagate_properly():
         assert u_key[:2] == "u_"
         assert u_key[2:] == key
 
+
+def test_default_u_params_and_params_are_consistent():
+    """Default unbounded parameters should agree with unbounding the default params"""
+    gen = zip(sspe.DEFAULT_SSPERR_U_PARAMS._fields, sspe.DEFAULT_SSPERR_PARAMS._fields)
+    for u_key, key in gen:
+        assert u_key[:2] == "u_"
+        assert u_key[2:] == key
     inferred_default_params = sspe.get_bounded_params(sspe.DEFAULT_SSPERR_U_PARAMS)
     assert set(inferred_default_params._fields) == set(
         sspe.DEFAULT_SSPERR_PARAMS._fields
@@ -23,6 +30,13 @@ def test_param_u_param_names_propagate_properly():
     assert set(inferred_default_u_params._fields) == set(
         sspe.DEFAULT_SSPERR_U_PARAMS._fields
     )
+
+
+def test_default_params_are_in_bounds():
+    """Default parameters should lie strictly within the bounds"""
+    gen = zip(sspe.DEFAULT_SSPERR_PARAMS, sspe.SSPERR_PBOUNDS)
+    for default, bounds in gen:
+        assert bounds[0] < default < bounds[1]
 
 
 def test_get_bounded_params_fails_when_passing_params():
