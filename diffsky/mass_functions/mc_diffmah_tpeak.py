@@ -25,6 +25,9 @@ from .mc_subs import generate_subhalopop
 class SubhaloCatalog(typing.NamedTuple):
     halo_ids: np.ndarray
     mah_params: np.ndarray
+    t_peak: np.ndarray
+    host_mah_params: np.ndarray
+    host_t_peak: np.ndarray
     lgmp_pen_inf: np.ndarray
     lgmp_ult_inf: np.ndarray
     lgmhost_pen_inf: np.ndarray
@@ -33,8 +36,8 @@ class SubhaloCatalog(typing.NamedTuple):
     t_pen_inf: np.ndarray
     t_ult_inf: np.ndarray
     upids: np.ndarray
-    pen_indx: np.ndarray
-    ult_indx: np.ndarray
+    pen_host_indx: np.ndarray
+    ult_host_indx: np.ndarray
 
 
 def mc_subhalo_catalog_singlez(
@@ -68,17 +71,51 @@ def mc_subhalo_catalog_singlez(
     -------
     SubhaloCatalog : namedtuple
 
-        mah_params: np.ndarray, shape (n_halos, 4)
-        lgmp_pen_inf: np.ndarray, shape (n_halos, )
-        lgmp_ult_inf: np.ndarray, shape (n_halos, )
-        lgmhost_pen_inf: np.ndarray, shape (n_halos, )
-        lgmhost_ult_inf: np.ndarray, shape (n_halos, )
+        halo_ids: array, shape (n_halos, )
+
+        mah_params: array, shape (n_halos, 4)
+
+        t_peak: array, shape (n_halos, s)
+
+        host_mah_params: array, shape (n_halos, 4)
+            mah_params of the host halo of every object
+            For host halos, host_mah_params==mah_params
+
+        host_t_peak: array, shape (n_halos, s)
+            t_peak of the host halo of every object
+            For host halos, host_t_peak==t_peak
+
+        lgmp_pen_inf: array, shape (n_halos, )
+            (sub)halo mass at t_pen_inf
+
+        lgmp_ult_inf: array, shape (n_halos, )
+            (sub)halo mass at t_ult_inf
+
+        lgmhost_pen_inf: array, shape (n_halos, )
+            Host halo mass at t_pen_inf.
+            For host halos, lgmhost_pen_inf = lgmp_pen_inf.
+            For subs, lgmhost_pen_inf is computed from the diffmah params of the host.
+
+        lgmhost_ult_inf: array, shape (n_halos, )
+            Host halo mass at t_ult_inf.
+            For host halos, lgmhost_ult_inf = lgmp_ult_inf.
+            For subs, lgmhost_ult_inf is computed from the diffmah params of the host.
+
         t_obs: float
-        t_pen_inf: np.ndarray, shape (n_halos, )
-        t_ult_inf: np.ndarray, shape (n_halos, )
-        upids: np.ndarray, shape (n_halos, )
-        penultimate_indx: np.ndarray, shape (n_halos, )
-        ultimate_indx: np.ndarray, shape (n_halos, )
+
+        t_pen_inf: array, shape (n_halos, )
+            Set equal to t_peak for both hosts and subs
+
+        t_ult_inf: array, shape (n_halos, )
+            Set equal to t_peak for both hosts and subs
+
+        upids: array, shape (n_halos, )
+
+        pen_indx: array, shape (n_halos, )
+            Index of the halo hosting the object at t_pen_inf
+
+        ult_indx: array, shape (n_halos, )
+            Index of the halo hosting the object at t_ult_inf
 
     """
 
@@ -109,6 +146,8 @@ def mc_subhalo_catalog_singlez(
         diffmahpop_params, subs_logmh_at_z, t_obs + _ZS, sub_key2
     )
 
+    t_peak = np.concatenate((hosts_t_peak, subs_t_peak))
+
     # For every sub, get diffmah params of its host halo
     subs_host_diffmah = DiffmahParams(*[x[subs_host_halo_indx] for x in hosts_diffmah])
     subs_host_t_peak = hosts_t_peak[subs_host_halo_indx]
@@ -116,6 +155,11 @@ def mc_subhalo_catalog_singlez(
     mah_params = DiffmahParams(
         *[np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_diffmah)]
     )
+
+    host_mah_params = DiffmahParams(
+        *[np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_host_diffmah)]
+    )
+    host_t_peak = np.concatenate((hosts_t_peak, subs_host_t_peak))
 
     subs_lgmp_pen_inf = _log_mah_kern(subs_diffmah, subs_t_peak, subs_t_peak, lgt0)
     subs_lgmp_ult_inf = subs_lgmp_pen_inf
@@ -138,13 +182,14 @@ def mc_subhalo_catalog_singlez(
         (np.zeros(n_cens).astype(int) - 1, hosts_halo_id[subs_host_halo_indx])
     )
 
-    penultimate_indx = np.concatenate(
-        (np.arange(n_cens).astype(int), subs_host_halo_indx)
-    )
-    ultimate_indx = np.concatenate((np.arange(n_cens).astype(int), subs_host_halo_indx))
+    pen_host_indx = np.concatenate((np.arange(n_cens).astype(int), subs_host_halo_indx))
+    ult_host_indx = np.concatenate((np.arange(n_cens).astype(int), subs_host_halo_indx))
     subcat = SubhaloCatalog(
         halo_ids,
         mah_params,
+        t_peak,
+        host_mah_params,
+        host_t_peak,
         lgmp_pen_inf,
         lgmp_ult_inf,
         lgmhost_pen_inf,
@@ -153,7 +198,7 @@ def mc_subhalo_catalog_singlez(
         t_pen_inf,
         t_ult_inf,
         upids,
-        penultimate_indx,
-        ultimate_indx,
+        pen_host_indx,
+        ult_host_indx,
     )
     return subcat
