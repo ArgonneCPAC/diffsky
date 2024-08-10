@@ -3,7 +3,7 @@
 
 import numpy as np
 
-from ..funopop_mono import (
+from ..funopop_ssfr import (
     DEFAULT_FUNOPOP_PARAMS,
     DEFAULT_FUNOPOP_U_PARAMS,
     get_bounded_funopop_params,
@@ -47,20 +47,20 @@ def test_get_unbounded_funopop_params_fails_when_passing_u_params():
 
 
 def test_get_funo_from_funopop_params_fails_when_passing_u_params():
-    logsm, logssfr = 10.0, -10.5
+    logssfr = -10.5
 
     try:
-        get_funo_from_funopop_params(DEFAULT_FUNOPOP_U_PARAMS, logsm, logssfr)
+        get_funo_from_funopop_params(DEFAULT_FUNOPOP_U_PARAMS, logssfr)
         raise NameError("get_funo_from_funopop_params should not accept u_params")
     except AttributeError:
         pass
 
 
 def test_get_funo_from_funopop_u_params_fails_when_passing_params():
-    logsm, logssfr = 10.0, -10.5
+    logssfr = -10.5
 
     try:
-        get_funo_from_funopop_u_params(DEFAULT_FUNOPOP_PARAMS, logsm, logssfr)
+        get_funo_from_funopop_u_params(DEFAULT_FUNOPOP_PARAMS, logssfr)
         raise NameError("get_funo_from_funopop_u_params should not accept params")
     except AttributeError:
         pass
@@ -76,30 +76,28 @@ def test_param_u_param_inversion():
 
 
 def test_get_funo_from_u_params_singlegal():
-    logsm, logssfr = 10.0, -10.5
+    logssfr = -10.5
 
-    funo = get_funo_from_funopop_u_params(DEFAULT_FUNOPOP_U_PARAMS, logsm, logssfr)
+    funo = get_funo_from_funopop_u_params(DEFAULT_FUNOPOP_U_PARAMS, logssfr)
     assert funo.shape == ()
     assert np.all(funo >= 0)
     assert np.all(funo <= 1)
 
     funopop_params = get_bounded_funopop_params(DEFAULT_FUNOPOP_U_PARAMS)
-    funo2 = get_funo_from_funopop_params(funopop_params, logsm, logssfr)
+    funo2 = get_funo_from_funopop_params(funopop_params, logssfr)
     assert np.allclose(funo, funo2, rtol=TOL)
 
 
 def test_get_funo_from_u_params_galpop():
-    logsm, logssfr = 10.0, -10.5
+    logssfr = -10.5
 
     n_gals = 255
     zz = np.zeros(n_gals)
-    funo = get_funo_from_funopop_u_params(
-        DEFAULT_FUNOPOP_U_PARAMS, logsm + zz, logssfr + zz
-    )
+    funo = get_funo_from_funopop_u_params(DEFAULT_FUNOPOP_U_PARAMS, logssfr + zz)
     assert funo.shape == (n_gals,)
     assert np.all(funo >= 0)
     assert np.all(funo <= 1)
 
     funopop_params = get_bounded_funopop_params(DEFAULT_FUNOPOP_U_PARAMS)
-    funo2 = get_funo_from_funopop_params(funopop_params, logsm + zz, logssfr + zz)
+    funo2 = get_funo_from_funopop_params(funopop_params, logssfr + zz)
     assert np.allclose(funo, funo2, rtol=TOL)
