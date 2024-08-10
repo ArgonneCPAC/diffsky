@@ -11,10 +11,9 @@ from ..utils import _inverse_sigmoid, _sigmoid
 
 DEFAULT_FUNOPOP_PDICT = OrderedDict(
     funo_logssfr_x0=-11.0,
-    funo_logssfr_ylo_logsm_x0=10.25,
+    funo_logsm_x0=10.5,
     funo_logssfr_ylo_logsm_ylo=0.1,
     funo_logssfr_ylo_logsm_yhi=0.05,
-    funo_logssfr_yhi_logsm_x0=10.75,
     funo_logssfr_yhi_logsm_ylo=0.3,
     funo_logssfr_yhi_logsm_yhi=0.15,
 )
@@ -25,10 +24,9 @@ FUNO_BOUNDS = 0.0, 0.5
 
 FUNOPOP_BOUNDS_PDICT = OrderedDict(
     funo_logssfr_x0=LOGSSFR_X0_BOUNDS,
-    funo_logssfr_ylo_logsm_x0=LOGSM_X0_BOUNDS,
+    funo_logsm_x0=LOGSM_X0_BOUNDS,
     funo_logssfr_ylo_logsm_ylo=FUNO_BOUNDS,
     funo_logssfr_ylo_logsm_yhi=FUNO_BOUNDS,
-    funo_logssfr_yhi_logsm_x0=LOGSM_X0_BOUNDS,
     funo_logssfr_yhi_logsm_ylo=FUNO_BOUNDS,
     funo_logssfr_yhi_logsm_yhi=FUNO_BOUNDS,
 )
@@ -51,16 +49,15 @@ def _funo_from_params_kern(
     logsm,
     logssfr,
     funo_logssfr_x0,
-    funo_logssfr_ylo_logsm_x0,
+    funo_logsm_x0,
     funo_logssfr_ylo_logsm_ylo,
     funo_logssfr_ylo_logsm_yhi,
-    funo_logssfr_yhi_logsm_x0,
     funo_logssfr_yhi_logsm_ylo,
     funo_logssfr_yhi_logsm_yhi,
 ):
     funo_logsm_q = _sigmoid(
         logsm,
-        funo_logssfr_ylo_logsm_x0,
+        funo_logsm_x0,
         LGSM_K,
         funo_logssfr_ylo_logsm_ylo,
         funo_logssfr_ylo_logsm_yhi,
@@ -68,7 +65,7 @@ def _funo_from_params_kern(
 
     funo_logsm_ms = _sigmoid(
         logsm,
-        funo_logssfr_yhi_logsm_x0,
+        funo_logsm_x0,
         LGSM_K,
         funo_logssfr_yhi_logsm_ylo,
         funo_logssfr_yhi_logsm_yhi,
