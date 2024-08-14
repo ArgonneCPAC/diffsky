@@ -6,6 +6,7 @@ from jax import random as jran
 from jax.nn import softplus
 
 from ..avpop_mono import (
+    AVPOP_PBOUNDS,
     DEFAULT_AVPOP_PARAMS,
     DEFAULT_AVPOP_U_PARAMS,
     DELTA_SUAV_AGE_BOUNDS,
@@ -56,6 +57,14 @@ def test_get_unbounded_avpop_params_fails_when_passing_u_params():
         raise NameError("get_unbounded_avpop_params should not accept u_params")
     except AttributeError:
         pass
+
+
+def test_default_params_are_in_bounds():
+
+    gen = zip(DEFAULT_AVPOP_PARAMS, DEFAULT_AVPOP_PARAMS._fields)
+    for val, key in gen:
+        bound = getattr(AVPOP_PBOUNDS, key)
+        assert bound[0] < val < bound[1]
 
 
 def test_get_av_from_avpop_params_fails_when_passing_u_params():
