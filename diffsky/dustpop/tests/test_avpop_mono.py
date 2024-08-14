@@ -13,7 +13,6 @@ from ..avpop_mono import (
     SUAV_BOUNDS,
     AvPopUParams,
     get_av_from_avpop_params_galpop,
-    get_av_from_avpop_params_scalar,
     get_av_from_avpop_params_singlegal,
     get_av_from_avpop_u_params_galpop,
     get_av_from_avpop_u_params_singlegal,
