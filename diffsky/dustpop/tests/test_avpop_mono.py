@@ -216,3 +216,31 @@ def test_get_av_from_avpop_is_monotonic_with_logsm_and_logssfr():
             assert np.all(av <= av_max)
             assert np.all(np.isfinite(av))
             assert np.all(np.diff(av, axis=0) >= -EPSILON)
+
+
+def test_get_av_is_always_within_bounds_for_all_u_params():
+    """Walk around AvPopUParams space and compute Av for 5_000 random galaxies.
+    Enforce that Av is always within bounds"""
+    n_tests = 1_000
+    n_gals = 5_000
+    n_params = len(DEFAULT_AVPOP_PARAMS)
+    ran_key = jran.PRNGKey(0)
+
+    suav_min = SUAV_BOUNDS[0] + DELTA_SUAV_AGE_BOUNDS[0]
+    av_min = softplus(suav_min)
+    suav_max = SUAV_BOUNDS[1] + DELTA_SUAV_AGE_BOUNDS[1]
+    av_max = softplus(suav_max)
+
+    for __ in range(n_tests):
+        ran_key, logsm_key, logssfr_key, z_key, u_p_key = jran.split(ran_key, 5)
+        logsm = jran.uniform(logsm_key, minval=0, maxval=20, shape=(n_gals,))
+        logssfr = jran.uniform(logssfr_key, minval=-20, maxval=0, shape=(n_gals,))
+        redshift = jran.uniform(z_key, minval=0, maxval=10, shape=(n_gals,))
+        u_params = jran.uniform(u_p_key, minval=-1_000, maxval=1_000, shape=(n_params,))
+        avpop_u_params = AvPopUParams(*u_params)
+        av = get_av_from_avpop_u_params_galpop(
+            avpop_u_params, logsm, logssfr, redshift, LGAGE_GYR
+        )
+
+        assert np.all(av >= av_min), (av.min(), av_min)
+        assert np.all(av <= av_max), (av.max(), av_max)
