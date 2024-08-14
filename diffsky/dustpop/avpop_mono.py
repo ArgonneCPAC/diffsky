@@ -16,27 +16,28 @@ LGSSFR_K = 5.0
 LGAGE_K = 5.0
 
 BOUNDING_K = 0.1
+SUAV_K = 0.5
 
 LGAGE_GYR_X0 = 6.5 - 9.0
 
 DEFAULT_AVPOP_PDICT = OrderedDict(
     suav_logsm_x0=10.0,
     suav_logssfr_x0=-10.25,
-    suav_logsm_ylo_q_z_ylo=-2.25,
-    suav_logsm_ylo_ms_z_ylo=-2.25,
-    suav_logsm_yhi_q_z_ylo=-2.25,
-    suav_logsm_yhi_ms_z_ylo=-2.25,
-    suav_logsm_ylo_q_z_yhi=-2.25,
-    suav_logsm_ylo_ms_z_yhi=-2.25,
-    suav_logsm_yhi_q_z_yhi=-2.25,
-    suav_logsm_yhi_ms_z_yhi=-2.25,
+    suav_logsm_ylo_q_z_ylo=-3.25,
+    suav_logsm_ylo_ms_z_ylo=-3.25,
+    suav_logsm_yhi_q_z_ylo=-3.25,
+    suav_logsm_yhi_ms_z_ylo=-3.25,
+    suav_logsm_ylo_q_z_yhi=-3.25,
+    suav_logsm_ylo_ms_z_yhi=-3.25,
+    suav_logsm_yhi_q_z_yhi=-3.25,
+    suav_logsm_yhi_ms_z_yhi=-3.25,
     suav_z_x0=1.0,
     delta_suav_age=0.2,
 )
 
 LGSM_X0_BOUNDS = (9.0, 11.0)
 LGSSFR_X0_BOUNDS = (-12.0, -8.0)
-SUAV_BOUNDS = (-4.0, 1.5)
+SUAV_BOUNDS = (-5.0, 1.5)
 REDSHIFT_BOUNDS = (0.0, 5.0)
 DELTA_SUAV_AGE_BOUNDS = (0.0, 1.0)
 
