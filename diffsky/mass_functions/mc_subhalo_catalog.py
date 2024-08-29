@@ -10,9 +10,9 @@ from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.cosmology.flat_wcdm import _age_at_z_kern
 from jax import random as jran
 
-from diffsky.mass_functions.mc_hosts import mc_host_halos_singlez
-from diffsky.mass_functions.mc_subs import generate_subhalopop
-from diffsky.mass_functions.mc_tinfall import mc_time_since_infall
+from .mc_hosts import mc_host_halos_singlez
+from .mc_subs import generate_subhalopop
+from .mc_tinfall import mc_time_since_infall
 
 
 class SubhaloCatalog(typing.NamedTuple):

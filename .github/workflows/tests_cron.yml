@@ -1,4 +1,4 @@
-name: test_main_branch_dependencies
+name: test-main-branch-diffstuff
 
 on:
   workflow_dispatch: null
