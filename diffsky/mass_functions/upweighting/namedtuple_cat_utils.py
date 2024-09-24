@@ -5,7 +5,8 @@ from .upweighting import downsample_and_upweight
 
 def downsample_and_upweight_cat(catalog, *args, **kwargs):
     in_sample, upweights = downsample_and_upweight(
-        catalog.lgmp_at_t_obs, catalog.ult_host_indx, *args, **kwargs)
+        catalog.lgmp_at_t_obs, catalog.ult_host_indx, *args, **kwargs
+    )
 
     in_sample = in_sample & in_sample[catalog.ult_host_indx]
     downsampled_cat = recursive_namedtuple_cut_and_reindex(catalog, in_sample)
@@ -14,8 +15,7 @@ def downsample_and_upweight_cat(catalog, *args, **kwargs):
     return downsampled_cat, upweights
 
 
-def recursive_namedtuple_cut_and_reindex(
-        catalog, selection, indx_str="indx"):
+def recursive_namedtuple_cut_and_reindex(catalog, selection, indx_str="indx"):
     """Perform selection on namedtuple of catalog columns"""
     catdict = catalog._asdict()
     indmap = jnp.cumsum(selection) - 1
@@ -32,8 +32,7 @@ def recursive_namedtuple_cut_and_reindex(
                     catdict[key] = val[selection]
 
         elif hasattr(val, "_asdict") and hasattr(val, "_replace"):
-            val = recursive_namedtuple_cut_and_reindex(
-                val, selection, indx_str)
+            val = recursive_namedtuple_cut_and_reindex(val, selection, indx_str)
             catdict[key] = val
         else:
             catdict[key] = val

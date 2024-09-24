@@ -1,13 +1,19 @@
-import jax.random
 import jax.numpy as jnp
+import jax.random
 
 from .. import hmf_model, predict_differential_hmf
 
 
-def downsample_and_upweight(lgmp_at_t_obs, ult_host_indx,
-                            z_obs=0.0, hmf_params=None,
-                            randkey=0, method="histogram",
-                            num_hist_bins=30, target_nhost=1000):
+def downsample_and_upweight(
+    lgmp_at_t_obs,
+    ult_host_indx,
+    z_obs=0.0,
+    hmf_params=None,
+    randkey=0,
+    method="histogram",
+    num_hist_bins=30,
+    target_nhost=1000,
+):
     if hmf_params is None:
         hmf_params = hmf_model.DEFAULT_HMF_PARAMS
     if isinstance(randkey, int):
@@ -22,8 +28,7 @@ def downsample_and_upweight(lgmp_at_t_obs, ult_host_indx,
         host_upweights = jnp.ones_like(host_lgmp)
 
     elif method == "histogram":
-        bins = jnp.linspace(host_lgmp.min(), host_lgmp.max(),
-                            num_hist_bins)
+        bins = jnp.linspace(host_lgmp.min(), host_lgmp.max(), num_hist_bins)
         bins = jnp.array([bins[0] - 1.0, *bins[1:-1], bins[-1] + 1.0])
         hist = jnp.maximum(jnp.histogram(host_lgmp, bins=bins)[0], 1)
         binned_upweights = (hist * num_hist_bins) / target_nhost
@@ -31,13 +36,12 @@ def downsample_and_upweight(lgmp_at_t_obs, ult_host_indx,
 
     elif method == "analytic":
         mass_range = host_lgmp.max() - host_lgmp.min()
-        host_dist = predict_differential_hmf(
-            hmf_params, host_lgmp, z_obs)
+        host_dist = predict_differential_hmf(hmf_params, host_lgmp, z_obs)
         host_dist = host_dist / host_dist.sum() * nhost**2
         host_upweights = host_dist * mass_range / target_nhost
 
     else:
-        raise ValueError(f"Unrecognized value for {method = }")
+        raise ValueError(f"Unrecognized value for method = {method}")
 
     host_upweights = jnp.maximum(host_upweights, 1.0)
     r = jax.random.uniform(randkey, (nhost,))

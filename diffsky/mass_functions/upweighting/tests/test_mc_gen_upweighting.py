@@ -6,19 +6,20 @@
 """
 
 import unittest
+
 import jax.numpy as jnp
 import jax.random
 
 from .... import mc_subhalos
 from ....sumstats.diffndhist import tw_ndhist_weighted
 from ...smhm_kernels import threeroll_smhm
-
 from ..namedtuple_cat_utils import (
-    downsample_and_upweight_cat, recursive_namedtuple_cut_and_reindex
+    downsample_and_upweight_cat,
+    recursive_namedtuple_cut_and_reindex,
 )
 
 Z_OBS = 0.0
-VOLUME = 100.0 ** 3
+VOLUME = 100.0**3
 SMF_BINS = jnp.linspace(10, 11.5, 16)
 LGMP_MIN = 11.5
 
@@ -45,23 +46,26 @@ def weighted_triweight_hist(x, bins, weights=None):
     if weights is None:
         weights = jnp.ones_like(x)
     sigma = jnp.full_like(x, bins[1] - bins[0])
-    return tw_ndhist_weighted(x[:, None], sigma[:, None], weights,
-                              bins[:-1, None], bins[1:, None])
+    return tw_ndhist_weighted(
+        x[:, None], sigma[:, None], weights, bins[:-1, None], bins[1:, None]
+    )
 
 
 def pred_smf(uparams_arr, cat, upweights=None):
     params_tup = threeroll_smhm.get_bounded_params(
-        smhm_uparams_array_to_tuple(uparams_arr))
+        smhm_uparams_array_to_tuple(uparams_arr)
+    )
     lgsm = threeroll_smhm.smhm_kernel(params_tup, cat.lgmp_at_t_obs)
     # smf = jnp.histogram(lgsm, bins=SMF_BINS, weights=upweights)[0]
-    smf = weighted_triweight_hist(
-        lgsm, SMF_BINS, upweights) / VOLUME / jnp.diff(SMF_BINS)
+    smf = (
+        weighted_triweight_hist(lgsm, SMF_BINS, upweights) / VOLUME / jnp.diff(SMF_BINS)
+    )
     return smf
 
 
 def loss(uparams_arr, cat, truth, upweights=None):
     pred = pred_smf(uparams_arr, cat, upweights=upweights)
-    return jnp.sum((pred - truth)**2)
+    return jnp.sum((pred - truth) ** 2)
 
 
 def make_jitted_lossfunc_and_gradlossfunc(cat, truth, upweights=None):
@@ -76,8 +80,7 @@ def make_jitted_lossfunc_and_gradlossfunc(cat, truth, upweights=None):
 class TestUpweighting(unittest.TestCase):
     def setUp(self):
         # Set default / shifted shamnet model parameters
-        self.params = smhm_uparams_tuple_to_array(
-            threeroll_smhm.DEFAULT_U_PARAMS)
+        self.params = smhm_uparams_tuple_to_array(threeroll_smhm.DEFAULT_U_PARAMS)
         self.params_hi = self.params + 1.0
         self.params_lo = self.params - 1.0
 
@@ -100,9 +103,7 @@ class TestUpweighting(unittest.TestCase):
         true_smf = pred_smf(self.params, cat)
 
         # Make jitted loss functions for all three methods
-        lossfunc, gradfunc = make_jitted_lossfunc_and_gradlossfunc(
-            cat, true_smf
-        )
+        lossfunc, gradfunc = make_jitted_lossfunc_and_gradlossfunc(cat, true_smf)
         lossfunc_hg, gradfunc_hg = make_jitted_lossfunc_and_gradlossfunc(
             cat_hg, true_smf, upweights=upweights_hg
         )
@@ -110,9 +111,14 @@ class TestUpweighting(unittest.TestCase):
             cat_an, true_smf, upweights=upweights_an
         )
 
-        self.jaxfuncs = (lossfunc, gradfunc,
-                         lossfunc_hg, gradfunc_hg,
-                         lossfunc_an, gradfunc_an)
+        self.jaxfuncs = (
+            lossfunc,
+            gradfunc,
+            lossfunc_hg,
+            gradfunc_hg,
+            lossfunc_an,
+            gradfunc_an,
+        )
 
     def test_downsampled_nhosts(self):
         min_accepted = 0.6 * self.target_nhost
@@ -121,9 +127,9 @@ class TestUpweighting(unittest.TestCase):
         assert min_accepted < self.nhost_an < max_accepted
 
     def test_nonzero_loss_and_grad_at_shifted_params(self):
-        (lossfunc, gradfunc,
-         lossfunc_hg, gradfunc_hg,
-         lossfunc_an, gradfunc_an) = self.jaxfuncs
+        (lossfunc, gradfunc, lossfunc_hg, gradfunc_hg, lossfunc_an, gradfunc_an) = (
+            self.jaxfuncs
+        )
 
         # Full catalog
         assert jnp.any(lossfunc(self.params_hi))
@@ -144,45 +150,47 @@ class TestUpweighting(unittest.TestCase):
         assert jnp.any(gradfunc_an(self.params_lo))
 
     def test_histogram_method_is_all_close(self):
-        (lossfunc, gradfunc,
-         lossfunc_hg, gradfunc_hg, _, _) = self.jaxfuncs
+        (lossfunc, gradfunc, lossfunc_hg, gradfunc_hg, _, _) = self.jaxfuncs
 
         # At default params
-        assert jnp.allclose(
-            lossfunc(self.params), lossfunc_hg(self.params), 1e-2, 1e-4)
-        assert jnp.allclose(
-            gradfunc(self.params), gradfunc_hg(self.params), 1e-2, 1e-4)
+        assert jnp.allclose(lossfunc(self.params), lossfunc_hg(self.params), 1e-2, 1e-4)
+        assert jnp.allclose(gradfunc(self.params), gradfunc_hg(self.params), 1e-2, 1e-4)
 
         # At upshifted params
         assert jnp.allclose(
-            lossfunc(self.params_hi), lossfunc_hg(self.params_hi), 1e-2, 1e-4)
+            lossfunc(self.params_hi), lossfunc_hg(self.params_hi), 1e-2, 1e-4
+        )
         assert jnp.allclose(
-            gradfunc(self.params_hi), gradfunc_hg(self.params_hi), 1e-2, 1e-4)
+            gradfunc(self.params_hi), gradfunc_hg(self.params_hi), 1e-2, 1e-4
+        )
 
         # At downshifted params
         assert jnp.allclose(
-            lossfunc(self.params_lo), lossfunc_hg(self.params_lo), 1e-2, 1e-4)
+            lossfunc(self.params_lo), lossfunc_hg(self.params_lo), 1e-2, 1e-4
+        )
         assert jnp.allclose(
-            gradfunc(self.params_lo), gradfunc_hg(self.params_lo), 1e-2, 1e-4)
+            gradfunc(self.params_lo), gradfunc_hg(self.params_lo), 1e-2, 1e-4
+        )
 
     def test_analytic_method_is_all_close(self):
-        (lossfunc, gradfunc,
-         _, _, lossfunc_an, gradfunc_an) = self.jaxfuncs
+        (lossfunc, gradfunc, _, _, lossfunc_an, gradfunc_an) = self.jaxfuncs
 
         # At default params
-        assert jnp.allclose(
-            lossfunc(self.params), lossfunc_an(self.params), 1e-2, 1e-4)
-        assert jnp.allclose(
-            gradfunc(self.params), gradfunc_an(self.params), 1e-2, 1e-4)
+        assert jnp.allclose(lossfunc(self.params), lossfunc_an(self.params), 1e-2, 1e-4)
+        assert jnp.allclose(gradfunc(self.params), gradfunc_an(self.params), 1e-2, 1e-4)
 
         # At upshifted params
         assert jnp.allclose(
-            lossfunc(self.params_hi), lossfunc_an(self.params_hi), 1e-2, 1e-4)
+            lossfunc(self.params_hi), lossfunc_an(self.params_hi), 1e-2, 1e-4
+        )
         assert jnp.allclose(
-            gradfunc(self.params_hi), gradfunc_an(self.params_hi), 1e-2, 1e-4)
+            gradfunc(self.params_hi), gradfunc_an(self.params_hi), 1e-2, 1e-4
+        )
 
         # At downshifted params
         assert jnp.allclose(
-            lossfunc(self.params_lo), lossfunc_an(self.params_lo), 1e-2, 1e-4)
+            lossfunc(self.params_lo), lossfunc_an(self.params_lo), 1e-2, 1e-4
+        )
         assert jnp.allclose(
-            gradfunc(self.params_lo), gradfunc_an(self.params_lo), 1e-2, 1e-4)
+            gradfunc(self.params_lo), gradfunc_an(self.params_lo), 1e-2, 1e-4
+        )
