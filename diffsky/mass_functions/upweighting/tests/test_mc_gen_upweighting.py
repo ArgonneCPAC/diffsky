@@ -9,6 +9,7 @@ import unittest
 
 import jax.numpy as jnp
 import jax.random
+import numpy as np
 
 from .... import mc_subhalos
 from ....sumstats.diffndhist import tw_ndhist_weighted
@@ -137,17 +138,23 @@ class TestUpweighting(unittest.TestCase):
         assert jnp.any(gradfunc(self.params_hi))
         assert jnp.any(gradfunc(self.params_lo))
 
+        assert np.all(np.isfinite(gradfunc(self.params_hi)))
+
         # Histogram-based upsampling
         assert jnp.any(lossfunc_hg(self.params_hi))
         assert jnp.any(lossfunc_hg(self.params_lo))
         assert jnp.any(gradfunc_hg(self.params_hi))
         assert jnp.any(gradfunc_hg(self.params_lo))
 
+        assert np.all(np.isfinite(gradfunc_hg(self.params_hi)))
+
         # Analytic upsampling
         assert jnp.any(lossfunc_an(self.params_hi))
         assert jnp.any(lossfunc_an(self.params_lo))
         assert jnp.any(gradfunc_an(self.params_hi))
         assert jnp.any(gradfunc_an(self.params_lo))
+
+        assert np.all(np.isfinite(gradfunc_an(self.params_hi)))
 
     def test_histogram_method_is_all_close(self):
         (lossfunc, gradfunc, lossfunc_hg, gradfunc_hg, _, _) = self.jaxfuncs
