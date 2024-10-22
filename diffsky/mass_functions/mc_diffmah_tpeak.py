@@ -5,15 +5,9 @@ import typing
 
 import numpy as np
 from diffmah.diffmah_kernels import DiffmahParams, _log_mah_kern
-from diffmah.diffmahpop_kernels.diffmahpop_params_monocensat import (
-    DEFAULT_DIFFMAHPOP_PARAMS,
-)
-from diffmah.diffmahpop_kernels.mc_diffmahpop_kernels_monocens import (
-    mc_diffmah_params_cenpop,
-)
-from diffmah.diffmahpop_kernels.mc_diffmahpop_kernels_monosats import (
-    mc_diffmah_params_satpop,
-)
+from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
+from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
+from diffmah.diffmahpop_kernels.mc_bimod_sats import mc_satpop
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.cosmology.flat_wcdm import _age_at_z_kern
 from jax import random as jran
@@ -25,9 +19,7 @@ from .mc_subs import generate_subhalopop
 class SubhaloCatalog(typing.NamedTuple):
     halo_ids: np.ndarray
     mah_params: np.ndarray
-    t_peak: np.ndarray
     host_mah_params: np.ndarray
-    host_t_peak: np.ndarray
     lgmp_at_t_obs: np.ndarray
     lgmp_pen_inf: np.ndarray
     lgmp_ult_inf: np.ndarray
@@ -136,40 +128,35 @@ def mc_subhalos(
     hosts_halo_id = np.arange(n_cens).astype(int)
     _ZH = np.zeros(n_cens)
 
-    hosts_diffmah, hosts_t_peak = mc_diffmah_params_cenpop(
-        diffmahpop_params, hosts_logmh_at_z, t_obs + _ZH, host_key2, lgt0
-    )
+    tarr = np.zeros(1) + 10**lgt0
+    hosts_diffmah = mc_cenpop(
+        diffmahpop_params, tarr, hosts_logmh_at_z, t_obs + _ZH, host_key2, lgt0
+    )[0]
 
     n_sats = subs_logmh_at_z.size
     _ZS = np.zeros(n_sats)
     halo_ids = np.arange(n_cens + n_sats).astype(int)
-    subs_diffmah, subs_t_peak = mc_diffmah_params_satpop(
-        diffmahpop_params, subs_logmh_at_z, t_obs + _ZS, sub_key2
-    )
-
-    t_peak = np.concatenate((hosts_t_peak, subs_t_peak))
+    subs_diffmah = mc_satpop(
+        diffmahpop_params, tarr, subs_logmh_at_z, t_obs + _ZS, sub_key2, lgt0
+    )[0]
 
     # For every sub, get diffmah params of its host halo
     subs_host_diffmah = DiffmahParams(*[x[subs_host_halo_indx] for x in hosts_diffmah])
-    subs_host_t_peak = hosts_t_peak[subs_host_halo_indx]
 
     mah_params = DiffmahParams(
         *[np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_diffmah)]
     )
-    lgmp_at_t_obs = np.array(_log_mah_kern(mah_params, t_obs, t_peak, lgt0))
+    lgmp_at_t_obs = np.array(_log_mah_kern(mah_params, t_obs, lgt0))
 
     host_mah_params = DiffmahParams(
         *[np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_host_diffmah)]
     )
-    host_t_peak = np.concatenate((hosts_t_peak, subs_host_t_peak))
 
-    subs_lgmp_pen_inf = _log_mah_kern(subs_diffmah, subs_t_peak, subs_t_peak, lgt0)
+    subs_lgmp_pen_inf = _log_mah_kern(subs_diffmah, subs_diffmah.t_peak, lgt0)
     subs_lgmp_ult_inf = subs_lgmp_pen_inf
 
-    subs_lgmhost_pen_inf = _log_mah_kern(
-        subs_host_diffmah, subs_t_peak, subs_host_t_peak, lgt0
-    )
-    subs_lgmhost_ult_inf = subs_lgmhost_pen_inf
+    subs_lgmhost_pen_inf = _log_mah_kern(subs_host_diffmah, subs_diffmah.t_peak, lgt0)
+    subs_lgmhost_ult_inf = subs_diffmah.t_peak
 
     lgmp_pen_inf = np.concatenate((hosts_logmh_at_z, subs_lgmp_pen_inf))
     lgmp_ult_inf = np.concatenate((hosts_logmh_at_z, subs_lgmp_ult_inf))
@@ -177,8 +164,8 @@ def mc_subhalos(
     lgmhost_pen_inf = np.concatenate((hosts_logmh_at_z, subs_lgmhost_pen_inf))
     lgmhost_ult_inf = np.concatenate((hosts_logmh_at_z, subs_lgmhost_ult_inf))
 
-    t_pen_inf = np.concatenate((hosts_t_peak, subs_t_peak))
-    t_ult_inf = np.concatenate((hosts_t_peak, subs_t_peak))
+    t_pen_inf = np.concatenate((hosts_diffmah.t_peak, subs_host_diffmah.t_peak))
+    t_ult_inf = np.concatenate((hosts_diffmah.t_peak, subs_host_diffmah.t_peak))
 
     upids = np.concatenate(
         (np.zeros(n_cens).astype(int) - 1, hosts_halo_id[subs_host_halo_indx])
@@ -189,9 +176,7 @@ def mc_subhalos(
     subcat = SubhaloCatalog(
         halo_ids,
         mah_params,
-        t_peak,
         host_mah_params,
-        host_t_peak,
         lgmp_at_t_obs,
         lgmp_pen_inf,
         lgmp_ult_inf,
