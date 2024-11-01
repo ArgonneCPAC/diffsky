@@ -1,14 +1,10 @@
-name: test-main-branch-diffstuff
+name: Test for Warnings
 
 on:
   workflow_dispatch: null
   schedule:
-    # Runs "every Monday & Thursday at 3:05am Central"
-    - cron: '5 8 * * 1,4'
-  push:
-    branches:
-      - main
-  pull_request: null
+    # Runs "First of every month at 3:15am Central"
+    - cron: '15 8 1 * *'
 
 jobs:
   tests:
@@ -27,7 +23,6 @@ jobs:
           channel-priority: strict
           show-channel-urls: true
           miniforge-version: latest
-          miniforge-variant: Mambaforge
           use-mamba: true
 
       - name: configure conda and install code
@@ -55,34 +50,8 @@ jobs:
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
           python -m pip install --no-build-isolation --no-deps -e .
 
-      - name: test
+      - name: test that no warnings are raised
         shell: bash -l {0}
         run: |
+          export PYTHONWARNINGS=error
           pytest -v diffsky --cov --cov-report=xml
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
-
-      - name: test versions
-        shell: bash -el {0}
-        run: |
-          pip uninstall diffsky --yes
-          [[ $(python setup.py --version) != "0.0.0" ]] || exit 1
-
-          rm -rf dist/*
-          python setup.py sdist
-          pip install --no-deps --no-build-isolation dist/*.tar.gz
-          pushd ..
-          python -c "import diffsky; assert diffsky.__version__ != '0.0.0'"
-          popd
-          pip uninstall diffsky --yes
-
-          rm -rf dist/*
-          python -m build --sdist . --outdir dist
-          pip install --no-deps --no-build-isolation dist/*.tar.gz
-          pushd ..
-          python -c "import diffsky; assert diffsky.__version__ != '0.0.0'"
-          popd
-          pip uninstall diffsky --yes
-
-          python -m pip install -v --no-deps --no-build-isolation -e .
