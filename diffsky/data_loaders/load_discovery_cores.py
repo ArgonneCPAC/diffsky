@@ -270,7 +270,10 @@ def load_discovery_diffsky_data(
         msk_impute_cores,
     )
 
-    return subcat, forest, tarr, sim, zarr, cosmo_dsps
+    _ret_names = ("subcat", "forest", "sim", "tarr", "zarr")
+    _ret = (subcat, forest, sim, tarr, zarr)
+    diffsky_data = dict([(key, val) for key, val in zip(_ret_names, _ret)])
+    return diffsky_data
 
 
 def impute_mask(mah_params, diffmah_data, n_min_mah=N_MIN_MAH_PTS):
