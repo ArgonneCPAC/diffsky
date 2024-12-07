@@ -23,6 +23,7 @@ log_mah_kern_vmap = jjit(vmap(_log_mah_kern, in_axes=_H))
 BNPAT_DIFFMAH = "subvol_{0}_chunk_{1}.hdf5"
 BNPAT_CORES = "m000p.coreforest.{0}.hdf5"
 N_DISCOVERY_SUBVOL = 96
+N_DISCOVERY_TIMESTEPS = 101
 
 DRNPAT_CORES_LCRC = "/lcrc/group/cosmodata/simulations/DESI_W0WA/{0}/coreforest/forest"
 DRNPAT_CORES_TASSO = "/Users/aphearin/work/DATA/DESI_W0WA/{0}"
