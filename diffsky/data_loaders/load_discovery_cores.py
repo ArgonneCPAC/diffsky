@@ -27,6 +27,7 @@ N_DISCOVERY_TIMESTEPS = 101
 
 DRNPAT_CORES_LCRC = "/lcrc/group/cosmodata/simulations/DESI_W0WA/{0}/coreforest/forest"
 DRNPAT_CORES_TASSO = "/Users/aphearin/work/DATA/DESI_W0WA/{0}"
+DRNPAT_DIFFMAH_LCRC = "/lcrc/project/halotools/DESI_W0WA/diffmah_fits/{0}"
 
 # MASS_COLNAME should be consistent with the column used in the diffmah fits
 MASS_COLNAME = "infall_tree_node_mass"
