@@ -8,7 +8,7 @@ on:
 
 jobs:
   tests:
-    name: test-latest-diffstuff-releases
+    name: tests
     runs-on: "ubuntu-latest"
 
     steps:
