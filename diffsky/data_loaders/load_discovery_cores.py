@@ -2,7 +2,7 @@
 """
 
 import os
-import typing
+from collections import namedtuple
 
 import h5py
 import numpy as np
@@ -26,7 +26,7 @@ N_DISCOVERY_SUBVOL = 96
 N_DISCOVERY_TIMESTEPS = 101
 
 DRNPAT_CORES_LCRC = "/lcrc/group/cosmodata/simulations/DESI_W0WA/{0}/coreforest/forest"
-DRNPAT_CORES_TASSO = "/Users/aphearin/work/DATA/DESI_W0WA/{0}"
+DRNPAT_CORES_POBOY = "/Users/aphearin/work/DATA/DESI_W0WA/{0}"
 DRNPAT_DIFFMAH_LCRC = "/lcrc/project/halotools/DESI_W0WA/diffmah_fits/{0}"
 
 # MASS_COLNAME should be consistent with the column used in the diffmah fits
@@ -36,20 +36,24 @@ MASS_COLNAME = "infall_tree_node_mass"
 N_MIN_MAH_PTS = 4
 
 
-class SubhaloCatalog(typing.NamedTuple):
-    mah_params: np.ndarray
-    logmp0: np.ndarray
-    logmp_pen_inf: np.ndarray
-    logmp_ult_inf: np.ndarray
-    logmhost_pen_inf: np.ndarray
-    logmhost_ult_inf: np.ndarray
-    t_obs: np.ndarray
-    t_pen_inf: np.ndarray
-    t_ult_inf: np.ndarray
-    upids: np.ndarray
-    t_pen_indx: np.ndarray
-    t_ult_indx: np.ndarray
-    fake_mah: np.ndarray
+_SUBCAT_COLNAMES = (
+    "mah_params",
+    "logmp_t_obs",
+    "logmp0",
+    "logmp_pen_inf",
+    "logmp_ult_inf",
+    "logmhost_pen_inf",
+    "logmhost_ult_inf",
+    "t_obs",
+    "t_pen_inf",
+    "t_ult_inf",
+    "upids",
+    "pen_host_indx",
+    "ult_host_indx",
+    "fake_mah",
+)
+
+SubhaloCatalog = namedtuple("SubhaloCatalog", _SUBCAT_COLNAMES)
 
 
 def _infer_drn_cores(sim_name, machine="LCRC"):
@@ -66,19 +70,21 @@ def _infer_drn_cores(sim_name, machine="LCRC"):
     machine = machine.upper()
     if machine == "LCRC":
         drn_cores = DRNPAT_CORES_LCRC.format(sim_pat)
-    elif machine == "TASSO":
-        drn_cores = DRNPAT_CORES_TASSO.format(sim_pat)
+        drn_diffmah = DRNPAT_DIFFMAH_LCRC.format(sim_pat)
+    elif machine == "POBOY":
+        drn_cores = DRNPAT_CORES_POBOY.format(sim_pat)
+        drn_diffmah = DRNPAT_CORES_POBOY.format(sim_pat)
     else:
         raise ValueError(f"Unrecognized machine = {machine}")
 
-    return sim_name, drn_cores
+    return sim_name, drn_cores, drn_diffmah
 
 
 def load_forest_chunk(
     subvol, chunknum, nchunks, sim_name=None, machine=None, drn_cores=None
 ):
     if drn_cores is None:
-        sim_name, drn_cores = _infer_drn_cores(sim_name, machine)
+        sim_name, drn_cores, drn_diffmah = _infer_drn_cores(sim_name, machine)
     bn_cores = BNPAT_CORES.format(subvol)
     fn_cores = os.path.join(drn_cores, bn_cores)
 
@@ -119,12 +125,12 @@ def get_infall_time_indices(
 
 
 def load_discovery_core_data(
+    sim_name,
     subvol,
     chunknum,
     nchunks,
     iz_obs,
-    drn_diffmah,
-    sim_name=None,
+    drn_diffmah=None,
     machine=None,
     drn_cores=None,
 ):
@@ -137,6 +143,11 @@ def load_discovery_core_data(
         machine=machine,
         drn_cores=drn_cores,
     )
+    if drn_diffmah is None:
+        _sim_name, _drn_cores, drn_diffmah = _infer_drn_cores(sim_name, machine)
+    else:
+        assert os.path.isdir(drn_diffmah)
+
     diffmah_data = _load_discovery_diffmah_data(
         drn_diffmah, subvol, chunknum, nchunks, N_DISCOVERY_SUBVOL
     )
@@ -148,24 +159,24 @@ def load_discovery_core_data(
 
 
 def load_discovery_diffsky_data(
+    sim_name,
     subvol,
     chunknum,
     nchunks,
     iz_obs,
-    drn_diffmah,
     ran_key,
-    sim_name=None,
     machine=None,
     drn_cores=None,
+    drn_diffmah=None,
     mass_colname=MASS_COLNAME,
 ):
     _res = load_discovery_core_data(
+        sim_name,
         subvol,
         chunknum,
         nchunks,
         iz_obs,
-        drn_diffmah,
-        sim_name=sim_name,
+        drn_diffmah=drn_diffmah,
         machine=machine,
         drn_cores=drn_cores,
     )
@@ -233,6 +244,9 @@ def load_discovery_diffsky_data(
     )
     mah_params_top_hosts, msk_impute_top_hosts = impute_mah_params(*args)
 
+    logmp_t_obs = _log_mah_kern(mah_params_cores, tarr[iz_obs], logt0)
+    logmp0 = _log_mah_kern(mah_params_cores, tarr[-1], logt0)
+
     logmp_t_pen_inf = log_mah_kern_vmap(mah_params_cores, tarr[indx_t_pen_inf], logt0)
     logmp_t_ult_inf = log_mah_kern_vmap(mah_params_cores, tarr[indx_t_ult_inf], logt0)
 
@@ -246,18 +260,17 @@ def load_discovery_diffsky_data(
     t_pen_inf = tarr[indx_t_pen_inf]
     t_ult_inf = tarr[indx_t_ult_inf]
 
-    pen_indx = forest["secondary_top_host_row"][:, iz_obs]
-    ult_indx = forest["top_host_row"][:, iz_obs]
+    pen_host_indx = forest["secondary_top_host_row"][:, iz_obs]
+    ult_host_indx = forest["top_host_row"][:, iz_obs]
 
     n_halos = forest["top_host_row"].shape[0]
     t_obs_arr = np.zeros(n_halos) + t_obs
 
     upids = np.where(is_central_sim, -1, forest["top_host_row"][:, iz_obs])
 
-    logmp0 = np.log10(mah_sim[:, -1])
-
     subcat = SubhaloCatalog(
         mah_params_cores,
+        logmp_t_obs,
         logmp0,
         logmp_t_pen_inf,
         logmp_t_ult_inf,
@@ -267,8 +280,8 @@ def load_discovery_diffsky_data(
         t_pen_inf,
         t_ult_inf,
         upids,
-        pen_indx,
-        ult_indx,
+        pen_host_indx,
+        ult_host_indx,
         msk_impute_cores,
     )
 

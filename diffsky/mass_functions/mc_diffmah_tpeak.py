@@ -1,7 +1,7 @@
 """
 """
 
-import typing
+from collections import namedtuple
 
 import numpy as np
 from diffmah.diffmah_kernels import DiffmahParams, _log_mah_kern
@@ -15,22 +15,24 @@ from jax import random as jran
 from .mc_hosts import mc_host_halos_singlez
 from .mc_subs import generate_subhalopop
 
-
-class SubhaloCatalog(typing.NamedTuple):
-    halo_ids: np.ndarray
-    mah_params: np.ndarray
-    host_mah_params: np.ndarray
-    lgmp_at_t_obs: np.ndarray
-    lgmp_pen_inf: np.ndarray
-    lgmp_ult_inf: np.ndarray
-    lgmhost_pen_inf: np.ndarray
-    lgmhost_ult_inf: np.ndarray
-    t_obs: np.ndarray
-    t_pen_inf: np.ndarray
-    t_ult_inf: np.ndarray
-    upids: np.ndarray
-    pen_host_indx: np.ndarray
-    ult_host_indx: np.ndarray
+_SUBCAT_KEYS = (
+    "halo_ids",
+    "mah_params",
+    "host_mah_params",
+    "logmp0",
+    "logmp_t_obs",
+    "logmp_pen_inf",
+    "logmp_ult_inf",
+    "logmhost_pen_inf",
+    "logmhost_ult_inf",
+    "t_obs",
+    "t_pen_inf",
+    "t_ult_inf",
+    "upids",
+    "pen_host_indx",
+    "ult_host_indx",
+)
+SubhaloCatalog = namedtuple("SubhaloCatalog", _SUBCAT_KEYS)
 
 
 def mc_subhalos(
@@ -146,7 +148,8 @@ def mc_subhalos(
     mah_params = DiffmahParams(
         *[np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_diffmah)]
     )
-    lgmp_at_t_obs = np.array(_log_mah_kern(mah_params, t_obs, lgt0))
+    logmp0 = np.array(_log_mah_kern(mah_params, t_0, lgt0))
+    lgmp_t_obs = np.array(_log_mah_kern(mah_params, t_obs, lgt0))
 
     host_mah_params = DiffmahParams(
         *[np.concatenate((x, y)) for x, y in zip(hosts_diffmah, subs_host_diffmah)]
@@ -177,7 +180,8 @@ def mc_subhalos(
         halo_ids,
         mah_params,
         host_mah_params,
-        lgmp_at_t_obs,
+        logmp0,
+        lgmp_t_obs,
         lgmp_pen_inf,
         lgmp_ult_inf,
         lgmhost_pen_inf,
