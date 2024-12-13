@@ -5,7 +5,7 @@ from .upweighting import downsample_and_upweight
 
 def downsample_and_upweight_cat(catalog, *args, **kwargs):
     in_sample, upweights = downsample_and_upweight(
-        catalog.lgmp_at_t_obs, catalog.ult_host_indx, *args, **kwargs
+        catalog.logmp_t_obs, catalog.ult_host_indx, *args, **kwargs
     )
 
     in_sample = in_sample & in_sample[catalog.ult_host_indx]
