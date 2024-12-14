@@ -11,7 +11,7 @@ from diffmah.diffmah_kernels import DEFAULT_MAH_PARAMS, MAH_PBOUNDS, _log_mah_ke
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_diffmah_cenpop
 from diffmah.diffmahpop_kernels.mc_bimod_sats import mc_diffmah_satpop
-from diffmah.fitting_helpers import compute_indx_t_peak_halopop
+from diffmah.fitting_helpers.diffmah_fitter_helpers import compute_indx_t_peak_halopop
 from dsps.cosmology import flat_wcdm
 from jax import jit as jjit
 from jax import random as jran
