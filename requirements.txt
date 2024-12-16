@@ -1,6 +1,6 @@
 numpy
 jax
-diffmah>=0.6.1
+diffmah>=0.6.3
 diffstar>=0.3.2
 dsps
 h5py

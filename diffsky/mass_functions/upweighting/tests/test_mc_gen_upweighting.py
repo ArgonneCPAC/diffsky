@@ -31,7 +31,7 @@ def load_mc_halo_cat(seed=0):
     # Perform initial MC generation slightly below LGMP_MIN
     raw_cat = mc_subhalos(randkey, LGMP_MIN - 0.2, Z_OBS, VOLUME)
 
-    cut = raw_cat.lgmp_at_t_obs[raw_cat.ult_host_indx] >= LGMP_MIN
+    cut = raw_cat.logmp_t_obs[raw_cat.ult_host_indx] >= LGMP_MIN
     return recursive_namedtuple_cut_and_reindex(raw_cat, cut)
 
 
@@ -56,7 +56,7 @@ def pred_smf(uparams_arr, cat, upweights=None):
     params_tup = threeroll_smhm.get_bounded_params(
         smhm_uparams_array_to_tuple(uparams_arr)
     )
-    lgsm = threeroll_smhm.smhm_kernel(params_tup, cat.lgmp_at_t_obs)
+    lgsm = threeroll_smhm.smhm_kernel(params_tup, cat.logmp_t_obs)
     # smf = jnp.histogram(lgsm, bins=SMF_BINS, weights=upweights)[0]
     smf = (
         weighted_triweight_hist(lgsm, SMF_BINS, upweights) / VOLUME / jnp.diff(SMF_BINS)
