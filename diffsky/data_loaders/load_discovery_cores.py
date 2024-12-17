@@ -148,9 +148,7 @@ def load_discovery_core_data(
     else:
         assert os.path.isdir(drn_diffmah)
 
-    diffmah_data = _load_discovery_diffmah_data(
-        drn_diffmah, subvol, chunknum, nchunks, N_DISCOVERY_SUBVOL
-    )
+    diffmah_data = _load_discovery_diffmah_data(drn_diffmah, subvol, chunknum, nchunks)
     mah_params = DEFAULT_MAH_PARAMS._make(
         [diffmah_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
@@ -378,13 +376,11 @@ def _load_forest_t_indices(
     return ret
 
 
-def _load_discovery_diffmah_data(drn, subvol, chunknum, nchunks, n_subvol_tot):
-    nchar_subvol = len(str(n_subvol_tot))
+def _load_discovery_diffmah_data(drn, subvol, chunknum, nchunks):
     nchar_chunks = len(str(nchunks))
-    subvol_str = f"{subvol:0{nchar_subvol}d}"
     chunknum_str = f"{chunknum:0{nchar_chunks}d}"
 
-    bname = BNPAT_DIFFMAH.format(subvol_str, chunknum_str)
+    bname = BNPAT_DIFFMAH.format(subvol, chunknum_str)
     fn_diffmah = os.path.join(drn, bname)
 
     diffmah_data = _load_flat_hdf5(fn_diffmah)
