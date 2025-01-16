@@ -25,10 +25,10 @@ jobs:
       - name: configure conda and install code
         shell: bash -l {0}
         run: |
-          mamba install --quiet \
+          conda install --quiet \
             --file=requirements.txt
           python -m pip install --no-deps -e .
-          mamba install -y -q \
+          conda install -y -q \
             flake8
 
       - name: lint

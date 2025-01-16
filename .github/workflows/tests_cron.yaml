@@ -27,16 +27,15 @@ jobs:
           channel-priority: strict
           show-channel-urls: true
           miniforge-version: latest
-          use-mamba: true
 
       - name: configure conda and install code
       # Test against current main branch of all diff+ dependencies
         shell: bash -l {0}
         run: |
           conda config --set always_yes yes
-          mamba install --quiet \
+          conda install --quiet \
             --file=requirements.txt
-          mamba install -y -q \
+          conda install -y -q \
             flake8 \
             pytest \
             pytest-xdist \
