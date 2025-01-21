@@ -2,5 +2,5 @@ numpy
 jax
 diffmah>=0.7.0
 diffstar>=0.3.3
-dsps
+dsps>=0.4.0
 h5py
