@@ -14,7 +14,7 @@ dependencies:
   - numpy
   - jax
   - jaxlib
-  - diffmah
-  - diffstar
-  - dsps
+  - diffmah>=0.7.0
+  - diffstar>=0.3.3
+  - dsps>=0.4.0
   - h5py
