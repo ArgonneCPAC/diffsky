@@ -2,19 +2,20 @@
 
 import argparse
 import os
-from glob import glob
 from time import time
 
 import numpy as np
 from diffmah.data_loaders.load_hacc_mahs import load_mahs_per_rank
 from mpi4py import MPI
 
+from diffsky.data_loaders import load_hacc_cores as lhc
+
 TMP_OUTPAT = "tmp_mah_fits_rank_{0}.dat"
 
 DRN_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LJ_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 
-BNPAT = "m000p.coreforest.{}.hdf5"
+BNPAT_CORE_DATA = "m000p.coreforest.{}.hdf5"
 
 NCHUNKS = 20
 NUM_SUBVOLS_LJ = 192
@@ -26,7 +27,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("outdir", help="Output directory")
-    parser.add_argument("-indir", help="Root directory storing HACC sim", default=None)
+    parser.add_argument("-indir_cores", help="Drn of HACC core data", default=None)
     parser.add_argument("-sim_name", help="Simulation name", default="LastJourney")
     parser.add_argument(
         "-machine",
@@ -49,7 +50,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    indir = args.indir
+    indir_cores = args.indir_cores
     sim_name = args.sim_name
     machine = args.machine
     istart, iend = args.istart, args.iend
@@ -64,34 +65,32 @@ if __name__ == "__main__":
     os.makedirs(outdir, exist_ok=True)
 
     if args.machine == "poboy":
-        indir = DRN_LJ_POBOY
+        indir_cores = DRN_LJ_POBOY
     elif args.machine == "lcrc":
-        indir = DRN_LJ_LCRC
+        indir_cores = DRN_LJ_LCRC
     else:
         raise ValueError("Unrecognized machine name")
 
     start = time()
 
-    all_avail_subvol_fnames = glob(os.path.join(indir, "m000p.coreforest.*.hdf5"))
-    all_avail_subvol_bnames = [os.path.basename(fn) for fn in all_avail_subvol_fnames]
-    all_avail_subvolumes = [int(s.split(".")[2]) for s in all_avail_subvol_bnames]
-    all_avail_subvolumes = np.array(sorted(all_avail_subvolumes))
-
     if args.test:
         subvolumes = [0]
         chunks = [0, 1]
     else:
-        subvolumes = all_avail_subvolumes[istart:iend]
+        subvolumes = np.arange(istart, iend + 1).astype(int)
         chunks = np.arange(nchunks).astype(int)
+    subvolumes = sorted(subvolumes)
+
+    all_avail_subvol_fnames = lhc._get_all_avail_basenames(
+        indir_cores, BNPAT_CORE_DATA, subvolumes
+    )
 
     for isubvol in subvolumes:
         isubvol_start = time()
 
-        nchar_subvol = len(str(num_subvols_tot))
-
         subvol_str = f"{isubvol}"
-        bname = BNPAT.format(subvol_str)
-        fn_data = os.path.join(indir, bname)
+        bname_core_data = BNPAT_CORE_DATA.format(subvol_str)
+        fn_data = os.path.join(indir_cores, bname_core_data)
 
         for chunknum in chunks:
             comm.Barrier()
