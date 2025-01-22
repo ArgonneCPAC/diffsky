@@ -11,8 +11,7 @@ from mpi4py import MPI
 
 TMP_OUTPAT = "tmp_mah_fits_rank_{0}.dat"
 
-LCRC_DRN_PAT = "/lcrc/group/cosmodata/simulations/DESI_W0WA/{0}/coreforest/forest"
-POBOY_DRN_PAT = "/Users/aphearin/work/DATA/DESI_W0WA/{0}"
+DRN_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 
 BNPAT = "m000p.coreforest.{}.hdf5"
 
@@ -25,18 +24,18 @@ if __name__ == "__main__":
     rank, nranks = comm.Get_rank(), comm.Get_size()
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("indir", help="Root directory storing both Discovery sims")
-    parser.add_argument("sim_name", help="Simulation name", choices=["LCDM", "W0WA"])
     parser.add_argument("outdir", help="Output directory")
+    parser.add_argument("-indir", help="Root directory storing HACC sim", default=None)
+    parser.add_argument("-sim_name", help="Simulation name", default="LastJourney")
+    parser.add_argument("-machine", help="Machine name", default="poboy", type=str)
     parser.add_argument(
-        "-outbase", help="Basename of the output hdf5 file", default="diffmah_fits.h5"
+        "-outbase", help="Basename of the output hdf5 file", default="sfh_mock.hdf5"
     )
     parser.add_argument("-test", help="Short test run?", type=bool, default=False)
     parser.add_argument("-istart", help="First subvolume in loop", type=int, default=0)
     parser.add_argument(
         "-iend", help="Last subvolume in loop", type=int, default=NUM_SUBVOLS_DISCOVERY
     )
-    parser.add_argument("-nstep", help="Number of gd steps", type=int, default=200)
     parser.add_argument("-nchunks", help="Number of chunks", type=int, default=NCHUNKS)
     parser.add_argument(
         "-num_subvols_tot",
@@ -46,8 +45,9 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    indir = args.indir
     sim_name = args.sim_name
-    nstep = args.nstep
+    machine = args.machine
     istart, iend = args.istart, args.iend
 
     num_subvols_tot = args.num_subvols_tot  # needed for string formatting
@@ -59,13 +59,10 @@ if __name__ == "__main__":
 
     os.makedirs(outdir, exist_ok=True)
 
-    if args.indir == "POBOY":
-        indir = POBOY_DRN_PAT.format(sim_name)
-    elif args.indir == "LCRC":
-        indir = LCRC_DRN_PAT.format(sim_name)
+    if args.machine == "poboy":
+        indir = DRN_LJ_POBOY
     else:
-        indir = args.indir
-    sim_name = "Discovery" + sim_name
+        raise ValueError("Unrecognized machine name")
 
     start = time()
 
