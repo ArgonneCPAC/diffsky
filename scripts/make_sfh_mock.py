@@ -72,7 +72,7 @@ if __name__ == "__main__":
     all_avail_subvolumes = np.array(sorted(all_avail_subvolumes))
 
     if args.test:
-        subvolumes = [all_avail_subvolumes[0]]
+        subvolumes = [0]
         chunks = [0, 1, 2]
     else:
         subvolumes = all_avail_subvolumes[istart:iend]
