@@ -12,11 +12,12 @@ from mpi4py import MPI
 TMP_OUTPAT = "tmp_mah_fits_rank_{0}.dat"
 
 DRN_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
+DRN_LJ_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 
 BNPAT = "m000p.coreforest.{}.hdf5"
 
 NCHUNKS = 20
-NUM_SUBVOLS_DISCOVERY = 96
+NUM_SUBVOLS_LJ = 192
 
 
 if __name__ == "__main__":
@@ -27,21 +28,24 @@ if __name__ == "__main__":
     parser.add_argument("outdir", help="Output directory")
     parser.add_argument("-indir", help="Root directory storing HACC sim", default=None)
     parser.add_argument("-sim_name", help="Simulation name", default="LastJourney")
-    parser.add_argument("-machine", help="Machine name", default="poboy", type=str)
+    parser.add_argument(
+        "-machine",
+        help="Machine name",
+        default="poboy",
+        type=str,
+        choices=["lcrc", "poboy"],
+    )
     parser.add_argument(
         "-outbase", help="Basename of the output hdf5 file", default="sfh_mock.hdf5"
     )
     parser.add_argument("-test", help="Short test run?", type=bool, default=False)
     parser.add_argument("-istart", help="First subvolume in loop", type=int, default=0)
     parser.add_argument(
-        "-iend", help="Last subvolume in loop", type=int, default=NUM_SUBVOLS_DISCOVERY
+        "-iend", help="Last subvolume in loop", type=int, default=NUM_SUBVOLS_LJ
     )
     parser.add_argument("-nchunks", help="Number of chunks", type=int, default=NCHUNKS)
     parser.add_argument(
-        "-num_subvols_tot",
-        help="Total # subvols",
-        type=int,
-        default=NUM_SUBVOLS_DISCOVERY,
+        "-num_subvols_tot", help="Total # subvols", type=int, default=NUM_SUBVOLS_LJ
     )
 
     args = parser.parse_args()
@@ -61,6 +65,8 @@ if __name__ == "__main__":
 
     if args.machine == "poboy":
         indir = DRN_LJ_POBOY
+    elif args.machine == "lcrc":
+        indir = DRN_LJ_LCRC
     else:
         raise ValueError("Unrecognized machine name")
 
@@ -73,7 +79,7 @@ if __name__ == "__main__":
 
     if args.test:
         subvolumes = [0]
-        chunks = [0, 1, 2]
+        chunks = [0, 1]
     else:
         subvolumes = all_avail_subvolumes[istart:iend]
         chunks = np.arange(nchunks).astype(int)
