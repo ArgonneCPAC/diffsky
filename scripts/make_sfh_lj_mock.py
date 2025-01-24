@@ -31,6 +31,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("outdir", help="Output directory")
+    parser.add_argument(
+        "-redshift", help="redshift of output mock", type=float, default=0.0
+    )
     parser.add_argument("-indir_cores", help="Drn of HACC core data", default=None)
     parser.add_argument("-indir_diffmah", help="Drn of diffmah data", default=None)
     parser.add_argument("-sim_name", help="Simulation name", default="LastJourney")
@@ -65,6 +68,8 @@ if __name__ == "__main__":
     outdir = args.outdir
     outbase = args.outbase
     nchunks = args.nchunks
+
+    IZ_OBS = 100
 
     nchar_chunks = len(str(nchunks))
 
@@ -113,15 +118,15 @@ if __name__ == "__main__":
             nhalos_for_rank = mahs_for_rank.shape[0]
             nhalos_tot = comm.reduce(nhalos_for_rank, op=MPI.SUM)
 
-            load_discovery_diffsky_data(
+            lhc.load_diffsky_data(
                 sim_name,
                 isubvol,
                 chunknum,
                 nchunks,
-                iz_obs,
+                IZ_OBS,
                 chunk_key_for_rank,
-                drn_cores=indir_cores,
-                drn_diffmah=indir_diffmah,
+                indir_cores,
+                indir_diffmah,
             )
 
             chunknum_str = f"{chunknum:0{nchar_chunks}d}"
