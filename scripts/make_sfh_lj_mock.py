@@ -6,6 +6,7 @@ from time import time
 
 import numpy as np
 from diffmah.data_loaders.load_hacc_mahs import load_mahs_per_rank
+from jax import random as jran
 from mpi4py import MPI
 
 from diffsky.data_loaders import load_hacc_cores as lhc
@@ -69,6 +70,8 @@ if __name__ == "__main__":
 
     os.makedirs(outdir, exist_ok=True)
 
+    rank_key = jran.key(rank)
+
     if args.machine == "poboy":
         indir_cores = DRN_LJ_POBOY
         indir_diffmah = DRN_LJ_DMAH_POBOY
@@ -101,6 +104,7 @@ if __name__ == "__main__":
 
         for chunknum in chunks:
             comm.Barrier()
+            rank_key, chunk_key_for_rank = jran.split(rank_key, 2)
             ichunk_start = time()
 
             tarr, mahs_for_rank = load_mahs_per_rank(
@@ -108,6 +112,17 @@ if __name__ == "__main__":
             )
             nhalos_for_rank = mahs_for_rank.shape[0]
             nhalos_tot = comm.reduce(nhalos_for_rank, op=MPI.SUM)
+
+            load_discovery_diffsky_data(
+                sim_name,
+                isubvol,
+                chunknum,
+                nchunks,
+                iz_obs,
+                chunk_key_for_rank,
+                drn_cores=indir_cores,
+                drn_diffmah=indir_diffmah,
+            )
 
             chunknum_str = f"{chunknum:0{nchar_chunks}d}"
             outbase_chunk = f"subvol_{subvol_str}_chunk_{chunknum_str}"
