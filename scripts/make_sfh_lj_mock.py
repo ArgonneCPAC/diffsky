@@ -15,6 +15,9 @@ TMP_OUTPAT = "tmp_mah_fits_rank_{0}.dat"
 DRN_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LJ_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 
+DRN_LJ_DMAH_POBOY = "/Users/aphearin/work/DATA/LastJourney/diffmah_fits"
+DRN_LJ_DMAH_LCRC = "/lcrc/project/halotools/LastJourney/diffmah_fits"
+
 BNPAT_CORE_DATA = "m000p.coreforest.{}.hdf5"
 
 NCHUNKS = 20
@@ -28,6 +31,7 @@ if __name__ == "__main__":
 
     parser.add_argument("outdir", help="Output directory")
     parser.add_argument("-indir_cores", help="Drn of HACC core data", default=None)
+    parser.add_argument("-indir_diffmah", help="Drn of diffmah data", default=None)
     parser.add_argument("-sim_name", help="Simulation name", default="LastJourney")
     parser.add_argument(
         "-machine",
@@ -51,6 +55,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     indir_cores = args.indir_cores
+    indir_diffmah = args.indir_diffmah
     sim_name = args.sim_name
     machine = args.machine
     istart, iend = args.istart, args.iend
@@ -66,8 +71,10 @@ if __name__ == "__main__":
 
     if args.machine == "poboy":
         indir_cores = DRN_LJ_POBOY
+        indir_diffmah = DRN_LJ_DMAH_POBOY
     elif args.machine == "lcrc":
         indir_cores = DRN_LJ_LCRC
+        indir_diffmah = DRN_LJ_DMAH_LCRC
     else:
         raise ValueError("Unrecognized machine name")
 
@@ -106,6 +113,7 @@ if __name__ == "__main__":
             outbase_chunk = f"subvol_{subvol_str}_chunk_{chunknum_str}"
             rank_basepat = "_".join((outbase_chunk, TMP_OUTPAT))
             rank_outname = os.path.join(args.outdir, rank_basepat).format(rank)
+            raise NotImplementedError()
 
             comm.Barrier()
             with open(rank_outname, "w") as fout:
