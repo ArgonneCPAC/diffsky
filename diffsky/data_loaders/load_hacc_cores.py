@@ -440,3 +440,16 @@ def _scatter_nd(array, axis=0, comm=COMM, root=0):
     else:
         ans = comm.recv(source=root)
     return ans
+
+
+def get_diffstar_cosmo_quantities(sim_name):
+    sim = HACCSim.simulations[sim_name]
+    fb = sim.cosmo.Omega_b / sim.cosmo.Omega_m
+
+    cosmo_dsps = flat_wcdm.CosmoParams(
+        *(sim.cosmo.Omega_m, sim.cosmo.w0, sim.cosmo.wa, sim.cosmo.h)
+    )
+    t0 = flat_wcdm.age_at_z0(*cosmo_dsps)
+    lgt0 = np.log10(t0)
+
+    return fb, lgt0
