@@ -16,6 +16,14 @@ from jax import jit as jjit
 from jax import random as jran
 from jax import vmap
 
+try:
+    from mpi4py import MPI
+
+    COMM = MPI.COMM_WORLD
+except ImportError:
+    MPI = COMM = None
+
+
 _H = (0, 0, None)
 log_mah_kern_vmap = jjit(vmap(_log_mah_kern, in_axes=_H))
 
@@ -46,12 +54,52 @@ _SUBCAT_COLNAMES = (
 )
 SubhaloCatalog = namedtuple("SubhaloCatalog", _SUBCAT_COLNAMES)
 
+DIFFSKY_DATA_DICT_KEYS = ("subcat", "forest", "sim", "tarr", "zarr")
+
 
 def _get_all_avail_basenames(drn, pat, subvolumes):
     fname_list = [os.path.join(drn, pat.format(i)) for i in subvolumes]
     for fn in fname_list:
         assert os.path.isfile(fn)
     return fname_list
+
+
+def load_diffsky_data_per_rank(
+    sim_name,
+    subvol,
+    chunknum,
+    nchunks,
+    iz_obs,
+    ran_key,
+    drn_cores,
+    drn_diffmah,
+    mass_colname=MASS_COLNAME,
+    comm=None,
+):
+    if comm is None:
+        comm = MPI.COMM_WORLD
+
+    if comm.rank == 0:
+        diffsky_data = load_diffsky_data(
+            sim_name,
+            subvol,
+            chunknum,
+            nchunks,
+            iz_obs,
+            ran_key,
+            drn_cores,
+            drn_diffmah,
+            mass_colname=mass_colname,
+        )
+    else:
+        diffsky_data = dict()
+        diffsky_data["tarr"] = None
+
+    diffsky_data["tarr"] = comm.bcast(diffsky_data["tarr"], root=0)
+    # mahs_for_rank = _scatter_nd(mahs, axis=0, comm=comm, root=0)
+    # tarr = comm.bcast(tarr, root=0)
+
+    return diffsky_data
 
 
 def load_diffsky_data(
@@ -179,9 +227,8 @@ def load_diffsky_data(
         msk_impute_cores,
     )
 
-    _ret_names = ("subcat", "forest", "sim", "tarr", "zarr")
     _ret = (subcat, forest, sim, tarr, zarr)
-    diffsky_data = dict([(key, val) for key, val in zip(_ret_names, _ret)])
+    diffsky_data = dict([(key, val) for key, val in zip(DIFFSKY_DATA_DICT_KEYS, _ret)])
     return diffsky_data
 
 

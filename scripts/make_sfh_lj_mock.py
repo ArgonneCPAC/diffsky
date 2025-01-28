@@ -112,13 +112,13 @@ if __name__ == "__main__":
             rank_key, chunk_key_for_rank = jran.split(rank_key, 2)
             ichunk_start = time()
 
-            tarr, mahs_for_rank = load_mahs_per_rank(
-                fn_data, sim_name, chunknum, nchunks, comm=MPI.COMM_WORLD
-            )
-            nhalos_for_rank = mahs_for_rank.shape[0]
-            nhalos_tot = comm.reduce(nhalos_for_rank, op=MPI.SUM)
+            # tarr, mahs_for_rank = load_mahs_per_rank(
+            #     fn_data, sim_name, chunknum, nchunks, comm=MPI.COMM_WORLD
+            # )
+            # nhalos_for_rank = mahs_for_rank.shape[0]
+            # nhalos_tot = comm.reduce(nhalos_for_rank, op=MPI.SUM)
 
-            lhc.load_diffsky_data(
+            diffsky_data = lhc.load_diffsky_data_per_rank(
                 sim_name,
                 isubvol,
                 chunknum,
@@ -127,13 +127,17 @@ if __name__ == "__main__":
                 chunk_key_for_rank,
                 indir_cores,
                 indir_diffmah,
+                comm=MPI.COMM_WORLD,
             )
 
             chunknum_str = f"{chunknum:0{nchar_chunks}d}"
             outbase_chunk = f"subvol_{subvol_str}_chunk_{chunknum_str}"
             bname = TMP_OUTPAT.format(subvol_str, chunknum_str, rank)
             rank_outname = os.path.join(args.outdir, bname)
-            raise NotImplementedError()
+
+            print(f"Rank = {rank} tarr = {diffsky_data['tarr']}")
+            comm.Barrier()
+            raise NotImplementedError("Made it this far")
 
             comm.Barrier()
             with open(rank_outname, "w") as fout:
