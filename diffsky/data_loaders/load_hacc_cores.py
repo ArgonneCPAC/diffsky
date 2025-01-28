@@ -68,6 +68,16 @@ def _get_all_avail_basenames(drn, pat, subvolumes):
     return fname_list
 
 
+def _scatter_subcat(subcat, comm):
+    mah_params = _scatter_mah_params(subcat.mah_params, comm)
+    seq = []
+    for arr in subcat[1:]:
+        seq.append(_scatter_nd(arr, axis=0, comm=comm, root=0))
+    data = [mah_params, *seq]
+    subcat = subcat._make(data)
+    return subcat
+
+
 def _scatter_mah_params(mah_params, comm):
     seq = []
     for key, arr in zip(mah_params._fields, mah_params):
@@ -113,8 +123,7 @@ def load_diffsky_data_per_rank(
     diffsky_data["tarr"] = comm.bcast(diffsky_data["tarr"], root=0)
     diffsky_data["zarr"] = comm.bcast(diffsky_data["zarr"], root=0)
 
-    mah_params = _scatter_mah_params(diffsky_data["subcat"].mah_params, comm)
-    diffsky_data["subcat"] = diffsky_data["subcat"]._replace(mah_params=mah_params)
+    diffsky_data["subcat"] = _scatter_subcat(diffsky_data["subcat"], comm)
 
     return diffsky_data
 

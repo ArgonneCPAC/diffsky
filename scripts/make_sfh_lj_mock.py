@@ -136,7 +136,9 @@ if __name__ == "__main__":
             rank_outname = os.path.join(args.outdir, bname)
 
             logm0 = diffsky_data["subcat"].mah_params.logm0[:3]
+            logmp0 = diffsky_data["subcat"].logmp0[:3]
             print(f"Rank = {rank} logm0 = {logm0}")
+            print(f"Rank = {rank} logmp0 = {logmp0}")
             comm.Barrier()
             raise NotImplementedError("Made it this far")
 
