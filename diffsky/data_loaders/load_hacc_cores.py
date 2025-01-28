@@ -56,12 +56,24 @@ SubhaloCatalog = namedtuple("SubhaloCatalog", _SUBCAT_COLNAMES)
 
 DIFFSKY_DATA_DICT_KEYS = ("subcat", "sim", "tarr", "zarr")
 
+EMPTY_MAH_PARAMS = DEFAULT_MAH_PARAMS._make([None] * len(DEFAULT_MAH_PARAMS))
+EMPTY_SUBCAT_DATA = [EMPTY_MAH_PARAMS, *[None] * len(_SUBCAT_COLNAMES[1:])]
+EMPTY_SUBCAT = SubhaloCatalog._make(EMPTY_SUBCAT_DATA)
+
 
 def _get_all_avail_basenames(drn, pat, subvolumes):
     fname_list = [os.path.join(drn, pat.format(i)) for i in subvolumes]
     for fn in fname_list:
         assert os.path.isfile(fn)
     return fname_list
+
+
+def _scatter_mah_params(mah_params, comm):
+    seq = []
+    for key, arr in zip(mah_params._fields, mah_params):
+        seq.append(_scatter_nd(arr, axis=0, comm=comm, root=0))
+    mah_params = mah_params._make(seq)
+    return mah_params
 
 
 def load_diffsky_data_per_rank(
@@ -91,30 +103,18 @@ def load_diffsky_data_per_rank(
             drn_diffmah,
             mass_colname=mass_colname,
         )
-        logmp0 = diffsky_data["subcat"].logmp0
     else:
         diffsky_data = dict()
+        diffsky_data["subcat"] = EMPTY_SUBCAT
+        diffsky_data["sim"] = None
         diffsky_data["tarr"] = None
         diffsky_data["zarr"] = None
-        diffsky_data["sim"] = None
-        logmp0 = None
-    #     for key in _SUBCAT_COLNAMES:
-    #         diffsky_data[key] = None
-
-    # subcat_dict_for_rank = dict()
-    # mah_params_pdict = dict()
-    # # mah_params
-    # for key, val in zip(DEFAULT_MAH_PARAMS._fields, DEFAULT_MAH_PARAMS):
-    #     comm.bcast(val, root=0)
-    # for key in _SUBCAT_COLNAMES:
-    #     if key != "mah_params":
-    #         pass
 
     diffsky_data["tarr"] = comm.bcast(diffsky_data["tarr"], root=0)
     diffsky_data["zarr"] = comm.bcast(diffsky_data["zarr"], root=0)
 
-    diffsky_data["logmp0"] = _scatter_nd(logmp0, axis=0, comm=comm, root=0)
-    # tarr = comm.bcast(tarr, root=0)
+    mah_params = _scatter_mah_params(diffsky_data["subcat"].mah_params, comm)
+    diffsky_data["subcat"] = diffsky_data["subcat"]._replace(mah_params=mah_params)
 
     return diffsky_data
 
