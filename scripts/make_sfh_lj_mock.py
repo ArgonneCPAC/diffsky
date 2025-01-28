@@ -11,7 +11,7 @@ from mpi4py import MPI
 
 from diffsky.data_loaders import load_hacc_cores as lhc
 
-TMP_OUTPAT = "tmp_mah_fits_rank_{0}.dat"
+TMP_OUTPAT = "sfh_mock_subvol_{0}_chunk_{1}_rank_{2}.dat"
 
 DRN_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LJ_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
@@ -131,8 +131,8 @@ if __name__ == "__main__":
 
             chunknum_str = f"{chunknum:0{nchar_chunks}d}"
             outbase_chunk = f"subvol_{subvol_str}_chunk_{chunknum_str}"
-            rank_basepat = "_".join((outbase_chunk, TMP_OUTPAT))
-            rank_outname = os.path.join(args.outdir, rank_basepat).format(rank)
+            bname = TMP_OUTPAT.format(subvol_str, chunknum_str, rank)
+            rank_outname = os.path.join(args.outdir, bname)
             raise NotImplementedError()
 
             comm.Barrier()
