@@ -3,7 +3,6 @@
 import os
 from collections import namedtuple
 
-import h5py
 import numpy as np
 from diffmah.data_loaders.load_hacc_mahs import _load_forest
 from diffmah.diffmah_kernels import DEFAULT_MAH_PARAMS, MAH_PBOUNDS, _log_mah_kern
@@ -15,6 +14,8 @@ from dsps.cosmology import flat_wcdm
 from jax import jit as jjit
 from jax import random as jran
 from jax import vmap
+
+from . import hacc_core_utils as hcu
 
 try:
     from mpi4py import MPI
@@ -74,24 +75,6 @@ def _get_all_avail_basenames(drn, pat, subvolumes):
     return fname_list
 
 
-def _scatter_subcat(subcat, comm):
-    mah_params = _scatter_mah_params(subcat.mah_params, comm)
-    seq = []
-    for arr in subcat[1:]:
-        seq.append(_scatter_nd(arr, axis=0, comm=comm, root=0))
-    data = [mah_params, *seq]
-    subcat = subcat._make(data)
-    return subcat
-
-
-def _scatter_mah_params(mah_params, comm):
-    seq = []
-    for key, arr in zip(mah_params._fields, mah_params):
-        seq.append(_scatter_nd(arr, axis=0, comm=comm, root=0))
-    mah_params = mah_params._make(seq)
-    return mah_params
-
-
 def load_diffsky_data_per_rank(
     sim_name,
     subvol,
@@ -129,7 +112,7 @@ def load_diffsky_data_per_rank(
     diffsky_data["tarr"] = comm.bcast(diffsky_data["tarr"], root=0)
     diffsky_data["zarr"] = comm.bcast(diffsky_data["zarr"], root=0)
     diffsky_data["sim"] = HACCSim.simulations[sim_name]
-    diffsky_data["subcat"] = _scatter_subcat(diffsky_data["subcat"], comm)
+    diffsky_data["subcat"] = hcu.scatter_subcat(diffsky_data["subcat"], comm)
 
     return diffsky_data
 
@@ -362,16 +345,8 @@ def _load_discovery_diffmah_data(drn, subvol, chunknum, nchunks):
     bname = BNPAT_DIFFMAH.format(subvol, chunknum_str)
     fn_diffmah = os.path.join(drn, bname)
 
-    diffmah_data = _load_flat_hdf5(fn_diffmah)
+    diffmah_data = hcu.load_flat_hdf5(fn_diffmah)
     return diffmah_data
-
-
-def _load_flat_hdf5(fn):
-    data = dict()
-    with h5py.File(fn, "r") as hdf:
-        for key in hdf.keys():
-            data[key] = hdf[key][...]
-    return data
 
 
 def impute_mah_params(
@@ -421,35 +396,3 @@ def impute_mask(mah_params, diffmah_data, n_min_mah=N_MIN_MAH_PTS):
 
     msk_impute = msk_nofit | msk_badfit | msk_badloss | msk_badmah
     return msk_impute
-
-
-def _scatter_nd(array, axis=0, comm=COMM, root=0):
-    """Scatter n-dimensional array from root to all ranks
-
-    This function is taken from https://github.com/AlanPearl/diffopt
-
-    """
-    ans: np.ndarray = np.array([])
-    if comm.rank == root:
-        splits = np.array_split(array, comm.size, axis=axis)
-        for i in range(comm.size):
-            if i == root:
-                ans = splits[i]
-            else:
-                comm.send(splits[i], dest=i)
-    else:
-        ans = comm.recv(source=root)
-    return ans
-
-
-def get_diffstar_cosmo_quantities(sim_name):
-    sim = HACCSim.simulations[sim_name]
-    fb = sim.cosmo.Omega_b / sim.cosmo.Omega_m
-
-    cosmo_dsps = flat_wcdm.CosmoParams(
-        *(sim.cosmo.Omega_m, sim.cosmo.w0, sim.cosmo.wa, sim.cosmo.h)
-    )
-    t0 = flat_wcdm.age_at_z0(*cosmo_dsps)
-    lgt0 = np.log10(t0)
-
-    return fb, lgt0

@@ -11,6 +11,7 @@ from diffstarpop.param_utils import mc_select_diffstar_params
 from jax import random as jran
 from mpi4py import MPI
 
+from diffsky.data_loaders import hacc_core_utils as hcu
 from diffsky.data_loaders import load_hacc_cores as lhc
 
 TMP_OUTPAT = "sfh_mock_subvol_{0}_chunk_{1}_rank_{2}.dat"
@@ -125,7 +126,7 @@ if __name__ == "__main__":
                 indir_diffmah,
                 comm=MPI.COMM_WORLD,
             )
-            fb, lgt0 = lhc.get_diffstar_cosmo_quantities(sim_name)
+            fb, lgt0 = hcu.get_diffstar_cosmo_quantities(sim_name)
 
             comm.Barrier()
             args = (
