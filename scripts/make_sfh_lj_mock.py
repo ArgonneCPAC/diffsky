@@ -5,7 +5,8 @@ import os
 from time import time
 
 import numpy as np
-from haccytrees import Simulation as HACCSim
+from diffstarpop import DEFAULT_DIFFSTARPOP_PARAMS
+from diffstarpop.mc_diffstarpop_cen_tpeak import mc_diffstar_sfh_galpop_cen
 from jax import random as jran
 from mpi4py import MPI
 
@@ -23,6 +24,8 @@ BNPAT_CORE_DATA = "m000p.coreforest.{}.hdf5"
 
 NCHUNKS = 20
 NUM_SUBVOLS_LJ = 192
+LGT0 = 1.14
+FB = 0.12
 
 
 if __name__ == "__main__":
@@ -129,12 +132,21 @@ if __name__ == "__main__":
             bname = TMP_OUTPAT.format(subvol_str, chunknum_str, rank)
             rank_outname = os.path.join(args.outdir, bname)
 
-            logm0 = diffsky_data["subcat"].mah_params.logm0[:3]
-            logmp0 = diffsky_data["subcat"].logmp0[:3]
-            print(f"Rank = {rank} logm0 = {logm0}")
-            print(f"Rank = {rank} logmp0 = {logmp0}")
-            print(f"Rank = {rank} sim = {diffsky_data['sim']}")
             comm.Barrier()
+            args = (
+                DEFAULT_DIFFSTARPOP_PARAMS,
+                diffsky_data["subcat"].mah_params,
+                diffsky_data["subcat"].logmp0,
+                chunk_key_for_rank,
+                diffsky_data["tarr"],
+            )
+            _res = mc_diffstar_sfh_galpop_cen(
+                *args,
+                lgt0=LGT0,
+                fb=FB,
+            )
+            diffstar_params_ms, diffstar_params_q, sfh_ms, sfh_q, frac_q, mc_is_q = _res
+
             raise NotImplementedError("Made it this far")
 
             comm.Barrier()
