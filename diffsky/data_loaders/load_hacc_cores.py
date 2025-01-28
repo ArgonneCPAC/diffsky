@@ -23,6 +23,12 @@ try:
 except ImportError:
     MPI = COMM = None
 
+try:
+    from haccytrees import Simulation as HACCSim
+
+    HAS_HACCYTREES = True
+except ImportError:
+    HAS_HACCYTREES = False
 
 _H = (0, 0, None)
 log_mah_kern_vmap = jjit(vmap(_log_mah_kern, in_axes=_H))
@@ -122,7 +128,7 @@ def load_diffsky_data_per_rank(
 
     diffsky_data["tarr"] = comm.bcast(diffsky_data["tarr"], root=0)
     diffsky_data["zarr"] = comm.bcast(diffsky_data["zarr"], root=0)
-
+    diffsky_data["sim"] = HACCSim.simulations[sim_name]
     diffsky_data["subcat"] = _scatter_subcat(diffsky_data["subcat"], comm)
 
     return diffsky_data

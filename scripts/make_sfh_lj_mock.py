@@ -5,7 +5,7 @@ import os
 from time import time
 
 import numpy as np
-from diffmah.data_loaders.load_hacc_mahs import load_mahs_per_rank
+from haccytrees import Simulation as HACCSim
 from jax import random as jran
 from mpi4py import MPI
 
@@ -112,12 +112,6 @@ if __name__ == "__main__":
             rank_key, chunk_key_for_rank = jran.split(rank_key, 2)
             ichunk_start = time()
 
-            # tarr, mahs_for_rank = load_mahs_per_rank(
-            #     fn_data, sim_name, chunknum, nchunks, comm=MPI.COMM_WORLD
-            # )
-            # nhalos_for_rank = mahs_for_rank.shape[0]
-            # nhalos_tot = comm.reduce(nhalos_for_rank, op=MPI.SUM)
-
             diffsky_data = lhc.load_diffsky_data_per_rank(
                 sim_name,
                 isubvol,
@@ -139,6 +133,7 @@ if __name__ == "__main__":
             logmp0 = diffsky_data["subcat"].logmp0[:3]
             print(f"Rank = {rank} logm0 = {logm0}")
             print(f"Rank = {rank} logmp0 = {logmp0}")
+            print(f"Rank = {rank} sim = {diffsky_data['sim']}")
             comm.Barrier()
             raise NotImplementedError("Made it this far")
 
