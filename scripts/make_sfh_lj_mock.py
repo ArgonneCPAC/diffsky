@@ -135,7 +135,7 @@ if __name__ == "__main__":
             bname = TMP_OUTPAT.format(subvol_str, chunknum_str, rank)
             rank_outname = os.path.join(args.outdir, bname)
 
-            print(f"Rank = {rank} tarr = {diffsky_data['tarr']}")
+            print(f"Rank = {rank} logmp0 = {diffsky_data['logmp0'][:4]}")
             comm.Barrier()
             raise NotImplementedError("Made it this far")
 

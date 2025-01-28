@@ -54,7 +54,7 @@ _SUBCAT_COLNAMES = (
 )
 SubhaloCatalog = namedtuple("SubhaloCatalog", _SUBCAT_COLNAMES)
 
-DIFFSKY_DATA_DICT_KEYS = ("subcat", "forest", "sim", "tarr", "zarr")
+DIFFSKY_DATA_DICT_KEYS = ("subcat", "sim", "tarr", "zarr")
 
 
 def _get_all_avail_basenames(drn, pat, subvolumes):
@@ -91,12 +91,29 @@ def load_diffsky_data_per_rank(
             drn_diffmah,
             mass_colname=mass_colname,
         )
+        logmp0 = diffsky_data["subcat"].logmp0
     else:
         diffsky_data = dict()
         diffsky_data["tarr"] = None
+        diffsky_data["zarr"] = None
+        diffsky_data["sim"] = None
+        logmp0 = None
+    #     for key in _SUBCAT_COLNAMES:
+    #         diffsky_data[key] = None
+
+    # subcat_dict_for_rank = dict()
+    # mah_params_pdict = dict()
+    # # mah_params
+    # for key, val in zip(DEFAULT_MAH_PARAMS._fields, DEFAULT_MAH_PARAMS):
+    #     comm.bcast(val, root=0)
+    # for key in _SUBCAT_COLNAMES:
+    #     if key != "mah_params":
+    #         pass
 
     diffsky_data["tarr"] = comm.bcast(diffsky_data["tarr"], root=0)
-    # mahs_for_rank = _scatter_nd(mahs, axis=0, comm=comm, root=0)
+    diffsky_data["zarr"] = comm.bcast(diffsky_data["zarr"], root=0)
+
+    diffsky_data["logmp0"] = _scatter_nd(logmp0, axis=0, comm=comm, root=0)
     # tarr = comm.bcast(tarr, root=0)
 
     return diffsky_data
@@ -227,7 +244,7 @@ def load_diffsky_data(
         msk_impute_cores,
     )
 
-    _ret = (subcat, forest, sim, tarr, zarr)
+    _ret = (subcat, sim, tarr, zarr)
     diffsky_data = dict([(key, val) for key, val in zip(DIFFSKY_DATA_DICT_KEYS, _ret)])
     return diffsky_data
 
@@ -389,3 +406,22 @@ def impute_mask(mah_params, diffmah_data, n_min_mah=N_MIN_MAH_PTS):
 
     msk_impute = msk_nofit | msk_badfit | msk_badloss | msk_badmah
     return msk_impute
+
+
+def _scatter_nd(array, axis=0, comm=COMM, root=0):
+    """Scatter n-dimensional array from root to all ranks
+
+    This function is taken from https://github.com/AlanPearl/diffopt
+
+    """
+    ans: np.ndarray = np.array([])
+    if comm.rank == root:
+        splits = np.array_split(array, comm.size, axis=axis)
+        for i in range(comm.size):
+            if i == root:
+                ans = splits[i]
+            else:
+                comm.send(splits[i], dest=i)
+    else:
+        ans = comm.recv(source=root)
+    return ans
