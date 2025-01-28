@@ -7,6 +7,7 @@ from time import time
 import numpy as np
 from diffstarpop import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstarpop.mc_diffstarpop_cen_tpeak import mc_diffstar_sfh_galpop_cen
+from diffstarpop.param_utils import mc_select_diffstar_params
 from jax import random as jran
 from mpi4py import MPI
 
@@ -136,6 +137,10 @@ if __name__ == "__main__":
             )
             _res = mc_diffstar_sfh_galpop_cen(*args, lgt0=lgt0, fb=fb)
             diffstar_params_ms, diffstar_params_q, sfh_ms, sfh_q, frac_q, mc_is_q = _res
+
+            sfh_params = mc_select_diffstar_params(
+                diffstar_params_q, diffstar_params_ms, mc_is_q
+            )
 
             chunknum_str = f"{chunknum:0{nchar_chunks}d}"
             bname = TMP_OUTPAT.format(subvol_str, chunknum_str, rank)
