@@ -38,11 +38,15 @@ def scatter_ndarray(array, axis=0, comm=COMM, root=0):
     return ans
 
 
-def load_flat_hdf5(fn):
+def load_flat_hdf5(fn, istart=0, iend=None):
+    """"""
     data = dict()
     with h5py.File(fn, "r") as hdf:
         for key in hdf.keys():
-            data[key] = hdf[key][...]
+            if iend is None:
+                data[key] = hdf[key][istart:]
+            else:
+                data[key] = hdf[key][istart:iend]
     return data
 
 
