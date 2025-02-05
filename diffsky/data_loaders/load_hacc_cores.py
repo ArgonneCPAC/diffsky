@@ -319,21 +319,31 @@ def get_infall_time_indices(
     """Timestep of first infall into penultimate and ultimate hosts, -1 for centrals"""
     _X = top_host_row
     M_ult_host = host_row == _X[:, iz].reshape((-1, 1))
-    indx_ult_inf_case2 = np.argmax(M_ult_host[:, : iz + 1], axis=1)
+    indx_t_ult_inf_case2 = np.argmax(M_ult_host[:, : iz + 1], axis=1)
 
-    core_only_minus1 = np.all(host_row == -1, axis=1)
-    is_central_whole_life = ~np.any((host_row > -1) & (is_central < 1), axis=1)
+    # Was the core identified prior to iz?
+    core_only_minus1 = np.all(host_row[:, : iz + 1] == -1, axis=1)
+
+    # Was the core always a central prior to iz?
+    is_central_whole_life = ~np.any(
+        (host_row[:, : iz + 1] > -1) & (is_central[:, : iz + 1] < 1), axis=1
+    )
+
+    # msk_case1: non-satellites
     msk_case1 = core_only_minus1 | is_central_whole_life
 
-    indx_t_ult_inf = np.where(msk_case1, -1, indx_ult_inf_case2)
+    # indx_t_ult_inf = indx_t_ult_inf_case2 for satellites, -1 otherwise
+    indx_t_ult_inf = np.where(msk_case1, -1, indx_t_ult_inf_case2)
 
     _Y = secondary_top_host_row
     M_pen_host = _X == _Y[:, iz].reshape((-1, 1))
-    indx_pen_inf_case3 = np.argmax(M_pen_host, axis=1)
+    indx_t_pen_inf_case3 = np.argmax(M_pen_host, axis=1)
 
+    # msk_case3: satellites with an existing secondary host at iz
     msk_case3 = ~msk_case1 & (secondary_top_host_row[:, iz] != -1)
 
-    indx_t_pen_inf = np.where(msk_case3, indx_pen_inf_case3, -1)
+    # indx_t_ult_inf = indx_t_ult_inf_case3 for sats-of-sats, -1 otherwise
+    indx_t_pen_inf = np.where(msk_case3, indx_t_pen_inf_case3, -1)
 
     return indx_t_ult_inf, indx_t_pen_inf
 
