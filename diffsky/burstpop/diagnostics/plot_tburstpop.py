@@ -49,7 +49,7 @@ def make_tburstpop_comparison_plot(
     )
 
     fig, (ax, ax1) = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
-    __ = ax.loglog()
+    ax.loglog()
     ax.set_xlim(8e4, 2e9)
     ax.set_ylim(2e-7, 10.5)
     xlabel = ax.set_xlabel(r"$\tau_{\rm age}\ {\rm [yr]}$")
@@ -59,29 +59,29 @@ def make_tburstpop_comparison_plot(
     age_weights = diffburst._pureburst_age_weights_from_params(
         lgyrarr, lgyr_peak[0], lgyr_max[0]
     )
-    __ = ax.plot(10**lgyrarr, age_weights, color="blue")
+    ax.plot(10**lgyrarr, age_weights, color="blue")
     age_weights2 = diffburst._pureburst_age_weights_from_params(
         lgyrarr, lgyr_peak2[0], lgyr_max2[0]
     )
-    __ = ax.plot(10**lgyrarr, age_weights2, "--", color="blue")
+    ax.plot(10**lgyrarr, age_weights2, "--", color="blue")
 
     age_weights = diffburst._pureburst_age_weights_from_params(
         lgyrarr, lgyr_peak[1], lgyr_max[1]
     )
-    __ = ax.plot(10**lgyrarr, age_weights, color="red")
+    ax.plot(10**lgyrarr, age_weights, color="red")
     age_weights2 = diffburst._pureburst_age_weights_from_params(
         lgyrarr, lgyr_peak2[1], lgyr_max2[1]
     )
-    __ = ax.plot(10**lgyrarr, age_weights2, "--", color="red")
+    ax.plot(10**lgyrarr, age_weights2, "--", color="red")
 
     age_weights = diffburst._pureburst_age_weights_from_params(
         lgyrarr, lgyr_peak[2], lgyr_max[2]
     )
-    __ = ax1.plot(10**lgyrarr, age_weights, color="blue")
+    ax1.plot(10**lgyrarr, age_weights, color="blue")
     age_weights2 = diffburst._pureburst_age_weights_from_params(
         lgyrarr, lgyr_peak2[2], lgyr_max2[2]
     )
-    __ = ax1.plot(10**lgyrarr, age_weights2, "--", color="blue")
+    ax1.plot(10**lgyrarr, age_weights2, "--", color="blue")
 
     age_weights = diffburst._pureburst_age_weights_from_params(
         lgyrarr, lgyr_peak[3], lgyr_max[3]
