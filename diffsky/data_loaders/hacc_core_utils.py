@@ -85,3 +85,35 @@ def get_diffstar_cosmo_quantities(sim_name):
     lgt0 = np.log10(t0)
 
     return fb, lgt0
+
+
+def get_timestep_range_from_z_range(sim_name, z_min, z_max):
+    """Find the HACC timesteps that contains the redshift range [z_min, z_max]
+
+    Parameters
+    ----------
+    sim_name : HACCSim name
+
+    z_min, z_max : floats
+
+    Returns
+    -------
+    idx_step_min, idx_step_max : ints
+        Indices of the timestep array that span the input z-range
+
+    timestep_min, timestep_max : ints
+        Timesteps that span the input z-range
+
+    """
+    sim = HACCSim.simulations[sim_name]
+    timesteps = np.array(sim.cosmotools_steps)
+
+    a_max = 1 / (1 + z_min)
+    a_min = 1 / (1 + z_max)
+    a_arr = sim.step2a(timesteps)
+
+    idx_step_min = np.searchsorted(a_arr, a_min) - 1
+    idx_step_max = np.searchsorted(a_arr, a_max)
+    timestep_min = timesteps[idx_step_min]
+    timestep_max = timesteps[idx_step_max]
+    return idx_step_min, idx_step_max, timestep_min, timestep_max
