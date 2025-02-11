@@ -71,7 +71,7 @@ EMPTY_SUBCAT = SubhaloCatalog._make(EMPTY_SUBCAT_DATA)
 def _get_all_avail_basenames(drn, pat, subvolumes):
     fname_list = [os.path.join(drn, pat.format(i)) for i in subvolumes]
     for fn in fname_list:
-        assert os.path.isfile(fn)
+        assert os.path.isfile(fn), fn
     return fname_list
 
 
