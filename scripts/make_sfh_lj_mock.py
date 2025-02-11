@@ -151,11 +151,7 @@ if __name__ == "__main__":
             bname = TMP_OUTPAT.format(subvol_str, chunknum_str, rank)
             rank_outname = os.path.join(outdir, bname)
 
-            raise NotImplementedError("Made it this far")
-
-            comm.Barrier()
-            with open(rank_outname, "w") as fout:
-                raise NotImplementedError()
+            lhc.write_sfh_mock_to_disk(diffsky_data, sfh_params, rank_outname)
 
             comm.Barrier()
             ichunk_end = time()
