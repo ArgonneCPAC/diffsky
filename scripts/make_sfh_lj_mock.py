@@ -8,6 +8,7 @@ import numpy as np
 from diffstarpop import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstarpop.mc_diffstarpop_cen_tpeak import mc_diffstar_sfh_galpop_cen
 from diffstarpop.param_utils import mc_select_diffstar_params
+from haccytrees import Simulation as HACCSim
 from jax import random as jran
 from mpi4py import MPI
 
@@ -61,6 +62,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    redshift = args.redshift
     indir_cores = args.indir_cores
     indir_diffmah = args.indir_diffmah
     sim_name = args.sim_name
@@ -72,7 +74,9 @@ if __name__ == "__main__":
     outbase = args.outbase
     nchunks = args.nchunks
 
-    IZ_OBS = 100
+    sim = HACCSim.simulations[sim_name]
+    zarr_sim = sim.step2z(np.array(sim.cosmotools_steps))
+    iz_obs = np.argmin(np.abs(redshift - zarr_sim))
 
     nchar_chunks = len(str(nchunks))
 
@@ -120,7 +124,7 @@ if __name__ == "__main__":
                 isubvol,
                 chunknum,
                 nchunks,
-                IZ_OBS,
+                iz_obs,
                 chunk_key_for_rank,
                 indir_cores,
                 indir_diffmah,
