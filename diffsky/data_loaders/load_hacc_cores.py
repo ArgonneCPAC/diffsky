@@ -34,7 +34,7 @@ except ImportError:
 _H = (0, 0, None)
 log_mah_kern_vmap = jjit(vmap(_log_mah_kern, in_axes=_H))
 
-BNPAT_DIFFMAH = "subvol_{0}_chunk_{1}.hdf5"
+BNPAT_DIFFMAH = "subvol_{0}_diffmah_fits.hdf5"
 BNPAT_CORES = "m000p.coreforest.{0}.hdf5"
 
 # MASS_COLNAME should be consistent with the column used in the diffmah fits
@@ -260,8 +260,9 @@ def load_core_data(
         subvol, chunknum, nchunks, iz_obs, sim_name, drn_cores
     )
     assert os.path.isdir(drn_diffmah)
+    forest = _res[2]
 
-    diffmah_data = _load_discovery_diffmah_data(drn_diffmah, subvol, chunknum, nchunks)
+    diffmah_data = load_diffmah_data_for_forest(drn_diffmah, subvol, forest)
     mah_params = DEFAULT_MAH_PARAMS._make(
         [diffmah_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
@@ -348,14 +349,17 @@ def get_infall_time_indices(
     return indx_t_ult_inf, indx_t_pen_inf
 
 
-def _load_discovery_diffmah_data(drn, subvol, chunknum, nchunks):
-    nchar_chunks = len(str(nchunks))
-    chunknum_str = f"{chunknum:0{nchar_chunks}d}"
-
-    bname = BNPAT_DIFFMAH.format(subvol, chunknum_str)
+def load_diffmah_data_for_forest(drn, subvol, forest):
+    """"""
+    bname = BNPAT_DIFFMAH.format(subvol)
     fn_diffmah = os.path.join(drn, bname)
 
-    diffmah_data = hcu.load_flat_hdf5(fn_diffmah)
+    cf_first_row = forest["absolute_row_idx"][0]
+    cf_last_row = forest["absolute_row_idx"][-1]
+
+    diffmah_data = hcu.load_flat_hdf5(
+        fn_diffmah, istart=cf_first_row, iend=cf_last_row + 1
+    )
     return diffmah_data
 
 
