@@ -3,6 +3,7 @@
 import os
 from collections import namedtuple
 
+import h5py
 import numpy as np
 from diffmah.data_loaders.load_hacc_mahs import _load_forest
 from diffmah.diffmah_kernels import DEFAULT_MAH_PARAMS, MAH_PBOUNDS, _log_mah_kern
@@ -410,3 +411,13 @@ def impute_mask(mah_params, diffmah_data, n_min_mah=N_MIN_MAH_PTS):
 
     msk_impute = msk_nofit | msk_badfit | msk_badloss | msk_badmah
     return msk_impute
+
+
+def write_sfh_mock_to_disk(diffsky_data, sfh_params, rank_outname):
+    with h5py.File(rank_outname, "w") as hdf_out:
+        for key in DEFAULT_MAH_PARAMS._fields:
+            hdf_out[key] = getattr(diffsky_data["subcat"].mah_params, key)
+        for key in sfh_params.ms_params._fields:
+            hdf_out[key] = getattr(sfh_params.ms_params, key)
+        for key in sfh_params.q_params._fields:
+            hdf_out[key] = getattr(sfh_params.q_params, key)
