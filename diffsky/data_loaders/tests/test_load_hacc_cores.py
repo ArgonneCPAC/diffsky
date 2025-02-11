@@ -29,8 +29,8 @@ except AssertionError:
 def test_load_last_journey_data():
     sim_name = "LastJourney"
     subvol = 0
-    chunknum = 0
-    nchunks = 20
+    chunknum = 49
+    nchunks = 50
     iz_obs = 100
     ran_key = jran.key(0)
     drn_cores = DRN_LJ_POBOY
@@ -40,3 +40,10 @@ def test_load_last_journey_data():
     )
     for x in diffsky_data["subcat"].mah_params:
         assert np.all(np.isfinite(x))
+
+    for x in diffsky_data["subcat"][1:]:
+        assert np.all(np.isfinite(x))
+
+    n_diffmah_fits = diffsky_data["subcat"].mah_params.logm0.size
+    n_forest = diffsky_data["subcat"].logmp0.size
+    assert n_forest == n_diffmah_fits, "mismatch between forest and diffmah fits"
