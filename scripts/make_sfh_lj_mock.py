@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import subprocess
 from time import time
 
 import numpy as np
@@ -15,7 +16,9 @@ from mpi4py import MPI
 from diffsky.data_loaders import hacc_core_utils as hcu
 from diffsky.data_loaders import load_hacc_cores as lhc
 
-TMP_OUTPAT = "sfh_mock_subvol_{0}_chunk_{1}_rank_{2}.dat"
+OUTPAT_CHUNK_RANK = "sfh_mock_subvol_{0}_chunk_{1}_rank_{2}.hdf5"
+OUTPAT_CHUNK = "sfh_mock_subvol_{0}_chunk_{1}.hdf5"
+OUTPAT_SUBVOL = "sfh_mock_subvol_{0}.hdf5"
 
 DRN_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LJ_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
@@ -148,10 +151,26 @@ if __name__ == "__main__":
             )
 
             chunknum_str = f"{chunknum:0{nchar_chunks}d}"
-            bname = TMP_OUTPAT.format(subvol_str, chunknum_str, rank)
+            bname = OUTPAT_CHUNK_RANK.format(subvol_str, chunknum_str, rank)
             rank_outname = os.path.join(outdir, bname)
 
             lhc.write_sfh_mock_to_disk(diffsky_data, sfh_params, rank_outname)
 
             comm.Barrier()
             ichunk_end = time()
+
+            if rank == 0:
+                chunk_fnames = []
+                for irank in range(nranks):
+                    bname = OUTPAT_CHUNK_RANK.format(subvol_str, chunknum_str, irank)
+                    fname = os.path.join(outdir, bname)
+                    chunk_fnames.append(fname)
+                bnout = OUTPAT_CHUNK.format(subvol_str, chunknum_str)
+                fnout = os.path.join(outdir, bnout)
+                lhc.collate_hdf5_file_collection(chunk_fnames, fnout)
+                bnpat = OUTPAT_CHUNK_RANK.format(subvol_str, chunknum_str, "*")
+                fnpat = os.path.join(outdir, bnpat)
+                command = "rm -rf " + fnpat
+                raw_result = subprocess.check_output(command, shell=True)
+
+            comm.Barrier()
