@@ -421,3 +421,20 @@ def write_sfh_mock_to_disk(diffsky_data, sfh_params, rank_outname):
             hdf_out[key] = getattr(sfh_params.ms_params, key)
         for key in sfh_params.q_params._fields:
             hdf_out[key] = getattr(sfh_params.q_params, key)
+
+
+def collate_hdf5_file_collection(fname_collection, fnout):
+    fn = fname_collection[0]
+    with h5py.File(fn, "r") as hdf:
+        mock_keys = list(hdf.keys())
+
+    for key in mock_keys:
+        col_data_collector = []
+        for fn_in in fname_collection:
+            with h5py.File(fn_in, "r") as hdf_in:
+                arr = hdf_in[key][...]
+                col_data_collector.append(arr)
+        complete_arr = np.concatenate(col_data_collector)
+
+        with h5py.File(fnout, "w") as hdf_out:
+            hdf_out[key] = complete_arr
