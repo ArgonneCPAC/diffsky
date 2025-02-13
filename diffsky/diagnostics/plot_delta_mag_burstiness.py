@@ -69,7 +69,7 @@ def get_interpolated_lsst_tcurves(ssp_wave, drn_ssp_data=DEFAULT_DSPS_DRN):
         tcurve_y = load_filter_data.load_transmission_curve(
             bn_pat="lsst_y*", drn=drn_ssp_data
         )
-    except (ImportError, OSError, ValueError):
+    except (ImportError, OSError, ValueError, AssertionError):
         _res = load_fake_filter_transmission_curves()
         wave, u, g, r, i, z, y = _res
         tcurve_u = load_filter_data.TransmissionCurve((wave, u))
@@ -126,7 +126,7 @@ def get_burstiness_delta_mag_quantities(
     ran_key = jran.key(0)
     try:
         ssp_data = load_ssp_templates(drn=drn_ssp_data)
-    except (AssertionError, OSError):
+    except (AssertionError, OSError, ValueError):
         ssp_data = load_fake_ssp_data()
         print(f"{drn_ssp_data} directory not found. Using fake SSP SEDs")
 
