@@ -204,7 +204,7 @@ def get_burstiness_delta_mag_quantities(
     return mags, alt_mags, halopop, sfh_galpop, smh_galpop, mc_is_q
 
 
-def plot_delta_mag_lsst(z_obs, n_halos=2_000):
+def plot_delta_mag_lsst_vs_logsm(z_obs, n_halos=2_000):
     if not HAS_MATPLOTLIB:
         raise ImportError("Must have matplotlib installed to use this function")
 
@@ -247,5 +247,41 @@ def plot_delta_mag_lsst(z_obs, n_halos=2_000):
         bbox_extra_artists=[xlabel, ylabel],
         bbox_inches="tight",
         dpi=200,
+    )
+    return fig
+
+
+def plot_delta_mag_lsst_vs_ssfr(
+    z_obs, figname="delta_mag_burstiness_ssfr.png", n_halos=2_000
+):
+    if not HAS_MATPLOTLIB:
+        raise ImportError("Must have matplotlib installed to use this function")
+
+    _res = get_burstiness_delta_mag_quantities(z_obs, n_halos=n_halos)
+    mags, alt_mags, halopop, sfh_galpop, smh_galpop, mc_is_q = _res
+
+    ssfr_z0 = np.log10(sfh_galpop[:, -1]) - np.log10(smh_galpop[:, -1])
+
+    fig, ax = plt.subplots(1, 1)
+    ax.set_ylim(-2.5, 0.2)
+    ax.set_xlim(-15, -9)
+
+    ax.scatter(
+        ssfr_z0, alt_mags[:, 3] - mags[:, 3], s=1, color=morange, label=r"$M_{\rm i}$"
+    )
+    ax.scatter(
+        ssfr_z0, alt_mags[:, 1] - mags[:, 1], s=1, color=mgreen, label=r"$M_{\rm g}$"
+    )
+    ax.scatter(
+        ssfr_z0, alt_mags[:, 0] - mags[:, 0], s=1, color=mpurple, label=r"$M_{\rm u}$"
+    )
+    ax.legend(markerscale=4)
+
+    xlabel = ax.set_xlabel(r"$\log_{10}{\rm sSFR}$")
+    ax.set_title(r"$z=0\ {\rm centrals}$")
+    ylabel = ax.set_ylabel(r"$M_{\rm bursty}-M_{\rm smooth}$")
+
+    fig.savefig(
+        figname, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
     return fig
