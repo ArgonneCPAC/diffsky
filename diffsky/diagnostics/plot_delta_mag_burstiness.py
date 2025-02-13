@@ -72,12 +72,12 @@ def get_interpolated_lsst_tcurves(ssp_wave, drn_ssp_data=DEFAULT_DSPS_DRN):
     except (ImportError, OSError, ValueError, AssertionError):
         _res = load_fake_filter_transmission_curves()
         wave, u, g, r, i, z, y = _res
-        tcurve_u = load_filter_data.TransmissionCurve((wave, u))
-        tcurve_g = load_filter_data.TransmissionCurve((wave, g))
-        tcurve_r = load_filter_data.TransmissionCurve((wave, r))
-        tcurve_i = load_filter_data.TransmissionCurve((wave, i))
-        tcurve_z = load_filter_data.TransmissionCurve((wave, z))
-        tcurve_y = load_filter_data.TransmissionCurve((wave, y))
+        tcurve_u = load_filter_data.TransmissionCurve(wave, u)
+        tcurve_g = load_filter_data.TransmissionCurve(wave, g)
+        tcurve_r = load_filter_data.TransmissionCurve(wave, r)
+        tcurve_i = load_filter_data.TransmissionCurve(wave, i)
+        tcurve_z = load_filter_data.TransmissionCurve(wave, z)
+        tcurve_y = load_filter_data.TransmissionCurve(wave, y)
 
     tcurve_u = tcurve_u._replace(
         transmission=np.interp(ssp_wave, tcurve_u.wave, tcurve_u.transmission)
