@@ -25,8 +25,13 @@ jobs:
           miniforge-version: latest
 
       - name: configure conda and install code
-      # Test against conda-forge for all dependencies except use main branch for dsps
+      # Test against current main branch of all diff+ dependencies
         shell: bash -l {0}
+        env:
+          GITHUB_TOKEN: ${{ secrets.CPAC_PRIVATE_REPO_TOKEN }}
+          GITHUB_USER: ${{ secrets.GH_USR_TESTING_TOKEN }}
+
+      # Test against conda-forge for all dependencies except use main branch for dsps
         run: |
           conda config --set always_yes yes
           conda install --quiet \
@@ -43,6 +48,7 @@ jobs:
             python-build
           pip uninstall dsps --yes
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
+          pip install --no-deps git+https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/ArgonneCPAC/diffstarpop.git
           python -m pip install --no-build-isolation --no-deps -e .
 
       - name: test
@@ -52,6 +58,8 @@ jobs:
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: test versions
         shell: bash -el {0}
