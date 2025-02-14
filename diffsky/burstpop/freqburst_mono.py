@@ -17,24 +17,23 @@ LGSSFR_K = 5.0
 DEFAULT_FREQBURST_PDICT = OrderedDict(
     sufqb_logsm_x0=10.0,
     sufqb_logssfr_x0=-10.25,
-    sufqb_logsm_ylo_q=-0.25,
-    sufqb_logsm_ylo_ms=-0.25,
-    sufqb_logsm_yhi_q=-0.25,
-    sufqb_logsm_yhi_ms=-0.25,
+    sufqb_logsm_ylo_q=-10.0,
+    sufqb_logsm_ylo_ms=-10.0,
+    sufqb_logsm_yhi_q=-10.0,
+    sufqb_logsm_yhi_ms=-10.0,
 )
 
 LGSM_X0_BOUNDS = (9.0, 11.0)
 LGSSFR_X0_BOUNDS = (-12.0, -8.0)
-SUFQB_BOUNDS = (-5.0, -1.0)
-U_BOUNDS = (-100.0, 100.0)
+SUFQB_BOUNDS = (-15.0, -5.0)
 
 FREQBURST_PBOUNDS_PDICT = OrderedDict(
     sufqb_logsm_x0=LGSM_X0_BOUNDS,
     sufqb_logssfr_x0=LGSSFR_X0_BOUNDS,
-    sufqb_logsm_ylo_q=U_BOUNDS,
-    sufqb_logsm_ylo_ms=U_BOUNDS,
-    sufqb_logsm_yhi_q=U_BOUNDS,
-    sufqb_logsm_yhi_ms=U_BOUNDS,
+    sufqb_logsm_ylo_q=SUFQB_BOUNDS,
+    sufqb_logsm_ylo_ms=SUFQB_BOUNDS,
+    sufqb_logsm_yhi_q=SUFQB_BOUNDS,
+    sufqb_logsm_yhi_ms=SUFQB_BOUNDS,
 )
 
 
@@ -50,10 +49,10 @@ FREQBURST_PBOUNDS = FreqburstParams(**FREQBURST_PBOUNDS_PDICT)
 _EPS = 0.2
 ZEROBURST_FREQBURST_PARAMS = deepcopy(DEFAULT_FREQBURST_PARAMS)
 ZEROBURST_FREQBURST_PARAMS = ZEROBURST_FREQBURST_PARAMS._replace(
-    sufqb_logsm_ylo_q=U_BOUNDS[0] + _EPS,
-    sufqb_logsm_ylo_ms=U_BOUNDS[0] + _EPS,
-    sufqb_logsm_yhi_q=U_BOUNDS[0] + _EPS,
-    sufqb_logsm_yhi_ms=U_BOUNDS[0] + _EPS,
+    sufqb_logsm_ylo_q=SUFQB_BOUNDS[0] + _EPS,
+    sufqb_logsm_ylo_ms=SUFQB_BOUNDS[0] + _EPS,
+    sufqb_logsm_yhi_q=SUFQB_BOUNDS[0] + _EPS,
+    sufqb_logsm_yhi_ms=SUFQB_BOUNDS[0] + _EPS,
 )
 
 
