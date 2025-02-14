@@ -5,7 +5,7 @@ import numpy as np
 from jax import nn
 from jax import random as jran
 
-from ..fburst_mono import (
+from ..fburstpop_mono import (
     DEFAULT_FBURSTPOP_PARAMS,
     DEFAULT_FBURSTPOP_U_PARAMS,
     FBURSTPOP_PBOUNDS,
