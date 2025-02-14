@@ -1,11 +1,14 @@
 """
 """
+
 import numpy as np
 from jax import random as jran
 
 from ..fburstpop import (
     DEFAULT_FBURSTPOP_PARAMS,
     DEFAULT_FBURSTPOP_U_PARAMS,
+    FBURSTPOP_PBOUNDS,
+    ZEROBURST_FBURSTPOP_PARAMS,
     get_bounded_fburstpop_params,
     get_lgfburst_from_fburstpop_params,
     get_lgfburst_from_fburstpop_u_params,
@@ -13,6 +16,14 @@ from ..fburstpop import (
 )
 
 TOL = 1e-2
+
+
+def test_default_params_are_in_bounds():
+
+    gen = zip(DEFAULT_FBURSTPOP_PARAMS, DEFAULT_FBURSTPOP_PARAMS._fields)
+    for val, key in gen:
+        bound = getattr(FBURSTPOP_PBOUNDS, key)
+        assert bound[0] < val < bound[1]
 
 
 def test_param_u_param_names_propagate_properly():
@@ -61,9 +72,7 @@ def test_get_lgfburst_from_fburstpop_u_params_fails_when_passing_params():
 
     try:
         get_lgfburst_from_fburstpop_u_params(DEFAULT_FBURSTPOP_PARAMS, logsm, logssfr)
-        raise NameError(
-            "get_lgfburst_from_fburstpop_u_params should not accept params"
-        )
+        raise NameError("get_lgfburst_from_fburstpop_u_params should not accept params")
     except AttributeError:
         pass
 
@@ -112,3 +121,27 @@ def test_get_bursty_age_weights_pop_u_param_inversion():
     assert np.all(np.isfinite(gal_lgfburst_u))
 
     assert np.allclose(gal_lgfburst, gal_lgfburst_u, rtol=1e-4)
+
+
+def test_zeroburst_params_are_in_bounds():
+
+    gen = zip(ZEROBURST_FBURSTPOP_PARAMS, ZEROBURST_FBURSTPOP_PARAMS._fields)
+    for val, key in gen:
+        bound = getattr(FBURSTPOP_PBOUNDS, key)
+        assert bound[0] < val < bound[1]
+
+
+def test_zeroburst_params_produce_zero_burstiness():
+    ran_key = jran.key(0)
+    sm_key, ssfr_key = jran.split(ran_key, 2)
+    n_gals = 2_000
+    logsmarr = jran.uniform(sm_key, minval=5, maxval=13, shape=(n_gals,))
+    logssfr = jran.uniform(ssfr_key, minval=-14, maxval=-5, shape=(n_gals,))
+
+    fb = 10 ** get_lgfburst_from_fburstpop_params(
+        ZEROBURST_FBURSTPOP_PARAMS, logsmarr, logssfr
+    )
+    assert fb.shape == (n_gals,)
+    assert np.all(np.isfinite(fb))
+    assert np.all(fb > 0.0)
+    assert np.all(fb < 1e-4)
