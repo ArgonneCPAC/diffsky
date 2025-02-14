@@ -14,7 +14,7 @@ BOUNDING_K = 0.1
 LGSM_K = 5.0
 LGSSFR_K = 5.0
 
-DEFAULT_FBURST_PDICT = OrderedDict(
+DEFAULT_FBURSTPOP_PDICT = OrderedDict(
     sufb_logsm_x0=10.0,
     sufb_logssfr_x0=-10.25,
     sufb_logsm_ylo_q=-10.0,
@@ -27,7 +27,7 @@ LGSM_X0_BOUNDS = (8.0, 11.0)
 LGSSFR_X0_BOUNDS = (-12.0, -8.0)
 SUFB_BOUNDS = (-15.0, -5.0)
 
-FBURST_PBOUNDS_PDICT = OrderedDict(
+FBURSTPOP_PBOUNDS_PDICT = OrderedDict(
     sufb_logsm_x0=LGSM_X0_BOUNDS,
     sufb_logssfr_x0=LGSSFR_X0_BOUNDS,
     sufb_logsm_ylo_q=SUFB_BOUNDS,
@@ -37,18 +37,18 @@ FBURST_PBOUNDS_PDICT = OrderedDict(
 )
 
 
-FburstParams = namedtuple("FburstParams", DEFAULT_FBURST_PDICT.keys())
+FburstPopParams = namedtuple("FburstPopParams", DEFAULT_FBURSTPOP_PDICT.keys())
 
-_FBURST_UPNAMES = ["u_" + key for key in FBURST_PBOUNDS_PDICT.keys()]
-FburstUParams = namedtuple("FburstUParams", _FBURST_UPNAMES)
+_FBURSTPOP_UPNAMES = ["u_" + key for key in FBURSTPOP_PBOUNDS_PDICT.keys()]
+FburstPopUParams = namedtuple("FburstPopUParams", _FBURSTPOP_UPNAMES)
 
 
-DEFAULT_FBURST_PARAMS = FburstParams(**DEFAULT_FBURST_PDICT)
-FBURST_PBOUNDS = FburstParams(**FBURST_PBOUNDS_PDICT)
+DEFAULT_FBURSTPOP_PARAMS = FburstPopParams(**DEFAULT_FBURSTPOP_PDICT)
+FBURSTPOP_PBOUNDS = FburstPopParams(**FBURSTPOP_PBOUNDS_PDICT)
 
 _EPS = 0.2
-ZEROBURST_FBURST_PARAMS = deepcopy(DEFAULT_FBURST_PARAMS)
-ZEROBURST_FBURST_PARAMS = ZEROBURST_FBURST_PARAMS._replace(
+ZEROBURST_FBURSTPOP_PARAMS = deepcopy(DEFAULT_FBURSTPOP_PARAMS)
+ZEROBURST_FBURSTPOP_PARAMS = ZEROBURST_FBURSTPOP_PARAMS._replace(
     sufb_logsm_ylo_q=SUFB_BOUNDS[0] + _EPS,
     sufb_logsm_ylo_ms=SUFB_BOUNDS[0] + _EPS,
     sufb_logsm_yhi_q=SUFB_BOUNDS[0] + _EPS,
@@ -88,20 +88,20 @@ def double_sigmoid_monotonic(u_params, x, y, x0, y0, xk, yk, z_bounds):
 
 
 @jjit
-def get_fburst_from_fburst_params(fburst_params, logsm, logssfr):
+def get_fburst_from_fburstpop_params(fburstpop_params, logsm, logssfr):
     DSM_ARGS = (
-        fburst_params.sufb_logsm_x0,
-        fburst_params.sufb_logssfr_x0,
+        fburstpop_params.sufb_logsm_x0,
+        fburstpop_params.sufb_logssfr_x0,
         LGSM_K,
         LGSSFR_K,
         SUFB_BOUNDS,
     )
 
     params = (
-        fburst_params.sufb_logsm_ylo_q,
-        fburst_params.sufb_logsm_ylo_ms,
-        fburst_params.sufb_logsm_yhi_q,
-        fburst_params.sufb_logsm_yhi_ms,
+        fburstpop_params.sufb_logsm_ylo_q,
+        fburstpop_params.sufb_logsm_ylo_ms,
+        fburstpop_params.sufb_logsm_yhi_q,
+        fburstpop_params.sufb_logsm_yhi_ms,
     )
     sufb = double_sigmoid_monotonic(params, logsm, logssfr, *DSM_ARGS)
     fburst = nn.softplus(sufb)
@@ -109,53 +109,57 @@ def get_fburst_from_fburst_params(fburst_params, logsm, logssfr):
 
 
 @jjit
-def get_fburst_from_fburst_u_params(fburst_u_params, logsm, logssfr):
-    fburst_params = get_bounded_fburst_params(fburst_u_params)
-    fburst = get_fburst_from_fburst_params(fburst_params, logsm, logssfr)
+def get_fburst_from_fburstpop_u_params(fburstpop_u_params, logsm, logssfr):
+    fburstpop_params = get_bounded_fburstpop_params(fburstpop_u_params)
+    fburst = get_fburst_from_fburstpop_params(fburstpop_params, logsm, logssfr)
     return fburst
 
 
 @jjit
-def _get_bounded_fburst_param(u_param, bound):
+def _get_bounded_fburstpop_param(u_param, bound):
     lo, hi = bound
     mid = 0.5 * (lo + hi)
     return _sigmoid(u_param, mid, 0.1, lo, hi)
 
 
 @jjit
-def _get_unbounded_fburst_param(param, bound):
+def _get_unbounded_fburstpop_param(param, bound):
     lo, hi = bound
     mid = 0.5 * (lo + hi)
     return _inverse_sigmoid(param, mid, 0.1, lo, hi)
 
 
 _C = (0, 0)
-_get_bounded_fburst_params_kern = jjit(vmap(_get_bounded_fburst_param, in_axes=_C))
-_get_unbounded_fburst_params_kern = jjit(vmap(_get_unbounded_fburst_param, in_axes=_C))
+_get_bounded_fburstpop_params_kern = jjit(
+    vmap(_get_bounded_fburstpop_param, in_axes=_C)
+)
+_get_unbounded_fburstpop_params_kern = jjit(
+    vmap(_get_unbounded_fburstpop_param, in_axes=_C)
+)
 
 
 @jjit
-def get_bounded_fburst_params(u_params):
-    u_params = jnp.array([getattr(u_params, u_pname) for u_pname in _FBURST_UPNAMES])
-    params = _get_bounded_fburst_params_kern(
-        jnp.array(u_params), jnp.array(FBURST_PBOUNDS)
+def get_bounded_fburstpop_params(u_params):
+    u_params = jnp.array([getattr(u_params, u_pname) for u_pname in _FBURSTPOP_UPNAMES])
+    params = _get_bounded_fburstpop_params_kern(
+        jnp.array(u_params), jnp.array(FBURSTPOP_PBOUNDS)
     )
-    fburst_params = FburstParams(*params)
-    return fburst_params
+    fburstpop_params = FburstPopParams(*params)
+    return fburstpop_params
 
 
 @jjit
-def get_unbounded_fburst_params(params):
+def get_unbounded_fburstpop_params(params):
     params = jnp.array(
-        [getattr(params, pname) for pname in DEFAULT_FBURST_PARAMS._fields]
+        [getattr(params, pname) for pname in DEFAULT_FBURSTPOP_PARAMS._fields]
     )
-    u_params = _get_unbounded_fburst_params_kern(
-        jnp.array(params), jnp.array(FBURST_PBOUNDS)
+    u_params = _get_unbounded_fburstpop_params_kern(
+        jnp.array(params), jnp.array(FBURSTPOP_PBOUNDS)
     )
-    fburst_u_params = FburstUParams(*u_params)
-    return fburst_u_params
+    fburstpop_u_params = FburstPopUParams(*u_params)
+    return fburstpop_u_params
 
 
-DEFAULT_FBURST_U_PARAMS = FburstUParams(
-    *get_unbounded_fburst_params(DEFAULT_FBURST_PARAMS)
+DEFAULT_FBURSTPOP_U_PARAMS = FburstPopUParams(
+    *get_unbounded_fburstpop_params(DEFAULT_FBURSTPOP_PARAMS)
 )
