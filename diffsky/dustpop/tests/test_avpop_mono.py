@@ -255,6 +255,14 @@ def test_zerodust_params_are_in_bounds():
         assert bound[0] < val < bound[1]
 
 
+def test_zerodust_params_are_invertible():
+    u_params = get_unbounded_avpop_params(ZERODUST_AVPOP_PARAMS)
+    params = get_bounded_avpop_params(u_params)
+    for p, p_orig in zip(ZERODUST_AVPOP_PARAMS, params):
+        assert np.all(np.isfinite(p))
+        assert np.allclose(p, p_orig, rtol=1e-4)
+
+
 def test_av_is_finite_and_tiny_for_zerodust_params():
     ran_key = jran.PRNGKey(0)
     logsm_key, logssfr_key, z_key = jran.split(ran_key, 3)
