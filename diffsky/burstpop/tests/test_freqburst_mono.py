@@ -8,7 +8,9 @@ from jax import random as jran
 from ..freqburst_mono import (
     DEFAULT_FREQBURST_PARAMS,
     DEFAULT_FREQBURST_U_PARAMS,
+    FREQBURST_PBOUNDS,
     SUFQB_BOUNDS,
+    ZEROBURST_FREQBURST_PARAMS,
     FreqburstUParams,
     get_bounded_freqburst_params,
     get_freqburst_from_freqburst_params,
@@ -18,6 +20,14 @@ from ..freqburst_mono import (
 
 TOL = 1e-2
 EPSILON = 1e-5
+
+
+def test_default_params_are_in_bounds():
+
+    gen = zip(DEFAULT_FREQBURST_PARAMS, DEFAULT_FREQBURST_PARAMS._fields)
+    for val, key in gen:
+        bound = getattr(FREQBURST_PBOUNDS, key)
+        assert bound[0] < val < bound[1]
 
 
 def test_param_u_param_names_propagate_properly():
