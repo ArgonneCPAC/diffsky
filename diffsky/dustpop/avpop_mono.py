@@ -2,6 +2,7 @@
 """
 
 from collections import OrderedDict, namedtuple
+from copy import deepcopy
 
 from jax import jit as jjit
 from jax import nn
@@ -65,6 +66,21 @@ AvPopUParams = namedtuple("AvPopUParams", _AVPOP_UPNAMES)
 
 DEFAULT_AVPOP_PARAMS = AvPopParams(**DEFAULT_AVPOP_PDICT)
 AVPOP_PBOUNDS = AvPopParams(**AVPOP_PBOUNDS_PDICT)
+
+_EPS = 0.2
+_EPS2 = 0.05
+ZERODUST_AVPOP_PARAMS = deepcopy(DEFAULT_AVPOP_PARAMS)
+ZERODUST_AVPOP_PARAMS = ZERODUST_AVPOP_PARAMS._replace(
+    suav_logsm_ylo_q_z_ylo=U_BOUNDS[0] + _EPS,
+    suav_logsm_ylo_ms_z_ylo=U_BOUNDS[0] + _EPS,
+    suav_logsm_yhi_q_z_ylo=U_BOUNDS[0] + _EPS,
+    suav_logsm_yhi_ms_z_ylo=U_BOUNDS[0] + _EPS,
+    suav_logsm_ylo_q_z_yhi=U_BOUNDS[0] + _EPS,
+    suav_logsm_ylo_ms_z_yhi=U_BOUNDS[0] + _EPS,
+    suav_logsm_yhi_q_z_yhi=U_BOUNDS[0] + _EPS,
+    suav_logsm_yhi_ms_z_yhi=U_BOUNDS[0] + _EPS,
+    delta_suav_age=DELTA_SUAV_AGE_BOUNDS[0] + _EPS2,
+)
 
 
 @jjit

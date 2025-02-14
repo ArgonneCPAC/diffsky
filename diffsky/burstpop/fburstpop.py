@@ -2,6 +2,7 @@
 """
 
 from collections import OrderedDict, namedtuple
+from copy import deepcopy
 
 from jax import jit as jjit
 from jax import numpy as jnp
@@ -46,6 +47,15 @@ FburstPopUParams = namedtuple("FburstPopUParams", _FBURSTPOP_UPNAMES)
 
 DEFAULT_FBURSTPOP_PARAMS = FburstPopParams(**DEFAULT_FBURSTPOP_PDICT)
 FBURSTPOP_PBOUNDS = FburstPopParams(**FBURSTPOP_BOUNDS_PDICT)
+
+_EPS = 0.1
+ZEROBURST_FBURSTPOP_PARAMS = deepcopy(DEFAULT_FBURSTPOP_PARAMS)
+ZEROBURST_FBURSTPOP_PARAMS = ZEROBURST_FBURSTPOP_PARAMS._replace(
+    lgfburst_logsm_ylo_q=_LGFBURST_BOUNDS[0] + _EPS,
+    lgfburst_logsm_ylo_ms=_LGFBURST_BOUNDS[0] + _EPS,
+    lgfburst_logsm_yhi_q=_LGFBURST_BOUNDS[0] + _EPS,
+    lgfburst_logsm_yhi_ms=_LGFBURST_BOUNDS[0] + _EPS,
+)
 
 
 @jjit

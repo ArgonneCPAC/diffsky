@@ -11,6 +11,7 @@ from ..avpop_mono import (
     DEFAULT_AVPOP_U_PARAMS,
     DELTA_SUAV_AGE_BOUNDS,
     SUAV_BOUNDS,
+    ZERODUST_AVPOP_PARAMS,
     AvPopUParams,
     get_av_from_avpop_params_galpop,
     get_av_from_avpop_params_singlegal,
@@ -244,3 +245,35 @@ def test_get_av_is_always_within_bounds_for_all_u_params():
 
         assert np.all(av >= av_min), (av.min(), av_min)
         assert np.all(av <= av_max), (av.max(), av_max)
+
+
+def test_zerodust_params_are_in_bounds():
+
+    gen = zip(ZERODUST_AVPOP_PARAMS, ZERODUST_AVPOP_PARAMS._fields)
+    for val, key in gen:
+        bound = getattr(AVPOP_PBOUNDS, key)
+        assert bound[0] < val < bound[1]
+
+
+def test_zerodust_params_are_invertible():
+    u_params = get_unbounded_avpop_params(ZERODUST_AVPOP_PARAMS)
+    params = get_bounded_avpop_params(u_params)
+    for p, p_orig in zip(ZERODUST_AVPOP_PARAMS, params):
+        assert np.all(np.isfinite(p))
+        assert np.allclose(p, p_orig, rtol=1e-4)
+
+
+def test_av_is_finite_and_tiny_for_zerodust_params():
+    ran_key = jran.PRNGKey(0)
+    logsm_key, logssfr_key, z_key = jran.split(ran_key, 3)
+    n_gals = 500
+    logsm = jran.uniform(logsm_key, minval=5, maxval=13, shape=(n_gals,))
+    logssfr = jran.uniform(logssfr_key, minval=-14, maxval=-6, shape=(n_gals,))
+    redshift = jran.uniform(z_key, minval=0, maxval=10, shape=(n_gals,))
+
+    av = get_av_from_avpop_params_galpop(
+        ZERODUST_AVPOP_PARAMS, logsm, logssfr, redshift, LGAGE_GYR
+    )
+    assert av.shape == (n_gals, N_AGE)
+    assert np.all(np.isfinite(av))
+    assert np.all(av < 0.05)

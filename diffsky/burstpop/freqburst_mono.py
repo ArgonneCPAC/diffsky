@@ -2,6 +2,7 @@
 """
 
 from collections import OrderedDict, namedtuple
+from copy import deepcopy
 
 from dsps.utils import _inverse_sigmoid, _sigmoid
 from jax import jit as jjit
@@ -45,6 +46,15 @@ FreqburstUParams = namedtuple("FreqburstUParams", _FREQBURST_UPNAMES)
 
 DEFAULT_FREQBURST_PARAMS = FreqburstParams(**DEFAULT_FREQBURST_PDICT)
 FREQBURST_PBOUNDS = FreqburstParams(**FREQBURST_PBOUNDS_PDICT)
+
+_EPS = 0.2
+ZEROBURST_FREQBURST_PARAMS = deepcopy(DEFAULT_FREQBURST_PARAMS)
+ZEROBURST_FREQBURST_PARAMS = ZEROBURST_FREQBURST_PARAMS._replace(
+    sufqb_logsm_ylo_q=U_BOUNDS[0] + _EPS,
+    sufqb_logsm_ylo_ms=U_BOUNDS[0] + _EPS,
+    sufqb_logsm_yhi_q=U_BOUNDS[0] + _EPS,
+    sufqb_logsm_yhi_ms=U_BOUNDS[0] + _EPS,
+)
 
 
 @jjit

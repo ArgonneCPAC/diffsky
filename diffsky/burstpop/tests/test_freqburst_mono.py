@@ -8,7 +8,9 @@ from jax import random as jran
 from ..freqburst_mono import (
     DEFAULT_FREQBURST_PARAMS,
     DEFAULT_FREQBURST_U_PARAMS,
+    FREQBURST_PBOUNDS,
     SUFQB_BOUNDS,
+    ZEROBURST_FREQBURST_PARAMS,
     FreqburstUParams,
     get_bounded_freqburst_params,
     get_freqburst_from_freqburst_params,
@@ -18,6 +20,14 @@ from ..freqburst_mono import (
 
 TOL = 1e-2
 EPSILON = 1e-5
+
+
+def test_default_params_are_in_bounds():
+
+    gen = zip(DEFAULT_FREQBURST_PARAMS, DEFAULT_FREQBURST_PARAMS._fields)
+    for val, key in gen:
+        bound = getattr(FREQBURST_PBOUNDS, key)
+        assert bound[0] < val < bound[1]
 
 
 def test_param_u_param_names_propagate_properly():
@@ -160,3 +170,39 @@ def test_get_freqburst_from_freqburst_params_is_monotonic_with_logsm_and_logssfr
             assert np.all(fqb >= 0.0)
             assert np.all(fqb <= fqb_max)
             assert np.all(np.diff(fqb) >= -EPSILON)
+
+
+def test_zeroburst_params_are_in_bounds():
+
+    gen = zip(ZEROBURST_FREQBURST_PARAMS, ZEROBURST_FREQBURST_PARAMS._fields)
+    for val, key in gen:
+        bound = getattr(FREQBURST_PBOUNDS, key)
+        assert bound[0] < val < bound[1]
+
+
+def test_zeroburst_params_are_invertible():
+    u_params = get_unbounded_freqburst_params(ZEROBURST_FREQBURST_PARAMS)
+    params = get_bounded_freqburst_params(u_params)
+    for p, p_orig in zip(ZEROBURST_FREQBURST_PARAMS, params):
+        assert np.all(np.isfinite(p))
+        assert np.allclose(p, p_orig, rtol=1e-4)
+
+
+def test_zeroburst_params_produce_zero_burstiness():
+    ran_key = jran.key(0)
+    sm_key, ssfr_key = jran.split(ran_key, 2)
+    n_gals = 2_000
+    logsmarr = jran.uniform(sm_key, minval=5, maxval=13, shape=(n_gals,))
+    logssfr = jran.uniform(ssfr_key, minval=-14, maxval=-5, shape=(n_gals,))
+
+    fqb = get_freqburst_from_freqburst_params(
+        ZEROBURST_FREQBURST_PARAMS, logsmarr, logssfr
+    )
+    assert fqb.shape == (n_gals,)
+    assert np.all(np.isfinite(fqb))
+    assert np.all(fqb >= 0.0)
+    assert np.all(fqb < 0.01)
+
+    sufq_max = SUFQB_BOUNDS[1]
+    fqb_max = nn.softplus(sufq_max)
+    assert np.all(fqb <= fqb_max)
