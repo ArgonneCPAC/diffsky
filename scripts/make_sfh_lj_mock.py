@@ -2,19 +2,23 @@
 
 import argparse
 import os
+import subprocess
 from time import time
 
 import numpy as np
 from diffstarpop import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstarpop.mc_diffstarpop_cen_tpeak import mc_diffstar_sfh_galpop_cen
 from diffstarpop.param_utils import mc_select_diffstar_params
+from haccytrees import Simulation as HACCSim
 from jax import random as jran
 from mpi4py import MPI
 
 from diffsky.data_loaders import hacc_core_utils as hcu
 from diffsky.data_loaders import load_hacc_cores as lhc
 
-TMP_OUTPAT = "sfh_mock_subvol_{0}_chunk_{1}_rank_{2}.dat"
+OUTPAT_CHUNK_RANK = "sfh_mock_subvol_{0}_chunk_{1}_rank_{2}.hdf5"
+OUTPAT_CHUNK = "sfh_mock_subvol_{0}_chunk_{1}.hdf5"
+OUTPAT_SUBVOL = "sfh_mock_subvol_{0}.hdf5"
 
 DRN_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LJ_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
@@ -61,6 +65,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    redshift = args.redshift
     indir_cores = args.indir_cores
     indir_diffmah = args.indir_diffmah
     sim_name = args.sim_name
@@ -72,7 +77,9 @@ if __name__ == "__main__":
     outbase = args.outbase
     nchunks = args.nchunks
 
-    IZ_OBS = 100
+    sim = HACCSim.simulations[sim_name]
+    zarr_sim = sim.step2z(np.array(sim.cosmotools_steps))
+    iz_obs = np.argmin(np.abs(redshift - zarr_sim))
 
     nchar_chunks = len(str(nchunks))
 
@@ -120,7 +127,7 @@ if __name__ == "__main__":
                 isubvol,
                 chunknum,
                 nchunks,
-                IZ_OBS,
+                iz_obs,
                 chunk_key_for_rank,
                 indir_cores,
                 indir_diffmah,
@@ -144,14 +151,26 @@ if __name__ == "__main__":
             )
 
             chunknum_str = f"{chunknum:0{nchar_chunks}d}"
-            bname = TMP_OUTPAT.format(subvol_str, chunknum_str, rank)
+            bname = OUTPAT_CHUNK_RANK.format(subvol_str, chunknum_str, rank)
             rank_outname = os.path.join(outdir, bname)
 
-            raise NotImplementedError("Made it this far")
-
-            comm.Barrier()
-            with open(rank_outname, "w") as fout:
-                raise NotImplementedError()
+            lhc.write_sfh_mock_to_disk(diffsky_data, sfh_params, rank_outname)
 
             comm.Barrier()
             ichunk_end = time()
+
+            if rank == 0:
+                chunk_fnames = []
+                for irank in range(nranks):
+                    bname = OUTPAT_CHUNK_RANK.format(subvol_str, chunknum_str, irank)
+                    fname = os.path.join(outdir, bname)
+                    chunk_fnames.append(fname)
+                bnout = OUTPAT_CHUNK.format(subvol_str, chunknum_str)
+                fnout = os.path.join(outdir, bnout)
+                lhc.collate_hdf5_file_collection(chunk_fnames, fnout)
+                bnpat = OUTPAT_CHUNK_RANK.format(subvol_str, chunknum_str, "*")
+                fnpat = os.path.join(outdir, bnpat)
+                command = "rm -rf " + fnpat
+                raw_result = subprocess.check_output(command, shell=True)
+
+            comm.Barrier()

@@ -3,6 +3,7 @@
 import os
 from collections import namedtuple
 
+import h5py
 import numpy as np
 from diffmah.data_loaders.load_hacc_mahs import _load_forest
 from diffmah.diffmah_kernels import DEFAULT_MAH_PARAMS, MAH_PBOUNDS, _log_mah_kern
@@ -34,7 +35,7 @@ except ImportError:
 _H = (0, 0, None)
 log_mah_kern_vmap = jjit(vmap(_log_mah_kern, in_axes=_H))
 
-BNPAT_DIFFMAH = "subvol_{0}_chunk_{1}.hdf5"
+BNPAT_DIFFMAH = "subvol_{0}_diffmah_fits.hdf5"
 BNPAT_CORES = "m000p.coreforest.{0}.hdf5"
 
 # MASS_COLNAME should be consistent with the column used in the diffmah fits
@@ -71,7 +72,7 @@ EMPTY_SUBCAT = SubhaloCatalog._make(EMPTY_SUBCAT_DATA)
 def _get_all_avail_basenames(drn, pat, subvolumes):
     fname_list = [os.path.join(drn, pat.format(i)) for i in subvolumes]
     for fn in fname_list:
-        assert os.path.isfile(fn)
+        assert os.path.isfile(fn), fn
     return fname_list
 
 
@@ -260,8 +261,9 @@ def load_core_data(
         subvol, chunknum, nchunks, iz_obs, sim_name, drn_cores
     )
     assert os.path.isdir(drn_diffmah)
+    forest = _res[2]
 
-    diffmah_data = _load_discovery_diffmah_data(drn_diffmah, subvol, chunknum, nchunks)
+    diffmah_data = load_diffmah_data_for_forest(drn_diffmah, subvol, forest)
     mah_params = DEFAULT_MAH_PARAMS._make(
         [diffmah_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
@@ -348,14 +350,17 @@ def get_infall_time_indices(
     return indx_t_ult_inf, indx_t_pen_inf
 
 
-def _load_discovery_diffmah_data(drn, subvol, chunknum, nchunks):
-    nchar_chunks = len(str(nchunks))
-    chunknum_str = f"{chunknum:0{nchar_chunks}d}"
-
-    bname = BNPAT_DIFFMAH.format(subvol, chunknum_str)
+def load_diffmah_data_for_forest(drn, subvol, forest):
+    """"""
+    bname = BNPAT_DIFFMAH.format(subvol)
     fn_diffmah = os.path.join(drn, bname)
 
-    diffmah_data = hcu.load_flat_hdf5(fn_diffmah)
+    cf_first_row = forest["absolute_row_idx"][0]
+    cf_last_row = forest["absolute_row_idx"][-1]
+
+    diffmah_data = hcu.load_flat_hdf5(
+        fn_diffmah, istart=cf_first_row, iend=cf_last_row + 1
+    )
     return diffmah_data
 
 
@@ -406,3 +411,30 @@ def impute_mask(mah_params, diffmah_data, n_min_mah=N_MIN_MAH_PTS):
 
     msk_impute = msk_nofit | msk_badfit | msk_badloss | msk_badmah
     return msk_impute
+
+
+def write_sfh_mock_to_disk(diffsky_data, sfh_params, rank_outname):
+    with h5py.File(rank_outname, "w") as hdf_out:
+        for key in DEFAULT_MAH_PARAMS._fields:
+            hdf_out[key] = getattr(diffsky_data["subcat"].mah_params, key)
+        for key in sfh_params.ms_params._fields:
+            hdf_out[key] = getattr(sfh_params.ms_params, key)
+        for key in sfh_params.q_params._fields:
+            hdf_out[key] = getattr(sfh_params.q_params, key)
+
+
+def collate_hdf5_file_collection(fname_collection, fnout):
+    fn = fname_collection[0]
+    with h5py.File(fn, "r") as hdf:
+        mock_keys = list(hdf.keys())
+
+    for key in mock_keys:
+        col_data_collector = []
+        for fn_in in fname_collection:
+            with h5py.File(fn_in, "r") as hdf_in:
+                arr = hdf_in[key][...]
+                col_data_collector.append(arr)
+        complete_arr = np.concatenate(col_data_collector)
+
+        with h5py.File(fnout, "w") as hdf_out:
+            hdf_out[key] = complete_arr
