@@ -4,7 +4,6 @@
 from collections import OrderedDict, namedtuple
 
 import numpy as np
-from cosmos20_colors import load_cosmos20
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import value_and_grad
@@ -37,6 +36,11 @@ COSMOS_PHOT_KEYS = (
 def load_cosmos20_tdata(
     phot_keys=COSMOS_PHOT_KEYS, zlo=0.5, zhi=2.5, sm_key="lp_mass_best", **kwargs
 ):
+    try:
+        from cosmos20_colors import load_cosmos20
+    except (ImportError, ModuleNotFoundError):
+        raise ImportError("Must have cosmos20_colors library installed")
+
     cosmos = load_cosmos20(**kwargs)
     msk_goodphot = np.ones(len(cosmos)).astype(bool)
     for key in phot_keys:
