@@ -49,6 +49,7 @@ jobs:
             setuptools \
             "setuptools_scm>=7,<8" \
             matplotlib \
+            astropy \
             python-build
           pip uninstall diffmah --yes
           pip uninstall diffstar --yes

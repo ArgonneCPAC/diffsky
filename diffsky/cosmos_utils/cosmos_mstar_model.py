@@ -9,6 +9,8 @@ from jax import numpy as jnp
 from jax import value_and_grad
 from jax.example_libraries import optimizers as jax_opt
 
+from ..data_loaders.cosmos20_loader import load_cosmos20
+
 DEFAULT_PDICT = OrderedDict(
     b0=18.01,
     i=-0.45,
@@ -52,17 +54,7 @@ def load_cosmos20_tdata(
         Fields defined by PhotData at module top
         Fields contain only the minimum information to train the approximate model
 
-    Notes
-    -----
-    This function has the following dependency:
-
-    https://github.com/LSSTDESC/cosmos20_colors
-
     """
-    try:
-        from cosmos20_colors import load_cosmos20
-    except (ImportError, ModuleNotFoundError):
-        raise ImportError("Must have cosmos20_colors library installed")
 
     cosmos = load_cosmos20(**kwargs)
     msk_goodphot = np.ones(len(cosmos)).astype(bool)
