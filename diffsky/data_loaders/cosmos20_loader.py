@@ -69,7 +69,12 @@ def load_cosmos20(
         raise ImportError("Must have astropy installed to use cosmos20_loader.py")
 
     if drn is None:
-        drn = os.environ["COSMOS20_DRN"]
+        try:
+            drn = os.environ["COSMOS20_DRN"]
+        except KeyError:
+            msg = "Must set environment variable COSMOS20_DRN or pass drn argument"
+            raise KeyError(msg)
+
     fn = os.path.join(drn, bn)
     cat = Table.read(fn, format="fits", hdu=1)
 

@@ -22,7 +22,7 @@ def test_fit_model():
 
     try:
         photdata = cmm.load_cosmos20_tdata()
-    except ImportError:
+    except (ImportError, KeyError):
         photdata = get_fake_cosmos_data(ran_key)
 
     logsm = cmm.predict_logsm(cmm.DEFAULT_PARAMS, photdata)
