@@ -26,11 +26,11 @@ def test_fit_model():
         photdata = get_fake_cosmos_data(ran_key)
 
     logsm = cmm.predict_logsm(cmm.DEFAULT_PARAMS, photdata)
-    loss_init = cmm.loss_kern(cmm.DEFAULT_PARAMS, photdata)
+    loss_init = cmm._loss_kern(cmm.DEFAULT_PARAMS, photdata)
     assert np.all(np.isfinite(logsm))
     assert np.all(np.isfinite(loss_init))
 
     p_best, loss_arr = cmm.fit_model(100, photdata, step_size=0.01)
 
-    loss_best = cmm.loss_kern(p_best, photdata)
+    loss_best = cmm._loss_kern(p_best, photdata)
     assert loss_best < loss_init
