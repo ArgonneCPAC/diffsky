@@ -41,6 +41,17 @@ def test_mc_subhalo_catalog_singlez():
     for mah_p in subcat.mah_params:
         assert mah_p.shape == (n_gals,)
 
+    logmp_ult_inf_sats = subcat.logmp_ult_inf[subcat.upids != -1]
+    logmhost_ult_inf_sats = subcat.logmhost_ult_inf[subcat.upids != -1]
+    logmu_ult_sats = logmp_ult_inf_sats - logmhost_ult_inf_sats
+    assert np.median(logmu_ult_sats < -0.75)
+
+    sat_bigger_than_host = (
+        subcat.logmp_ult_inf[subcat.upids != -1]
+        > subcat.logmhost_ult_inf[subcat.upids != -1]
+    )
+    assert np.mean(sat_bigger_than_host) < 0.2
+
 
 def test_mc_subhalo_catalog_colnames_are_stable():
     """Changing colnames of SubhaloCatalog may break something downstream"""

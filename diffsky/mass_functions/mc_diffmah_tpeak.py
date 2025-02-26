@@ -159,7 +159,7 @@ def mc_subhalos(
     subs_lgmp_ult_inf = subs_lgmp_pen_inf
 
     subs_lgmhost_pen_inf = _log_mah_kern(subs_host_diffmah, subs_diffmah.t_peak, lgt0)
-    subs_lgmhost_ult_inf = subs_diffmah.t_peak
+    subs_lgmhost_ult_inf = subs_lgmhost_pen_inf
 
     lgmp_pen_inf = np.concatenate((hosts_logmh_at_z, subs_lgmp_pen_inf))
     lgmp_ult_inf = np.concatenate((hosts_logmh_at_z, subs_lgmp_ult_inf))
