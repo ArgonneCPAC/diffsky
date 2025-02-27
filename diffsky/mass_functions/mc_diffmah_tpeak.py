@@ -44,7 +44,7 @@ def mc_subhalos(
     cosmo=DEFAULT_COSMOLOGY,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
 ):
-    """Monte Carlo realization of a subhalo catalog at the input redshift
+    """Monte Carlo realization of a subhalo catalog at a single redshift
 
     Parameters
     ----------
@@ -52,8 +52,8 @@ def mc_subhalos(
 
     lgmp_min : float
         Base-10 log of the halo mass competeness limit of the generated population
-
         Smaller values of lgmp_min produce more halos in the returned sample
+        A small fraction of halos will have slightly smaller masses than lgmp_min
 
     redshift : float
         Redshift of the halo population
@@ -66,7 +66,8 @@ def mc_subhalos(
 
     hosts_logmh_at_z : ndarray, optional
         Grid of host halo masses at the input redshift.
-        Default is None, in which case volume_com argument must be passed.
+        Default is None, in which case volume_com argument must be passed
+        and the host halo mass function will be randomly sampled.
 
     Returns
     -------
