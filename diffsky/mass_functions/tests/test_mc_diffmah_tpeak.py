@@ -58,3 +58,16 @@ def test_mc_subhalo_catalog_colnames_are_stable():
     for key in _EXPECTED_SUBCAT_COLNAMES:
         msg = f"`{key}` missing from mc_diffmah_tpeak.SubhaloCatalog"
         assert key in mcd.SubhaloCatalog._fields, msg
+
+
+def test_mc_subhalo_catalog_input_logmh_grid():
+    ran_key = jran.PRNGKey(0)
+    lgmp_min = 11.0
+    redshift = 0.5
+
+    n_hosts = 250
+    hosts_logmh_at_z = np.linspace(lgmp_min, 15, n_hosts)
+    args = ran_key, lgmp_min, redshift
+    subcat = mcd.mc_subhalos(*args, hosts_logmh_at_z=hosts_logmh_at_z)
+    for x in subcat:
+        assert np.all(np.isfinite(x))
