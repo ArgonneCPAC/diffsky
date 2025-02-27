@@ -39,7 +39,8 @@ def mc_subhalos(
     ran_key,
     lgmp_min,
     redshift,
-    volume_com,
+    volume_com=None,
+    hosts_logmh_at_z=None,
     cosmo=DEFAULT_COSMOLOGY,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
 ):
@@ -57,10 +58,15 @@ def mc_subhalos(
     redshift : float
         Redshift of the halo population
 
-    volume_com : float
+    volume_com : float, optional
         volume_com = Lbox**3 where Lbox is in comoving in units of Mpc/h
+        Default is None, in which case argument hosts_logmh_at_z must be passed
 
         Larger values of volume_com produce more halos in the returned sample
+
+    hosts_logmh_at_z : ndarray, optional
+        Grid of host halo masses at the input redshift.
+        Default is None, in which case volume_com argument must be passed.
 
     Returns
     -------
@@ -115,7 +121,12 @@ def mc_subhalos(
     """
 
     host_key1, host_key2, sub_key1, sub_key2 = jran.split(ran_key, 4)
-    hosts_logmh_at_z = mc_host_halos_singlez(host_key1, lgmp_min, redshift, volume_com)
+    if hosts_logmh_at_z is None:
+        msg = "Must pass volume_com argument if not passing hosts_logmh_at_z"
+        assert volume_com is not None, msg
+        hosts_logmh_at_z = mc_host_halos_singlez(
+            host_key1, lgmp_min, redshift, volume_com
+        )
 
     subhalo_info = generate_subhalopop(sub_key1, hosts_logmh_at_z, lgmp_min)
     subs_lgmu, subs_lgmhost, subs_host_halo_indx = subhalo_info
