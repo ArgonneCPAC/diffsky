@@ -11,12 +11,8 @@ from diffstarpop.mc_diffstarpop_tpeak import mc_diffstar_sfh_galpop
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.cosmology.flat_wcdm import _age_at_z_kern, age_at_z0
-from dsps.data_loaders import load_filter_data, load_ssp_templates
-from dsps.data_loaders.retrieve_fake_fsps_data import (
-    load_fake_filter_transmission_curves,
-    load_fake_ssp_data,
-)
-from dsps.dust.utils import get_filter_effective_wavelength
+from dsps.data_loaders import load_ssp_templates
+from dsps.data_loaders.retrieve_fake_fsps_data import load_fake_ssp_data
 from dsps.photometry import photpop
 from dsps.utils import cumulative_mstar_formed
 from jax import jit as jjit
@@ -24,6 +20,8 @@ from jax import random as jran
 from jax import vmap
 
 from diffsky import tw_photgrad
+
+from .utils import get_interpolated_lsst_tcurves, get_wave_eff_from_tcurves
 
 try:
     from matplotlib import pyplot as plt
@@ -49,77 +47,6 @@ cumulative_mstar_formed_galpop = jjit(vmap(cumulative_mstar_formed, in_axes=(Non
 mpurple, mgreen, morange = ("#9467bd", "#2ca02c", "#ff7f0e")
 
 
-def get_interpolated_lsst_tcurves(ssp_wave, drn_ssp_data=DEFAULT_DSPS_DRN):
-    try:
-        tcurve_u = load_filter_data.load_transmission_curve(
-            bn_pat="lsst_u*", drn=drn_ssp_data
-        )
-        tcurve_g = load_filter_data.load_transmission_curve(
-            bn_pat="lsst_g*", drn=drn_ssp_data
-        )
-        tcurve_r = load_filter_data.load_transmission_curve(
-            bn_pat="lsst_r*", drn=drn_ssp_data
-        )
-        tcurve_i = load_filter_data.load_transmission_curve(
-            bn_pat="lsst_i*", drn=drn_ssp_data
-        )
-        tcurve_z = load_filter_data.load_transmission_curve(
-            bn_pat="lsst_z*", drn=drn_ssp_data
-        )
-        tcurve_y = load_filter_data.load_transmission_curve(
-            bn_pat="lsst_y*", drn=drn_ssp_data
-        )
-    except (ImportError, OSError, ValueError, AssertionError):
-        _res = load_fake_filter_transmission_curves()
-        wave, u, g, r, i, z, y = _res
-        tcurve_u = load_filter_data.TransmissionCurve(wave, u)
-        tcurve_g = load_filter_data.TransmissionCurve(wave, g)
-        tcurve_r = load_filter_data.TransmissionCurve(wave, r)
-        tcurve_i = load_filter_data.TransmissionCurve(wave, i)
-        tcurve_z = load_filter_data.TransmissionCurve(wave, z)
-        tcurve_y = load_filter_data.TransmissionCurve(wave, y)
-
-    tcurve_u = tcurve_u._replace(
-        transmission=np.interp(ssp_wave, tcurve_u.wave, tcurve_u.transmission)
-    )
-    tcurve_g = tcurve_g._replace(
-        transmission=np.interp(ssp_wave, tcurve_g.wave, tcurve_g.transmission)
-    )
-    tcurve_r = tcurve_r._replace(
-        transmission=np.interp(ssp_wave, tcurve_r.wave, tcurve_r.transmission)
-    )
-    tcurve_i = tcurve_i._replace(
-        transmission=np.interp(ssp_wave, tcurve_i.wave, tcurve_i.transmission)
-    )
-    tcurve_z = tcurve_z._replace(
-        transmission=np.interp(ssp_wave, tcurve_z.wave, tcurve_z.transmission)
-    )
-    tcurve_y = tcurve_y._replace(
-        transmission=np.interp(ssp_wave, tcurve_y.wave, tcurve_y.transmission)
-    )
-
-    tcurve_u = tcurve_u._replace(wave=ssp_wave)
-    tcurve_g = tcurve_g._replace(wave=ssp_wave)
-    tcurve_r = tcurve_r._replace(wave=ssp_wave)
-    tcurve_i = tcurve_i._replace(wave=ssp_wave)
-    tcurve_z = tcurve_z._replace(wave=ssp_wave)
-    tcurve_y = tcurve_y._replace(wave=ssp_wave)
-
-    tcurves = list((tcurve_u, tcurve_g, tcurve_r, tcurve_i, tcurve_z, tcurve_y))
-    return tcurves
-
-
-def get_wave_eff(tcurves, z_obs):
-    wave_eff_arr = []
-    for tcurve in tcurves:
-        waveff = get_filter_effective_wavelength(
-            tcurve.wave, tcurve.transmission, z_obs
-        )
-        wave_eff_arr.append(waveff)
-    wave_eff_arr = np.array(wave_eff_arr)
-    return wave_eff_arr
-
-
 def get_burstiness_delta_mag_quantities(
     z_obs, drn_ssp_data=DEFAULT_DSPS_DRN, n_halos=2_000
 ):
@@ -133,7 +60,7 @@ def get_burstiness_delta_mag_quantities(
     lsst_tcurves = get_interpolated_lsst_tcurves(
         ssp_data.ssp_wave, drn_ssp_data=drn_ssp_data
     )
-    wave_eff_arr = get_wave_eff(lsst_tcurves, z_obs)
+    wave_eff_arr = get_wave_eff_from_tcurves(lsst_tcurves, z_obs)
 
     X = np.array([ssp_data.ssp_wave] * 6)
     Y = np.array([x.transmission for x in lsst_tcurves])
