@@ -290,17 +290,17 @@ def mc_diffsky_photometry(
     X = np.array([ssp_data.ssp_wave] * 6)
     Y = np.array([x.transmission for x in lsst_tcurves])
 
-    ssp_flux_table = 10 ** (
+    _ssp_flux_table = 10 ** (
         -0.4
         * photpop.precompute_ssp_restmags(ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y)
     )
-    ssp_flux_table_multimag = np.swapaxes(np.swapaxes(ssp_flux_table, 0, 2), 1, 2)
+    ssp_flux_table_multimag = np.swapaxes(np.swapaxes(_ssp_flux_table, 0, 2), 1, 2)
 
     t_obs = flat_wcdm._age_at_z_kern(z_obs, *DEFAULT_COSMOLOGY)
     t0 = flat_wcdm.age_at_z0(*DEFAULT_COSMOLOGY)
     logt0 = np.log10(t0)
 
-    frac_trans_kcorrect = calc_dust_ftrans_vmap(
+    frac_trans = calc_dust_ftrans_vmap(
         dustpop_params,
         wave_eff_arr,
         diffsky_data["logsm_obs"],
@@ -311,6 +311,32 @@ def mc_diffsky_photometry(
         scatter_params,
     )
 
+    logsm_obs = diffsky_data["logsm_obs"].reshape((n_gals, 1, 1, 1))
+    # assert False, (ssp_flux_table_multimag.shape, diffsky_data["logsm_obs"].shape)
+    gal_flux_table_nodust = ssp_flux_table_multimag * 10**logsm_obs
+    assert False, (
+        gal_flux_table_nodust.shape,
+        diffsky_data["smooth_ssp_weights"].shape,
+    )
+
+    _s = (1, *frac_trans.shape)
+    gal_flux_table = gal_flux_table_nodust * frac_trans.reshape(_s)
+
+    diffsky_data["gal_flux_nodust_smooth"] = jnp.sum(
+        gal_flux_table_nodust * diffsky_data["smooth_ssp_weights"], axis=(0, 1)
+    )
+    diffsky_data["gal_flux_nodust_bursty"] = jnp.sum(
+        gal_flux_table_nodust * diffsky_data["bursty_ssp_weights"], axis=(0, 1)
+    )
+
+    diffsky_data["gal_flux_dust_smooth"] = jnp.sum(
+        gal_flux_table * diffsky_data["smooth_ssp_weights"], axis=(0, 1)
+    )
+    diffsky_data["gal_flux_dust_bursty"] = jnp.sum(
+        gal_flux_table * diffsky_data["bursty_ssp_weights"], axis=(0, 1)
+    )
+
+    return (diffsky_data, frac_trans)
     # fluxes_smooth, fluxes_bursty = calc_approx_apparent_multiflux_galpop(
     #     spspop_params,
     #     mzr_params,
