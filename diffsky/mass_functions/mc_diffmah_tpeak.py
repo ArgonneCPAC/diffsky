@@ -38,10 +38,10 @@ SubhaloCatalog = namedtuple("SubhaloCatalog", _SUBCAT_KEYS)
 def mc_subhalos(
     ran_key,
     lgmp_min,
-    redshift,
+    z_obs,
     volume_com=None,
     hosts_logmh_at_z=None,
-    cosmo=DEFAULT_COSMOLOGY,
+    cosmo_params=DEFAULT_COSMOLOGY,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
 ):
     """Monte Carlo realization of a subhalo catalog at a single redshift
@@ -55,7 +55,7 @@ def mc_subhalos(
         Smaller values of lgmp_min produce more halos in the returned sample
         A small fraction of halos will have slightly smaller masses than lgmp_min
 
-    redshift : float
+    z_obs : float
         Redshift of the halo population
 
     volume_com : float, optional
@@ -125,17 +125,15 @@ def mc_subhalos(
     if hosts_logmh_at_z is None:
         msg = "Must pass volume_com argument if not passing hosts_logmh_at_z"
         assert volume_com is not None, msg
-        hosts_logmh_at_z = mc_host_halos_singlez(
-            host_key1, lgmp_min, redshift, volume_com
-        )
+        hosts_logmh_at_z = mc_host_halos_singlez(host_key1, lgmp_min, z_obs, volume_com)
 
     subhalo_info = generate_subhalopop(sub_key1, hosts_logmh_at_z, lgmp_min)
     subs_lgmu, subs_lgmhost, subs_host_halo_indx = subhalo_info
 
     subs_logmh_at_z = subs_lgmu + subs_lgmhost
 
-    t_obs = _age_at_z_kern(redshift, *cosmo)
-    t_0 = _age_at_z_kern(0.0, *cosmo)
+    t_obs = _age_at_z_kern(z_obs, *cosmo_params)
+    t_0 = _age_at_z_kern(0.0, *cosmo_params)
     lgt0 = np.log10(t_0)
 
     n_cens = hosts_logmh_at_z.size
@@ -210,11 +208,11 @@ def mc_subhalos(
 
 def mc_host_halos(
     ran_key,
-    redshift,
+    z_obs,
     lgmp_min=None,
     volume_com=None,
     hosts_logmh_at_z=None,
-    cosmo=DEFAULT_COSMOLOGY,
+    cosmo_params=DEFAULT_COSMOLOGY,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
 ):
     """Monte Carlo realization of a subhalo catalog at a single redshift"""
@@ -225,12 +223,10 @@ def mc_host_halos(
         msg = "Must pass lgmp_min argument if not passing hosts_logmh_at_z"
         assert lgmp_min is not None, msg
 
-        hosts_logmh_at_z = mc_host_halos_singlez(
-            host_key1, lgmp_min, redshift, volume_com
-        )
+        hosts_logmh_at_z = mc_host_halos_singlez(host_key1, lgmp_min, z_obs, volume_com)
 
-    t_obs = _age_at_z_kern(redshift, *cosmo)
-    t_0 = age_at_z0(*cosmo)
+    t_obs = _age_at_z_kern(z_obs, *cosmo_params)
+    t_0 = age_at_z0(*cosmo_params)
     lgt0 = np.log10(t_0)
 
     n_cens = hosts_logmh_at_z.size
