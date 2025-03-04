@@ -29,7 +29,7 @@ def load_mc_halo_cat(seed=0):
     randkey = jax.random.key(seed)
 
     # Perform initial MC generation slightly below LGMP_MIN
-    raw_cat = mc_subhalos(randkey, LGMP_MIN - 0.2, Z_OBS, VOLUME)
+    raw_cat = mc_subhalos(randkey, Z_OBS, LGMP_MIN - 0.2, VOLUME)
 
     cut = raw_cat.logmp_t_obs[raw_cat.ult_host_indx] >= LGMP_MIN
     return recursive_namedtuple_cut_and_reindex(raw_cat, cut)
