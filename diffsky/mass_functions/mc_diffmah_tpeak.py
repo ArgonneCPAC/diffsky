@@ -9,7 +9,7 @@ from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PA
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
 from diffmah.diffmahpop_kernels.mc_bimod_sats import mc_satpop
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
-from dsps.cosmology.flat_wcdm import _age_at_z_kern
+from dsps.cosmology.flat_wcdm import _age_at_z_kern, age_at_z0
 from jax import random as jran
 
 from .mc_hosts import mc_host_halos_singlez
@@ -188,6 +188,74 @@ def mc_subhalos(
 
     pen_host_indx = np.concatenate((np.arange(n_cens).astype(int), subs_host_halo_indx))
     ult_host_indx = np.concatenate((np.arange(n_cens).astype(int), subs_host_halo_indx))
+    subcat = SubhaloCatalog(
+        halo_ids,
+        mah_params,
+        host_mah_params,
+        logmp0,
+        lgmp_t_obs,
+        lgmp_pen_inf,
+        lgmp_ult_inf,
+        lgmhost_pen_inf,
+        lgmhost_ult_inf,
+        t_obs,
+        t_pen_inf,
+        t_ult_inf,
+        upids,
+        pen_host_indx,
+        ult_host_indx,
+    )
+    return subcat
+
+
+def mc_host_halopop(
+    ran_key,
+    redshift,
+    lgmp_min=None,
+    volume_com=None,
+    hosts_logmh_at_z=None,
+    cosmo=DEFAULT_COSMOLOGY,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+):
+    """Monte Carlo realization of a subhalo catalog at a single redshift"""
+    host_key1, host_key2 = jran.split(ran_key, 2)
+    if hosts_logmh_at_z is None:
+        msg = "Must pass volume_com argument if not passing hosts_logmh_at_z"
+        assert volume_com is not None, msg
+        msg = "Must pass lgmp_min argument if not passing hosts_logmh_at_z"
+        assert lgmp_min is not None, msg
+
+        hosts_logmh_at_z = mc_host_halos_singlez(
+            host_key1, lgmp_min, redshift, volume_com
+        )
+
+    t_obs = _age_at_z_kern(redshift, *cosmo)
+    t_0 = age_at_z0(*cosmo)
+    lgt0 = np.log10(t_0)
+
+    n_cens = hosts_logmh_at_z.size
+    halo_ids = np.arange(n_cens).astype(int)
+    _ZH = np.zeros(n_cens)
+
+    tarr = np.zeros(1) + 10**lgt0
+    mah_params = mc_cenpop(
+        diffmahpop_params, tarr, hosts_logmh_at_z, t_obs + _ZH, host_key2, lgt0
+    )[0]
+
+    host_mah_params = mah_params
+    lgmhost_pen_inf = np.copy(hosts_logmh_at_z)
+    lgmhost_ult_inf = np.copy(hosts_logmh_at_z)
+    t_pen_inf = mah_params.t_peak
+    t_ult_inf = mah_params.t_peak
+    upids = _ZH - 1
+    pen_host_indx = np.arange(n_cens)
+    ult_host_indx = np.arange(n_cens)
+
+    logmp0 = _log_mah_kern(mah_params, 10**lgt0, lgt0)
+    lgmp_t_obs = _log_mah_kern(mah_params, t_obs, lgt0)
+    lgmp_pen_inf = _log_mah_kern(mah_params, mah_params.t_peak, lgt0)
+    lgmp_ult_inf = _log_mah_kern(mah_params, mah_params.t_peak, lgt0)
+
     subcat = SubhaloCatalog(
         halo_ids,
         mah_params,
