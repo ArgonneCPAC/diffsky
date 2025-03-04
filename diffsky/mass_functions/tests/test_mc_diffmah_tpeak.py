@@ -73,14 +73,14 @@ def test_mc_subhalo_catalog_input_logmh_grid():
         assert np.all(np.isfinite(x))
 
 
-def test_mc_host_halopop():
+def test_mc_host_halos():
 
     ran_key = jran.PRNGKey(0)
     redshift = 0.5
     Lbox = 25.0
     args = ran_key, redshift
 
-    subcat = mcd.mc_host_halopop(*args, lgmp_min=11, volume_com=Lbox**3)
+    subcat = mcd.mc_host_halos(*args, lgmp_min=11, volume_com=Lbox**3)
     for x in subcat:
         assert np.all(np.isfinite(x))
 
@@ -88,3 +88,8 @@ def test_mc_host_halopop():
     assert subcat.logmp_pen_inf.shape == (n_gals,)
     for mah_p in subcat.mah_params:
         assert mah_p.shape == (n_gals,)
+
+    n_cens = 200
+    hosts_logmh_at_z = np.linspace(10, 15, n_cens)
+    subcat = mcd.mc_host_halos(*args, hosts_logmh_at_z=hosts_logmh_at_z)
+    assert subcat.logmp0.size == n_cens

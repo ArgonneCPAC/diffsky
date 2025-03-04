@@ -208,7 +208,7 @@ def mc_subhalos(
     return subcat
 
 
-def mc_host_halopop(
+def mc_host_halos(
     ran_key,
     redshift,
     lgmp_min=None,
