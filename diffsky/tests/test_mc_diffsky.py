@@ -13,7 +13,7 @@ def test_mc_diffstar_galhalo_pop():
     lgmp_min = 11.0
     z_obs = 0.1
     args = (ran_key, lgmp_min, z_obs)
-    diffsky_data = mcd.mc_diffstar_galhalo_pop(*args, hosts_logmh_at_z=hosts_logmh_at_z)
+    diffsky_data = mcd.mc_diffstar_galpop(*args, hosts_logmh_at_z=hosts_logmh_at_z)
 
     for p in diffsky_data["subcat"].mah_params:
         assert np.all(np.isfinite(p))

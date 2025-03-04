@@ -20,7 +20,7 @@ N_T = 100
 _interp_vmap_single_t_obs = jjit(vmap(jnp.interp, in_axes=(None, None, 0)))
 
 
-def mc_diffstar_galhalo_pop(
+def mc_diffstar_galpop(
     ran_key,
     lgmp_min,
     z_obs,
