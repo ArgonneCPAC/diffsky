@@ -36,13 +36,13 @@ def mc_diffstar_galpop(
     ----------
     ran_key : jran.PRNGKey
 
+    z_obs : float
+        Redshift of the halo population
+
     lgmp_min : float
         Base-10 log of the halo mass competeness limit of the generated population
         Smaller values of lgmp_min produce more halos in the returned sample
         A small fraction of halos will have slightly smaller masses than lgmp_min
-
-    redshift : float
-        Redshift of the halo population
 
     volume_com : float, optional
         volume_com = Lbox**3 where Lbox is in comoving in units of Mpc/h
@@ -68,8 +68,8 @@ def mc_diffstar_galpop(
 
     subcat = mc_subhalos(
         mah_key,
-        lgmp_min,
         z_obs,
+        lgmp_min,
         volume_com=volume_com,
         hosts_logmh_at_z=hosts_logmh_at_z,
         cosmo_params=cosmo_params,
@@ -124,6 +124,38 @@ def mc_diffstar_cenpop(
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     n_t=N_T,
 ):
+    """Generate a population of central galaxies with diffmah MAH and diffstar SFH
+
+    Parameters
+    ----------
+    ran_key : jran.PRNGKey
+
+    z_obs : float
+        Redshift of the halo population
+
+    lgmp_min : float
+        Base-10 log of the halo mass competeness limit of the generated population
+        Smaller values of lgmp_min produce more halos in the returned sample
+        A small fraction of halos will have slightly smaller masses than lgmp_min
+
+    volume_com : float, optional
+        volume_com = Lbox**3 where Lbox is in comoving in units of Mpc/h
+        Default is None, in which case argument hosts_logmh_at_z must be passed
+
+        Larger values of volume_com produce more halos in the returned sample
+
+    hosts_logmh_at_z : ndarray, optional
+        Grid of host halo masses at the input redshift.
+        Default is None, in which case volume_com argument must be passed
+        and the host halo mass function will be randomly sampled.
+
+    Returns
+    -------
+    diffsky_data : dict
+        Diffstar galaxy population
+
+    """
+
     mah_key, sfh_key = jran.split(ran_key, 2)
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)

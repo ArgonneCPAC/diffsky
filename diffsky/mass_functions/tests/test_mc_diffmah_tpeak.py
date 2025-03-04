@@ -30,7 +30,7 @@ def test_mc_subhalo_catalog_singlez():
     redshift = 0.5
     Lbox = 25.0
     volume_com = Lbox**3
-    args = ran_key, lgmp_min, redshift, volume_com
+    args = ran_key, redshift, lgmp_min, volume_com
 
     subcat = mcd.mc_subhalos(*args)
     for x in subcat:
@@ -67,7 +67,7 @@ def test_mc_subhalo_catalog_input_logmh_grid():
 
     n_hosts = 250
     hosts_logmh_at_z = np.linspace(lgmp_min, 15, n_hosts)
-    args = ran_key, lgmp_min, redshift
+    args = ran_key, redshift, lgmp_min
     subcat = mcd.mc_subhalos(*args, hosts_logmh_at_z=hosts_logmh_at_z)
     for x in subcat:
         assert np.all(np.isfinite(x))

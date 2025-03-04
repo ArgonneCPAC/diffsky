@@ -37,8 +37,8 @@ SubhaloCatalog = namedtuple("SubhaloCatalog", _SUBCAT_KEYS)
 
 def mc_subhalos(
     ran_key,
-    lgmp_min,
     z_obs,
+    lgmp_min,
     volume_com=None,
     hosts_logmh_at_z=None,
     cosmo_params=DEFAULT_COSMOLOGY,
