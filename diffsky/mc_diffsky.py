@@ -338,6 +338,22 @@ def mc_diffsky_lsst_photpop(
         saw.SFR_MIN,
     )
 
+    if return_internal_quantities:
+        diffsky_data["smooth_age_weights_ms"] = _calc_age_weights_galpop(
+            diffsky_data["t_table"],
+            diffsky_data["sfh_ms"],
+            ssp_data.ssp_lg_age_gyr,
+            diffsky_data["t_obs"],
+            saw.SFR_MIN,
+        )
+        diffsky_data["smooth_age_weights_q"] = _calc_age_weights_galpop(
+            diffsky_data["t_table"],
+            diffsky_data["sfh_q"],
+            ssp_data.ssp_lg_age_gyr,
+            diffsky_data["t_obs"],
+            saw.SFR_MIN,
+        )
+
     diffsky_data["lgmet_weights"] = _calc_lgmet_weights_galpop(
         diffsky_data["lgmet_med"], lgmet_scatter, ssp_data.ssp_lgmet
     )
@@ -352,17 +368,60 @@ def mc_diffsky_lsst_photpop(
     bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
     diffsky_data["bursty_age_weights"] = bursty_age_weights
 
+    if return_internal_quantities:
+        _args = (
+            diffburstpop_params,
+            diffsky_data["logsm_obs"],
+            diffsky_data["logssfr_obs"],
+            ssp_data.ssp_lg_age_gyr,
+            diffsky_data["smooth_age_weights_ms"],
+        )
+        bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
+        diffsky_data["bursty_age_weights_ms"] = bursty_age_weights
+
+        _args = (
+            diffburstpop_params,
+            diffsky_data["logsm_obs"],
+            diffsky_data["logssfr_obs"],
+            ssp_data.ssp_lg_age_gyr,
+            diffsky_data["smooth_age_weights_q"],
+        )
+        bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
+        diffsky_data["bursty_age_weights_q"] = bursty_age_weights
+
     _wmet = diffsky_data["lgmet_weights"].reshape((n_gals, n_met, 1))
+
     _amet = diffsky_data["smooth_age_weights"].reshape((n_gals, 1, n_age))
     smooth_weights = _wmet * _amet
     smooth_weights = smooth_weights / smooth_weights.sum()
+    diffsky_data["smooth_ssp_weights"] = smooth_weights
+
+    if return_internal_quantities:
+        _amet = diffsky_data["smooth_age_weights_ms"].reshape((n_gals, 1, n_age))
+        smooth_weights = _wmet * _amet
+        smooth_weights = smooth_weights / smooth_weights.sum()
+        diffsky_data["smooth_ssp_weights_ms"] = smooth_weights
+
+        _amet = diffsky_data["smooth_age_weights_q"].reshape((n_gals, 1, n_age))
+        smooth_weights = _wmet * _amet
+        smooth_weights = smooth_weights / smooth_weights.sum()
+        diffsky_data["smooth_ssp_weights_q"] = smooth_weights
 
     _bmet = diffsky_data["bursty_age_weights"].reshape((n_gals, 1, n_age))
     bursty_weights = _wmet * _bmet
     bursty_weights = bursty_weights / bursty_weights.sum()
-
-    diffsky_data["smooth_ssp_weights"] = smooth_weights
     diffsky_data["bursty_ssp_weights"] = bursty_weights
+
+    if return_internal_quantities:
+        _bmet = diffsky_data["bursty_age_weights_ms"].reshape((n_gals, 1, n_age))
+        bursty_weights = _wmet * _bmet
+        bursty_weights = bursty_weights / bursty_weights.sum()
+        diffsky_data["bursty_ssp_weights_ms"] = bursty_weights
+
+        _bmet = diffsky_data["bursty_age_weights_q"].reshape((n_gals, 1, n_age))
+        bursty_weights = _wmet * _bmet
+        bursty_weights = bursty_weights / bursty_weights.sum()
+        diffsky_data["bursty_ssp_weights_q"] = bursty_weights
 
     lsst_tcurves = load_interpolated_lsst_curves(
         ssp_data.ssp_wave, drn_ssp_data=drn_ssp_data
@@ -420,7 +479,32 @@ def mc_diffsky_lsst_photpop(
     diffsky_data["rest_ugrizy_smooth_dust"] = mag_smooth_dust
     diffsky_data["rest_ugrizy_bursty_dust"] = mag_bursty_dust
 
-    return diffsky_data, gal_flux_table_nodust, frac_trans
+    if return_internal_quantities:
+        w = diffsky_data["smooth_ssp_weights_ms"].reshape((n_gals, 1, n_met, n_age))
+        mags_nodust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_nodust * w, axis=(2, 3)))
+        mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
+        diffsky_data["rest_ugrizy_smooth_nodust_ms"] = mags_nodust
+        diffsky_data["rest_ugrizy_smooth_dust_ms"] = mags_dust
+
+        w = diffsky_data["smooth_ssp_weights_q"].reshape((n_gals, 1, n_met, n_age))
+        mags_nodust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_nodust * w, axis=(2, 3)))
+        mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
+        diffsky_data["rest_ugrizy_smooth_nodust_q"] = mags_nodust
+        diffsky_data["rest_ugrizy_smooth_dust_q"] = mags_dust
+
+        w = diffsky_data["bursty_ssp_weights_ms"].reshape((n_gals, 1, n_met, n_age))
+        mags_nodust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_nodust * w, axis=(2, 3)))
+        mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
+        diffsky_data["rest_ugrizy_bursty_nodust_ms"] = mags_nodust
+        diffsky_data["rest_ugrizy_bursty_dust_ms"] = mags_dust
+
+        w = diffsky_data["bursty_ssp_weights_q"].reshape((n_gals, 1, n_met, n_age))
+        mags_nodust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_nodust * w, axis=(2, 3)))
+        mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
+        diffsky_data["rest_ugrizy_bursty_nodust_q"] = mags_nodust
+        diffsky_data["rest_ugrizy_bursty_dust_q"] = mags_dust
+
+    return diffsky_data
 
 
 @jjit
