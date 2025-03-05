@@ -2,6 +2,7 @@
 """
 
 import numpy as np
+from dsps.data_loaders import retrieve_fake_fsps_data as rffd
 from jax import random as jran
 
 from .. import mc_diffsky as mcd
@@ -53,3 +54,14 @@ def test_mc_diffstar_cenpop():
     # Enforce return_internal_quantities supplies additional info
     for key in ("sfh_params_q", "sfh_ms", "frac_q"):
         assert key in diffsky_data.keys()
+
+
+def test_mc_diffsky_galhalo_pop():
+    ran_key = jran.key(0)
+    lgmp_min = 11.0
+    z_obs = 0.2
+    Lbox = 50.0
+    ssp_data = rffd.load_fake_ssp_data()
+    args = (ran_key, z_obs, lgmp_min, ssp_data)
+
+    diffsky_data = mcd.mc_diffsky_galhalo_pop(*args, volume_com=Lbox**3)
