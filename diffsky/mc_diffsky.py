@@ -393,34 +393,40 @@ def mc_diffsky_lsst_photpop(
 
     _amet = diffsky_data["smooth_age_weights"].reshape((n_gals, 1, n_age))
     smooth_weights = _wmet * _amet
-    smooth_weights = smooth_weights / smooth_weights.sum()
+    _norm = jnp.sum(smooth_weights, axis=(1, 2))
+    smooth_weights = smooth_weights / _norm.reshape((n_gals, 1, 1))
     diffsky_data["smooth_ssp_weights"] = smooth_weights
 
     if return_internal_quantities:
         _amet = diffsky_data["smooth_age_weights_ms"].reshape((n_gals, 1, n_age))
         smooth_weights = _wmet * _amet
-        smooth_weights = smooth_weights / smooth_weights.sum()
+        _norm = jnp.sum(smooth_weights, axis=(1, 2))
+        smooth_weights = smooth_weights / _norm.reshape((n_gals, 1, 1))
         diffsky_data["smooth_ssp_weights_ms"] = smooth_weights
 
         _amet = diffsky_data["smooth_age_weights_q"].reshape((n_gals, 1, n_age))
         smooth_weights = _wmet * _amet
-        smooth_weights = smooth_weights / smooth_weights.sum()
+        _norm = jnp.sum(smooth_weights, axis=(1, 2))
+        smooth_weights = smooth_weights / _norm.reshape((n_gals, 1, 1))
         diffsky_data["smooth_ssp_weights_q"] = smooth_weights
 
     _bmet = diffsky_data["bursty_age_weights"].reshape((n_gals, 1, n_age))
     bursty_weights = _wmet * _bmet
-    bursty_weights = bursty_weights / bursty_weights.sum()
+    _norm = jnp.sum(bursty_weights, axis=(1, 2))
+    bursty_weights = bursty_weights / _norm.reshape((n_gals, 1, 1))
     diffsky_data["bursty_ssp_weights"] = bursty_weights
 
     if return_internal_quantities:
         _bmet = diffsky_data["bursty_age_weights_ms"].reshape((n_gals, 1, n_age))
         bursty_weights = _wmet * _bmet
-        bursty_weights = bursty_weights / bursty_weights.sum()
+        _norm = jnp.sum(bursty_weights, axis=(1, 2))
+        bursty_weights = bursty_weights / _norm.reshape((n_gals, 1, 1))
         diffsky_data["bursty_ssp_weights_ms"] = bursty_weights
 
         _bmet = diffsky_data["bursty_age_weights_q"].reshape((n_gals, 1, n_age))
         bursty_weights = _wmet * _bmet
-        bursty_weights = bursty_weights / bursty_weights.sum()
+        _norm = jnp.sum(bursty_weights, axis=(1, 2))
+        bursty_weights = bursty_weights / _norm.reshape((n_gals, 1, 1))
         diffsky_data["bursty_ssp_weights_q"] = bursty_weights
 
     lsst_tcurves = load_interpolated_lsst_curves(
