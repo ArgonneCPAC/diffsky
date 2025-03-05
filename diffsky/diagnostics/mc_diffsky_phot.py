@@ -80,8 +80,8 @@ def mc_diffstar_galhalo_pop(
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, n_t)
 
-    args = (mah_key, lgmp_min, z_obs, volume_com)
-    subcat = mc_subhalos(*args)
+    args = (mah_key, z_obs)
+    subcat = mc_subhalos(*args, lgmp_min=lgmp_min, volume_com=volume_com)
 
     logmu_infall = subcat.logmp_ult_inf - subcat.logmhost_ult_inf
     args = (
