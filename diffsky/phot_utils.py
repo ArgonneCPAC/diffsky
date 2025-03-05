@@ -17,6 +17,12 @@ except KeyError:
 
 
 def load_interpolated_lsst_curves(ssp_wave, drn_ssp_data=None):
+    lsst_tcurves_nointerp = load_lsst_curves(drn_ssp_data=drn_ssp_data)
+    lsst_tcurves_interp = interpolate_lsst_tcurves(lsst_tcurves_nointerp, ssp_wave)
+    return lsst_tcurves_interp, lsst_tcurves_nointerp
+
+
+def load_lsst_curves(drn_ssp_data=None):
     if drn_ssp_data is None:
         lsst_tcurves = load_fake_lsst_tcurves()
         print("Using fake LSST transmission curves since input drn_ssp_data=None")
@@ -28,7 +34,6 @@ def load_interpolated_lsst_curves(ssp_wave, drn_ssp_data=None):
             msg = f"Input drn does not contain DSPS data: drn_ssp_data=`{drn_ssp_data}`"
             raise ValueError(msg)
 
-    lsst_tcurves = interpolate_lsst_tcurves(lsst_tcurves, ssp_wave)
     return lsst_tcurves
 
 
