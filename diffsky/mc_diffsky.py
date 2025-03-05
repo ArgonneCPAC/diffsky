@@ -95,9 +95,10 @@ def mc_diffstar_galpop(
     sfh_table = jnp.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     smh_table = cumulative_mstar_formed_galpop(t_table, sfh_table)
     diffstar_params_ms, diffstar_params_q = _res[0:2]
-    sfh_params = mc_select_diffstar_params(diffstar_params_q, diffstar_params_ms,
-                                           mc_is_q)
-    
+    sfh_params = mc_select_diffstar_params(
+        diffstar_params_q, diffstar_params_ms, mc_is_q
+    )
+
     diffstar_data = dict()
     diffstar_data["subcat"] = subcat
     diffstar_data["t_table"] = t_table
@@ -193,8 +194,9 @@ def mc_diffstar_cenpop(
     sfh_table = jnp.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     smh_table = cumulative_mstar_formed_galpop(t_table, sfh_table)
     diffstar_params_ms, diffstar_params_q = _res[0:2]
-    sfh_params = mc_select_diffstar_params(diffstar_params_q, diffstar_params_ms,
-                                           mc_is_q)
+    sfh_params = mc_select_diffstar_params(
+        diffstar_params_q, diffstar_params_ms, mc_is_q
+    )
 
     diffstar_data = dict()
     diffstar_data["subcat"] = subcat
