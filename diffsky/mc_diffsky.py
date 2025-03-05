@@ -510,6 +510,8 @@ def mc_diffsky_lsst_photpop(
         diffsky_data["rest_ugrizy_bursty_nodust_q"] = mags_nodust
         diffsky_data["rest_ugrizy_bursty_dust_q"] = mags_dust
 
+        diffsky_data["frac_trans"] = frac_trans
+
     return diffsky_data
 
 
