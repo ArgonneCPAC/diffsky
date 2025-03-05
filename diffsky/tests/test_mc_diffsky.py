@@ -64,13 +64,9 @@ def test_mc_diffsky_galhalo_pop():
     ssp_data = rffd.load_fake_ssp_data()
 
     args = (ran_key, z_obs, lgmp_min, ssp_data)
-    diffsky_data, gal_flux_table_nodust, frac_trans = mcd.mc_diffsky_lsst_photpop(
-        *args, volume_com=Lbox**3, drn_ssp_data=None
+    diffsky_data = mcd.mc_diffsky_lsst_photpop(
+        *args, volume_com=Lbox**3, drn_ssp_data=None, return_internal_quantities=True
     )
-    for key in (
-        "rest_ugrizy_smooth_nodust",
-        "rest_ugrizy_bursty_nodust",
-        "rest_ugrizy_smooth_dust",
-        "rest_ugrizy_bursty_dust",
-    ):
-        assert np.all(np.isfinite(diffsky_data[key]))
+    for key in diffsky_data.keys():
+        if "rest_ugrizy" in key:
+            assert np.all(np.isfinite(diffsky_data[key]))
