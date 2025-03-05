@@ -378,8 +378,10 @@ def mc_diffsky_lsst_photpop(
     )
     ssp_flux_table_multiband = jnp.swapaxes(jnp.swapaxes(_ssp_flux_table, 0, 2), 1, 2)
 
-    ran_key, scatter_key = jran.split(ran_key, 2)
-    random_draw = jran.uniform(scatter_key, shape=(n_gals,))
+    av_key, delta_key, funo_key = jran.split(ran_key, 3)
+    uran_av = jran.uniform(av_key, shape=(n_gals,))
+    uran_delta = jran.uniform(delta_key, shape=(n_gals,))
+    uran_funo = jran.uniform(funo_key, shape=(n_gals,))
 
     frac_trans = calc_dust_ftrans_vmap(
         dustpop_params,
@@ -388,7 +390,9 @@ def mc_diffsky_lsst_photpop(
         diffsky_data["logssfr_obs"],
         z_obs,
         ssp_data.ssp_lg_age_gyr,
-        random_draw,
+        uran_av,
+        uran_delta,
+        uran_funo,
         scatter_params,
     )
 
@@ -406,7 +410,9 @@ def calc_dust_ftrans(
     logssfr,
     redshift,
     ssp_lg_age_gyr,
-    random_draw,
+    uran_av,
+    uran_delta,
+    uran_funo,
     scatter_params,
 ):
     av = avpop_mono.get_av_from_avpop_params_singlegal(
@@ -420,14 +426,12 @@ def calc_dust_ftrans(
     )
 
     suav = jnp.log(jnp.exp(av) - 1)
-    noisy_suav = _inverse_sigmoid(
-        random_draw, suav, scatter_params.av_scatter, 0.0, 1.0
-    )
+    noisy_suav = _inverse_sigmoid(uran_av, suav, scatter_params.av_scatter, 0.0, 1.0)
     noisy_av = nn.softplus(noisy_suav)
 
     udelta = deltapop._get_unbounded_deltapop_param(delta, deltapop.DELTAPOP_BOUNDS)
     noisy_udelta = _inverse_sigmoid(
-        random_draw, udelta, scatter_params.delta_scatter, 0.0, 1.0
+        uran_delta, udelta, scatter_params.delta_scatter, 0.0, 1.0
     )
     noisy_delta = deltapop._get_bounded_deltapop_param(
         noisy_udelta, deltapop.DELTAPOP_BOUNDS
@@ -435,7 +439,7 @@ def calc_dust_ftrans(
 
     ufuno = funopop_ssfr._get_u_p_from_p_scalar(funo, funopop_ssfr.FUNO_BOUNDS)
     noisy_ufuno = _inverse_sigmoid(
-        random_draw, ufuno, scatter_params.funo_scatter, 0.0, 1.0
+        uran_funo, ufuno, scatter_params.funo_scatter, 0.0, 1.0
     )
     noisy_funo = funopop_ssfr._get_p_from_u_p_scalar(
         noisy_ufuno, funopop_ssfr.FUNO_BOUNDS
@@ -447,8 +451,8 @@ def calc_dust_ftrans(
     return ftrans
 
 
-_A = (None, 0, None, None, None, None, None, None)
-_B = [None, None, 0, 0, None, None, 0, None]
+_A = (None, 0, None, None, None, None, None, None, None, None)
+_B = [None, None, 0, 0, None, None, 0, 0, 0, None]
 
 _f = jjit(vmap(calc_dust_ftrans, in_axes=_A))
 calc_dust_ftrans_vmap = jjit(vmap(_f, in_axes=_B))
