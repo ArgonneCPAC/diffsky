@@ -429,13 +429,13 @@ def mc_diffsky_lsst_photpop(
         bursty_weights = bursty_weights / _norm.reshape((n_gals, 1, 1))
         diffsky_data["bursty_ssp_weights_q"] = bursty_weights
 
-    lsst_tcurves = load_interpolated_lsst_curves(
+    lsst_tcurves_interp, lsst_tcurves_sparse = load_interpolated_lsst_curves(
         ssp_data.ssp_wave, drn_ssp_data=drn_ssp_data
     )
-    wave_eff_arr = get_wave_eff_from_tcurves(lsst_tcurves, z_obs)
+    wave_eff_ugrizy_aa = get_wave_eff_from_tcurves(lsst_tcurves_sparse, z_obs)
 
     X = jnp.array([ssp_data.ssp_wave] * 6)
-    Y = jnp.array([x.transmission for x in lsst_tcurves])
+    Y = jnp.array([x.transmission for x in lsst_tcurves_interp])
 
     _ssp_flux_table = 10 ** (
         -0.4
@@ -448,9 +448,9 @@ def mc_diffsky_lsst_photpop(
     uran_delta = jran.uniform(delta_key, shape=(n_gals,))
     uran_funo = jran.uniform(funo_key, shape=(n_gals,))
 
-    frac_trans = calc_dust_ftrans_vmap(
+    frac_trans_nonoise, frac_trans_noisy = calc_dust_ftrans_vmap(
         dustpop_params,
-        wave_eff_arr,
+        wave_eff_ugrizy_aa,
         diffsky_data["logsm_obs"],
         diffsky_data["logssfr_obs"],
         z_obs,
@@ -466,7 +466,7 @@ def mc_diffsky_lsst_photpop(
 
     n_gals, n_filters, n_met, n_age = gal_flux_table_nodust.shape
     _s = (n_gals, n_filters, 1, n_age)
-    gal_flux_table_dust = gal_flux_table_nodust * frac_trans.reshape(_s)
+    gal_flux_table_dust = gal_flux_table_nodust * frac_trans_noisy.reshape(_s)
 
     w = diffsky_data["smooth_ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     flux = jnp.sum(gal_flux_table_nodust * w, axis=(2, 3))
@@ -510,7 +510,9 @@ def mc_diffsky_lsst_photpop(
         diffsky_data["rest_ugrizy_bursty_nodust_q"] = mags_nodust
         diffsky_data["rest_ugrizy_bursty_dust_q"] = mags_dust
 
-        diffsky_data["frac_trans"] = frac_trans
+        diffsky_data["frac_trans_nonoise"] = frac_trans_nonoise
+        diffsky_data["frac_trans_noisy"] = frac_trans_noisy
+        diffsky_data["wave_eff_ugrizy"] = wave_eff_ugrizy_aa
 
     return diffsky_data
 
@@ -538,6 +540,9 @@ def calc_dust_ftrans(
         dustpop_params.funopop_params, logssfr
     )
 
+    dust_params = tw_dust.DustParams(av, delta, funo)
+    ftrans = tw_dust.calc_dust_frac_trans(wave_aa, dust_params)
+
     suav = jnp.log(jnp.exp(av) - 1)
     noisy_suav = _inverse_sigmoid(uran_av, suav, scatter_params.av_scatter, 0.0, 1.0)
     noisy_av = nn.softplus(noisy_suav)
@@ -558,10 +563,10 @@ def calc_dust_ftrans(
         noisy_ufuno, funopop_ssfr.FUNO_BOUNDS
     )
 
-    dust_params = tw_dust.DustParams(noisy_av, noisy_delta, noisy_funo)
-    ftrans = tw_dust.calc_dust_frac_trans(wave_aa, dust_params)
+    noisy_dust_params = tw_dust.DustParams(noisy_av, noisy_delta, noisy_funo)
+    ftrans_noisy = tw_dust.calc_dust_frac_trans(wave_aa, noisy_dust_params)
 
-    return ftrans
+    return ftrans, ftrans_noisy
 
 
 _A = (None, 0, None, None, None, None, None, None, None, None)
