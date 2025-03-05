@@ -54,7 +54,12 @@ def test_load_real_interpolated_lsst_tcurves():
             assert np.all(tcurve.transmission <= 1)
 
 
-def test_z_obs_dependence():
+def test_ssp_integrations():
+    """The calculation of k-corrected absolute mags has been sloppy so far.
+    Several aspects of code correctness should be checked:
+        1. Calculation of the effective wavelength at z_obs
+        2. Pre-tabulation of SSP magnitudes using the interpolated transmission cuves
+    """
     raise NotImplementedError(
-        "Still need to fix bug in z_obs k-correction to filter integrations"
+        "Still need to check correctness of calculation of k-corrected absolute mags"
     )
