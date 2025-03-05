@@ -30,6 +30,7 @@ def mc_diffstar_galpop(
     cosmo_params=DEFAULT_COSMOLOGY,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     n_t=N_T,
+    return_internal_quantities=False,
 ):
     """Generate a population of galaxies with diffmah MAH and diffstar SFH
 
@@ -55,6 +56,11 @@ def mc_diffstar_galpop(
         Grid of host halo masses at the input redshift.
         Default is None, in which case volume_com argument must be passed
         and the host halo mass function will be randomly sampled.
+
+    return_internal_quantities : bool, optional
+        If True, returned data will include additional info such as
+        the separate SFHs for the probabilistic main and quenched sequences.
+        Default is False, in which case only a single SFH will be returned.
 
     Returns
     -------
@@ -116,6 +122,13 @@ def mc_diffstar_galpop(
     )
     diffstar_data["logssfr_obs"] = logsfh_obs - diffstar_data["logsm_obs"]
 
+    if return_internal_quantities:
+        diffstar_data["sfh_ms"] = sfh_ms
+        diffstar_data["sfh_q"] = sfh_q
+        diffstar_data["frac_q"] = frac_q
+        diffstar_data["sfh_params_ms"] = diffstar_params_ms
+        diffstar_data["sfh_params_q"] = diffstar_params_q
+
     return diffstar_data
 
 
@@ -128,6 +141,7 @@ def mc_diffstar_cenpop(
     cosmo_params=DEFAULT_COSMOLOGY,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     n_t=N_T,
+    return_internal_quantities=False,
 ):
     """Generate a population of central galaxies with diffmah MAH and diffstar SFH
 
@@ -153,6 +167,11 @@ def mc_diffstar_cenpop(
         Grid of host halo masses at the input redshift.
         Default is None, in which case volume_com argument must be passed
         and the host halo mass function will be randomly sampled.
+
+    return_internal_quantities : bool, optional
+        If True, returned data will include additional info such as
+        the separate SFHs for the probabilistic main and quenched sequences.
+        Default is False, in which case only a single SFH will be returned.
 
     Returns
     -------
@@ -214,5 +233,12 @@ def mc_diffstar_cenpop(
         t_obs, t_table, jnp.log10(diffstar_data["sfh"])
     )
     diffstar_data["logssfr_obs"] = logsfh_obs - diffstar_data["logsm_obs"]
+
+    if return_internal_quantities:
+        diffstar_data["sfh_ms"] = sfh_ms
+        diffstar_data["sfh_q"] = sfh_q
+        diffstar_data["frac_q"] = frac_q
+        diffstar_data["sfh_params_ms"] = diffstar_params_ms
+        diffstar_data["sfh_params_q"] = diffstar_params_q
 
     return diffstar_data
