@@ -6,6 +6,7 @@ from diffstar.defaults import T_TABLE_MIN
 from diffstar.utils import cumulative_mstar_formed_galpop
 from diffstarpop import mc_diffstarpop_tpeak as mcdsp
 from diffstarpop.kernels.defaults_tpeak import DEFAULT_DIFFSTARPOP_PARAMS
+from diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from jax import jit as jjit
@@ -93,7 +94,10 @@ def mc_diffstar_galpop(
     sfh_ms, sfh_q, frac_q, mc_is_q = _res[2:]
     sfh_table = jnp.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     smh_table = cumulative_mstar_formed_galpop(t_table, sfh_table)
-
+    diffstar_params_ms, diffstar_params_q = _res[0:2]
+    sfh_params = mc_select_diffstar_params(diffstar_params_q, diffstar_params_ms,
+                                           mc_is_q)
+    
     diffstar_data = dict()
     diffstar_data["subcat"] = subcat
     diffstar_data["t_table"] = t_table
@@ -101,6 +105,7 @@ def mc_diffstar_galpop(
     diffstar_data["sfh"] = sfh_table
     diffstar_data["smh"] = smh_table
     diffstar_data["mc_quenched"] = mc_is_q
+    diffstar_data["sfh_params"] = sfh_params
 
     diffstar_data["logsm_obs"] = _interp_vmap_single_t_obs(
         t_obs, t_table, jnp.log10(diffstar_data["smh"])
@@ -187,6 +192,9 @@ def mc_diffstar_cenpop(
     sfh_ms, sfh_q, frac_q, mc_is_q = _res[2:]
     sfh_table = jnp.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     smh_table = cumulative_mstar_formed_galpop(t_table, sfh_table)
+    diffstar_params_ms, diffstar_params_q = _res[0:2]
+    sfh_params = mc_select_diffstar_params(diffstar_params_q, diffstar_params_ms,
+                                           mc_is_q)
 
     diffstar_data = dict()
     diffstar_data["subcat"] = subcat
@@ -195,6 +203,7 @@ def mc_diffstar_cenpop(
     diffstar_data["sfh"] = sfh_table
     diffstar_data["smh"] = smh_table
     diffstar_data["mc_quenched"] = mc_is_q
+    diffstar_data["sfh_params"] = sfh_params
 
     diffstar_data["logsm_obs"] = _interp_vmap_single_t_obs(
         t_obs, t_table, jnp.log10(diffstar_data["smh"])
