@@ -70,3 +70,7 @@ def test_mc_diffsky_galhalo_pop():
     for key in diffsky_data.keys():
         if "rest_ugrizy" in key:
             assert np.all(np.isfinite(diffsky_data[key]))
+
+    assert np.all(np.isfinite(diffsky_data["frac_trans"]))
+    assert np.all(diffsky_data["frac_trans"] >= 0)
+    assert np.all(diffsky_data["frac_trans"] <= 1)
