@@ -42,3 +42,9 @@ def test_load_real_interpolated_lsst_tcurves():
         assert np.all(np.isfinite(tcurve.transmission))
         assert np.all(tcurve.transmission >= 0)
         assert np.all(tcurve.transmission <= 1)
+
+
+def test_z_obs_dependence():
+    raise NotImplementedError(
+        "Still need to fix bug in z_obs k-correction to filter integrations"
+    )
