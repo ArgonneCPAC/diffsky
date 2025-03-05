@@ -1,6 +1,7 @@
 """
 """
 
+import os
 from collections import OrderedDict, namedtuple
 
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
@@ -24,8 +25,14 @@ from jax import vmap
 from .burstpop import diffqburstpop
 from .dustpop import avpop_mono, deltapop, funopop_ssfr, tw_dust, tw_dustpop_mono
 from .mass_functions.mc_diffmah_tpeak import mc_host_halos, mc_subhalos
-from .phot_utils import get_interpolated_lsst_tcurves, get_wave_eff_from_tcurves
+from .phot_utils import get_wave_eff_from_tcurves, load_interpolated_lsst_curves
 from .utils import _inverse_sigmoid
+
+try:
+    DSPS_DATA_DRN = os.environ["DSPS_DRN"]
+except KeyError:
+    DSPS_DATA_DRN = ""
+
 
 N_T = 100
 
@@ -38,6 +45,7 @@ DEFAULT_SCATTER_PDICT = OrderedDict(
 )
 ScatterParams = namedtuple("ScatterParams", list(DEFAULT_SCATTER_PDICT.keys()))
 DEFAULT_SCATTER_PARAMS = ScatterParams(*DEFAULT_SCATTER_PDICT.values())
+
 
 _interp_vmap_single_t_obs = jjit(vmap(jnp.interp, in_axes=(None, None, 0)))
 
@@ -281,7 +289,7 @@ def mc_diffstar_cenpop(
     return diffstar_data
 
 
-def mc_diffsky_galhalo_pop(
+def mc_diffsky_lsst_photpop(
     ran_key,
     z_obs,
     lgmp_min,
@@ -297,10 +305,12 @@ def mc_diffsky_galhalo_pop(
     scatter_params=DEFAULT_SCATTER_PARAMS,
     n_t=N_T,
     return_internal_quantities=False,
+    drn_ssp_data=DSPS_DATA_DRN,
 ):
     n_met, n_age, n_ssp_wave = ssp_data.ssp_flux.shape
 
-    lgmet_key, diffstar_key = jran.split(ran_key, 2)
+    lgmet_key, diffstar_key, ran_key = jran.split(ran_key, 3)
+
     diffsky_data = mc_diffstar_galpop(
         diffstar_key,
         z_obs,
@@ -354,7 +364,38 @@ def mc_diffsky_galhalo_pop(
     diffsky_data["smooth_ssp_weights"] = smooth_weights
     diffsky_data["bursty_ssp_weights"] = bursty_weights
 
-    return diffsky_data
+    lsst_tcurves = load_interpolated_lsst_curves(
+        ssp_data.ssp_wave, drn_ssp_data=drn_ssp_data
+    )
+    wave_eff_arr = get_wave_eff_from_tcurves(lsst_tcurves, z_obs)
+
+    X = jnp.array([ssp_data.ssp_wave] * 6)
+    Y = jnp.array([x.transmission for x in lsst_tcurves])
+
+    _ssp_flux_table = 10 ** (
+        -0.4
+        * photpop.precompute_ssp_restmags(ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y)
+    )
+    ssp_flux_table_multiband = jnp.swapaxes(jnp.swapaxes(_ssp_flux_table, 0, 2), 1, 2)
+
+    ran_key, scatter_key = jran.split(ran_key, 2)
+    random_draw = jran.uniform(scatter_key, shape=(n_gals,))
+
+    frac_trans = calc_dust_ftrans_vmap(
+        dustpop_params,
+        wave_eff_arr,
+        diffsky_data["logsm_obs"],
+        diffsky_data["logssfr_obs"],
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        random_draw,
+        scatter_params,
+    )
+
+    logsm_obs = diffsky_data["logsm_obs"].reshape((n_gals, 1, 1, 1))
+    gal_flux_table_nodust = ssp_flux_table_multiband * 10**logsm_obs
+
+    return diffsky_data, gal_flux_table_nodust, frac_trans
 
 
 @jjit
