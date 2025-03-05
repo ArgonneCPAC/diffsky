@@ -58,10 +58,12 @@ def test_mc_diffstar_cenpop():
 
 def test_mc_diffsky_galhalo_pop():
     ran_key = jran.key(0)
-    lgmp_min = 11.0
+    lgmp_min = 12.0
     z_obs = 0.2
-    Lbox = 50.0
+    Lbox = 20.0
     ssp_data = rffd.load_fake_ssp_data()
-    args = (ran_key, z_obs, lgmp_min, ssp_data)
 
-    diffsky_data = mcd.mc_diffsky_galhalo_pop(*args, volume_com=Lbox**3)
+    args = (ran_key, z_obs, lgmp_min, ssp_data)
+    diffsky_data, gal_flux_table_nodust, frac_trans = mcd.mc_diffsky_lsst_photpop(
+        *args, volume_com=Lbox**3, drn_ssp_data=None
+    )
