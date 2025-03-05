@@ -21,9 +21,18 @@ HAS_DATA_MSG = "Must have DSPS_DRN in os.environ to run this test"
 
 def test_load_fake_interpolated_lsst_tcurves():
     ssp_data = rffd.load_fake_ssp_data()
-    tcurves = pu.load_interpolated_lsst_curves(ssp_data.ssp_wave, drn_ssp_data=None)
-    assert len(tcurves) == 6
-    for tcurve in tcurves:
+    lsst_tcurves_interp, lsst_tcurves_nointerp = pu.load_interpolated_lsst_curves(
+        ssp_data.ssp_wave, drn_ssp_data=None
+    )
+    assert len(lsst_tcurves_interp) == 6
+    for tcurve in lsst_tcurves_interp:
+        assert np.all(np.isfinite(tcurve.wave))
+        assert np.all(np.isfinite(tcurve.transmission))
+        assert np.all(tcurve.transmission >= 0)
+        assert np.all(tcurve.transmission <= 1)
+
+    assert len(lsst_tcurves_nointerp) == 6
+    for tcurve in lsst_tcurves_nointerp:
         assert np.all(np.isfinite(tcurve.wave))
         assert np.all(np.isfinite(tcurve.transmission))
         assert np.all(tcurve.transmission >= 0)
@@ -33,15 +42,16 @@ def test_load_fake_interpolated_lsst_tcurves():
 @pytest.mark.skipif(not HAS_REAL_DSPS_DATA, reason=HAS_DATA_MSG)
 def test_load_real_interpolated_lsst_tcurves():
     ssp_data = load_ssp_templates(drn=DSPS_DATA_DRN)
-    tcurves = pu.load_interpolated_lsst_curves(
+    lsst_tcurves_interp, lsst_tcurves_nointerp = pu.load_interpolated_lsst_curves(
         ssp_data.ssp_wave, drn_ssp_data=DSPS_DATA_DRN
     )
-    assert len(tcurves) == 6
-    for tcurve in tcurves:
-        assert np.all(np.isfinite(tcurve.wave))
-        assert np.all(np.isfinite(tcurve.transmission))
-        assert np.all(tcurve.transmission >= 0)
-        assert np.all(tcurve.transmission <= 1)
+    for tcurves in (lsst_tcurves_interp, lsst_tcurves_nointerp):
+        assert len(tcurves) == 6
+        for tcurve in tcurves:
+            assert np.all(np.isfinite(tcurve.wave))
+            assert np.all(np.isfinite(tcurve.transmission))
+            assert np.all(tcurve.transmission >= 0)
+            assert np.all(tcurve.transmission <= 1)
 
 
 def test_z_obs_dependence():
