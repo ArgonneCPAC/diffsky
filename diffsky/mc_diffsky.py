@@ -77,13 +77,14 @@ def mc_diffstar_galpop(
     )
 
     logmu_infall = subcat.logmp_ult_inf - subcat.logmhost_ult_inf
+    t_obs = flat_wcdm._age_at_z_kern(z_obs, *cosmo_params)
     args = (
         diffstarpop_params,
         subcat.mah_params,
         subcat.logmp0,
         logmu_infall,
         subcat.logmhost_ult_inf,
-        subcat.t_ult_inf,
+        t_obs - subcat.t_ult_inf,
         sfh_key,
         t_table,
     )
@@ -92,8 +93,6 @@ def mc_diffstar_galpop(
     sfh_ms, sfh_q, frac_q, mc_is_q = _res[2:]
     sfh_table = jnp.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     smh_table = cumulative_mstar_formed_galpop(t_table, sfh_table)
-
-    t_obs = flat_wcdm._age_at_z_kern(z_obs, *cosmo_params)
 
     diffstar_data = dict()
     diffstar_data["subcat"] = subcat
@@ -172,13 +171,14 @@ def mc_diffstar_cenpop(
     )
 
     logmu_infall = subcat.logmp_ult_inf - subcat.logmhost_ult_inf
+    t_obs = flat_wcdm._age_at_z_kern(z_obs, *cosmo_params)
     args = (
         diffstarpop_params,
         subcat.mah_params,
         subcat.logmp0,
         logmu_infall,
         subcat.logmhost_ult_inf,
-        subcat.t_ult_inf,
+        t_obs - subcat.t_ult_inf,
         sfh_key,
         t_table,
     )
@@ -187,8 +187,6 @@ def mc_diffstar_cenpop(
     sfh_ms, sfh_q, frac_q, mc_is_q = _res[2:]
     sfh_table = jnp.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     smh_table = cumulative_mstar_formed_galpop(t_table, sfh_table)
-
-    t_obs = flat_wcdm._age_at_z_kern(z_obs, *cosmo_params)
 
     diffstar_data = dict()
     diffstar_data["subcat"] = subcat
