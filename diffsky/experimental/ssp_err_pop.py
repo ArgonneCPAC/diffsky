@@ -15,7 +15,7 @@ LGSSFR_X0_BOUNDS = (-11.5, -8.0)
 BOUNDING_K = 0.1
 
 DEFAULT_SSP_ERR_POP_PDICT = OrderedDict()
-DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_x0"] = 3.7
+DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_x0"] = 3.55
 DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_lgssfr_x0"] = -10.0
 DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_ylo_ylo"] = 0.0
 DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_ylo_yhi"] = 0.0
