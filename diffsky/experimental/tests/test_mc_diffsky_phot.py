@@ -8,7 +8,7 @@ from jax import random as jran
 from .. import mc_diffsky_phot as mcdp
 
 
-def test_mc_diffsky_galhalo_pop():
+def test_mc_diffsky_galpop_lsst_phot():
     ran_key = jran.key(0)
     lgmp_min = 12.0
     z_obs = 0.2
@@ -16,7 +16,7 @@ def test_mc_diffsky_galhalo_pop():
     ssp_data = rffd.load_fake_ssp_data()
 
     args = (ran_key, z_obs, lgmp_min, ssp_data)
-    diffsky_data = mcdp.mc_diffsky_lsst_photpop(
+    diffsky_data = mcdp.mc_diffsky_galpop_lsst_phot(
         *args, volume_com=Lbox**3, drn_ssp_data=None, return_internal_quantities=True
     )
     for key in diffsky_data.keys():
