@@ -1,5 +1,6 @@
 """
 """
+
 import numpy as np
 from ..photometry_interpolation import get_interpolated_photometry
 from ..photometry_interpolation import calc_ssp_weights_sfh_table_lognormal_mdf_vmap
