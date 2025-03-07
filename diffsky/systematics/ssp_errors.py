@@ -21,13 +21,13 @@ from jax import vmap
 
 from ..utils import _inverse_sigmoid, _sigmoid
 
-DEFAULT_SSPERR_PDICT = OrderedDict(ssp_ff_x0=3.78, ssp_ff_ylo=0.0, ssp_ff_yhi=0.0)
+DEFAULT_SSPERR_PDICT = OrderedDict(ssp_ff_x0=3.5, ssp_ff_ylo=0.0, ssp_ff_yhi=0.0)
 SSPerrParams = namedtuple("SSPerrParams", DEFAULT_SSPERR_PDICT.keys())
 DEFAULT_SSPERR_PARAMS = SSPerrParams(**DEFAULT_SSPERR_PDICT)
 U_PNAMES = ["u_" + key for key in DEFAULT_SSPERR_PARAMS._fields]
 SSPerrUParams = namedtuple("SSPerrUParams", U_PNAMES)
 
-SSPERR_FF_BOUNDS = (-0.25, 0.25)
+SSPERR_FF_BOUNDS = (-0.75, 0.75)
 SSPERR_BOUNDS_DICT = OrderedDict(
     ssp_ff_x0=(3.1, 4.1), ssp_ff_ylo=SSPERR_FF_BOUNDS, ssp_ff_yhi=SSPERR_FF_BOUNDS
 )
