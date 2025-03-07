@@ -153,7 +153,6 @@ def predict_lsst_phot_from_diffstar(
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
-    ff_scatter=0.001,
 ):
     diffsky_data = diffstar_data.copy()
 
@@ -306,9 +305,14 @@ def predict_lsst_phot_from_diffstar(
     flux_factor = ssp_err_pop.get_flux_factor_from_lgssfr_vmap(
         ssp_err_pop_params, diffsky_data["logssfr_obs"], wave_eff_ugrizy_aa
     )
-    flux_factor = flux_factor + jran.uniform(
-        ff_key, minval=-ff_scatter, maxval=ff_scatter, shape=flux_factor.shape
+    ff_noise_level = ssp_err_pop.get_ff_scatter(
+        ssp_err_pop_params, diffsky_data["logssfr_obs"]
     )
+    ff_noise_level = ff_noise_level.reshape((n_gals, 1))
+    ff_noise = jran.uniform(
+        ff_key, minval=-ff_noise_level, maxval=ff_noise_level, shape=flux_factor.shape
+    )
+    flux_factor = flux_factor + ff_noise
     _ff = flux_factor.reshape((n_gals, n_bands, 1, 1))
     gal_flux_table_nodust = gal_flux_table_nodust * _ff
 
