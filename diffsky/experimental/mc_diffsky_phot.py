@@ -20,6 +20,7 @@ from ..burstpop import diffqburstpop
 from ..dustpop import avpop_mono, deltapop, funopop_ssfr, tw_dust, tw_dustpop_mono
 from ..phot_utils import get_wave_eff_from_tcurves, load_interpolated_lsst_curves
 from ..utils import _inverse_sigmoid
+from . import ssp_err_pop
 
 DEFAULT_SCATTER_PDICT = OrderedDict(
     delta_scatter=5.0,
@@ -66,6 +67,7 @@ def mc_diffsky_lsst_photpop(
     n_t=mcd.N_T,
     return_internal_quantities=False,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
+    ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
 ):
     n_met, n_age, n_ssp_wave = ssp_data.ssp_flux.shape
 
@@ -193,6 +195,7 @@ def mc_diffsky_lsst_photpop(
         ssp_data.ssp_wave, drn_ssp_data=drn_ssp_data
     )
     wave_eff_ugrizy_aa = get_wave_eff_from_tcurves(lsst_tcurves_sparse, z_obs)
+    n_bands = wave_eff_ugrizy_aa.size
 
     X = jnp.array([ssp_data.ssp_wave] * 6)
     Y = jnp.array([x.transmission for x in lsst_tcurves_interp])
@@ -223,6 +226,12 @@ def mc_diffsky_lsst_photpop(
 
     logsm_obs = diffsky_data["logsm_obs"].reshape((n_gals, 1, 1, 1))
     gal_flux_table_nodust = ssp_flux_table_multiband * 10**logsm_obs
+
+    flux_factor = ssp_err_pop.get_flux_factor_from_lgssfr_vmap(
+        ssp_err_pop_params, diffsky_data["logssfr_obs"], wave_eff_ugrizy_aa
+    )
+    _ff = flux_factor.reshape((n_gals, n_bands, 1, 1))
+    gal_flux_table_nodust = gal_flux_table_nodust * _ff
 
     n_gals, n_filters, n_met, n_age = gal_flux_table_nodust.shape
     _s = (n_gals, n_filters, 1, n_age)
