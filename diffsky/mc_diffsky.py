@@ -1,6 +1,8 @@
 """
 """
 
+import os
+
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffstar.defaults import T_TABLE_MIN
 from diffstar.utils import cumulative_mstar_formed_galpop
@@ -15,6 +17,12 @@ from jax import random as jran
 from jax import vmap
 
 from .mass_functions.mc_diffmah_tpeak import mc_host_halos, mc_subhalos
+
+try:
+    DSPS_DATA_DRN = os.environ["DSPS_DRN"]
+except KeyError:
+    DSPS_DATA_DRN = ""
+
 
 N_T = 100
 
