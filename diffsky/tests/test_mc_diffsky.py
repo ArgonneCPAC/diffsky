@@ -53,5 +53,3 @@ def test_mc_diffstar_cenpop():
     # Enforce return_internal_quantities supplies additional info
     for key in ("sfh_params_q", "sfh_ms", "frac_q"):
         assert key in diffsky_data.keys()
-
-
