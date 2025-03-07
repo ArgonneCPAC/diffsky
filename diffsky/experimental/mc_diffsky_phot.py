@@ -54,9 +54,8 @@ def mc_diffsky_galpop_lsst_phot(
     ran_key,
     z_obs,
     lgmp_min,
+    volume_com,
     ssp_data,
-    volume_com=None,
-    hosts_logmh_at_z=None,
     cosmo_params=DEFAULT_COSMOLOGY,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
@@ -75,6 +74,49 @@ def mc_diffsky_galpop_lsst_phot(
         z_obs,
         lgmp_min,
         volume_com=volume_com,
+        cosmo_params=cosmo_params,
+        diffstarpop_params=diffstarpop_params,
+        n_t=n_t,
+        return_internal_quantities=return_internal_quantities,
+    )
+    diffsky_data = predict_lsst_phot_from_diffstar(
+        diffstar_data,
+        ran_key,
+        z_obs,
+        ssp_data,
+        dustpop_params=dustpop_params,
+        mzr_params=mzr_params,
+        lgmet_scatter=lgmet_scatter,
+        diffburstpop_params=diffburstpop_params,
+        scatter_params=scatter_params,
+        ssp_err_pop_params=ssp_err_pop_params,
+        drn_ssp_data=drn_ssp_data,
+        return_internal_quantities=return_internal_quantities,
+    )
+    return diffsky_data
+
+
+def mc_diffsky_cenpop_lsst_phot(
+    ran_key,
+    z_obs,
+    hosts_logmh_at_z,
+    ssp_data,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
+    dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
+    mzr_params=umzr.DEFAULT_MZR_PARAMS,
+    lgmet_scatter=umzr.MZR_SCATTER,
+    diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
+    scatter_params=DEFAULT_SCATTER_PARAMS,
+    ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
+    n_t=mcd.N_T,
+    drn_ssp_data=mcd.DSPS_DATA_DRN,
+    return_internal_quantities=False,
+):
+    diffstar_key, ran_key = jran.split(ran_key, 2)
+    diffstar_data = mcd.mc_diffstar_cenpop(
+        diffstar_key,
+        z_obs,
         hosts_logmh_at_z=hosts_logmh_at_z,
         cosmo_params=cosmo_params,
         diffstarpop_params=diffstarpop_params,
