@@ -1,5 +1,6 @@
 """
 """
+
 from dsps.cosmology import age_at_z
 from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
 from jax import jit as jjit
