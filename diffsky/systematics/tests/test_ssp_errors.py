@@ -86,8 +86,8 @@ def test_flux_factor_kern_default_is_well_behaved():
     """The ssp_flux_factor function should return sensible values for default params"""
     wave = np.logspace(3, 4, 100)
     ff = sspe.ssp_flux_factor(sspe.DEFAULT_SSPERR_PARAMS, wave)
-    assert np.all(ff >= 10 ** sspe.SSPERR_PBOUNDS.ssp_lgff_ylo[0])
-    assert np.all(ff <= 10 ** sspe.SSPERR_PBOUNDS.ssp_lgff_ylo[1])
+    assert np.all(ff >= 10 ** sspe.SSPERR_PBOUNDS.ssp_ff_ylo[0])
+    assert np.all(ff <= 10 ** sspe.SSPERR_PBOUNDS.ssp_ff_ylo[1])
 
 
 def test_flux_factor_kern_rando_is_well_behaved():
@@ -103,6 +103,6 @@ def test_flux_factor_kern_rando_is_well_behaved():
         u_params = sspe.DEFAULT_SSPERR_U_PARAMS._make(uran)
         params = sspe.get_bounded_params(u_params)
         ff = sspe.ssp_flux_factor(params, wave)
-        assert np.all(ff >= 10 ** sspe.SSPERR_PBOUNDS.ssp_lgff_ylo[0])
-        assert np.all(ff <= 10 ** sspe.SSPERR_PBOUNDS.ssp_lgff_ylo[1])
+        assert np.all(ff >= 10 ** sspe.SSPERR_PBOUNDS.ssp_ff_ylo[0])
+        assert np.all(ff <= 10 ** sspe.SSPERR_PBOUNDS.ssp_ff_ylo[1])
         assert not np.allclose(ff, 1.0)
