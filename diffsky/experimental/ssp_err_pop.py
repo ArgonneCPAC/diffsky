@@ -40,9 +40,9 @@ SSPERR_POP_PBOUNDS = SSPerrPopParams(**SSP_ERR_POP_BOUNDS_DICT)
 
 
 @jjit
-def get_flux_factor_from_lgssfr_kern(ssp_err_pop_params, lgssfr, wave):
+def get_flux_factor_from_lgssfr_kern(ssp_err_pop_params, lgssfr, wave_aa):
     ssp_err_params = get_ssp_err_params_from_lgssfr_kern(ssp_err_pop_params, lgssfr)
-    flux_factor = ssp_errors.ssp_flux_factor(ssp_err_params, wave)
+    flux_factor = ssp_errors.ssp_flux_factor(ssp_err_params, wave_aa)
     return flux_factor
 
 
