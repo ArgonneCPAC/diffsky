@@ -154,7 +154,7 @@ def predict_lsst_phot_from_diffstar(
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
 ):
-    diffsky_data = diffstar_data
+    diffsky_data = diffstar_data.copy()
 
     lgmet_key, ran_key = jran.split(ran_key, 2)
     lgmet_med = umzr.mzr_model(
@@ -355,7 +355,8 @@ def predict_lsst_phot_from_diffstar(
 
         diffsky_data["frac_trans_nonoise"] = frac_trans_nonoise
         diffsky_data["frac_trans_noisy"] = frac_trans_noisy
-        diffsky_data["wave_eff_ugrizy"] = wave_eff_ugrizy_aa
+        diffsky_data["wave_eff_ugrizy_aa"] = wave_eff_ugrizy_aa
+        diffsky_data['flux_factor'] = flux_factor
 
     return diffsky_data
 
