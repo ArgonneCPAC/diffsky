@@ -1,4 +1,4 @@
-"""
+"""Key parameters to vary: ssp_ff_x0, ssp_ff_lgssfr_x0, ssp_ff_ylo_yhi
 """
 
 from collections import OrderedDict, namedtuple
@@ -22,8 +22,8 @@ DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_ylo_yhi"] = 0.0
 DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_yhi_ylo"] = 0.0
 DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_yhi_yhi"] = 0.0
 DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_scatter_x0"] = -11.0
-DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_scatter_ylo"] = 0.005
-DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_scatter_yhi"] = 0.02
+DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_scatter_ylo"] = 0.01
+DEFAULT_SSP_ERR_POP_PDICT["ssp_ff_scatter_yhi"] = 0.025
 
 SSPerrPopParams = namedtuple("SSPErrPopParams", list(DEFAULT_SSP_ERR_POP_PDICT.keys()))
 DEFAULT_SSP_ERR_POP_PARAMS = SSPerrPopParams(**DEFAULT_SSP_ERR_POP_PDICT)
@@ -31,7 +31,8 @@ DEFAULT_SSP_ERR_POP_PARAMS = SSPerrPopParams(**DEFAULT_SSP_ERR_POP_PDICT)
 U_PNAMES = ["u_" + key for key in DEFAULT_SSP_ERR_POP_PARAMS._fields]
 SSPerrPopUParams = namedtuple("SSPerrPopUParams", U_PNAMES)
 
-FF_SCATTER_BOUNDS = (0.001, 0.05)
+FF_SCATTER_BOUNDS_Q = (0.001, 0.02)
+FF_SCATTER_BOUNDS_MS = (0.001, 0.05)
 
 SSP_ERR_POP_BOUNDS_DICT = OrderedDict(
     ssp_ff_x0=ssp_errors.SSPERR_PBOUNDS.ssp_ff_x0,
@@ -41,8 +42,8 @@ SSP_ERR_POP_BOUNDS_DICT = OrderedDict(
     ssp_ff_yhi_ylo=ssp_errors.SSPERR_PBOUNDS.ssp_ff_yhi,
     ssp_ff_yhi_yhi=ssp_errors.SSPERR_PBOUNDS.ssp_ff_yhi,
     ssp_ff_scatter_x0=(-11.5, -8.0),
-    ssp_ff_scatter_ylo=FF_SCATTER_BOUNDS,
-    ssp_ff_scatter_yhi=FF_SCATTER_BOUNDS,
+    ssp_ff_scatter_ylo=FF_SCATTER_BOUNDS_Q,
+    ssp_ff_scatter_yhi=FF_SCATTER_BOUNDS_MS,
 )
 SSPERR_POP_PBOUNDS = SSPerrPopParams(**SSP_ERR_POP_BOUNDS_DICT)
 
