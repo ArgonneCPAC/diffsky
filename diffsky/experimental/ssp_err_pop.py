@@ -46,6 +46,13 @@ def get_flux_factor_from_lgssfr_kern(ssp_err_pop_params, lgssfr, wave):
     return flux_factor
 
 
+_B = (None, None, 0)
+_G = (None, 0, None)
+get_flux_factor_from_lgssfr_vmap = jjit(
+    vmap(vmap(get_flux_factor_from_lgssfr_kern, in_axes=_B), in_axes=_G)
+)
+
+
 @jjit
 def get_ssp_err_params_from_lgssfr_kern(ssp_err_pop_params, lgssfr):
 
