@@ -53,5 +53,5 @@ def test_mc_diffsky_cenpop_lsst_phot():
     assert np.all(diffsky_data["frac_trans_noisy"] >= 0)
     assert np.all(diffsky_data["frac_trans_noisy"] <= 1)
 
-    n_gals = diffsky_data['sfh'].shape[0]
+    n_gals = diffsky_data["sfh"].shape[0]
     assert n_gals == hosts_logmh_at_z.size
