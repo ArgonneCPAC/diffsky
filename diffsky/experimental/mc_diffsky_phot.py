@@ -50,7 +50,7 @@ _calc_bursty_age_weights_vmap = jjit(
 )
 
 
-def mc_diffsky_lsst_photpop(
+def mc_diffsky_galpop_lsst_phot(
     ran_key,
     z_obs,
     lgmp_min,
@@ -64,16 +64,13 @@ def mc_diffsky_lsst_photpop(
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
     scatter_params=DEFAULT_SCATTER_PARAMS,
-    n_t=mcd.N_T,
-    return_internal_quantities=False,
-    drn_ssp_data=mcd.DSPS_DATA_DRN,
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
+    n_t=mcd.N_T,
+    drn_ssp_data=mcd.DSPS_DATA_DRN,
+    return_internal_quantities=False,
 ):
-    n_met, n_age, n_ssp_wave = ssp_data.ssp_flux.shape
-
-    lgmet_key, diffstar_key, ran_key = jran.split(ran_key, 3)
-
-    diffsky_data = mcd.mc_diffstar_galpop(
+    diffstar_key, ran_key = jran.split(ran_key, 2)
+    diffstar_data = mcd.mc_diffstar_galpop(
         diffstar_key,
         z_obs,
         lgmp_min,
@@ -84,8 +81,40 @@ def mc_diffsky_lsst_photpop(
         n_t=n_t,
         return_internal_quantities=return_internal_quantities,
     )
-    n_gals = diffsky_data["sfh"].shape[0]
+    diffsky_data = predict_lsst_phot_from_diffstar(
+        diffstar_data,
+        ran_key,
+        z_obs,
+        ssp_data,
+        dustpop_params=dustpop_params,
+        mzr_params=mzr_params,
+        lgmet_scatter=lgmet_scatter,
+        diffburstpop_params=diffburstpop_params,
+        scatter_params=scatter_params,
+        ssp_err_pop_params=ssp_err_pop_params,
+        drn_ssp_data=drn_ssp_data,
+        return_internal_quantities=return_internal_quantities,
+    )
+    return diffsky_data
 
+
+def predict_lsst_phot_from_diffstar(
+    diffstar_data,
+    ran_key,
+    z_obs,
+    ssp_data,
+    dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
+    mzr_params=umzr.DEFAULT_MZR_PARAMS,
+    lgmet_scatter=umzr.MZR_SCATTER,
+    diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
+    scatter_params=DEFAULT_SCATTER_PARAMS,
+    ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
+    drn_ssp_data=mcd.DSPS_DATA_DRN,
+    return_internal_quantities=False,
+):
+    diffsky_data = diffstar_data
+
+    lgmet_key, ran_key = jran.split(ran_key, 2)
     lgmet_med = umzr.mzr_model(
         diffsky_data["logsm_obs"], diffsky_data["t_obs"], *mzr_params
     )
@@ -150,6 +179,9 @@ def mc_diffsky_lsst_photpop(
         )
         bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
         diffsky_data["bursty_age_weights_q"] = bursty_age_weights
+
+    n_gals = diffsky_data["sfh"].shape[0]
+    n_met, n_age = ssp_data.ssp_flux.shape[0:2]
 
     _wmet = diffsky_data["lgmet_weights"].reshape((n_gals, n_met, 1))
 
