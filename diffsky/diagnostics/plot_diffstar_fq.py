@@ -2,7 +2,7 @@
 """
 
 import numpy as np
-from diffstarpop.kernels.defaults_tpeak import DEFAULT_DIFFSTARPOP_PARAMS
+from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.cosmology import flat_wcdm
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from jax import random as jran
