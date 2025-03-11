@@ -77,42 +77,14 @@ def load_fake_lsst_tcurves():
 
 
 def interpolate_lsst_tcurves(lsst_tcurves, ssp_wave):
-    tcurve_u, tcurve_g, tcurve_r, tcurve_i, tcurve_z, tcurve_y = lsst_tcurves
-
-    tcurve_u = tcurve_u._replace(
-        transmission=np.interp(ssp_wave, tcurve_u.wave, tcurve_u.transmission)
-    )
-    tcurve_g = tcurve_g._replace(
-        transmission=np.interp(ssp_wave, tcurve_g.wave, tcurve_g.transmission)
-    )
-    tcurve_r = tcurve_r._replace(
-        transmission=np.interp(ssp_wave, tcurve_r.wave, tcurve_r.transmission)
-    )
-    tcurve_i = tcurve_i._replace(
-        transmission=np.interp(ssp_wave, tcurve_i.wave, tcurve_i.transmission)
-    )
-    tcurve_z = tcurve_z._replace(
-        transmission=np.interp(ssp_wave, tcurve_z.wave, tcurve_z.transmission)
-    )
-    tcurve_y = tcurve_y._replace(
-        transmission=np.interp(ssp_wave, tcurve_y.wave, tcurve_y.transmission)
-    )
-
-    tcurve_u = tcurve_u._replace(wave=ssp_wave)
-    tcurve_g = tcurve_g._replace(wave=ssp_wave)
-    tcurve_r = tcurve_r._replace(wave=ssp_wave)
-    tcurve_i = tcurve_i._replace(wave=ssp_wave)
-    tcurve_z = tcurve_z._replace(wave=ssp_wave)
-    tcurve_y = tcurve_y._replace(wave=ssp_wave)
-
-    tcurves = list((tcurve_u, tcurve_g, tcurve_r, tcurve_i, tcurve_z, tcurve_y))
-    return tcurves
+    new_tcurves = [interp_tcurve(tcurve, ssp_wave) for tcurve in lsst_tcurves]
+    return new_tcurves
 
 
-def interp_tcurve(tcurve_orig, ssp_data):
+def interp_tcurve(tcurve_orig, ssp_wave):
     """"""
-    indx_insert = np.searchsorted(ssp_data.ssp_wave, tcurve_orig.wave)
-    xarr = np.insert(ssp_data.ssp_wave, indx_insert, tcurve_orig.wave)
+    indx_insert = np.searchsorted(ssp_wave, tcurve_orig.wave)
+    xarr = np.insert(ssp_wave, indx_insert, tcurve_orig.wave)
     tcurve_new_trans = np.interp(xarr, tcurve_orig.wave, tcurve_orig.transmission)
     msk = (xarr >= tcurve_orig.wave[0]) & (xarr <= tcurve_orig.wave[-1])
     tcurve_new_wave = xarr[msk]
