@@ -109,6 +109,18 @@ def interpolate_lsst_tcurves(lsst_tcurves, ssp_wave):
     return tcurves
 
 
+def interp_tcurve(tcurve_orig, ssp_data):
+    """"""
+    indx_insert = np.searchsorted(ssp_data.ssp_wave, tcurve_orig.wave)
+    xarr = np.insert(ssp_data.ssp_wave, indx_insert, tcurve_orig.wave)
+    tcurve_new_trans = np.interp(xarr, tcurve_orig.wave, tcurve_orig.transmission)
+    msk = (xarr >= tcurve_orig.wave[0]) & (xarr <= tcurve_orig.wave[-1])
+    tcurve_new_wave = xarr[msk]
+    tcurve_new_trans = tcurve_new_trans[msk]
+    tcurve_new = load_filter_data.TransmissionCurve(tcurve_new_wave, tcurve_new_trans)
+    return tcurve_new
+
+
 def get_wave_eff_from_tcurves(tcurves, z_obs):
     wave_eff_arr = []
     for tcurve in tcurves:
