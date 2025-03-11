@@ -80,10 +80,16 @@ def load_fake_lsst_tcurves():
 def interpolate_lsst_tcurves(lsst_tcurves, ssp_wave):
     wave_filters = [x.wave for x in lsst_tcurves]
     trans_filters = [x.transmission for x in lsst_tcurves]
-    new_tcurves = phu.interpolate_filter_trans_curves(
+    wave_matrix, trans_matrix = phu.interpolate_filter_trans_curves(
         wave_filters, trans_filters, len(ssp_wave)
     )
-    return new_tcurves
+    collector = []
+    n_filters = wave_matrix.shape[0]
+    for i in range(n_filters):
+        wave, trans = wave_matrix[i, :], trans_matrix[i, :]
+        tcurve = load_filter_data.TransmissionCurve(wave, trans)
+        collector.append(tcurve)
+    return collector
 
 
 def interp_tcurve(tcurve_orig, ssp_wave):

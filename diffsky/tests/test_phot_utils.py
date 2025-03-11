@@ -52,14 +52,3 @@ def test_load_real_interpolated_lsst_tcurves():
             assert np.all(np.isfinite(tcurve.transmission))
             assert np.all(tcurve.transmission >= 0)
             assert np.all(tcurve.transmission <= 1)
-
-
-def test_ssp_integrations():
-    """The calculation of k-corrected absolute mags has been sloppy so far.
-    Several aspects of code correctness should be checked:
-        1. Calculation of the effective wavelength at z_obs
-        2. Pre-tabulation of SSP magnitudes using the interpolated transmission cuves
-    """
-    raise NotImplementedError(
-        "Still need to check correctness of calculation of k-corrected absolute mags"
-    )
