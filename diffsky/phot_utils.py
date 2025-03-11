@@ -9,6 +9,7 @@ from dsps.data_loaders.retrieve_fake_fsps_data import (
     load_fake_filter_transmission_curves,
 )
 from dsps.dust.utils import get_filter_effective_wavelength
+from dsps.photometry import utils as phu
 
 try:
     DEFAULT_DSPS_DRN = os.environ["DSPS_DRN"]
@@ -77,7 +78,11 @@ def load_fake_lsst_tcurves():
 
 
 def interpolate_lsst_tcurves(lsst_tcurves, ssp_wave):
-    new_tcurves = [interp_tcurve(tcurve, ssp_wave) for tcurve in lsst_tcurves]
+    wave_filters = [x.wave for x in lsst_tcurves]
+    trans_filters = [x.transmission for x in lsst_tcurves]
+    new_tcurves = phu.interpolate_filter_trans_curves(
+        wave_filters, trans_filters, len(ssp_wave)
+    )
     return new_tcurves
 
 
