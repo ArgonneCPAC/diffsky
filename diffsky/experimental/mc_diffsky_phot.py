@@ -276,7 +276,7 @@ def predict_lsst_phot_from_diffstar(
 
     _ssp_flux_table = 10 ** (
         -0.4
-        * photpop.precompute_ssp_restmags(ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y)
+        * photpop.precompute_ssp_restmags_z_kcorrect(ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y, z_obs)
     )
     ssp_flux_table_multiband = jnp.swapaxes(jnp.swapaxes(_ssp_flux_table, 0, 2), 1, 2)
 
