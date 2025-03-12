@@ -23,12 +23,12 @@ def test_mc_diffsky_galpop_lsst_phot():
         if "rest_ugrizy" in key:
             assert np.all(np.isfinite(diffsky_data[key]))
 
-    assert np.all(np.isfinite(diffsky_data["frac_trans_nonoise"]))
-    assert np.all(diffsky_data["frac_trans_nonoise"] >= 0)
-    assert np.all(diffsky_data["frac_trans_nonoise"] <= 1)
-    assert np.all(np.isfinite(diffsky_data["frac_trans_noisy"]))
-    assert np.all(diffsky_data["frac_trans_noisy"] >= 0)
-    assert np.all(diffsky_data["frac_trans_noisy"] <= 1)
+    assert np.all(np.isfinite(diffsky_data["frac_trans_nonoise_rest"]))
+    assert np.all(diffsky_data["frac_trans_nonoise_rest"] >= 0)
+    assert np.all(diffsky_data["frac_trans_nonoise_rest"] <= 1)
+    assert np.all(np.isfinite(diffsky_data["frac_trans_noisy_rest"]))
+    assert np.all(diffsky_data["frac_trans_noisy_rest"] >= 0)
+    assert np.all(diffsky_data["frac_trans_noisy_rest"] <= 1)
 
 
 def test_mc_diffsky_cenpop_lsst_phot():
@@ -45,12 +45,12 @@ def test_mc_diffsky_cenpop_lsst_phot():
         if "ugrizy" in key:
             assert np.all(np.isfinite(diffsky_data[key]))
 
-    assert np.all(np.isfinite(diffsky_data["frac_trans_nonoise"]))
-    assert np.all(diffsky_data["frac_trans_nonoise"] >= 0)
-    assert np.all(diffsky_data["frac_trans_nonoise"] <= 1)
-    assert np.all(np.isfinite(diffsky_data["frac_trans_noisy"]))
-    assert np.all(diffsky_data["frac_trans_noisy"] >= 0)
-    assert np.all(diffsky_data["frac_trans_noisy"] <= 1)
+    assert np.all(np.isfinite(diffsky_data["frac_trans_nonoise_rest"]))
+    assert np.all(diffsky_data["frac_trans_nonoise_rest"] >= 0)
+    assert np.all(diffsky_data["frac_trans_nonoise_rest"] <= 1)
+    assert np.all(np.isfinite(diffsky_data["frac_trans_noisy_rest"]))
+    assert np.all(diffsky_data["frac_trans_noisy_rest"] >= 0)
+    assert np.all(diffsky_data["frac_trans_noisy_rest"] <= 1)
 
     n_gals = diffsky_data["sfh"].shape[0]
     assert n_gals == hosts_logmh_at_z.size
