@@ -48,6 +48,8 @@ _calc_bursty_age_weights_vmap = jjit(
     vmap(diffqburstpop.calc_bursty_age_weights_from_diffburstpop_params, in_axes=_B)
 )
 
+Z_KCORRECT = 0.1
+
 
 def mc_diffsky_galpop_lsst_phot(
     ran_key,
@@ -155,6 +157,7 @@ def predict_lsst_phot_from_diffstar(
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
+    z_kcorrect=Z_KCORRECT,
 ):
     diffsky_data = diffstar_data.copy()
 
@@ -270,8 +273,9 @@ def predict_lsst_phot_from_diffstar(
     lsst_tcurves_interp, lsst_tcurves_sparse = load_interpolated_lsst_curves(
         ssp_data.ssp_wave, drn_ssp_data=drn_ssp_data
     )
-    wave_eff_ugrizy_aa = get_wave_eff_from_tcurves(lsst_tcurves_sparse, z_obs)
-    n_bands = wave_eff_ugrizy_aa.size
+    rest_wave_eff_ugrizy_aa = get_wave_eff_from_tcurves(lsst_tcurves_sparse, z_kcorrect)
+    obs_wave_eff_ugrizy_aa = get_wave_eff_from_tcurves(lsst_tcurves_sparse, z_obs)
+    n_bands = rest_wave_eff_ugrizy_aa.size
 
     X = jnp.array([ssp_data.ssp_wave] * 6)
     Y = jnp.array([x.transmission for x in lsst_tcurves_interp])
@@ -279,7 +283,7 @@ def predict_lsst_phot_from_diffstar(
     _ssp_flux_table = 10 ** (
         -0.4
         * photpop.precompute_ssp_restmags_z_kcorrect(
-            ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y, z_obs
+            ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y, z_kcorrect
         )
     )
     ssp_flux_table_multiband = jnp.swapaxes(jnp.swapaxes(_ssp_flux_table, 0, 2), 1, 2)
@@ -304,9 +308,21 @@ def predict_lsst_phot_from_diffstar(
     uran_delta = jran.uniform(delta_key, shape=(n_gals,))
     uran_funo = jran.uniform(funo_key, shape=(n_gals,))
 
-    frac_trans_nonoise, frac_trans_noisy = calc_dust_ftrans_vmap(
+    frac_trans_nonoise_rest, frac_trans_noisy_rest = calc_dust_ftrans_vmap(
         dustpop_params,
-        wave_eff_ugrizy_aa,
+        rest_wave_eff_ugrizy_aa,
+        diffsky_data["logsm_obs"],
+        diffsky_data["logssfr_obs"],
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        scatter_params,
+    )
+    frac_trans_nonoise_obs, frac_trans_noisy_obs = calc_dust_ftrans_vmap(
+        dustpop_params,
+        obs_wave_eff_ugrizy_aa,
         diffsky_data["logsm_obs"],
         diffsky_data["logssfr_obs"],
         z_obs,
@@ -322,25 +338,36 @@ def predict_lsst_phot_from_diffstar(
     gal_obs_flux_table_nodust = ssp_obs_flux_table_multiband * 10**logsm_obs
 
     ran_key, ff_key = jran.split(ran_key, 2)
-    flux_factor = ssp_err_pop.get_flux_factor_from_lgssfr_vmap(
-        ssp_err_pop_params, diffsky_data["logssfr_obs"], wave_eff_ugrizy_aa
+    rest_flux_factor = ssp_err_pop.get_flux_factor_from_lgssfr_vmap(
+        ssp_err_pop_params, diffsky_data["logssfr_obs"], rest_wave_eff_ugrizy_aa
+    )
+    obs_flux_factor = ssp_err_pop.get_flux_factor_from_lgssfr_vmap(
+        ssp_err_pop_params, diffsky_data["logssfr_obs"], obs_wave_eff_ugrizy_aa
     )
     ff_noise_level = ssp_err_pop.get_ff_scatter(
         ssp_err_pop_params, diffsky_data["logssfr_obs"]
     )
     ff_noise_level = ff_noise_level.reshape((n_gals, 1))
     ff_noise = jran.uniform(
-        ff_key, minval=-ff_noise_level, maxval=ff_noise_level, shape=flux_factor.shape
+        ff_key,
+        minval=-ff_noise_level,
+        maxval=ff_noise_level,
+        shape=rest_flux_factor.shape,
     )
-    flux_factor = flux_factor + ff_noise
-    _ff = flux_factor.reshape((n_gals, n_bands, 1, 1))
-    gal_flux_table_nodust = gal_flux_table_nodust * _ff
-    gal_obs_flux_table_nodust = gal_obs_flux_table_nodust * _ff
+    rest_flux_factor = rest_flux_factor + ff_noise
+    _ff_rest = rest_flux_factor.reshape((n_gals, n_bands, 1, 1))
+    gal_flux_table_nodust = gal_flux_table_nodust * _ff_rest
+
+    obs_flux_factor = obs_flux_factor + ff_noise
+    _ff_obs = obs_flux_factor.reshape((n_gals, n_bands, 1, 1))
+    gal_obs_flux_table_nodust = gal_obs_flux_table_nodust * _ff_obs
 
     n_gals, n_filters, n_met, n_age = gal_flux_table_nodust.shape
     _s = (n_gals, n_filters, 1, n_age)
-    gal_flux_table_dust = gal_flux_table_nodust * frac_trans_noisy.reshape(_s)
-    gal_obs_flux_table_dust = gal_obs_flux_table_nodust * frac_trans_noisy.reshape(_s)
+    gal_flux_table_dust = gal_flux_table_nodust * frac_trans_noisy_rest.reshape(_s)
+    gal_obs_flux_table_dust = gal_obs_flux_table_nodust * frac_trans_noisy_obs.reshape(
+        _s
+    )
 
     w = diffsky_data["smooth_ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     flux = jnp.sum(gal_flux_table_nodust * w, axis=(2, 3))
@@ -431,10 +458,14 @@ def predict_lsst_phot_from_diffstar(
         diffsky_data["obs_ugrizy_bursty_nodust_q"] = obs_mags_nodust
         diffsky_data["obs_ugrizy_bursty_dust_q"] = obs_mags_dust
 
-        diffsky_data["frac_trans_nonoise"] = frac_trans_nonoise
-        diffsky_data["frac_trans_noisy"] = frac_trans_noisy
-        diffsky_data["wave_eff_ugrizy_aa"] = wave_eff_ugrizy_aa
-        diffsky_data["flux_factor"] = flux_factor
+        diffsky_data["frac_trans_nonoise_rest"] = frac_trans_nonoise_rest
+        diffsky_data["frac_trans_noisy_rest"] = frac_trans_noisy_rest
+        diffsky_data["rest_wave_eff_ugrizy_aa"] = rest_wave_eff_ugrizy_aa
+        diffsky_data["rest_flux_factor"] = rest_flux_factor
+        diffsky_data["frac_trans_nonoise_obs"] = frac_trans_nonoise_obs
+        diffsky_data["frac_trans_noisy_obs"] = frac_trans_noisy_obs
+        diffsky_data["obs_wave_eff_ugrizy_aa"] = obs_wave_eff_ugrizy_aa
+        diffsky_data["obs_flux_factor"] = obs_flux_factor
 
     return diffsky_data
 
