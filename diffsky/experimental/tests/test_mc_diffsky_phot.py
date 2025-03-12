@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import numpy as np
 from dsps.data_loaders import retrieve_fake_fsps_data as rffd
@@ -43,7 +42,7 @@ def test_mc_diffsky_cenpop_lsst_phot():
         *args, drn_ssp_data=None, return_internal_quantities=True
     )
     for key in diffsky_data.keys():
-        if "rest_ugrizy" in key:
+        if "ugrizy" in key:
             assert np.all(np.isfinite(diffsky_data[key]))
 
     assert np.all(np.isfinite(diffsky_data["frac_trans_nonoise"]))
@@ -55,3 +54,8 @@ def test_mc_diffsky_cenpop_lsst_phot():
 
     n_gals = diffsky_data["sfh"].shape[0]
     assert n_gals == hosts_logmh_at_z.size
+
+    rest_keys = [key for key in diffsky_data.keys() if "rest_ugrizy" in key]
+    for key in rest_keys:
+        obs_key = key.replace("rest_", "obs_")
+        assert obs_key in diffsky_data.keys()
