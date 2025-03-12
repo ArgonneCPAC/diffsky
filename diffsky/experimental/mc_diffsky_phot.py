@@ -277,7 +277,7 @@ def predict_lsst_phot_from_diffstar(
     obs_wave_eff_ugrizy_aa = get_wave_eff_from_tcurves(lsst_tcurves_sparse, z_obs)
     n_bands = rest_wave_eff_ugrizy_aa.size
 
-    X = jnp.array([ssp_data.ssp_wave] * 6)
+    X = jnp.array([x.wave for x in lsst_tcurves_interp])
     Y = jnp.array([x.transmission for x in lsst_tcurves_interp])
 
     _ssp_flux_table = 10 ** (
@@ -466,6 +466,11 @@ def predict_lsst_phot_from_diffstar(
         diffsky_data["frac_trans_noisy_obs"] = frac_trans_noisy_obs
         diffsky_data["obs_wave_eff_ugrizy_aa"] = obs_wave_eff_ugrizy_aa
         diffsky_data["obs_flux_factor"] = obs_flux_factor
+
+        diffsky_data["ssp_flux_table_multiband"] = ssp_flux_table_multiband
+        diffsky_data["ssp_obs_flux_table_multiband"] = ssp_obs_flux_table_multiband
+        diffsky_data["_ssp_flux_table"] = _ssp_flux_table
+        diffsky_data["_ssp_obs_flux_table"] = _ssp_obs_flux_table
 
     return diffsky_data
 
