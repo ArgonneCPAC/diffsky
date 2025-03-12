@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from collections import OrderedDict, namedtuple
 
@@ -84,6 +83,7 @@ def mc_diffsky_galpop_lsst_phot(
         ran_key,
         z_obs,
         ssp_data,
+        cosmo_params=cosmo_params,
         dustpop_params=dustpop_params,
         mzr_params=mzr_params,
         lgmet_scatter=lgmet_scatter,
@@ -128,6 +128,7 @@ def mc_diffsky_cenpop_lsst_phot(
         ran_key,
         z_obs,
         ssp_data,
+        cosmo_params=cosmo_params,
         dustpop_params=dustpop_params,
         mzr_params=mzr_params,
         lgmet_scatter=lgmet_scatter,
@@ -145,6 +146,7 @@ def predict_lsst_phot_from_diffstar(
     ran_key,
     z_obs,
     ssp_data,
+    cosmo_params=DEFAULT_COSMOLOGY,
     dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
@@ -276,9 +278,26 @@ def predict_lsst_phot_from_diffstar(
 
     _ssp_flux_table = 10 ** (
         -0.4
-        * photpop.precompute_ssp_restmags_z_kcorrect(ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y, z_obs)
+        * photpop.precompute_ssp_restmags_z_kcorrect(
+            ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y, z_obs
+        )
     )
     ssp_flux_table_multiband = jnp.swapaxes(jnp.swapaxes(_ssp_flux_table, 0, 2), 1, 2)
+
+    _ssp_obs_flux_table = 10 ** (
+        -0.4
+        * photpop.precompute_ssp_obsmags(
+            ssp_data.ssp_wave,
+            ssp_data.ssp_flux,
+            X,
+            Y,
+            z_obs,
+            *cosmo_params,
+        )
+    )
+    ssp_obs_flux_table_multiband = jnp.swapaxes(
+        jnp.swapaxes(_ssp_obs_flux_table, 0, 2), 1, 2
+    )
 
     av_key, delta_key, funo_key, ran_key = jran.split(ran_key, 4)
     uran_av = jran.uniform(av_key, shape=(n_gals,))
@@ -300,6 +319,7 @@ def predict_lsst_phot_from_diffstar(
 
     logsm_obs = diffsky_data["logsm_obs"].reshape((n_gals, 1, 1, 1))
     gal_flux_table_nodust = ssp_flux_table_multiband * 10**logsm_obs
+    gal_obs_flux_table_nodust = ssp_obs_flux_table_multiband * 10**logsm_obs
 
     ran_key, ff_key = jran.split(ran_key, 2)
     flux_factor = ssp_err_pop.get_flux_factor_from_lgssfr_vmap(
@@ -315,27 +335,43 @@ def predict_lsst_phot_from_diffstar(
     flux_factor = flux_factor + ff_noise
     _ff = flux_factor.reshape((n_gals, n_bands, 1, 1))
     gal_flux_table_nodust = gal_flux_table_nodust * _ff
+    gal_obs_flux_table_nodust = gal_obs_flux_table_nodust * _ff
 
     n_gals, n_filters, n_met, n_age = gal_flux_table_nodust.shape
     _s = (n_gals, n_filters, 1, n_age)
     gal_flux_table_dust = gal_flux_table_nodust * frac_trans_noisy.reshape(_s)
+    gal_obs_flux_table_dust = gal_obs_flux_table_nodust * frac_trans_noisy.reshape(_s)
 
     w = diffsky_data["smooth_ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     flux = jnp.sum(gal_flux_table_nodust * w, axis=(2, 3))
     mag_smooth_nodust = -2.5 * jnp.log10(flux)
+    obs_flux = jnp.sum(gal_obs_flux_table_nodust * w, axis=(2, 3))
+    obs_mag_smooth_nodust = -2.5 * jnp.log10(obs_flux)
+
     flux = jnp.sum(gal_flux_table_dust * w, axis=(2, 3))
     mag_smooth_dust = -2.5 * jnp.log10(flux)
+    obs_flux = jnp.sum(gal_obs_flux_table_dust * w, axis=(2, 3))
+    obs_mag_smooth_dust = -2.5 * jnp.log10(obs_flux)
 
     w = diffsky_data["bursty_ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     flux = jnp.sum(gal_flux_table_nodust * w, axis=(2, 3))
     mag_bursty_nodust = -2.5 * jnp.log10(flux)
+    obs_flux = jnp.sum(gal_obs_flux_table_nodust * w, axis=(2, 3))
+    obs_mag_bursty_nodust = -2.5 * jnp.log10(obs_flux)
+
     flux = jnp.sum(gal_flux_table_dust * w, axis=(2, 3))
     mag_bursty_dust = -2.5 * jnp.log10(flux)
+    obs_flux = jnp.sum(gal_obs_flux_table_dust * w, axis=(2, 3))
+    obs_mag_bursty_dust = -2.5 * jnp.log10(obs_flux)
 
     diffsky_data["rest_ugrizy_smooth_nodust"] = mag_smooth_nodust
     diffsky_data["rest_ugrizy_bursty_nodust"] = mag_bursty_nodust
     diffsky_data["rest_ugrizy_smooth_dust"] = mag_smooth_dust
     diffsky_data["rest_ugrizy_bursty_dust"] = mag_bursty_dust
+    diffsky_data["obs_ugrizy_smooth_nodust"] = obs_mag_smooth_nodust
+    diffsky_data["obs_ugrizy_bursty_nodust"] = obs_mag_bursty_nodust
+    diffsky_data["obs_ugrizy_smooth_dust"] = obs_mag_smooth_dust
+    diffsky_data["obs_ugrizy_bursty_dust"] = obs_mag_bursty_dust
 
     if return_internal_quantities:
         w = diffsky_data["smooth_ssp_weights_ms"].reshape((n_gals, 1, n_met, n_age))
@@ -343,24 +379,57 @@ def predict_lsst_phot_from_diffstar(
         mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
         diffsky_data["rest_ugrizy_smooth_nodust_ms"] = mags_nodust
         diffsky_data["rest_ugrizy_smooth_dust_ms"] = mags_dust
+        obs_mags_nodust = -2.5 * jnp.log10(
+            jnp.sum(gal_obs_flux_table_nodust * w, axis=(2, 3))
+        )
+        obs_mags_dust = -2.5 * jnp.log10(
+            jnp.sum(gal_obs_flux_table_dust * w, axis=(2, 3))
+        )
+        diffsky_data["obs_ugrizy_smooth_nodust_ms"] = obs_mags_nodust
+        diffsky_data["obs_ugrizy_smooth_dust_ms"] = obs_mags_dust
 
         w = diffsky_data["smooth_ssp_weights_q"].reshape((n_gals, 1, n_met, n_age))
         mags_nodust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_nodust * w, axis=(2, 3)))
         mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
         diffsky_data["rest_ugrizy_smooth_nodust_q"] = mags_nodust
         diffsky_data["rest_ugrizy_smooth_dust_q"] = mags_dust
+        obs_mags_nodust = -2.5 * jnp.log10(
+            jnp.sum(gal_obs_flux_table_nodust * w, axis=(2, 3))
+        )
+        obs_mags_dust = -2.5 * jnp.log10(
+            jnp.sum(gal_obs_flux_table_dust * w, axis=(2, 3))
+        )
+        diffsky_data["obs_ugrizy_smooth_nodust_q"] = obs_mags_nodust
+        diffsky_data["obs_ugrizy_smooth_dust_q"] = obs_mags_dust
 
         w = diffsky_data["bursty_ssp_weights_ms"].reshape((n_gals, 1, n_met, n_age))
         mags_nodust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_nodust * w, axis=(2, 3)))
         mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
         diffsky_data["rest_ugrizy_bursty_nodust_ms"] = mags_nodust
         diffsky_data["rest_ugrizy_bursty_dust_ms"] = mags_dust
+        obs_mags_nodust = -2.5 * jnp.log10(
+            jnp.sum(gal_obs_flux_table_nodust * w, axis=(2, 3))
+        )
+        obs_mags_dust = -2.5 * jnp.log10(
+            jnp.sum(gal_obs_flux_table_dust * w, axis=(2, 3))
+        )
+        diffsky_data["obs_ugrizy_bursty_nodust_ms"] = obs_mags_nodust
+        diffsky_data["obs_ugrizy_bursty_dust_ms"] = obs_mags_dust
 
         w = diffsky_data["bursty_ssp_weights_q"].reshape((n_gals, 1, n_met, n_age))
         mags_nodust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_nodust * w, axis=(2, 3)))
         mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
         diffsky_data["rest_ugrizy_bursty_nodust_q"] = mags_nodust
         diffsky_data["rest_ugrizy_bursty_dust_q"] = mags_dust
+
+        obs_mags_nodust = -2.5 * jnp.log10(
+            jnp.sum(gal_obs_flux_table_nodust * w, axis=(2, 3))
+        )
+        obs_mags_dust = -2.5 * jnp.log10(
+            jnp.sum(gal_obs_flux_table_dust * w, axis=(2, 3))
+        )
+        diffsky_data["obs_ugrizy_bursty_nodust_q"] = obs_mags_nodust
+        diffsky_data["obs_ugrizy_bursty_dust_q"] = obs_mags_dust
 
         diffsky_data["frac_trans_nonoise"] = frac_trans_nonoise
         diffsky_data["frac_trans_noisy"] = frac_trans_noisy
