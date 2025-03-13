@@ -1,6 +1,7 @@
 """ """
 
 import numpy as np
+from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.data_loaders.load_ssp_data import load_ssp_templates
 
 from .. import precompute_ssp_phot as psp
@@ -27,3 +28,16 @@ def test_get_ssp_restflux_table():
     ssp_restflux_table = psp.get_ssp_restflux_table(ssp_data, tcurves, z_kcorrect)
     assert np.all(np.isfinite(ssp_restflux_table))
     assert ssp_restflux_table.shape == (n_filters, n_met, n_age)
+
+
+def test_get_ssp_obsflux_table():
+    tcurves = load_dsps_lsst_tcurves()
+    n_filters = len(tcurves)
+    ssp_data = load_ssp_templates()
+    n_met, n_age = ssp_data.ssp_flux.shape[0:2]
+    z_obs = 1.0
+    ssp_obsflux_table = psp.get_ssp_obsflux_table(
+        ssp_data, tcurves, z_obs, DEFAULT_COSMOLOGY
+    )
+    assert np.all(np.isfinite(ssp_obsflux_table))
+    assert ssp_obsflux_table.shape == (n_filters, n_met, n_age)
