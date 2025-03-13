@@ -1,4 +1,5 @@
-""" """
+"""Module implementing convenience functions
+get_ssp_obsflux_table and get_ssp_restflux_table"""
 
 import numpy as np
 from dsps.photometry import photometry_kernels as pk
@@ -79,6 +80,28 @@ def get_tcurve_matrix_from_tcurves(tcurves):
 
 
 def get_ssp_restflux_table(ssp_data, tcurves, z_kcorrect):
+    """Calculate the precomputed restframe flux table of a collection of SSP SEDs.
+
+    Parameters
+    ----------
+    ssp_data : namedtuple
+        Returned by dsps.data_loaders.load_ssp_data.load_ssp_templates
+        ssp_data.ssp_flux has shape (n_met, n_age, n_wave) and
+        will be integrated across each transmission curve
+
+    tcurves : list of namedtuples, length n_filters
+        Each entry is an instance of the namedtuple returned by
+        dsps.data_loaders.load_filter_data.load_transmission_curve
+
+    z_kcorrect : float
+        Redshift to which the restframe SED is k-corrected
+
+    Returns
+    -------
+    ssp_restflux_table : ndarray, shape (n_filters, n_met, n_age)
+        ssp_restmag_table = -2.5*log10(ssp_restflux_table)
+
+    """
     tcurves = get_redshifted_and_interpolated_tcurves(
         tcurves, ssp_data.ssp_wave, z_kcorrect
     )
@@ -90,6 +113,32 @@ def get_ssp_restflux_table(ssp_data, tcurves, z_kcorrect):
 
 
 def get_ssp_obsflux_table(ssp_data, tcurves, z_obs, cosmo_params):
+    """Calculate the precomputed observer-frame flux table of a collection of SSP SEDs.
+
+    Parameters
+    ----------
+    ssp_data : namedtuple
+        Returned by dsps.data_loaders.load_ssp_data.load_ssp_templates
+        ssp_data.ssp_flux has shape (n_met, n_age, n_wave) and
+        will be integrated across each transmission curve
+
+    tcurves : list of namedtuples, length n_filters
+        Each entry is an instance of the namedtuple returned by
+        dsps.data_loaders.load_filter_data.load_transmission_curve
+
+    z_obs : float
+        Redshift to which the restframe SED is observed
+
+    cosmo_params : namedtuple
+        Instance of dsps.cosmology.flat_wcdm.CosmoParams
+        cosmo_params = (Om0, w0, wa, h)
+
+    Returns
+    -------
+    ssp_obsflux_table : ndarray, shape (n_filters, n_met, n_age)
+        ssp_obsmag_table = -2.5*log10(ssp_obsflux_table)
+
+    """
     ssp_flux_table = get_ssp_restflux_table(ssp_data, tcurves, z_obs)
     dimming = pk._cosmological_dimming(
         z_obs, cosmo_params.Om0, cosmo_params.w0, cosmo_params.wa, cosmo_params.h
