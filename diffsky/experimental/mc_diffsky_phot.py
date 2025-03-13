@@ -19,6 +19,7 @@ from ..burstpop import diffqburstpop
 from ..dustpop import avpop_mono, deltapop, funopop_ssfr, tw_dust, tw_dustpop_mono
 from ..phot_utils import get_wave_eff_from_tcurves, load_interpolated_lsst_curves
 from ..utils import _inverse_sigmoid
+from . import precompute_ssp_phot as psp
 from . import ssp_err_pop
 
 DEFAULT_SCATTER_PDICT = OrderedDict(
@@ -68,6 +69,7 @@ def mc_diffsky_galpop_lsst_phot(
     n_t=mcd.N_T,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
+    use_new_precompute_method=False,
 ):
     diffstar_key, ran_key = jran.split(ran_key, 2)
     diffstar_data = mcd.mc_diffstar_galpop(
@@ -94,6 +96,7 @@ def mc_diffsky_galpop_lsst_phot(
         ssp_err_pop_params=ssp_err_pop_params,
         drn_ssp_data=drn_ssp_data,
         return_internal_quantities=return_internal_quantities,
+        use_new_precompute_method=use_new_precompute_method,
     )
     return diffsky_data
 
@@ -114,6 +117,7 @@ def mc_diffsky_cenpop_lsst_phot(
     n_t=mcd.N_T,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
+    use_new_precompute_method=False,
 ):
     diffstar_key, ran_key = jran.split(ran_key, 2)
     diffstar_data = mcd.mc_diffstar_cenpop(
@@ -139,6 +143,7 @@ def mc_diffsky_cenpop_lsst_phot(
         ssp_err_pop_params=ssp_err_pop_params,
         drn_ssp_data=drn_ssp_data,
         return_internal_quantities=return_internal_quantities,
+        use_new_precompute_method=use_new_precompute_method,
     )
     return diffsky_data
 
@@ -158,6 +163,7 @@ def predict_lsst_phot_from_diffstar(
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
     z_kcorrect=Z_KCORRECT,
+    use_new_precompute_method=False,
 ):
     diffsky_data = diffstar_data.copy()
 
@@ -280,28 +286,38 @@ def predict_lsst_phot_from_diffstar(
     X = jnp.array([x.wave for x in lsst_tcurves_interp])
     Y = jnp.array([x.transmission for x in lsst_tcurves_interp])
 
-    _ssp_flux_table = 10 ** (
-        -0.4
-        * photpop.precompute_ssp_restmags_z_kcorrect(
-            ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y, z_kcorrect
+    if use_new_precompute_method:
+        ssp_flux_table_multiband = psp.get_ssp_restflux_table(
+            ssp_data, lsst_tcurves_sparse, z_kcorrect
         )
-    )
-    ssp_flux_table_multiband = jnp.swapaxes(jnp.swapaxes(_ssp_flux_table, 0, 2), 1, 2)
+        ssp_obs_flux_table_multiband = psp.get_ssp_obsflux_table(
+            ssp_data, lsst_tcurves_sparse, z_obs, cosmo_params
+        )
+    else:
+        _ssp_flux_table = 10 ** (
+            -0.4
+            * photpop.precompute_ssp_restmags_z_kcorrect(
+                ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y, z_kcorrect
+            )
+        )
+        ssp_flux_table_multiband = jnp.swapaxes(
+            jnp.swapaxes(_ssp_flux_table, 0, 2), 1, 2
+        )
 
-    _ssp_obs_flux_table = 10 ** (
-        -0.4
-        * photpop.precompute_ssp_obsmags(
-            ssp_data.ssp_wave,
-            ssp_data.ssp_flux,
-            X,
-            Y,
-            z_obs,
-            *cosmo_params,
+        _ssp_obs_flux_table = 10 ** (
+            -0.4
+            * photpop.precompute_ssp_obsmags(
+                ssp_data.ssp_wave,
+                ssp_data.ssp_flux,
+                X,
+                Y,
+                z_obs,
+                *cosmo_params,
+            )
         )
-    )
-    ssp_obs_flux_table_multiband = jnp.swapaxes(
-        jnp.swapaxes(_ssp_obs_flux_table, 0, 2), 1, 2
-    )
+        ssp_obs_flux_table_multiband = jnp.swapaxes(
+            jnp.swapaxes(_ssp_obs_flux_table, 0, 2), 1, 2
+        )
 
     av_key, delta_key, funo_key, ran_key = jran.split(ran_key, 4)
     uran_av = jran.uniform(av_key, shape=(n_gals,))
@@ -469,8 +485,6 @@ def predict_lsst_phot_from_diffstar(
 
         diffsky_data["ssp_flux_table_multiband"] = ssp_flux_table_multiband
         diffsky_data["ssp_obs_flux_table_multiband"] = ssp_obs_flux_table_multiband
-        diffsky_data["_ssp_flux_table"] = _ssp_flux_table
-        diffsky_data["_ssp_obs_flux_table"] = _ssp_obs_flux_table
 
     return diffsky_data
 
