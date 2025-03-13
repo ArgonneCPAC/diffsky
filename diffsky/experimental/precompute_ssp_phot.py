@@ -1,8 +1,14 @@
 """ """
 
 import numpy as np
+from dsps.photometry.photometry_kernels import calc_rest_mag
 from jax import jit as jjit
+from jax import vmap
 
+_SSP = (None, 0, None, None)
+_calc_rest_mag_ssp = jjit(vmap(vmap(calc_rest_mag, in_axes=_SSP), in_axes=_SSP))
+_B = (None, None, 0, 0)
+_calc_rest_mag_ssp_bands = jjit(vmap(_calc_rest_mag_ssp, in_axes=_B))
 EPS = 1e-5
 
 
@@ -76,12 +82,13 @@ def get_ssp_restflux_table(ssp_data, tcurves, z_kcorrect):
     tcurves = get_redshifted_and_interpolated_tcurves(
         tcurves, ssp_data.ssp_wave, z_kcorrect
     )
-    X, Y = get_tcurve_matrix_from_tcurves(tcurves)
-    # calc_rest_mag(wave_spec_rest, lum_spec, wave_filter, trans_filter)
+    wave_filters, trans_filters = get_tcurve_matrix_from_tcurves(tcurves)
+    ssp_restmag_table = _calc_rest_mag_ssp_bands(
+        ssp_data.ssp_wave, ssp_data.ssp_flux, wave_filters, trans_filters
+    )
+    ssp_restflux_table = 10 ** (-0.4 * ssp_restmag_table)
+    return ssp_restflux_table
 
 
-@jjit
-def get_ssp_obsflux_table(
-    ssp_wave, ssp_fluxes, wave_matrix, tcurve_matrix, z_obs, cosmo_params
-):
+def get_ssp_obsflux_table(ssp_data, tcurves, z_obs, cosmo_params):
     pass
