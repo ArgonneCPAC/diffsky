@@ -11,4 +11,7 @@ def test_get_interpolated_tcurves():
     ssp_data = load_ssp_templates()
 
     z_obs = 1.0
-    new_tcurves = psp.get_interpolated_tcurves(lsst_tcurves, ssp_data.ssp_wave, z_obs)
+    new_tcurves = psp.get_redshifted_and_interpolated_tcurves(
+        lsst_tcurves, ssp_data.ssp_wave, z_obs
+    )
+    X, Y = psp.get_tcurve_matrix_from_tcurves(new_tcurves)

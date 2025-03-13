@@ -44,7 +44,7 @@ def redshift_tcurve(tcurve, redshift):
     return tcurve
 
 
-def get_interpolated_tcurves(tcurves, ssp_wave, redshift):
+def get_redshifted_and_interpolated_tcurves(tcurves, ssp_wave, redshift):
     """"""
     tcurves = [redshift_tcurve(tcurve, redshift) for tcurve in tcurves]
 
@@ -72,15 +72,16 @@ def get_tcurve_matrix_from_tcurves(tcurves):
     return X, Y
 
 
-@jjit
-def get_ssp_restflux_table(
-    ssp_wave, ssp_fluxes, wave_matrix, transmission_matrix, z_kcorrect
-):
-    pass
+def get_ssp_restflux_table(ssp_data, tcurves, z_kcorrect):
+    tcurves = get_redshifted_and_interpolated_tcurves(
+        tcurves, ssp_data.ssp_wave, z_kcorrect
+    )
+    X, Y = get_tcurve_matrix_from_tcurves(tcurves)
+    # calc_rest_mag(wave_spec_rest, lum_spec, wave_filter, trans_filter)
 
 
 @jjit
 def get_ssp_obsflux_table(
-    ssp_wave, ssp_fluxes, wave_matrix, transmission_matrix, z_obs, cosmo_params
+    ssp_wave, ssp_fluxes, wave_matrix, tcurve_matrix, z_obs, cosmo_params
 ):
     pass
