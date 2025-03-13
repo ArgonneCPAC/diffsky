@@ -6,7 +6,7 @@ from jax import jit as jjit
 EPS = 1e-5
 
 
-def interp_tcurve_to_ssp(tcurve_wave, tcurve_trans, ssp_wave, redshift):
+def interp_tcurve_to_ssp(tcurve_wave, tcurve_trans, ssp_wave):
     """"""
     cuml_trans = np.cumsum(tcurve_trans)
     cuml_trans = cuml_trans / cuml_trans[-1]
@@ -38,8 +38,16 @@ def _pad_tcurve(tcurve_wave, tcurve_trans, n):
     return tcurve_wave_out, tcurve_trans_out
 
 
+def redshift_tcurve(tcurve, redshift):
+    x = tcurve.wave / (1.0 + redshift)
+    tcurve = tcurve._make((x, tcurve.transmission))
+    return tcurve
+
+
 def get_interpolated_tcurves(tcurves, ssp_wave, redshift):
     """"""
+    tcurves = [redshift_tcurve(tcurve, redshift) for tcurve in tcurves]
+
     tcurves_refined = []
     for tcurve in tcurves:
         args = tcurve.wave, tcurve.transmission, ssp_wave
