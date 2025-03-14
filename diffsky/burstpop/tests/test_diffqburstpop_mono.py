@@ -5,7 +5,7 @@ from dsps.sfh import diffburst
 from jax import random as jran
 
 from .. import diffqburstpop_mono as dbp
-from ..fburstpop import FburstPopUParams
+from ..fburstpop_mono import FburstPopUParams
 from ..freqburst import FreqburstUParams
 from ..tburstpop import TburstPopUParams
 

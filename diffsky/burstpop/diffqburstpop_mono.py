@@ -1,15 +1,15 @@
-"""
-"""
+""" """
 
 from collections import namedtuple
 
 from dsps.sfh.diffburst import BurstParams, calc_bursty_age_weights
 from jax import jit as jjit
+from jax import numpy as jnp
 
-from .fburstpop import (
+from .fburstpop_mono import (
     DEFAULT_FBURSTPOP_PARAMS,
     get_bounded_fburstpop_params,
-    get_lgfburst_from_fburstpop_params,
+    get_fburst_from_fburstpop_params,
     get_unbounded_fburstpop_params,
 )
 from .freqburst import (
@@ -66,9 +66,10 @@ def get_unbounded_diffburstpop_params(params):
 def calc_bursty_age_weights_from_diffburstpop_params(
     diffburstpop_params, logsm, logssfr, ssp_lg_age_gyr, smooth_age_weights
 ):
-    lgfburst = get_lgfburst_from_fburstpop_params(
+    f_burst = get_fburst_from_fburstpop_params(
         diffburstpop_params.fburstpop_params, logsm, logssfr
     )
+    lgfburst = jnp.log10(f_burst)
 
     tburst_params = get_tburst_params_from_tburstpop_params(
         diffburstpop_params.tburstpop_params, logsm, logssfr
