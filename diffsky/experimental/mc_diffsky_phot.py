@@ -5,7 +5,6 @@ from collections import OrderedDict, namedtuple
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.metallicity import umzr
-from dsps.photometry import photpop
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed import stellar_age_weights as saw
 from jax import jit as jjit
@@ -69,7 +68,6 @@ def mc_diffsky_galpop_lsst_phot(
     n_t=mcd.N_T,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
-    use_new_precompute_method=False,
 ):
     diffstar_key, ran_key = jran.split(ran_key, 2)
     diffstar_data = mcd.mc_diffstar_galpop(
@@ -96,7 +94,6 @@ def mc_diffsky_galpop_lsst_phot(
         ssp_err_pop_params=ssp_err_pop_params,
         drn_ssp_data=drn_ssp_data,
         return_internal_quantities=return_internal_quantities,
-        use_new_precompute_method=use_new_precompute_method,
     )
     return diffsky_data
 
@@ -117,7 +114,6 @@ def mc_diffsky_cenpop_lsst_phot(
     n_t=mcd.N_T,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
-    use_new_precompute_method=False,
 ):
     diffstar_key, ran_key = jran.split(ran_key, 2)
     diffstar_data = mcd.mc_diffstar_cenpop(
@@ -143,7 +139,6 @@ def mc_diffsky_cenpop_lsst_phot(
         ssp_err_pop_params=ssp_err_pop_params,
         drn_ssp_data=drn_ssp_data,
         return_internal_quantities=return_internal_quantities,
-        use_new_precompute_method=use_new_precompute_method,
     )
     return diffsky_data
 
@@ -163,7 +158,6 @@ def predict_lsst_phot_from_diffstar(
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
     z_kcorrect=Z_KCORRECT,
-    use_new_precompute_method=False,
 ):
     diffsky_data = diffstar_data.copy()
 
@@ -283,41 +277,12 @@ def predict_lsst_phot_from_diffstar(
     obs_wave_eff_ugrizy_aa = get_wave_eff_from_tcurves(lsst_tcurves_sparse, z_obs)
     n_bands = rest_wave_eff_ugrizy_aa.size
 
-    X = jnp.array([x.wave for x in lsst_tcurves_interp])
-    Y = jnp.array([x.transmission for x in lsst_tcurves_interp])
-
-    if use_new_precompute_method:
-        ssp_flux_table_multiband = psp.get_ssp_restflux_table(
-            ssp_data, lsst_tcurves_sparse, z_kcorrect
-        )
-        ssp_obs_flux_table_multiband = psp.get_ssp_obsflux_table(
-            ssp_data, lsst_tcurves_sparse, z_obs, cosmo_params
-        )
-    else:
-        _ssp_flux_table = 10 ** (
-            -0.4
-            * photpop.precompute_ssp_restmags_z_kcorrect(
-                ssp_data.ssp_wave, ssp_data.ssp_flux, X, Y, z_kcorrect
-            )
-        )
-        ssp_flux_table_multiband = jnp.swapaxes(
-            jnp.swapaxes(_ssp_flux_table, 0, 2), 1, 2
-        )
-
-        _ssp_obs_flux_table = 10 ** (
-            -0.4
-            * photpop.precompute_ssp_obsmags(
-                ssp_data.ssp_wave,
-                ssp_data.ssp_flux,
-                X,
-                Y,
-                z_obs,
-                *cosmo_params,
-            )
-        )
-        ssp_obs_flux_table_multiband = jnp.swapaxes(
-            jnp.swapaxes(_ssp_obs_flux_table, 0, 2), 1, 2
-        )
+    ssp_flux_table_multiband = psp.get_ssp_restflux_table(
+        ssp_data, lsst_tcurves_sparse, z_kcorrect
+    )
+    ssp_obs_flux_table_multiband = psp.get_ssp_obsflux_table(
+        ssp_data, lsst_tcurves_sparse, z_obs, cosmo_params
+    )
 
     av_key, delta_key, funo_key, ran_key = jran.split(ran_key, 4)
     uran_av = jran.uniform(av_key, shape=(n_gals,))
