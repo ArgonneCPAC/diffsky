@@ -102,3 +102,6 @@ def calc_bursty_age_weights_from_diffburstpop_u_params(
 DEFAULT_DIFFBURSTPOP_U_PARAMS = DiffburstPopUParams(
     *get_unbounded_diffburstpop_params(DEFAULT_DIFFBURSTPOP_PARAMS)
 )
+ZERO_DIFFBURSTPOP_U_PARAMS = get_unbounded_diffburstpop_params(
+    DEFAULT_DIFFBURSTPOP_PARAMS
+)
