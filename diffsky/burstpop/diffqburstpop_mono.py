@@ -12,7 +12,7 @@ from .fburstpop_mono import (
     get_fburst_from_fburstpop_params,
     get_unbounded_fburstpop_params,
 )
-from .freqburst import (
+from .freqburst_mono import (
     DEFAULT_FREQBURST_PARAMS,
     get_bounded_freqburst_params,
     get_unbounded_freqburst_params,

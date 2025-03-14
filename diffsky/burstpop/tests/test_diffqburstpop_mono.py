@@ -6,7 +6,7 @@ from jax import random as jran
 
 from .. import diffqburstpop_mono as dbp
 from ..fburstpop_mono import FburstPopUParams
-from ..freqburst import FreqburstUParams
+from ..freqburst_mono import FreqburstUParams
 from ..tburstpop import TburstPopUParams
 
 TOL = 1e-2
