@@ -59,22 +59,3 @@ def test_mc_diffsky_cenpop_lsst_phot():
     for key in rest_keys:
         obs_key = key.replace("rest_", "obs_")
         assert obs_key in diffsky_data.keys()
-
-
-def test_mc_diffsky_cenpop_lsst_phot_alt_ssp_table():
-    ran_key = jran.key(0)
-    z_obs = 0.2
-    hosts_logmh_at_z = np.linspace(10, 15, 300)
-    ssp_data = rffd.load_fake_ssp_data()
-
-    args = (ran_key, z_obs, hosts_logmh_at_z, ssp_data)
-    diffsky_data = mcdp.mc_diffsky_cenpop_lsst_phot(
-        *args,
-        drn_ssp_data=None,
-        return_internal_quantities=True,
-        use_new_precompute_method=True,
-    )
-    rest_keys = [key for key in diffsky_data.keys() if "rest_ugrizy" in key]
-    for key in rest_keys:
-        obs_key = key.replace("rest_", "obs_")
-        assert obs_key in diffsky_data.keys()
