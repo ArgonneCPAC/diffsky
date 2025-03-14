@@ -8,12 +8,14 @@ from jax import numpy as jnp
 
 from .fburstpop_mono import (
     DEFAULT_FBURSTPOP_PARAMS,
+    ZEROBURST_FBURSTPOP_PARAMS,
     get_bounded_fburstpop_params,
     get_fburst_from_fburstpop_params,
     get_unbounded_fburstpop_params,
 )
 from .freqburst_mono import (
     DEFAULT_FREQBURST_PARAMS,
+    ZEROBURST_FREQBURST_PARAMS,
     get_bounded_freqburst_params,
     get_unbounded_freqburst_params,
 )
@@ -34,6 +36,10 @@ _BURSTPOP_UPNAMES = [
     key.replace("params", "u_params") for key in DEFAULT_DIFFBURSTPOP_PARAMS._fields
 ]
 DiffburstPopUParams = namedtuple("DiffburstPopUParams", _BURSTPOP_UPNAMES)
+
+ZERO_DIFFBURSTPOP_PARAMS = DiffburstPopParams(
+    ZEROBURST_FREQBURST_PARAMS, ZEROBURST_FBURSTPOP_PARAMS, DEFAULT_TBURSTPOP_PARAMS
+)
 
 
 @jjit
