@@ -110,8 +110,9 @@ def test_calc_ftrans_singlegal_singlewave_from_dustpop_params():
         random_draw_funo,
         twdn.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     )
-    frac_trans = twdn.calc_ftrans_singlegal_singlewave_from_dustpop_params(*args)
-    assert np.all(np.isfinite(frac_trans))
-    assert frac_trans.shape == (n_age,)
-    assert np.all(frac_trans >= 0)
-    assert np.all(frac_trans <= 1)
+    _res = twdn.calc_ftrans_singlegal_singlewave_from_dustpop_params(*args)
+    ftrans, noisy_ftrans, dust_params, noisy_dust_params = _res
+    assert np.all(np.isfinite(ftrans))
+    assert ftrans.shape == (n_age,)
+    assert np.all(ftrans >= 0)
+    assert np.all(ftrans <= 1)
