@@ -113,7 +113,7 @@ def calc_dust_ftrans_galpop_from_dustpop_params(
     dust_params = DustParams(av, delta, funo)
     ftrans = calc_dust_frac_trans(wave_aa, dust_params)
 
-    return ftrans
+    return ftrans, dust_params
 
 
 @jjit
@@ -161,7 +161,7 @@ def calc_dust_ftrans_scalar_from_dustpop_params(
     dust_params = DustParams(av, delta, funo)
     ftrans = calc_dust_frac_trans(wave_aa, dust_params)
 
-    return ftrans
+    return ftrans, dust_params
 
 
 DEFAULT_DUSTPOP_U_PARAMS = DustPopUParams(
