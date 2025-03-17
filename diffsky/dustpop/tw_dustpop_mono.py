@@ -20,7 +20,7 @@ from .deltapop import (
     get_delta_from_deltapop_params,
     get_unbounded_deltapop_params,
 )
-from .funopop_simple import (
+from .funopop_ssfr import (
     DEFAULT_FUNOPOP_PARAMS,
     get_bounded_funopop_params,
     get_funo_from_funopop_params,
@@ -105,7 +105,7 @@ def calc_dust_ftrans_galpop_from_dustpop_params(
     delta = get_delta_from_deltapop_params(
         dustpop_params.deltapop_params, logsm, logssfr
     )
-    funo = get_funo_from_funopop_params(dustpop_params.funopop_params, logsm, logssfr)
+    funo = get_funo_from_funopop_params(dustpop_params.funopop_params, logssfr)
 
     n_gals = redshift.size
     delta = delta.reshape((n_gals, 1))
@@ -156,7 +156,7 @@ def calc_dust_ftrans_scalar_from_dustpop_params(
     delta = get_delta_from_deltapop_params(
         dustpop_params.deltapop_params, logsm, logssfr
     )
-    funo = get_funo_from_funopop_params(dustpop_params.funopop_params, logsm, logssfr)
+    funo = get_funo_from_funopop_params(dustpop_params.funopop_params, logssfr)
 
     dust_params = DustParams(av, delta, funo)
     ftrans = calc_dust_frac_trans(wave_aa, dust_params)

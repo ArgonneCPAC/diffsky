@@ -5,7 +5,7 @@ import numpy as np
 from .. import tw_dustpop_mono as twd
 from ..avpop_mono import DEFAULT_AVPOP_U_PARAMS
 from ..deltapop import DEFAULT_DELTAPOP_U_PARAMS
-from ..funopop_simple import DEFAULT_FUNOPOP_U_PARAMS
+from ..funopop_ssfr import DEFAULT_FUNOPOP_U_PARAMS
 
 TOL = 1e-2
 
@@ -68,16 +68,20 @@ def test_calc_dust_ftrans_galpop_from_dustpop_params():
     assert np.all(np.isfinite(delta))
 
     funo = twd.get_funo_from_funopop_params(
-        twd.DEFAULT_DUSTPOP_PARAMS.funopop_params, logsm, logssfr
+        twd.DEFAULT_DUSTPOP_PARAMS.funopop_params, logssfr
     )
     assert funo.shape == ()
     assert np.all(np.isfinite(funo))
+    assert np.all(funo >= 0)
+    assert np.all(funo <= 1)
 
     funo = twd.get_funo_from_funopop_params(
-        twd.DEFAULT_DUSTPOP_PARAMS.funopop_params, logsm + zz, logssfr + zz
+        twd.DEFAULT_DUSTPOP_PARAMS.funopop_params, logssfr + zz
     )
     assert funo.shape == (n_gals,)
     assert np.all(np.isfinite(funo))
+    assert np.all(funo >= 0)
+    assert np.all(funo <= 1)
 
 
 def test_calc_dust_ftrans_scalar_from_default_dustpop_params_behaves_as_expected():
