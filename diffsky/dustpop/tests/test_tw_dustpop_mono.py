@@ -33,7 +33,7 @@ def test_calc_dust_ftrans_galpop_from_dustpop_params():
         redshift + zz,
         ssp_lg_age_gyr,
     )
-    ftrans = twd.calc_dust_ftrans_galpop_from_dustpop_params(*args)
+    ftrans, dust_params = twd.calc_dust_ftrans_galpop_from_dustpop_params(*args)
     assert ftrans.shape == (n_gals, n_age)
     assert np.all(np.isfinite(ftrans))
     assert np.all(ftrans >= 0)
@@ -99,7 +99,7 @@ def test_calc_dust_ftrans_scalar_from_default_dustpop_params_behaves_as_expected
         redshift,
         ssp_lg_age_gyr,
     )
-    ftrans_uv = twd.calc_dust_ftrans_scalar_from_dustpop_params(*args)
+    ftrans_uv, dust_params = twd.calc_dust_ftrans_scalar_from_dustpop_params(*args)
     assert np.all(np.isfinite(ftrans_uv))
     assert ftrans_uv.shape == ()
     assert np.all(ftrans_uv >= 0)
@@ -119,7 +119,7 @@ def test_calc_dust_ftrans_scalar_from_default_dustpop_params_behaves_as_expected
         redshift,
         ssp_lg_age_gyr,
     )
-    ftrans_nir = twd.calc_dust_ftrans_scalar_from_dustpop_params(*args)
+    ftrans_nir, dust_params = twd.calc_dust_ftrans_scalar_from_dustpop_params(*args)
     assert ftrans_nir > ftrans_uv
 
     assert np.all(np.isfinite(ftrans_nir))
@@ -141,6 +141,6 @@ def test_calc_dust_ftrans_scalar_from_default_dustpop_params_behaves_as_expected
         redshift,
         ssp_lg_age_gyr,
     )
-    ftrans_fir = twd.calc_dust_ftrans_scalar_from_dustpop_params(*args)
+    ftrans_fir, dust_params = twd.calc_dust_ftrans_scalar_from_dustpop_params(*args)
     assert ftrans_fir > ftrans_nir
     assert ftrans_fir > 0.9
