@@ -1,4 +1,5 @@
-""" """
+"""Module implements the get_ssp_restflux_table and get_ssp_obsflux_table
+functions for precomputing SSP magnitude tables"""
 
 import numpy as np
 from dsps.photometry import photometry_kernels as pk
@@ -10,6 +11,82 @@ _calc_rest_flux_ssp = jjit(vmap(vmap(pk.calc_rest_flux, in_axes=_SSP), in_axes=_
 _B = (None, None, 0, 0)
 _calc_rest_flux_ssp_bands = jjit(vmap(_calc_rest_flux_ssp, in_axes=_B))
 EPS = 1e-5
+
+
+def get_ssp_restflux_table(ssp_data, tcurves, z_kcorrect):
+    """Compute restframe broadband flux of a collection of SSP SEDs.
+
+    This function is typically used to precompute absolute magnitudes of SSPs
+    in population-level forward modeling applications, running large batches of MCMCs
+    of individual galaxy photometry, and other performance-critical applications.
+
+    Parameters
+    ----------
+    ssp_data : namedtuple
+        Object returned by dsps.data_loaders.load_ssp_templates
+        Tuple entries: ('ssp_lgmet', 'ssp_lg_age_gyr', 'ssp_wave', 'ssp_flux')
+
+    tcurves : list of namedtuples
+        Each element is an instance of dsps.data_loaders.load_transmission_curve
+        Tuple entries: ('wave', 'transmission')
+
+    z_kcorrect : float
+        Redshift to which the SSP SEDs are k-corrected
+
+    Returns
+    -------
+    ssp_restflux_table : ndarray, shape (n_filters, n_met, n_age)
+        ssp_restmag_table = -2.5log10(ssp_restflux_table)
+
+    """
+    tcurves = get_redshifted_and_interpolated_tcurves(
+        tcurves, ssp_data.ssp_wave, z_kcorrect
+    )
+    wave_filters, trans_filters = get_tcurve_matrix_from_tcurves(tcurves)
+    ssp_restflux_table = _calc_rest_flux_ssp_bands(
+        ssp_data.ssp_wave, ssp_data.ssp_flux, wave_filters, trans_filters
+    )
+    return ssp_restflux_table
+
+
+def get_ssp_obsflux_table(ssp_data, tcurves, z_obs, cosmo_params):
+    """Compute observer-frame broadband flux of a collection of SSP SEDs.
+
+    This function is typically used to precompute apparent magnitudes of SSPs
+    in population-level forward modeling applications, running large batches of MCMCs
+    of individual galaxy photometry, and other performance-critical applications.
+
+    Parameters
+    ----------
+    ssp_data : namedtuple
+        Object returned by dsps.data_loaders.load_ssp_templates
+        Tuple entries: ('ssp_lgmet', 'ssp_lg_age_gyr', 'ssp_wave', 'ssp_flux')
+
+    tcurves : list of namedtuples
+        Each element is an instance of dsps.data_loaders.load_transmission_curve
+        Tuple entries: ('wave', 'transmission')
+
+    z_obs : float
+        Observed redshift of the galaxy
+
+    cosmo_params : namedtuple
+        Instance of dsps.cosmology.CosmoParams
+        Tuple entries: ('Om0', 'w0', 'wa', 'h')
+
+    Returns
+    -------
+    ssp_obsflux_table : ndarray, shape (n_filters, n_met, n_age)
+        ssp_obsmag_table = -2.5log10(ssp_obsflux_table)
+
+    """
+    ssp_flux_table = get_ssp_restflux_table(ssp_data, tcurves, z_obs)
+    dimming = pk._cosmological_dimming(
+        z_obs, cosmo_params.Om0, cosmo_params.w0, cosmo_params.wa, cosmo_params.h
+    )
+    ssp_mag_table = -2.5 * np.log10(ssp_flux_table)
+    ssp_obsmag_table = ssp_mag_table + dimming
+    ssp_obsflux_table = 10 ** (-0.4 * ssp_obsmag_table)
+    return ssp_obsflux_table
 
 
 def interp_tcurve_to_ssp(tcurve_wave, tcurve_trans, ssp_wave):
@@ -76,25 +153,3 @@ def get_tcurve_matrix_from_tcurves(tcurves):
     X = np.array([x.wave for x in tcurves])
     Y = np.array([x.transmission for x in tcurves])
     return X, Y
-
-
-def get_ssp_restflux_table(ssp_data, tcurves, z_kcorrect):
-    tcurves = get_redshifted_and_interpolated_tcurves(
-        tcurves, ssp_data.ssp_wave, z_kcorrect
-    )
-    wave_filters, trans_filters = get_tcurve_matrix_from_tcurves(tcurves)
-    ssp_restflux_table = _calc_rest_flux_ssp_bands(
-        ssp_data.ssp_wave, ssp_data.ssp_flux, wave_filters, trans_filters
-    )
-    return ssp_restflux_table
-
-
-def get_ssp_obsflux_table(ssp_data, tcurves, z_obs, cosmo_params):
-    ssp_flux_table = get_ssp_restflux_table(ssp_data, tcurves, z_obs)
-    dimming = pk._cosmological_dimming(
-        z_obs, cosmo_params.Om0, cosmo_params.w0, cosmo_params.wa, cosmo_params.h
-    )
-    ssp_mag_table = -2.5 * np.log10(ssp_flux_table)
-    ssp_obsmag_table = ssp_mag_table + dimming
-    ssp_obsflux_table = 10 ** (-0.4 * ssp_obsmag_table)
-    return ssp_obsflux_table
