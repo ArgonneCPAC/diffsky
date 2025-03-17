@@ -3,7 +3,7 @@
 import numpy as np
 
 from .. import tw_dustpop_mono as twd
-from ..avpop_flex import DEFAULT_AVPOP_U_PARAMS
+from ..avpop_mono import DEFAULT_AVPOP_U_PARAMS
 from ..deltapop import DEFAULT_DELTAPOP_U_PARAMS
 from ..funopop_simple import DEFAULT_FUNOPOP_U_PARAMS
 

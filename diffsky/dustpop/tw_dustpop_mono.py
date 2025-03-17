@@ -1,12 +1,13 @@
 """Module calculating the fraction of light transmitted through dust based on the
 triweight attenuation kernel
 """
+
 from collections import OrderedDict, namedtuple
 
 from jax import jit as jjit
 from jax import vmap
 
-from .avpop_flex import (
+from .avpop_mono import (
     DEFAULT_AVPOP_PARAMS,
     get_av_from_avpop_params_galpop,
     get_av_from_avpop_params_scalar,
