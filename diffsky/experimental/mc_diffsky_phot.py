@@ -1,36 +1,21 @@
 """ """
 
-from collections import OrderedDict, namedtuple
-
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed import stellar_age_weights as saw
 from jax import jit as jjit
-from jax import nn
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
 from .. import mc_diffsky as mcd
 from ..burstpop import diffqburstpop
-from ..dustpop import avpop_mono, deltapop, funopop_ssfr, tw_dust, tw_dustpop_mono
+from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..phot_utils import get_wave_eff_from_tcurves, load_interpolated_lsst_curves
-from ..utils import _inverse_sigmoid
 from . import precompute_ssp_phot as psp
 from . import ssp_err_pop
-
-DEFAULT_SCATTER_PDICT = OrderedDict(
-    delta_scatter=5.0,
-    av_scatter=5.0,
-    lgfburst_scatter=5.0,
-    lgmet_scatter=5.0,
-    funo_scatter=5.0,
-)
-ScatterParams = namedtuple("ScatterParams", list(DEFAULT_SCATTER_PDICT.keys()))
-DEFAULT_SCATTER_PARAMS = ScatterParams(*DEFAULT_SCATTER_PDICT.values())
-
 
 # gal_t_table, gal_sfr_table, ssp_lg_age_gyr, t_obs, sfr_min
 _A = (None, 0, None, None, None)
@@ -63,7 +48,7 @@ def mc_diffsky_galpop_lsst_phot(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
-    scatter_params=DEFAULT_SCATTER_PARAMS,
+    scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     n_t=mcd.N_T,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
@@ -109,7 +94,7 @@ def mc_diffsky_cenpop_lsst_phot(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
-    scatter_params=DEFAULT_SCATTER_PARAMS,
+    scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     n_t=mcd.N_T,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
@@ -153,7 +138,7 @@ def predict_lsst_phot_from_diffstar(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
-    scatter_params=DEFAULT_SCATTER_PARAMS,
+    scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
@@ -289,7 +274,7 @@ def predict_lsst_phot_from_diffstar(
     uran_delta = jran.uniform(delta_key, shape=(n_gals,))
     uran_funo = jran.uniform(funo_key, shape=(n_gals,))
 
-    frac_trans_nonoise_rest, frac_trans_noisy_rest = calc_dust_ftrans_vmap(
+    _res = calc_dust_ftrans_vmap(
         dustpop_params,
         rest_wave_eff_ugrizy_aa,
         diffsky_data["logsm_obs"],
@@ -301,7 +286,10 @@ def predict_lsst_phot_from_diffstar(
         uran_funo,
         scatter_params,
     )
-    frac_trans_nonoise_obs, frac_trans_noisy_obs = calc_dust_ftrans_vmap(
+    nonoise_ftrans_rest, noisy_ftrans_rest, dust_params_rest, noisy_dust_params_rest = (
+        _res
+    )
+    _res = calc_dust_ftrans_vmap(
         dustpop_params,
         obs_wave_eff_ugrizy_aa,
         diffsky_data["logsm_obs"],
@@ -313,6 +301,7 @@ def predict_lsst_phot_from_diffstar(
         uran_funo,
         scatter_params,
     )
+    nonoise_ftrans_obs, noisy_ftrans_obs, dust_params_obs, noisy_dust_params_obs = _res
 
     logsm_obs = diffsky_data["logsm_obs"].reshape((n_gals, 1, 1, 1))
     gal_flux_table_nodust = ssp_flux_table_multiband * 10**logsm_obs
@@ -345,10 +334,8 @@ def predict_lsst_phot_from_diffstar(
 
     n_gals, n_filters, n_met, n_age = gal_flux_table_nodust.shape
     _s = (n_gals, n_filters, 1, n_age)
-    gal_flux_table_dust = gal_flux_table_nodust * frac_trans_noisy_rest.reshape(_s)
-    gal_obs_flux_table_dust = gal_obs_flux_table_nodust * frac_trans_noisy_obs.reshape(
-        _s
-    )
+    gal_flux_table_dust = gal_flux_table_nodust * noisy_ftrans_rest.reshape(_s)
+    gal_obs_flux_table_dust = gal_obs_flux_table_nodust * noisy_ftrans_obs.reshape(_s)
 
     w = diffsky_data["smooth_ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     flux = jnp.sum(gal_flux_table_nodust * w, axis=(2, 3))
@@ -439,12 +426,12 @@ def predict_lsst_phot_from_diffstar(
         diffsky_data["obs_ugrizy_bursty_nodust_q"] = obs_mags_nodust
         diffsky_data["obs_ugrizy_bursty_dust_q"] = obs_mags_dust
 
-        diffsky_data["frac_trans_nonoise_rest"] = frac_trans_nonoise_rest
-        diffsky_data["frac_trans_noisy_rest"] = frac_trans_noisy_rest
+        diffsky_data["frac_trans_nonoise_rest"] = nonoise_ftrans_rest
+        diffsky_data["frac_trans_noisy_rest"] = noisy_ftrans_rest
         diffsky_data["rest_wave_eff_ugrizy_aa"] = rest_wave_eff_ugrizy_aa
         diffsky_data["rest_flux_factor"] = rest_flux_factor
-        diffsky_data["frac_trans_nonoise_obs"] = frac_trans_nonoise_obs
-        diffsky_data["frac_trans_noisy_obs"] = frac_trans_noisy_obs
+        diffsky_data["frac_trans_nonoise_obs"] = nonoise_ftrans_obs
+        diffsky_data["frac_trans_noisy_obs"] = noisy_ftrans_obs
         diffsky_data["obs_wave_eff_ugrizy_aa"] = obs_wave_eff_ugrizy_aa
         diffsky_data["obs_flux_factor"] = obs_flux_factor
 
@@ -454,60 +441,13 @@ def predict_lsst_phot_from_diffstar(
     return diffsky_data
 
 
-@jjit
-def calc_dust_ftrans(
-    dustpop_params,
-    wave_aa,
-    logsm,
-    logssfr,
-    redshift,
-    ssp_lg_age_gyr,
-    uran_av,
-    uran_delta,
-    uran_funo,
-    scatter_params,
-):
-    av = avpop_mono.get_av_from_avpop_params_singlegal(
-        dustpop_params.avpop_params, logsm, logssfr, redshift, ssp_lg_age_gyr
-    )
-    delta = deltapop.get_delta_from_deltapop_params(
-        dustpop_params.deltapop_params, logsm, logssfr
-    )
-    funo = funopop_ssfr.get_funo_from_funopop_params(
-        dustpop_params.funopop_params, logssfr
-    )
-
-    dust_params = tw_dust.DustParams(av, delta, funo)
-    ftrans = tw_dust.calc_dust_frac_trans(wave_aa, dust_params)
-
-    suav = jnp.log(jnp.exp(av) - 1)
-    noisy_suav = _inverse_sigmoid(uran_av, suav, scatter_params.av_scatter, 0.0, 1.0)
-    noisy_av = nn.softplus(noisy_suav)
-
-    udelta = deltapop._get_unbounded_deltapop_param(delta, deltapop.DELTAPOP_BOUNDS)
-    noisy_udelta = _inverse_sigmoid(
-        uran_delta, udelta, scatter_params.delta_scatter, 0.0, 1.0
-    )
-    noisy_delta = deltapop._get_bounded_deltapop_param(
-        noisy_udelta, deltapop.DELTAPOP_BOUNDS
-    )
-
-    ufuno = funopop_ssfr._get_u_p_from_p_scalar(funo, funopop_ssfr.FUNO_BOUNDS)
-    noisy_ufuno = _inverse_sigmoid(
-        uran_funo, ufuno, scatter_params.funo_scatter, 0.0, 1.0
-    )
-    noisy_funo = funopop_ssfr._get_p_from_u_p_scalar(
-        noisy_ufuno, funopop_ssfr.FUNO_BOUNDS
-    )
-
-    noisy_dust_params = tw_dust.DustParams(noisy_av, noisy_delta, noisy_funo)
-    ftrans_noisy = tw_dust.calc_dust_frac_trans(wave_aa, noisy_dust_params)
-
-    return ftrans, ftrans_noisy
-
-
 _A = (None, 0, None, None, None, None, None, None, None, None)
 _B = [None, None, 0, 0, None, None, 0, 0, 0, None]
 
-_f = jjit(vmap(calc_dust_ftrans, in_axes=_A))
+_f = jjit(
+    vmap(
+        tw_dustpop_mono_noise.calc_ftrans_singlegal_singlewave_from_dustpop_params,
+        in_axes=_A,
+    )
+)
 calc_dust_ftrans_vmap = jjit(vmap(_f, in_axes=_B))
