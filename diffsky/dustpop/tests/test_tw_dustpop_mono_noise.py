@@ -3,6 +3,7 @@
 import numpy as np
 from jax import random as jran
 
+from .. import tw_dustpop_mono as twd
 from .. import tw_dustpop_mono_noise as twdn
 
 TOL = 1e-4
@@ -83,3 +84,34 @@ def test_random_params_are_always_invertible():
         u_params2 = twdn.get_unbounded_dustpop_scatter_params(params)
         assert np.all(np.isfinite(u_params2))
         assert np.allclose(u_params, u_params2, rtol=TOL)
+
+
+def test_calc_dust_ftrans_singlegal_singlewave_from_dustpop_params():
+    wave_aa = 5_000.0
+    logsm = 10.0
+    logssfr = -10.0
+    redshift = 0.5
+
+    n_age = 37
+    ssp_lg_age_gyr = np.linspace(5, 10.1, n_age) - 9.0
+
+    random_draw_av = 0.5
+    random_draw_delta = 0.5
+    random_draw_funo = 0.5
+    args = (
+        twd.DEFAULT_DUSTPOP_PARAMS,
+        wave_aa,
+        logsm,
+        logssfr,
+        redshift,
+        ssp_lg_age_gyr,
+        random_draw_av,
+        random_draw_delta,
+        random_draw_funo,
+        twdn.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    )
+    frac_trans = twdn.calc_dust_ftrans_singlegal_singlewave_from_dustpop_params(*args)
+    assert np.all(np.isfinite(frac_trans))
+    assert frac_trans.shape == (n_age,)
+    assert np.all(frac_trans >= 0)
+    assert np.all(frac_trans <= 1)
