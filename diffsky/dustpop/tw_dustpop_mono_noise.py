@@ -38,7 +38,7 @@ DUSTPOP_SCATTER_PBOUNDS = DustScatterParams(**DUSTPOP_SCATTER_PBOUNDS_PDICT)
 
 
 @jjit
-def calc_dust_ftrans_singlegal_singlewave_from_dustpop_params(
+def calc_ftrans_singlegal_singlewave_from_dustpop_params(
     dustpop_params,
     wave_aa,
     logsm,

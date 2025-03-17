@@ -86,7 +86,7 @@ def test_random_params_are_always_invertible():
         assert np.allclose(u_params, u_params2, rtol=TOL)
 
 
-def test_calc_dust_ftrans_singlegal_singlewave_from_dustpop_params():
+def test_calc_ftrans_singlegal_singlewave_from_dustpop_params():
     wave_aa = 5_000.0
     logsm = 10.0
     logssfr = -10.0
@@ -110,7 +110,7 @@ def test_calc_dust_ftrans_singlegal_singlewave_from_dustpop_params():
         random_draw_funo,
         twdn.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     )
-    frac_trans = twdn.calc_dust_ftrans_singlegal_singlewave_from_dustpop_params(*args)
+    frac_trans = twdn.calc_ftrans_singlegal_singlewave_from_dustpop_params(*args)
     assert np.all(np.isfinite(frac_trans))
     assert frac_trans.shape == (n_age,)
     assert np.all(frac_trans >= 0)
