@@ -150,6 +150,7 @@ def predict_lsst_phot_from_diffstar(
     lgmet_med = umzr.mzr_model(
         diffsky_data["logsm_obs"], diffsky_data["t_obs"], *mzr_params
     )
+    diffsky_data["lgmet_nonoise"] = lgmet_med
     unorm = jran.normal(lgmet_key, shape=lgmet_med.shape) * lgmet_scatter
     diffsky_data["lgmet_med"] = lgmet_med + unorm
 
@@ -190,6 +191,8 @@ def predict_lsst_phot_from_diffstar(
     )
     bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
     diffsky_data["bursty_age_weights"] = bursty_age_weights
+    for param, pname in zip(burst_params, burst_params._fields):
+        diffsky_data[pname] = param
 
     if return_internal_quantities:
         _args = (
