@@ -48,7 +48,7 @@ def mc_diffsky_galpop_lsst_phot(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
-    scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     n_t=mcd.N_T,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
@@ -75,7 +75,7 @@ def mc_diffsky_galpop_lsst_phot(
         mzr_params=mzr_params,
         lgmet_scatter=lgmet_scatter,
         diffburstpop_params=diffburstpop_params,
-        scatter_params=scatter_params,
+        dustpop_scatter_params=dustpop_scatter_params,
         ssp_err_pop_params=ssp_err_pop_params,
         drn_ssp_data=drn_ssp_data,
         return_internal_quantities=return_internal_quantities,
@@ -94,7 +94,7 @@ def mc_diffsky_cenpop_lsst_phot(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
-    scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     n_t=mcd.N_T,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
@@ -120,7 +120,7 @@ def mc_diffsky_cenpop_lsst_phot(
         mzr_params=mzr_params,
         lgmet_scatter=lgmet_scatter,
         diffburstpop_params=diffburstpop_params,
-        scatter_params=scatter_params,
+        dustpop_scatter_params=dustpop_scatter_params,
         ssp_err_pop_params=ssp_err_pop_params,
         drn_ssp_data=drn_ssp_data,
         return_internal_quantities=return_internal_quantities,
@@ -138,7 +138,7 @@ def predict_lsst_phot_from_diffstar(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
-    scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
@@ -284,7 +284,7 @@ def predict_lsst_phot_from_diffstar(
         uran_av,
         uran_delta,
         uran_funo,
-        scatter_params,
+        dustpop_scatter_params,
     )
     nonoise_ftrans_rest, noisy_ftrans_rest, dust_params_rest, noisy_dust_params_rest = (
         _res
@@ -299,7 +299,7 @@ def predict_lsst_phot_from_diffstar(
         uran_av,
         uran_delta,
         uran_funo,
-        scatter_params,
+        dustpop_scatter_params,
     )
     nonoise_ftrans_obs, noisy_ftrans_obs, dust_params_obs, noisy_dust_params_obs = _res
 
