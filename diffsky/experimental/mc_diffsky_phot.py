@@ -11,7 +11,7 @@ from jax import random as jran
 from jax import vmap
 
 from .. import mc_diffsky as mcd
-from ..burstpop import diffqburstpop
+from ..burstpop import diffqburstpop_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..phot_utils import get_wave_eff_from_tcurves, load_interpolated_lsst_curves
 from . import precompute_ssp_phot as psp
@@ -30,7 +30,9 @@ _calc_lgmet_weights_galpop = jjit(
 # diffburstpop_params, logsm, logssfr, ssp_lg_age_gyr, smooth_age_weights
 _B = (None, 0, 0, None, 0)
 _calc_bursty_age_weights_vmap = jjit(
-    vmap(diffqburstpop.calc_bursty_age_weights_from_diffburstpop_params, in_axes=_B)
+    vmap(
+        diffqburstpop_mono.calc_bursty_age_weights_from_diffburstpop_params, in_axes=_B
+    )
 )
 
 Z_KCORRECT = 0.1
@@ -47,7 +49,7 @@ def mc_diffsky_galpop_lsst_phot(
     dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
-    diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
+    diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
     dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     n_t=mcd.N_T,
@@ -93,7 +95,7 @@ def mc_diffsky_cenpop_lsst_phot(
     dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
-    diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
+    diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
     dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     n_t=mcd.N_T,
@@ -137,7 +139,7 @@ def predict_lsst_phot_from_diffstar(
     dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
-    diffburstpop_params=diffqburstpop.DEFAULT_DIFFBURSTPOP_PARAMS,
+    diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
     dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_pop.DEFAULT_SSP_ERR_POP_PARAMS,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
