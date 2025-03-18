@@ -305,6 +305,10 @@ def predict_lsst_phot_from_diffstar(
         dustpop_scatter_params,
     )
     nonoise_ftrans_obs, noisy_ftrans_obs, dust_params_obs, noisy_dust_params_obs = _res
+    for param, pname in zip(dust_params_obs, dust_params_obs._fields):
+        diffsky_data[pname + "_nonoise"] = param
+    for param, pname in zip(noisy_dust_params_obs, noisy_dust_params_obs._fields):
+        diffsky_data[pname] = param
 
     logsm_obs = diffsky_data["logsm_obs"].reshape((n_gals, 1, 1, 1))
     gal_flux_table_nodust = ssp_flux_table_multiband * 10**logsm_obs
