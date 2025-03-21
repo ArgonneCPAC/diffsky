@@ -29,7 +29,8 @@ jobs:
             --file=requirements.txt
           python -m pip install --no-deps -e .
           conda install -y -q \
-            flake8
+            flake8 \
+            flake8-pyproject
 
       - name: lint
         shell: bash -l {0}
