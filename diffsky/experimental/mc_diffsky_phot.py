@@ -267,7 +267,7 @@ def predict_lsst_phot_from_diffstar(
     lsst_tcurves_interp, lsst_tcurves_sparse = load_interpolated_lsst_curves(
         ssp_data.ssp_wave, drn_ssp_data=drn_ssp_data
     )
-    rest_wave_eff_ugrizy_aa = get_wave_eff_from_tcurves(lsst_tcurves_sparse, z_kcorrect)
+    rest_wave_eff_ugrizy_aa = get_wave_eff_from_tcurves(lsst_tcurves_sparse, z_obs)
     obs_wave_eff_ugrizy_aa = get_wave_eff_from_tcurves(lsst_tcurves_sparse, z_obs)
     n_bands = rest_wave_eff_ugrizy_aa.size
 
