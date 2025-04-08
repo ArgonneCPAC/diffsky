@@ -38,9 +38,6 @@ log_mah_kern_vmap = jjit(vmap(_log_mah_kern, in_axes=_H))
 BNPAT_DIFFMAH = "subvol_{0}_diffmah_fits.hdf5"
 BNPAT_CORES = "m000p.coreforest.{0}.hdf5"
 
-# MASS_COLNAME should be consistent with the column used in the diffmah fits
-MASS_COLNAME = "infall_tree_node_mass"
-
 # Simulated MAHs with fewer points than N_MIN_MAH_PTS will get a synthetic MAH
 N_MIN_MAH_PTS = 4
 
@@ -85,7 +82,7 @@ def load_diffsky_data_per_rank(
     ran_key,
     drn_cores,
     drn_diffmah,
-    mass_colname=MASS_COLNAME,
+    mass_colname=hcu.DIFFMAH_MASS_COLNAME,
     comm=None,
 ):
     if comm is None:
@@ -127,7 +124,7 @@ def load_diffsky_data(
     ran_key,
     drn_cores,
     drn_diffmah,
-    mass_colname=MASS_COLNAME,
+    mass_colname=hcu.DIFFMAH_MASS_COLNAME,
 ):
     _res = load_core_data(
         sim_name,
