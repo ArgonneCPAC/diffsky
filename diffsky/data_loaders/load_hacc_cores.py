@@ -5,7 +5,6 @@ from collections import namedtuple
 
 import h5py
 import numpy as np
-from diffmah.data_loaders.load_hacc_mahs import _load_forest
 from diffmah.diffmah_kernels import DEFAULT_MAH_PARAMS, MAH_PBOUNDS, _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_diffmah_cenpop
@@ -27,6 +26,7 @@ except ImportError:
 
 try:
     from haccytrees import Simulation as HACCSim
+    from haccytrees import coretrees
 
     HAS_HACCYTREES = True
 except ImportError:
@@ -272,7 +272,16 @@ def load_forest_chunk(subvol, chunknum, nchunks, sim_name, drn_cores):
     bn_cores = BNPAT_CORES.format(subvol)
     fn_cores = os.path.join(drn_cores, bn_cores)
 
-    sim, forest_matrices, zarr = _load_forest(fn_cores, sim_name, chunknum, nchunks)
+    sim = HACCSim.simulations[sim_name]
+    zarr = sim.step2z(np.array(sim.cosmotools_steps))
+
+    forest_matrices = coretrees.corematrix_reader(
+        fn_cores,
+        calculate_secondary_host_row=True,
+        nchunks=nchunks,
+        chunknum=chunknum,
+        simulation=sim,
+    )
 
     cosmo_dsps = flat_wcdm.CosmoParams(
         *(sim.cosmo.Omega_m, sim.cosmo.w0, sim.cosmo.wa, sim.cosmo.h)
