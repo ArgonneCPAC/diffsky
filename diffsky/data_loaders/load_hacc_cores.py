@@ -268,6 +268,31 @@ def load_core_data(
     return ret
 
 
+def load_coreforest_and_metadata(
+    fn_cores, sim_name, chunknum, nchunks, include_fields=()
+):
+    sim = HACCSim.simulations[sim_name]
+    zarr = sim.step2z(np.array(sim.cosmotools_steps))
+
+    forest_matrices = coretrees.corematrix_reader(
+        fn_cores,
+        calculate_secondary_host_row=True,
+        nchunks=nchunks,
+        chunknum=chunknum,
+        simulation=sim,
+        include_fields=list(include_fields),
+    )
+
+    cosmo_dsps = flat_wcdm.CosmoParams(
+        *(sim.cosmo.Omega_m, sim.cosmo.w0, sim.cosmo.wa, sim.cosmo.h)
+    )
+
+    tarr = flat_wcdm.age_at_z(zarr, *cosmo_dsps)
+    lgt0 = np.log10(flat_wcdm.age_at_z0(*cosmo_dsps))
+
+    return sim, cosmo_dsps, forest_matrices, zarr, tarr, lgt0
+
+
 def load_forest_chunk(subvol, chunknum, nchunks, sim_name, drn_cores):
     bn_cores = BNPAT_CORES.format(subvol)
     fn_cores = os.path.join(drn_cores, bn_cores)
