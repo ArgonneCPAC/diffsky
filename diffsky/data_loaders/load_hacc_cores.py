@@ -125,9 +125,14 @@ def load_diffsky_data(
     drn_cores,
     drn_diffmah,
     mass_colname=hcu.DIFFMAH_MASS_COLNAME,
+    include_fields=(),
 ):
     fn_cores = os.path.join(drn_cores, BNPAT_CORES.format(subvol))
-    include_fields = ("central", mass_colname)
+
+    # At a minimum we need `central` and mass
+    include_fields = ("central", mass_colname, *include_fields)
+    include_fields = list(set(include_fields))  # discard possible redundancies
+
     _res = load_coreforest_and_metadata(
         fn_cores, sim_name, chunknum, nchunks, include_fields=include_fields
     )
