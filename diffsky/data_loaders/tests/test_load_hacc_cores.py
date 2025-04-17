@@ -21,6 +21,7 @@ DRN_DISCOVERY_POBOY = "/Users/aphearin/work/DATA/DESI_W0WA"
 
 try:
     assert os.path.isdir(DRN_LJ_POBOY)
+    assert os.path.isdir(DRN_DISCOVERY_POBOY)
     assert lhc.HAS_HACCYTREES
     CAN_RUN_HACC_DATA_TESTS = True
 except AssertionError:
@@ -73,3 +74,32 @@ def test_load_coreforest_and_metadata_discovery_sims():
         assert np.allclose(sim.cosmo.w0, cosmo_dsps.w0, rtol=1e-4)
         assert np.allclose(sim.cosmo.wa, cosmo_dsps.wa, rtol=1e-4)
         assert np.allclose(sim.cosmo.h, cosmo_dsps.h, rtol=1e-4)
+
+
+@pytest.mark.skipif(not CAN_RUN_HACC_DATA_TESTS, reason=POBOY_MSG)
+def test_load_diffsky_data():
+    ran_key = jran.key(0)
+
+    for sim_nickname in ("LCDM", "W0WA"):
+        sim_name = "Discovery" + sim_nickname
+        subvol = 89
+        chunknum = 0
+        nchunks = 50
+        iz_obs = 80
+
+        drn_cores = os.path.join(DRN_DISCOVERY_POBOY, sim_nickname)
+        drn_diffmah = drn_cores
+        args = (
+            sim_name,
+            subvol,
+            chunknum,
+            nchunks,
+            iz_obs,
+            ran_key,
+            drn_cores,
+            drn_diffmah,
+        )
+
+        diffsky_data = lhc.load_diffsky_data(*args)
+        for key in lhc.DIFFSKY_DATA_DICT_KEYS:
+            assert key in diffsky_data.keys()
