@@ -5,7 +5,6 @@ from collections import namedtuple
 
 import h5py
 import numpy as np
-from diffmah.data_loaders.load_hacc_mahs import _load_forest
 from diffmah.diffmah_kernels import DEFAULT_MAH_PARAMS, MAH_PBOUNDS, _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_diffmah_cenpop
@@ -27,6 +26,7 @@ except ImportError:
 
 try:
     from haccytrees import Simulation as HACCSim
+    from haccytrees import coretrees
 
     HAS_HACCYTREES = True
 except ImportError:
@@ -37,9 +37,6 @@ log_mah_kern_vmap = jjit(vmap(_log_mah_kern, in_axes=_H))
 
 BNPAT_DIFFMAH = "subvol_{0}_diffmah_fits.hdf5"
 BNPAT_CORES = "m000p.coreforest.{0}.hdf5"
-
-# MASS_COLNAME should be consistent with the column used in the diffmah fits
-MASS_COLNAME = "infall_tree_node_mass"
 
 # Simulated MAHs with fewer points than N_MIN_MAH_PTS will get a synthetic MAH
 N_MIN_MAH_PTS = 4
@@ -85,7 +82,7 @@ def load_diffsky_data_per_rank(
     ran_key,
     drn_cores,
     drn_diffmah,
-    mass_colname=MASS_COLNAME,
+    mass_colname=hcu.DIFFMAH_MASS_COLNAME,
     comm=None,
 ):
     if comm is None:
@@ -127,20 +124,26 @@ def load_diffsky_data(
     ran_key,
     drn_cores,
     drn_diffmah,
-    mass_colname=MASS_COLNAME,
+    mass_colname=hcu.DIFFMAH_MASS_COLNAME,
 ):
-    _res = load_core_data(
-        sim_name,
-        subvol,
-        chunknum,
-        nchunks,
-        iz_obs,
-        drn_diffmah,
-        drn_cores,
+    fn_cores = os.path.join(drn_cores, BNPAT_CORES.format(subvol))
+    include_fields = ("central", mass_colname)
+    _res = load_coreforest_and_metadata(
+        fn_cores, sim_name, chunknum, nchunks, include_fields=include_fields
     )
+    sim, cosmo_dsps, forest, zarr, tarr, logt0 = _res
+    t_obs = flat_wcdm._age_at_z_kern(zarr[iz_obs], *cosmo_dsps)
 
-    sim, cosmo_dsps, forest, zarr, tarr, logt0, t_obs = _res[:7]
-    indx_t_ult_inf, indx_t_pen_inf, diffmah_data, mah_params_raw = _res[7:]
+    diffmah_fit_data, mah_params_raw = load_diffmah_data_for_forest(
+        drn_diffmah, subvol, forest
+    )
+    indx_t_ult_inf, indx_t_pen_inf = get_infall_time_indices(
+        forest["host_row"],
+        forest["central"],
+        forest["top_host_row"],
+        forest["secondary_top_host_row"],
+        iz_obs,
+    )
 
     core_key, pen_key, ult_key, ran_key = jran.split(ran_key, 4)
 
@@ -151,7 +154,7 @@ def load_diffsky_data(
         mah_params_raw,
         mah_sim,
         is_central_sim,
-        diffmah_data,
+        diffmah_fit_data,
         tarr,
         core_key,
         t_obs,
@@ -171,12 +174,16 @@ def load_diffsky_data(
 
     mah_sim_pen_hosts = mah_sim[indx_pen]
     is_central_pen_hosts = forest["central"][indx_pen, iz_obs]
-    keys = diffmah_data.keys()
-    diffmah_data_pen_hosts = dict([(key, diffmah_data[key][indx_pen]) for key in keys])
+    keys = diffmah_fit_data.keys()
+    diffmah_data_pen_hosts = dict(
+        [(key, diffmah_fit_data[key][indx_pen]) for key in keys]
+    )
 
     mah_sim_top_hosts = mah_sim[indx_top]
     is_central_top_hosts = forest["central"][indx_top, iz_obs]
-    diffmah_data_top_hosts = dict([(key, diffmah_data[key][indx_top]) for key in keys])
+    diffmah_data_top_hosts = dict(
+        [(key, diffmah_fit_data[key][indx_top]) for key in keys]
+    )
 
     args = (
         mah_params_pen_hosts,
@@ -248,71 +255,29 @@ def load_diffsky_data(
     return diffsky_data
 
 
-def load_core_data(
-    sim_name,
-    subvol,
-    chunknum,
-    nchunks,
-    iz_obs,
-    drn_diffmah,
-    drn_cores,
+def load_coreforest_and_metadata(
+    fn_cores, sim_name, chunknum, nchunks, include_fields=()
 ):
-    _res = _load_forest_t_indices(
-        subvol, chunknum, nchunks, iz_obs, sim_name, drn_cores
+    sim = HACCSim.simulations[sim_name]
+    zarr = sim.step2z(np.array(sim.cosmotools_steps))
+
+    forest_matrices = coretrees.corematrix_reader(
+        fn_cores,
+        calculate_secondary_host_row=True,
+        nchunks=nchunks,
+        chunknum=chunknum,
+        simulation=sim,
+        include_fields=list(include_fields),
     )
-    assert os.path.isdir(drn_diffmah)
-    forest = _res[2]
-
-    diffmah_data = load_diffmah_data_for_forest(drn_diffmah, subvol, forest)
-    mah_params = DEFAULT_MAH_PARAMS._make(
-        [diffmah_data[key] for key in DEFAULT_MAH_PARAMS._fields]
-    )
-    ret = (*_res, diffmah_data, mah_params)
-    return ret
-
-
-def load_forest_chunk(subvol, chunknum, nchunks, sim_name, drn_cores):
-    bn_cores = BNPAT_CORES.format(subvol)
-    fn_cores = os.path.join(drn_cores, bn_cores)
-
-    sim, forest_matrices, zarr = _load_forest(fn_cores, sim_name, chunknum, nchunks)
 
     cosmo_dsps = flat_wcdm.CosmoParams(
         *(sim.cosmo.Omega_m, sim.cosmo.w0, sim.cosmo.wa, sim.cosmo.h)
     )
 
     tarr = flat_wcdm.age_at_z(zarr, *cosmo_dsps)
+    lgt0 = np.log10(flat_wcdm.age_at_z0(*cosmo_dsps))
 
-    return sim, cosmo_dsps, forest_matrices, zarr, tarr
-
-
-def _load_forest_t_indices(subvol, chunknum, nchunks, iz_obs, sim_name, drn_cores):
-    _res = load_forest_chunk(subvol, chunknum, nchunks, sim_name, drn_cores)
-    sim, cosmo_dsps, forest, zarr, tarr = _res
-
-    logt0 = float(np.log10(tarr[-1]))
-    _z_obs = np.zeros(1) + zarr[iz_obs]
-    t_obs = float(flat_wcdm.age_at_z(_z_obs, *cosmo_dsps)[0])
-
-    host_row = forest["host_row"]
-    is_central = forest["central"]
-    top_host_row = forest["top_host_row"]
-    secondary_top_host_row = forest["secondary_top_host_row"]
-    args = host_row, is_central, top_host_row, secondary_top_host_row, iz_obs
-    indx_t_ult_inf, indx_t_pen_inf = get_infall_time_indices(*args)
-
-    ret = (
-        sim,
-        cosmo_dsps,
-        forest,
-        zarr,
-        tarr,
-        logt0,
-        t_obs,
-        indx_t_ult_inf,
-        indx_t_pen_inf,
-    )
-    return ret
+    return sim, cosmo_dsps, forest_matrices, zarr, tarr, lgt0
 
 
 def get_infall_time_indices(
@@ -358,10 +323,14 @@ def load_diffmah_data_for_forest(drn, subvol, forest):
     cf_first_row = forest["absolute_row_idx"][0]
     cf_last_row = forest["absolute_row_idx"][-1]
 
-    diffmah_data = hcu.load_flat_hdf5(
+    diffmah_fit_data = hcu.load_flat_hdf5(
         fn_diffmah, istart=cf_first_row, iend=cf_last_row + 1
     )
-    return diffmah_data
+    mah_params = DEFAULT_MAH_PARAMS._make(
+        [diffmah_fit_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+    )
+
+    return diffmah_fit_data, mah_params
 
 
 def impute_mah_params(
