@@ -9,8 +9,8 @@ from diffsky.mass_functions import mc_hosts
 from .. import mc_lightcone_halos as mclh
 
 
-def test_mc_lightcone_host_halos():
-    """Enforce mc_lightcone_host_halos produces consistent halo mass functions as
+def test_mc_lightcone_host_halo_mass_function():
+    """Enforce mc_lightcone_host_halo_mass_function produces consistent halo mass functions as
     the diffsky.mass_functions.mc_hosts function evaluated at the median redshift
 
     """
@@ -23,7 +23,9 @@ def test_mc_lightcone_host_halos():
     for ran_key in ran_keys:
         args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
 
-        redshifts_galpop, logmp_halopop = mclh.mc_lightcone_host_halos(*args)
+        redshifts_galpop, logmp_halopop = mclh.mc_lightcone_host_halo_mass_function(
+            *args
+        )
         assert np.all(np.isfinite(redshifts_galpop))
         assert np.all(np.isfinite(logmp_halopop))
         assert logmp_halopop.shape == redshifts_galpop.shape
@@ -62,3 +64,29 @@ def test_mc_lightcone_host_halos():
             lgmp_hist_lc[msk_counts] - lgmp_hist_zmed[msk_counts]
         ) / lgmp_hist_zmed[msk_counts]
         assert np.all(np.abs(fracdiff) < 0.1)
+
+
+def test_mc_lightcone_host_halo_diffmah():
+    """Enforce mc_lightcone_host_halo_mah returns reasonable results"""
+    ran_key = jran.key(0)
+    lgmp_min = 12.0
+    sky_area_degsq = 1.0
+
+    n_tests = 5
+    z_max_arr = np.linspace(0.2, 2.5, n_tests)
+    for z_max in z_max_arr:
+        test_key, ran_key = jran.split(ran_key, 2)
+        z_min = z_max - 0.05
+        args = (test_key, lgmp_min, z_min, z_max, sky_area_degsq)
+
+        cenpop = mclh.mc_lightcone_host_halo_diffmah(*args)
+        n_gals = cenpop.z_obs.size
+        assert cenpop.logmp_obs.size == cenpop.logmp0.size == n_gals
+        assert np.all(np.isfinite(cenpop.z_obs))
+
+        assert np.all(cenpop.z_obs >= z_min)
+        assert np.all(cenpop.z_obs <= z_max)
+
+        # Some halos with logmp_obs<lgmp_min is ok,
+        # but too many indicates an issue with DiffmahPop replicating logmp_obs
+        assert np.mean(cenpop.logmp_obs < lgmp_min) < 0.2, f"z_min={z_min:.2f}"

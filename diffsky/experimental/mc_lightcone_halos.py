@@ -1,7 +1,12 @@
 """ """
 
+from collections import namedtuple
 from functools import partial
 
+import numpy as np
+from diffmah.diffmah_kernels import _log_mah_kern
+from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
+from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
 from dsps.cosmology import flat_wcdm
 from jax import config, grad
 from jax import jit as jjit
@@ -89,7 +94,7 @@ def mc_lightcone_redshift(
     return mc_redshifts
 
 
-def mc_lightcone_host_halos(
+def mc_lightcone_host_halo_mass_function(
     ran_key,
     lgmp_min,
     z_min,
@@ -99,7 +104,7 @@ def mc_lightcone_host_halos(
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     n_grid=2_000,
 ):
-    """Generate a Monte Carlo realization of a lightcone of host halos
+    """Generate a Monte Carlo realization of a lightcone of host halo mass and redshift
 
     Parameters
     ----------
@@ -165,3 +170,82 @@ def mc_lightcone_host_halos(
     logmp_halopop = mc_logmp_vmap(uran_m, hmf_params, lgmp_min, z_halopop, vol_galpop)
 
     return z_halopop, logmp_halopop
+
+
+def mc_lightcone_host_halo_diffmah(
+    ran_key,
+    lgmp_min,
+    z_min,
+    z_max,
+    sky_area_degsq,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    n_grid=2_000,
+):
+    """Generate mass assembly histories for host halos sampled from a lightcone
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lgmp_min : float
+        Minimum halo mass
+
+    z_min, z_max : float
+
+    sky_area_degsq : float
+        Sky area in units of deg^2
+
+    cosmo_params : namedtuple
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    Returns
+    -------
+    cenpop : namedtuple
+        z_obs, logmp_obs, mah_params, logmp0 = cenpop
+
+        z_obs : narray, shape (n_halos, )
+            Lightcone redshift
+
+        logmp_obs : narray, shape (n_halos, )
+            Halo mass at the lightcone redshift
+
+        mah_params : namedtuple of diffmah params
+            Each tuple entry is an ndarray with shape (n_halos, )
+
+        logmp0 : narray, shape (n_halos, )
+            Halo mass at z=0
+
+    """
+
+    lc_hmf_key, mah_key = jran.split(ran_key, 2)
+    z_halopop, logmp_halopop = mc_lightcone_host_halo_mass_function(
+        lc_hmf_key,
+        lgmp_min,
+        z_min,
+        z_max,
+        sky_area_degsq,
+        cosmo_params=cosmo_params,
+        hmf_params=hmf_params,
+        n_grid=n_grid,
+    )
+    t_obs_halopop = flat_wcdm.age_at_z(z_halopop, *cosmo_params)
+    t_0 = flat_wcdm.age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t_0)
+
+    tarr = np.array((10**lgt0,))
+    args = (diffmahpop_params, tarr, logmp_halopop, t_obs_halopop, mah_key, lgt0)
+    halopop = mc_cenpop(*args)  # mah_params, dmhdt, log_mah
+    logmp0_halopop = halopop.log_mah[:, 0]
+
+    logmp_obs_halopop = _log_mah_kern(halopop.mah_params, t_obs_halopop, lgt0)
+
+    colnames = ("z_obs", "logmp_obs", "mah_params", "logmp0")
+    DiffmahCenPop = namedtuple("DiffmahCenPop", colnames)
+    cenpop = DiffmahCenPop._make(
+        (z_halopop, logmp_obs_halopop, halopop.mah_params, logmp0_halopop)
+    )
+
+    return cenpop
