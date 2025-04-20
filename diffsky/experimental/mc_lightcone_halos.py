@@ -13,6 +13,7 @@ from diffstarpop import param_utils as dpu
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
+from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
 from jax import config, grad
 from jax import jit as jjit
 from jax import numpy as jnp
@@ -22,6 +23,11 @@ from jax import vmap
 from ..mass_functions import mc_hosts
 
 config.update("jax_enable_x64", True)
+
+_AGEPOP = (None, 0, None, 0)
+calc_age_weights_from_sfh_table_vmap = jjit(
+    vmap(calc_age_weights_from_sfh_table, in_axes=_AGEPOP)
+)
 
 FULL_SKY_AREA = (4 * jnp.pi) * (180 / jnp.pi) ** 2
 
@@ -388,3 +394,39 @@ def mc_lightcone_diffstar_cens(
     sfh_cenpop = DiffstarCenPop(*values)
 
     return sfh_cenpop
+
+
+def mc_lightcone_diffstar_stellar_ages_cens(
+    ran_key,
+    lgmp_min,
+    z_min,
+    z_max,
+    sky_area_degsq,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
+    ssp_lg_age_gyr=np.linspace(5.0, 10.25, 90) - 9.0,
+    n_grid=2_000,
+    n_t_table=100,
+):
+    cenpop = mc_lightcone_diffstar_cens(
+        ran_key,
+        lgmp_min,
+        z_min,
+        z_max,
+        sky_area_degsq,
+        cosmo_params=cosmo_params,
+        hmf_params=hmf_params,
+        diffmahpop_params=diffmahpop_params,
+        n_grid=n_grid,
+    )
+    age_weights_galpop = calc_age_weights_from_sfh_table_vmap(
+        cenpop.t_table, cenpop.sfh_table, ssp_lg_age_gyr, cenpop.t_obs
+    )
+    fields = (*cenpop._fields, "age_weights", "ssp_lg_age_gyr")
+    values = (*cenpop, age_weights_galpop, ssp_lg_age_gyr)
+    DiffstarCenPop = namedtuple("DiffstarCenPop", fields)
+    cenpop = DiffstarCenPop(*values)
+
+    return cenpop
