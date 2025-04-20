@@ -419,7 +419,9 @@ def mc_lightcone_diffstar_stellar_ages_cens(
         cosmo_params=cosmo_params,
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
+        diffstarpop_params=diffstarpop_params,
         n_grid=n_grid,
+        n_t_table=n_t_table,
     )
     age_weights_galpop = calc_age_weights_from_sfh_table_vmap(
         cenpop.t_table, cenpop.sfh_table, ssp_lg_age_gyr, cenpop.t_obs
