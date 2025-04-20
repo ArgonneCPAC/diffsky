@@ -558,6 +558,17 @@ def mc_lightcone_diffstar_ssp_weights_cens(
     return cenpop
 
 
+def get_precompute_ssp_mag_redshift_table(tcurves, ssp_data, z_phot_table):
+    collector = []
+    for z_obs in z_phot_table:
+        ssp_obsflux_table = psp.get_ssp_obsflux_table(
+            ssp_data, tcurves, z_obs, flat_wcdm.PLANCK15
+        )
+        collector.append(ssp_obsflux_table)
+    precomputed_ssp_mag_table = -2.5 * np.log10(np.array(collector))
+    return precomputed_ssp_mag_table
+
+
 def mc_lightcone_obs_mags_cens(
     ran_key,
     lgmp_min,
@@ -565,9 +576,8 @@ def mc_lightcone_obs_mags_cens(
     z_max,
     sky_area_degsq,
     ssp_data,
-    tcurves=None,
-    precomputed_ssp_mag_table=None,
-    z_phot_table=None,
+    precomputed_ssp_mag_table,
+    z_phot_table,
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
@@ -576,16 +586,8 @@ def mc_lightcone_obs_mags_cens(
     lgmet_scatter=umzr.MZR_SCATTER,
     n_grid=2_000,
     n_t_table=100,
-    n_z_phot_table=50,
     phot_keys=LSST_PHOTKEYS,
 ):
-    if precomputed_ssp_mag_table is not None:
-        assert z_phot_table is not None
-        assert z_phot_table.size == precomputed_ssp_mag_table.shape[0]
-    else:
-        if z_phot_table is None:
-            z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
-
     cenpop = mc_lightcone_diffstar_ssp_weights_cens(
         ran_key,
         lgmp_min,

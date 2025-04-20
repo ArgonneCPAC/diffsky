@@ -1,7 +1,5 @@
 """ """
 
-from time import time
-
 import numpy as np
 from dsps.cosmology import flat_wcdm
 from dsps.data_loaders import retrieve_fake_fsps_data
@@ -176,19 +174,15 @@ def test_mc_lightcone_obs_mags_cens():
 
     tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
 
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
-    start = time()
-    cenpop = mclh.mc_lightcone_obs_mags_cens(*args, tcurves=tcurves, n_z_phot_table=5)
-    end = time()
-    runtime0 = end - start
-    assert np.all(np.isfinite(cenpop["obs_mags"]))
-
-    start = time()
-    cenpop2 = mclh.mc_lightcone_obs_mags_cens(
-        *args,
-        precomputed_ssp_mag_table=cenpop["precomputed_ssp_mag_table"],
-        z_phot_table=cenpop["z_phot_table"],
+    z_phot_table = np.linspace(z_min, z_max, 5)
+    precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table
     )
-    runtime1 = end - start
-    assert np.allclose(cenpop["obs_mags"], cenpop2["obs_mags"])
-    assert runtime1 < runtime0 / 2
+
+    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
+    cenpop = mclh.mc_lightcone_obs_mags_cens(
+        *args,
+        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
+        z_phot_table=z_phot_table,
+    )
+    assert np.all(np.isfinite(cenpop["obs_mags"]))
