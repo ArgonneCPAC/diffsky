@@ -242,10 +242,41 @@ def mc_lightcone_host_halo_diffmah(
 
     logmp_obs_halopop = _log_mah_kern(halopop.mah_params, t_obs_halopop, lgt0)
 
-    colnames = ("z_obs", "logmp_obs", "mah_params", "logmp0")
+    colnames = ("z_obs", "t_obs_halopop", "logmp_obs", "mah_params", "logmp0")
     DiffmahCenPop = namedtuple("DiffmahCenPop", colnames)
     cenpop = DiffmahCenPop._make(
-        (z_halopop, logmp_obs_halopop, halopop.mah_params, logmp0_halopop)
+        (
+            z_halopop,
+            t_obs_halopop,
+            logmp_obs_halopop,
+            halopop.mah_params,
+            logmp0_halopop,
+        )
     )
 
+    return cenpop
+
+
+def mc_lightcone_diffstar_cens(
+    ran_key,
+    lgmp_min,
+    z_min,
+    z_max,
+    sky_area_degsq,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    n_grid=2_000,
+):
+    cenpop = mc_lightcone_host_halo_diffmah(
+        ran_key,
+        lgmp_min,
+        z_min,
+        z_max,
+        sky_area_degsq,
+        cosmo_params=cosmo_params,
+        hmf_params=hmf_params,
+        diffmahpop_params=diffmahpop_params,
+        n_grid=n_grid,
+    )
     return cenpop
