@@ -90,3 +90,18 @@ def test_mc_lightcone_host_halo_diffmah():
         # Some halos with logmp_obs<lgmp_min is ok,
         # but too many indicates an issue with DiffmahPop replicating logmp_obs
         assert np.mean(cenpop.logmp_obs < lgmp_min) < 0.2, f"z_min={z_min:.2f}"
+
+
+def test_mc_lightcone_diffstar_cens():
+    """Enforce mc_lightcone_host_halo_mah returns reasonable results"""
+    ran_key = jran.key(0)
+    lgmp_min = 12.0
+    sky_area_degsq = 1.0
+
+    z_min, z_max = 0.1, 0.5
+    z_min = z_max - 0.05
+    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
+    cenpop = mclh.mc_lightcone_diffstar_cens(*args)
+    assert np.all(np.isfinite(cenpop.logsm_obs))
+    assert np.all(np.isfinite(cenpop.logssfr_obs))
+    assert cenpop.logsm_obs.min() > 4

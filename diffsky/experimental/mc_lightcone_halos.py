@@ -7,6 +7,11 @@ import numpy as np
 from diffmah.diffmah_kernels import _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
+from diffstar.utils import cumulative_mstar_formed_galpop
+from diffstarpop import mc_diffstarpop_cen_tpeak as mcdct
+from diffstarpop import param_utils as dpu
+from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
+from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
 from jax import config, grad
 from jax import jit as jjit
@@ -16,11 +21,11 @@ from jax import vmap
 
 from ..mass_functions import mc_hosts
 
-FULL_SKY_AREA = (4 * jnp.pi) * (180 / jnp.pi) ** 2
-
-
 config.update("jax_enable_x64", True)
 
+FULL_SKY_AREA = (4 * jnp.pi) * (180 / jnp.pi) ** 2
+
+interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
 _G = (0, None, None, 0, 0)
 mc_logmp_vmap = jjit(vmap(mc_hosts._mc_host_halos_singlez_kern, in_axes=_G))
@@ -242,7 +247,7 @@ def mc_lightcone_host_halo_diffmah(
 
     logmp_obs_halopop = _log_mah_kern(halopop.mah_params, t_obs_halopop, lgt0)
 
-    colnames = ("z_obs", "t_obs_halopop", "logmp_obs", "mah_params", "logmp0")
+    colnames = ("z_obs", "t_obs", "logmp_obs", "mah_params", "logmp0")
     DiffmahCenPop = namedtuple("DiffmahCenPop", colnames)
     cenpop = DiffmahCenPop._make(
         (
@@ -266,8 +271,64 @@ def mc_lightcone_diffstar_cens(
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     n_grid=2_000,
+    n_t_table=100,
 ):
+    """
+    Generate halo and galaxy assembly histories for host halos sampled from a lightcone
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lgmp_min : float
+        Minimum halo mass
+
+    z_min, z_max : float
+
+    sky_area_degsq : float
+        Sky area in units of deg^2
+
+    cosmo_params : namedtuple
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    Returns
+    -------
+    cenpop : namedtuple
+        z_obs, logmp_obs, mah_params, logmp0 = cenpop
+
+        z_obs : narray, shape (n_halos, )
+            Lightcone redshift
+
+        logmp_obs : narray, shape (n_halos, )
+            Halo mass at the lightcone redshift
+
+        mah_params : namedtuple of diffmah params
+            Each tuple entry is an ndarray with shape (n_halos, )
+
+        logmp0 : narray, shape (n_halos, )
+            log10 of halo mass at z=0
+
+        logsm_obs : narray, shape (n_halos, )
+            log10(Mstar) at the time of observation
+
+        logssfr_obs : narray, shape (n_halos, )
+            log10(SFR/Mstar) at the time of observation
+
+        sfh_params : namedtuple
+            Diffstar params for every galaxy
+
+        sfh_table : narray, shape (n_halos, n_times)
+            Star formation rate in Msun/yr
+
+        t_table : narray, shape (n_times, )
+
+        diffstarpop_data : namedtuple
+            ancillary diffstarpop data such as frac_q
+
+    """
     cenpop = mc_lightcone_host_halo_diffmah(
         ran_key,
         lgmp_min,
@@ -279,4 +340,51 @@ def mc_lightcone_diffstar_cens(
         diffmahpop_params=diffmahpop_params,
         n_grid=n_grid,
     )
-    return cenpop
+
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+
+    t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
+    args = (diffstarpop_params, cenpop.mah_params, cenpop.logmp0, ran_key, t_table)
+
+    ddp_fields = "sfh_params_ms", "sfh_params_q", "sfh_ms", "sfh_q", "frac_q", "mc_is_q"
+    DiffstarPopData = namedtuple("DiffstarPopData", ddp_fields)
+    diffstarpop_data = DiffstarPopData(*mcdct.mc_diffstar_sfh_galpop_cen(*args))
+
+    sfh_table = jnp.where(
+        diffstarpop_data.mc_is_q.reshape((-1, 1)),
+        diffstarpop_data.sfh_q,
+        diffstarpop_data.sfh_ms,
+    )
+    sfh_params = dpu.mc_select_diffstar_params(
+        diffstarpop_data.sfh_params_q,
+        diffstarpop_data.sfh_params_ms,
+        diffstarpop_data.mc_is_q,
+    )
+
+    logsmh_table = np.log10(cumulative_mstar_formed_galpop(t_table, sfh_table))
+    logsm_obs = interp_vmap(cenpop.t_obs, t_table, logsmh_table)
+    logsfr_obs = interp_vmap(cenpop.t_obs, t_table, np.log10(sfh_table))
+    logssfr_obs = logsfr_obs - logsm_obs
+
+    fields = (
+        *cenpop._fields,
+        "logsm_obs",
+        "logssfr_obs",
+        "sfh_params",
+        "sfh_table",
+        "t_table",
+        "diffstarpop_data",
+    )
+    values = (
+        *cenpop,
+        logsm_obs,
+        logssfr_obs,
+        sfh_params,
+        sfh_table,
+        t_table,
+        diffstarpop_data,
+    )
+    DiffstarCenPop = namedtuple("DiffstarCenPop", fields)
+    sfh_cenpop = DiffstarCenPop(*values)
+
+    return sfh_cenpop
