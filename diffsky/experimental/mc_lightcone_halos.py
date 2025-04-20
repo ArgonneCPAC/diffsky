@@ -12,6 +12,8 @@ from diffstarpop import param_utils as dpu
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
+from dsps.metallicity import umzr
+from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
 from jax import config, grad
 from jax import jit as jjit
@@ -38,6 +40,12 @@ mc_logmp_vmap = jjit(vmap(mc_hosts._mc_host_halos_singlez_kern, in_axes=_G))
 _Z = (0, None, None, None, None)
 dist_com_grad_kern = jjit(
     vmap(grad(flat_wcdm.comoving_distance_to_z, argnums=0), in_axes=_Z)
+)
+
+# gal_lgmet, gal_lgmet_scatter, ssp_lgmet
+_M = (0, None, None)
+_calc_lgmet_weights_galpop = jjit(
+    vmap(zmetw.calc_lgmet_weights_from_lognormal_mdf, in_axes=_M)
 )
 
 
@@ -499,3 +507,47 @@ def mc_lightcone_diffstar_stellar_ages_cens(
         cenpop_out[key] = value
 
     return cenpop_out
+
+
+def mc_lightcone_diffstar_ssp_weights_cens(
+    ran_key,
+    lgmp_min,
+    z_min,
+    z_max,
+    sky_area_degsq,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
+    mzr_params=umzr.DEFAULT_MZR_PARAMS,
+    lgmet_scatter=umzr.MZR_SCATTER,
+    ssp_lg_age_gyr=np.linspace(5.0, 10.25, 107) - 9.0,
+    ssp_lgmet=np.linspace(-4, -1.3, 12),
+    n_grid=2_000,
+    n_t_table=100,
+):
+    cenpop = mc_lightcone_diffstar_stellar_ages_cens(
+        ran_key,
+        lgmp_min,
+        z_min,
+        z_max,
+        sky_area_degsq,
+        cosmo_params=cosmo_params,
+        hmf_params=hmf_params,
+        diffmahpop_params=diffmahpop_params,
+        diffstarpop_params=diffstarpop_params,
+        n_grid=n_grid,
+        n_t_table=n_t_table,
+        ssp_lg_age_gyr=ssp_lg_age_gyr,
+    )
+
+    lgmet_med = umzr.mzr_model(cenpop["logsm_obs"], cenpop["t_obs"], *mzr_params)
+    cenpop["lgmet_weights"] = _calc_lgmet_weights_galpop(
+        lgmet_med, lgmet_scatter, ssp_lgmet
+    )
+    n_gals, n_met = cenpop["lgmet_weights"].shape
+    n_age = len(ssp_lg_age_gyr)
+    _w_lgmet = cenpop["lgmet_weights"].reshape((n_gals, n_met, 1))
+    _w_age = cenpop["age_weights"].reshape((n_gals, 1, n_age))
+    cenpop["ssp_weights"] = _w_lgmet * _w_age
+    return cenpop
