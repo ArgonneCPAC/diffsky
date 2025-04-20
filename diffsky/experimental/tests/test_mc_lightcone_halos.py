@@ -1,7 +1,11 @@
 """ """
 
+from time import time
+
 import numpy as np
 from dsps.cosmology import flat_wcdm
+from dsps.data_loaders import retrieve_fake_fsps_data
+from dsps.data_loaders.defaults import TransmissionCurve
 from jax import random as jran
 
 from diffsky.mass_functions import mc_hosts
@@ -156,3 +160,35 @@ def test_mc_lightcone_diffstar_ssp_weights_cens():
 
     assert np.all(np.isfinite(cenpop["ssp_weights"]))
     assert np.allclose(1.0, np.sum(cenpop["ssp_weights"], axis=(1, 2)), rtol=1e-3)
+
+
+def test_mc_lightcone_obs_mags_cens():
+    ran_key = jran.key(0)
+    lgmp_min = 12.0
+    sky_area_degsq = 1.0
+
+    z_min, z_max = 0.1, 0.5
+    z_min = z_max - 0.05
+
+    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
+    _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
+    wave, u, g, r, i, z, y = _res
+
+    tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+
+    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
+    start = time()
+    cenpop = mclh.mc_lightcone_obs_mags_cens(*args, tcurves=tcurves, n_z_phot_table=5)
+    end = time()
+    runtime0 = end - start
+    assert np.all(np.isfinite(cenpop["obs_mags"]))
+
+    start = time()
+    cenpop2 = mclh.mc_lightcone_obs_mags_cens(
+        *args,
+        precomputed_ssp_mag_table=cenpop["precomputed_ssp_mag_table"],
+        z_phot_table=cenpop["z_phot_table"],
+    )
+    runtime1 = end - start
+    assert np.allclose(cenpop["obs_mags"], cenpop2["obs_mags"])
+    assert runtime1 < runtime0 / 2

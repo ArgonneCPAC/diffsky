@@ -12,6 +12,7 @@ from diffstarpop import param_utils as dpu
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
+from dsps.data_loaders import load_transmission_curve
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
@@ -22,6 +23,8 @@ from jax import random as jran
 from jax import vmap
 
 from ..mass_functions import mc_hosts
+from . import photometry_interpolation as photerp
+from . import precompute_ssp_phot as psp
 
 config.update("jax_enable_x64", True)
 
@@ -31,6 +34,8 @@ calc_age_weights_from_sfh_table_vmap = jjit(
 )
 
 FULL_SKY_AREA = (4 * jnp.pi) * (180 / jnp.pi) ** 2
+
+LSST_PHOTKEYS = ("lsst_u*", "lsst_g*", "lsst_r*", "lsst_i*", "lsst_z*", "lsst_y*")
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
@@ -521,8 +526,8 @@ def mc_lightcone_diffstar_ssp_weights_cens(
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
-    ssp_lg_age_gyr=np.linspace(5.0, 10.25, 107) - 9.0,
-    ssp_lgmet=np.linspace(-4, -1.3, 12),
+    ssp_lg_age_gyr=np.linspace(5.0, 10.25, 90) - 9.0,
+    ssp_lgmet=np.linspace(-4, -1.3, 11),
     n_grid=2_000,
     n_t_table=100,
 ):
@@ -550,4 +555,76 @@ def mc_lightcone_diffstar_ssp_weights_cens(
     _w_lgmet = cenpop["lgmet_weights"].reshape((n_gals, n_met, 1))
     _w_age = cenpop["age_weights"].reshape((n_gals, 1, n_age))
     cenpop["ssp_weights"] = _w_lgmet * _w_age
+    return cenpop
+
+
+def mc_lightcone_obs_mags_cens(
+    ran_key,
+    lgmp_min,
+    z_min,
+    z_max,
+    sky_area_degsq,
+    ssp_data,
+    tcurves=None,
+    precomputed_ssp_mag_table=None,
+    z_phot_table=None,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
+    mzr_params=umzr.DEFAULT_MZR_PARAMS,
+    lgmet_scatter=umzr.MZR_SCATTER,
+    n_grid=2_000,
+    n_t_table=100,
+    n_z_phot_table=50,
+    phot_keys=LSST_PHOTKEYS,
+):
+    if precomputed_ssp_mag_table is not None:
+        assert z_phot_table is not None
+        assert z_phot_table.size == precomputed_ssp_mag_table.shape[0]
+    else:
+        if z_phot_table is None:
+            z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+
+    cenpop = mc_lightcone_diffstar_ssp_weights_cens(
+        ran_key,
+        lgmp_min,
+        z_min,
+        z_max,
+        sky_area_degsq,
+        cosmo_params=cosmo_params,
+        hmf_params=hmf_params,
+        diffmahpop_params=diffmahpop_params,
+        diffstarpop_params=diffstarpop_params,
+        mzr_params=mzr_params,
+        lgmet_scatter=lgmet_scatter,
+        n_grid=n_grid,
+        n_t_table=n_t_table,
+        ssp_lgmet=ssp_data.ssp_lgmet,
+        ssp_lg_age_gyr=ssp_data.ssp_lg_age_gyr,
+    )
+    if precomputed_ssp_mag_table is None:
+        tcurves = [load_transmission_curve(bn_pat=key) for key in phot_keys]
+
+        collector = []
+        for z_obs in z_phot_table:
+            ssp_obsflux_table = psp.get_ssp_obsflux_table(
+                ssp_data, tcurves, z_obs, flat_wcdm.PLANCK15
+            )
+            collector.append(ssp_obsflux_table)
+        precomputed_ssp_mag_table = -2.5 * np.log10(np.array(collector))
+
+    photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
+        cenpop["z_obs"], z_phot_table, precomputed_ssp_mag_table
+    )
+    cenpop["precomputed_ssp_mag_table"] = precomputed_ssp_mag_table
+    cenpop["photflux_table"] = 10 ** (-0.4 * photmag_table_galpop)
+    cenpop["z_phot_table"] = z_phot_table
+
+    n_gals, n_bands, n_met, n_age = cenpop["photflux_table"].shape
+    w = cenpop["ssp_weights"].reshape((n_gals, 1, n_met, n_age))
+    sm = 10 ** cenpop["logmp_obs"].reshape((n_gals, 1))
+    photflux_galpop = jnp.sum(w * cenpop["photflux_table"], axis=(2, 3)) * sm
+    cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
+
     return cenpop
