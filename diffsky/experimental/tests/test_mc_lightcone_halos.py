@@ -80,16 +80,16 @@ def test_mc_lightcone_host_halo_diffmah():
         args = (test_key, lgmp_min, z_min, z_max, sky_area_degsq)
 
         cenpop = mclh.mc_lightcone_host_halo_diffmah(*args)
-        n_gals = cenpop.z_obs.size
-        assert cenpop.logmp_obs.size == cenpop.logmp0.size == n_gals
-        assert np.all(np.isfinite(cenpop.z_obs))
+        n_gals = cenpop["z_obs"].size
+        assert cenpop["logmp_obs"].size == cenpop["logmp0"].size == n_gals
+        assert np.all(np.isfinite(cenpop["z_obs"]))
 
-        assert np.all(cenpop.z_obs >= z_min)
-        assert np.all(cenpop.z_obs <= z_max)
+        assert np.all(cenpop["z_obs"] >= z_min)
+        assert np.all(cenpop["z_obs"] <= z_max)
 
         # Some halos with logmp_obs<lgmp_min is ok,
         # but too many indicates an issue with DiffmahPop replicating logmp_obs
-        assert np.mean(cenpop.logmp_obs < lgmp_min) < 0.2, f"z_min={z_min:.2f}"
+        assert np.mean(cenpop["logmp_obs"] < lgmp_min) < 0.2, f"z_min={z_min:.2f}"
 
 
 def test_mc_lightcone_diffstar_cens():
@@ -102,9 +102,19 @@ def test_mc_lightcone_diffstar_cens():
     z_min = z_max - 0.05
     args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
     cenpop = mclh.mc_lightcone_diffstar_cens(*args)
-    assert np.all(np.isfinite(cenpop.logsm_obs))
-    assert np.all(np.isfinite(cenpop.logssfr_obs))
-    assert cenpop.logsm_obs.min() > 4
+    assert np.all(np.isfinite(cenpop["logsm_obs"]))
+    assert np.all(np.isfinite(cenpop["logssfr_obs"]))
+    assert cenpop["logsm_obs"].min() > 4
+
+    assert np.all(np.isfinite(cenpop["diffstarpop_data"]["sfh_params_ms"].ms_params))
+    assert np.all(np.isfinite(cenpop["diffstarpop_data"]["sfh_params_ms"].q_params))
+    assert np.all(np.isfinite(cenpop["diffstarpop_data"]["sfh_params_q"].ms_params))
+    assert np.all(np.isfinite(cenpop["diffstarpop_data"]["sfh_params_q"].q_params))
+
+    assert np.all(np.isfinite(cenpop["diffstarpop_data"]["sfh_ms"]))
+    assert np.all(np.isfinite(cenpop["diffstarpop_data"]["sfh_q"]))
+    assert np.all(cenpop["diffstarpop_data"]["frac_q"] >= 0)
+    assert np.all(cenpop["diffstarpop_data"]["frac_q"] <= 1)
 
 
 def test_mc_lightcone_diffstar_stellar_ages_cens():
@@ -117,9 +127,9 @@ def test_mc_lightcone_diffstar_stellar_ages_cens():
     z_min = z_max - 0.05
     args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
     cenpop = mclh.mc_lightcone_diffstar_stellar_ages_cens(*args)
-    assert np.all(np.isfinite(cenpop.logsm_obs))
-    assert np.all(np.isfinite(cenpop.logssfr_obs))
-    assert cenpop.logsm_obs.min() > 4
+    assert np.all(np.isfinite(cenpop["logsm_obs"]))
+    assert np.all(np.isfinite(cenpop["logssfr_obs"]))
+    assert cenpop["logsm_obs"].min() > 4
 
-    assert np.all(np.isfinite(cenpop.age_weights))
-    assert np.allclose(1.0, np.sum(cenpop.age_weights, axis=1), rtol=1e-3)
+    assert np.all(np.isfinite(cenpop["age_weights"]))
+    assert np.allclose(1.0, np.sum(cenpop["age_weights"], axis=1), rtol=1e-3)

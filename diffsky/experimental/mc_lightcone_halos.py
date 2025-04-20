@@ -1,6 +1,5 @@
 """ """
 
-from collections import namedtuple
 from functools import partial
 
 import numpy as np
@@ -214,8 +213,7 @@ def mc_lightcone_host_halo_diffmah(
 
     Returns
     -------
-    cenpop : namedtuple
-        z_obs, logmp_obs, mah_params, logmp0 = cenpop
+    cenpop : dict
 
         z_obs : narray, shape (n_halos, )
             Lightcone redshift
@@ -253,19 +251,19 @@ def mc_lightcone_host_halo_diffmah(
 
     logmp_obs_halopop = _log_mah_kern(halopop.mah_params, t_obs_halopop, lgt0)
 
-    colnames = ("z_obs", "t_obs", "logmp_obs", "mah_params", "logmp0")
-    DiffmahCenPop = namedtuple("DiffmahCenPop", colnames)
-    cenpop = DiffmahCenPop._make(
-        (
-            z_halopop,
-            t_obs_halopop,
-            logmp_obs_halopop,
-            halopop.mah_params,
-            logmp0_halopop,
-        )
+    fields = ("z_obs", "t_obs", "logmp_obs", "mah_params", "logmp0")
+    values = (
+        z_halopop,
+        t_obs_halopop,
+        logmp_obs_halopop,
+        halopop.mah_params,
+        logmp0_halopop,
     )
+    cenpop_out = dict()
+    for key, value in zip(fields, values):
+        cenpop_out[key] = value
 
-    return cenpop
+    return cenpop_out
 
 
 def mc_lightcone_diffstar_cens(
@@ -302,8 +300,7 @@ def mc_lightcone_diffstar_cens(
 
     Returns
     -------
-    cenpop : namedtuple
-        z_obs, logmp_obs, mah_params, logmp0 = cenpop
+    cenpop : dict
 
         z_obs : narray, shape (n_halos, )
             Lightcone redshift
@@ -331,7 +328,7 @@ def mc_lightcone_diffstar_cens(
 
         t_table : narray, shape (n_times, )
 
-        diffstarpop_data : namedtuple
+        diffstarpop_data : dict
             ancillary diffstarpop data such as frac_q
 
     """
@@ -350,30 +347,38 @@ def mc_lightcone_diffstar_cens(
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
 
     t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
-    args = (diffstarpop_params, cenpop.mah_params, cenpop.logmp0, ran_key, t_table)
+    args = (
+        diffstarpop_params,
+        cenpop["mah_params"],
+        cenpop["logmp0"],
+        ran_key,
+        t_table,
+    )
 
     ddp_fields = "sfh_params_ms", "sfh_params_q", "sfh_ms", "sfh_q", "frac_q", "mc_is_q"
-    DiffstarPopData = namedtuple("DiffstarPopData", ddp_fields)
-    diffstarpop_data = DiffstarPopData(*mcdct.mc_diffstar_sfh_galpop_cen(*args))
+    ddp_values = mcdct.mc_diffstar_sfh_galpop_cen(*args)
+    diffstarpop_data = dict()
+    for key, value in zip(ddp_fields, ddp_values):
+        diffstarpop_data[key] = value
 
     sfh_table = jnp.where(
-        diffstarpop_data.mc_is_q.reshape((-1, 1)),
-        diffstarpop_data.sfh_q,
-        diffstarpop_data.sfh_ms,
+        diffstarpop_data["mc_is_q"].reshape((-1, 1)),
+        diffstarpop_data["sfh_q"],
+        diffstarpop_data["sfh_ms"],
     )
     sfh_params = dpu.mc_select_diffstar_params(
-        diffstarpop_data.sfh_params_q,
-        diffstarpop_data.sfh_params_ms,
-        diffstarpop_data.mc_is_q,
+        diffstarpop_data["sfh_params_q"],
+        diffstarpop_data["sfh_params_ms"],
+        diffstarpop_data["mc_is_q"],
     )
 
     logsmh_table = np.log10(cumulative_mstar_formed_galpop(t_table, sfh_table))
-    logsm_obs = interp_vmap(cenpop.t_obs, t_table, logsmh_table)
-    logsfr_obs = interp_vmap(cenpop.t_obs, t_table, np.log10(sfh_table))
+    logsm_obs = interp_vmap(cenpop["t_obs"], t_table, logsmh_table)
+    logsfr_obs = interp_vmap(cenpop["t_obs"], t_table, np.log10(sfh_table))
     logssfr_obs = logsfr_obs - logsm_obs
 
     fields = (
-        *cenpop._fields,
+        *cenpop.keys(),
         "logsm_obs",
         "logssfr_obs",
         "sfh_params",
@@ -382,7 +387,7 @@ def mc_lightcone_diffstar_cens(
         "diffstarpop_data",
     )
     values = (
-        *cenpop,
+        *cenpop.values(),
         logsm_obs,
         logssfr_obs,
         sfh_params,
@@ -390,10 +395,11 @@ def mc_lightcone_diffstar_cens(
         t_table,
         diffstarpop_data,
     )
-    DiffstarCenPop = namedtuple("DiffstarCenPop", fields)
-    sfh_cenpop = DiffstarCenPop(*values)
+    cenpop_out = dict()
+    for key, value in zip(fields, values):
+        cenpop_out[key] = value
 
-    return sfh_cenpop
+    return cenpop_out
 
 
 def mc_lightcone_diffstar_stellar_ages_cens(
@@ -424,11 +430,12 @@ def mc_lightcone_diffstar_stellar_ages_cens(
         n_t_table=n_t_table,
     )
     age_weights_galpop = calc_age_weights_from_sfh_table_vmap(
-        cenpop.t_table, cenpop.sfh_table, ssp_lg_age_gyr, cenpop.t_obs
+        cenpop["t_table"], cenpop["sfh_table"], ssp_lg_age_gyr, cenpop["t_obs"]
     )
-    fields = (*cenpop._fields, "age_weights", "ssp_lg_age_gyr")
-    values = (*cenpop, age_weights_galpop, ssp_lg_age_gyr)
-    DiffstarCenPop = namedtuple("DiffstarCenPop", fields)
-    cenpop = DiffstarCenPop(*values)
+    fields = (*cenpop.keys(), "age_weights", "ssp_lg_age_gyr")
+    values = (*cenpop.values(), age_weights_galpop, ssp_lg_age_gyr)
+    cenpop_out = dict()
+    for key, value in zip(fields, values):
+        cenpop_out[key] = value
 
-    return cenpop
+    return cenpop_out
