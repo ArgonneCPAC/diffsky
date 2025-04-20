@@ -559,6 +559,21 @@ def mc_lightcone_diffstar_ssp_weights_cens(
 
 
 def get_precompute_ssp_mag_redshift_table(tcurves, ssp_data, z_phot_table):
+    """Calculate precomputed SSP magnitude table to use for lightcone interpolation
+
+    Parameters
+    ----------
+    tcurves : list of n_bands transmission curves
+
+    ssp_data : namedtuple
+
+    z_phot_table : ndarray, shape (n_phot_table, )
+
+    Returns
+    -------
+    precomputed_ssp_mag_table : ndarray, shape (n_phot_table, n_bands, n_met, n_age)
+
+    """
     collector = []
     for z_obs in z_phot_table:
         ssp_obsflux_table = psp.get_ssp_obsflux_table(
@@ -588,6 +603,75 @@ def mc_lightcone_obs_mags_cens(
     n_t_table=100,
     phot_keys=LSST_PHOTKEYS,
 ):
+    """
+    Generate photometry for host halos sampled from a lightcone
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lgmp_min : float
+        Minimum halo mass
+
+    z_min, z_max : float
+
+    sky_area_degsq : float
+        Sky area in units of deg^2
+
+    cosmo_params : namedtuple
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    ssp_data : namedtuple
+
+    precomputed_ssp_mag_table : ndarray, shape (n_phot_table, n_bands, n_met, n_age)
+        Computed by the get_precompute_ssp_mag_redshift_table function
+
+    z_phot_table : ndarray, shape (n_phot_table, )
+
+    Returns
+    -------
+    cenpop : dict
+
+        z_obs : narray, shape (n_halos, )
+            Lightcone redshift
+
+        logmp_obs : narray, shape (n_halos, )
+            Halo mass at the lightcone redshift
+
+        mah_params : namedtuple of diffmah params
+            Each tuple entry is an ndarray with shape (n_halos, )
+
+        logmp0 : narray, shape (n_halos, )
+            log10 of halo mass at z=0
+
+        logsm_obs : narray, shape (n_halos, )
+            log10(Mstar) at the time of observation
+
+        logssfr_obs : narray, shape (n_halos, )
+            log10(SFR/Mstar) at the time of observation
+
+        sfh_params : namedtuple
+            Diffstar params for every galaxy
+
+        sfh_table : narray, shape (n_halos, n_times)
+            Star formation rate in Msun/yr
+
+        t_table : narray, shape (n_times, )
+
+        diffstarpop_data : dict
+            ancillary diffstarpop data such as frac_q
+
+        age_weights : ndarray, shape (n_halos, n_ages)
+            Stellar age PDF, P(τ), for every galaxy
+
+        ssp_lg_age_gyr : ndarray, shape (n_ages, )
+            log10 stellar age grid in Gyr
+
+        obs_mags : ndarray, shape (n_bands, n_gals)
+            Apparent magnitude of each galaxy in each band
+
+    """
     cenpop = mc_lightcone_diffstar_ssp_weights_cens(
         ran_key,
         lgmp_min,
