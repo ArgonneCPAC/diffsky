@@ -1,4 +1,4 @@
-""" """
+"""Functions to generate Monte Carlo realizations of galaxies on a lightcone"""
 
 from functools import partial
 
