@@ -6,8 +6,7 @@ from dsps.data_loaders import retrieve_fake_fsps_data
 from dsps.data_loaders.defaults import TransmissionCurve
 from jax import random as jran
 
-from diffsky.mass_functions import mc_hosts
-
+from ...mass_functions import mc_hosts
 from .. import mc_lightcone_halos as mclh
 
 
