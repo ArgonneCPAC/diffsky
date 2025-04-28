@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from collections import OrderedDict, namedtuple
 from copy import deepcopy
@@ -18,14 +17,14 @@ DEFAULT_FREQBURST_PDICT = OrderedDict(
     sufqb_logsm_x0=10.0,
     sufqb_logssfr_x0=-10.25,
     sufqb_logsm_ylo_q=-10.0,
-    sufqb_logsm_ylo_ms=-10.0,
+    sufqb_logsm_ylo_ms=-0.2,
     sufqb_logsm_yhi_q=-10.0,
-    sufqb_logsm_yhi_ms=-10.0,
+    sufqb_logsm_yhi_ms=-0.5,
 )
 
 LGSM_X0_BOUNDS = (9.0, 11.0)
 LGSSFR_X0_BOUNDS = (-12.0, -8.0)
-SUFQB_BOUNDS = (-15.0, -5.0)
+SUFQB_BOUNDS = (-15.0, 0.5)
 
 FREQBURST_PBOUNDS_PDICT = OrderedDict(
     sufqb_logsm_x0=LGSM_X0_BOUNDS,
