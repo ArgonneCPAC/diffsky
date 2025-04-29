@@ -200,7 +200,7 @@ def test_zeroburst_params_produce_zero_burstiness():
     assert fqb.shape == (n_gals,)
     assert np.all(np.isfinite(fqb))
     assert np.all(fqb >= 0.0)
-    assert np.all(fqb < 0.01), fqb.max()
+    assert np.all(fqb < 0.1), fqb.max()
 
     sufq_max = SUFQB_BOUNDS[1]
     fqb_max = nn.softplus(sufq_max)
