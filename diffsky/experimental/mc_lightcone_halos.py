@@ -360,6 +360,8 @@ def mc_lightcone_diffstar_cens(
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
 
     t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
+
+    upids = jnp.zeros_like(cenpop["logmp0"]).astype(int) - 1
     lgmu_infall = jnp.zeros_like(cenpop["logmp0"])
     logmhost_infall = jnp.zeros_like(cenpop["logmp0"]) + cenpop["logmp0"]
     gyr_since_infall = jnp.zeros_like(cenpop["logmp0"])
@@ -367,6 +369,7 @@ def mc_lightcone_diffstar_cens(
         diffstarpop_params,
         cenpop["mah_params"],
         cenpop["logmp0"],
+        upids,
         lgmu_infall,
         logmhost_infall,
         gyr_since_infall,
