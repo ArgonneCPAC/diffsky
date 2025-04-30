@@ -5,8 +5,6 @@ from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed import stellar_age_weights as saw
-from diffdesi.ssp_err_model import ssp_err_model
-
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -16,6 +14,7 @@ from .. import mc_diffsky as mcd
 from ..burstpop import diffqburstpop_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..phot_utils import get_wave_eff_from_tcurves, load_interpolated_lsst_curves
+from ..ssp_err_model import ssp_err_model
 from . import precompute_ssp_phot as psp
 
 # gal_t_table, gal_sfr_table, ssp_lg_age_gyr, t_obs, sfr_min
@@ -375,7 +374,7 @@ def predict_lsst_phot_from_diffstar(
         z_obs,
         diffsky_data["logsm_obs"],
         obs_wave_eff_ugrizy_aa,
-        ssp_err_model.LAMBDA_REST
+        ssp_err_model.LAMBDA_REST,
     )
 
     delta_mag_rest = ssp_err_model.delta_mag_from_lambda_rest(
@@ -383,15 +382,23 @@ def predict_lsst_phot_from_diffstar(
         z_obs,
         diffsky_data["logsm_obs"],
         rest_wave_eff_ugrizy_aa,
-        ssp_err_model.LAMBDA_REST
+        ssp_err_model.LAMBDA_REST,
     )
 
-    diffsky_data["rest_ugrizy_smooth_nodust_ssperrs"] = mag_smooth_nodust + delta_mag_rest
-    diffsky_data["rest_ugrizy_bursty_nodust_ssperrs"] = mag_bursty_nodust + delta_mag_rest
+    diffsky_data["rest_ugrizy_smooth_nodust_ssperrs"] = (
+        mag_smooth_nodust + delta_mag_rest
+    )
+    diffsky_data["rest_ugrizy_bursty_nodust_ssperrs"] = (
+        mag_bursty_nodust + delta_mag_rest
+    )
     diffsky_data["rest_ugrizy_smooth_dust_ssperrs"] = mag_smooth_dust + delta_mag_rest
     diffsky_data["rest_ugrizy_bursty_dust_ssperrs"] = mag_bursty_dust + delta_mag_rest
-    diffsky_data["obs_ugrizy_smooth_nodust_ssperrs"] = obs_mag_smooth_nodust + delta_mag_obs
-    diffsky_data["obs_ugrizy_bursty_nodust_ssperrs"] = obs_mag_bursty_nodust + delta_mag_obs
+    diffsky_data["obs_ugrizy_smooth_nodust_ssperrs"] = (
+        obs_mag_smooth_nodust + delta_mag_obs
+    )
+    diffsky_data["obs_ugrizy_bursty_nodust_ssperrs"] = (
+        obs_mag_bursty_nodust + delta_mag_obs
+    )
     diffsky_data["obs_ugrizy_smooth_dust_ssperrs"] = obs_mag_smooth_dust + delta_mag_obs
     diffsky_data["obs_ugrizy_bursty_dust_ssperrs"] = obs_mag_bursty_dust + delta_mag_obs
 
@@ -404,7 +411,9 @@ def predict_lsst_phot_from_diffstar(
         mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
         diffsky_data["rest_ugrizy_smooth_nodust_ms"] = mags_nodust
         diffsky_data["rest_ugrizy_smooth_dust_ms"] = mags_dust
-        diffsky_data["rest_ugrizy_smooth_nodust_ms_ssperrs"] = mags_nodust + delta_mag_rest
+        diffsky_data["rest_ugrizy_smooth_nodust_ms_ssperrs"] = (
+            mags_nodust + delta_mag_rest
+        )
         diffsky_data["rest_ugrizy_smooth_dust_ms_ssperrs"] = mags_dust + delta_mag_rest
 
         obs_mags_nodust = -2.5 * jnp.log10(
@@ -415,8 +424,12 @@ def predict_lsst_phot_from_diffstar(
         )
         diffsky_data["obs_ugrizy_smooth_nodust_ms"] = obs_mags_nodust
         diffsky_data["obs_ugrizy_smooth_dust_ms"] = obs_mags_dust
-        diffsky_data["obs_ugrizy_smooth_nodust_ms_ssperrs"] = obs_mags_nodust + delta_mag_obs
-        diffsky_data["obs_ugrizy_smooth_dust_ms_ssperrs"] = obs_mags_dust + delta_mag_obs
+        diffsky_data["obs_ugrizy_smooth_nodust_ms_ssperrs"] = (
+            obs_mags_nodust + delta_mag_obs
+        )
+        diffsky_data["obs_ugrizy_smooth_dust_ms_ssperrs"] = (
+            obs_mags_dust + delta_mag_obs
+        )
 
         # Quenched sequence
         # Rest and observed flux: smooth SFH with and without dust
@@ -426,7 +439,9 @@ def predict_lsst_phot_from_diffstar(
         mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
         diffsky_data["rest_ugrizy_smooth_nodust_q"] = mags_nodust
         diffsky_data["rest_ugrizy_smooth_dust_q"] = mags_dust
-        diffsky_data["rest_ugrizy_smooth_nodust_q_ssperrs"] = mags_nodust + delta_mag_rest
+        diffsky_data["rest_ugrizy_smooth_nodust_q_ssperrs"] = (
+            mags_nodust + delta_mag_rest
+        )
         diffsky_data["rest_ugrizy_smooth_dust_q_ssperrs"] = mags_dust + delta_mag_rest
         obs_mags_nodust = -2.5 * jnp.log10(
             jnp.sum(gal_obs_flux_table_nodust * w, axis=(2, 3))
@@ -436,7 +451,9 @@ def predict_lsst_phot_from_diffstar(
         )
         diffsky_data["obs_ugrizy_smooth_nodust_q"] = obs_mags_nodust
         diffsky_data["obs_ugrizy_smooth_dust_q"] = obs_mags_dust
-        diffsky_data["obs_ugrizy_smooth_nodust_q_ssperrs"] = obs_mags_nodust + delta_mag_obs
+        diffsky_data["obs_ugrizy_smooth_nodust_q_ssperrs"] = (
+            obs_mags_nodust + delta_mag_obs
+        )
         diffsky_data["obs_ugrizy_smooth_dust_q_ssperrs"] = obs_mags_dust + delta_mag_obs
 
         # Main sequence
@@ -447,7 +464,9 @@ def predict_lsst_phot_from_diffstar(
         mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
         diffsky_data["rest_ugrizy_bursty_nodust_ms"] = mags_nodust
         diffsky_data["rest_ugrizy_bursty_dust_ms"] = mags_dust
-        diffsky_data["rest_ugrizy_bursty_nodust_ms_ssperrs"] = mags_nodust + delta_mag_rest
+        diffsky_data["rest_ugrizy_bursty_nodust_ms_ssperrs"] = (
+            mags_nodust + delta_mag_rest
+        )
         diffsky_data["rest_ugrizy_bursty_dust_ms_ssperrs"] = mags_dust + delta_mag_rest
         obs_mags_nodust = -2.5 * jnp.log10(
             jnp.sum(gal_obs_flux_table_nodust * w, axis=(2, 3))
@@ -457,8 +476,12 @@ def predict_lsst_phot_from_diffstar(
         )
         diffsky_data["obs_ugrizy_bursty_nodust_ms"] = obs_mags_nodust
         diffsky_data["obs_ugrizy_bursty_dust_ms"] = obs_mags_dust
-        diffsky_data["obs_ugrizy_bursty_nodust_ms_ssperrs"] = obs_mags_nodust + delta_mag_obs
-        diffsky_data["obs_ugrizy_bursty_dust_ms_ssperrs"] = obs_mags_dust + delta_mag_obs
+        diffsky_data["obs_ugrizy_bursty_nodust_ms_ssperrs"] = (
+            obs_mags_nodust + delta_mag_obs
+        )
+        diffsky_data["obs_ugrizy_bursty_dust_ms_ssperrs"] = (
+            obs_mags_dust + delta_mag_obs
+        )
 
         # Quenched sequence
         # Rest and observed flux: bursty SFH with and without dust
@@ -468,7 +491,9 @@ def predict_lsst_phot_from_diffstar(
         mags_dust = -2.5 * jnp.log10(jnp.sum(gal_flux_table_dust * w, axis=(2, 3)))
         diffsky_data["rest_ugrizy_bursty_nodust_q"] = mags_nodust
         diffsky_data["rest_ugrizy_bursty_dust_q"] = mags_dust
-        diffsky_data["rest_ugrizy_bursty_nodust_q_ssperrs"] = mags_nodust + delta_mag_rest
+        diffsky_data["rest_ugrizy_bursty_nodust_q_ssperrs"] = (
+            mags_nodust + delta_mag_rest
+        )
         diffsky_data["rest_ugrizy_bursty_dust_q_ssperrs"] = mags_dust + delta_mag_rest
 
         obs_mags_nodust = -2.5 * jnp.log10(
@@ -479,7 +504,9 @@ def predict_lsst_phot_from_diffstar(
         )
         diffsky_data["obs_ugrizy_bursty_nodust_q"] = obs_mags_nodust
         diffsky_data["obs_ugrizy_bursty_dust_q"] = obs_mags_dust
-        diffsky_data["obs_ugrizy_bursty_nodust_q_ssperrs"] = obs_mags_nodust + delta_mag_obs
+        diffsky_data["obs_ugrizy_bursty_nodust_q_ssperrs"] = (
+            obs_mags_nodust + delta_mag_obs
+        )
         diffsky_data["obs_ugrizy_bursty_dust_q_ssperrs"] = obs_mags_dust + delta_mag_obs
 
         # Store additional internal quantities
