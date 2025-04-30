@@ -7,7 +7,7 @@ from diffmah.diffmah_kernels import _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
 from diffstar.utils import cumulative_mstar_formed_galpop
-from diffstarpop import mc_diffstarpop_cen_tpeak as mcdct
+from diffstarpop import mc_diffstar_sfh_galpop
 from diffstarpop import param_utils as dpu
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.constants import T_TABLE_MIN
@@ -360,16 +360,25 @@ def mc_lightcone_diffstar_cens(
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
 
     t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
+
+    upids = jnp.zeros_like(cenpop["logmp0"]).astype(int) - 1
+    lgmu_infall = jnp.zeros_like(cenpop["logmp0"])
+    logmhost_infall = jnp.zeros_like(cenpop["logmp0"]) + cenpop["logmp0"]
+    gyr_since_infall = jnp.zeros_like(cenpop["logmp0"])
     args = (
         diffstarpop_params,
         cenpop["mah_params"],
         cenpop["logmp0"],
+        upids,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
         ran_key,
         t_table,
     )
 
     ddp_fields = "sfh_params_ms", "sfh_params_q", "sfh_ms", "sfh_q", "frac_q", "mc_is_q"
-    ddp_values = mcdct.mc_diffstar_sfh_galpop_cen(*args)
+    ddp_values = mc_diffstar_sfh_galpop(*args)
     diffstarpop_data = dict()
     for key, value in zip(ddp_fields, ddp_values):
         diffstarpop_data[key] = value

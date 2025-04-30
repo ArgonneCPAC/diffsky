@@ -53,7 +53,7 @@ jobs:
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffmah.git
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffstar.git
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
-          pip install --no-deps git+https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/ArgonneCPAC/diffstarpop.git
+          pip install --no-deps git+https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/ArgonneCPAC/diffstarpop.git@sepms_satquench
           python -m pip install --no-build-isolation --no-deps -e .
 
       - name: test

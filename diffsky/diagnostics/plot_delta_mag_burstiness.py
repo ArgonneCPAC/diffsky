@@ -1,13 +1,12 @@
-"""
-"""
+""" """
 
 import os
 
 import numpy as np
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
+from diffstarpop import mc_diffstar_sfh_galpop
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
-from diffstarpop.mc_diffstarpop_tpeak import mc_diffstar_sfh_galpop
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.cosmology.flat_wcdm import _age_at_z_kern, age_at_z0
@@ -19,8 +18,7 @@ from jax import jit as jjit
 from jax import random as jran
 from jax import vmap
 
-from diffsky import tw_photgrad
-
+from .. import tw_photgrad
 from .utils import get_interpolated_lsst_tcurves, get_wave_eff_from_tcurves
 
 try:
@@ -97,14 +95,19 @@ def get_burstiness_delta_mag_quantities(
     logmp0 = halopop.log_mah[:, -1]
 
     ran_key, sfh_key = jran.split(ran_key, 2)
+    upid = np.zeros_like(logmp0).astype(int) - 1
+    logmu_infall = np.zeros_like(logmp0)
+    logmhost_infall = np.copy(logmp0)
+    gyr_since_infall = np.zeros_like(logmp0)
 
     args = (
         DEFAULT_DIFFSTARPOP_PARAMS,
         halopop.mah_params,
         logmp0,
-        logmp0,
-        logmp0,
-        _ZH + t0,
+        upid,
+        logmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
         ran_key,
         tarr,
     )
