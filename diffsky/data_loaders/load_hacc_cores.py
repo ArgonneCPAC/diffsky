@@ -449,3 +449,22 @@ def concatenate_diffsky_subcats(subcats):
     subcat = subcat._replace(upids=upids_correct)
 
     return subcat
+
+
+def write_subcat_to_disk(subcat, fname):
+    with h5py.File(fname, "w") as hdf:
+        hdf["mah_params"] = np.array([*subcat.mah_params]).T
+        for pname, arr in zip(subcat._fields[1:], subcat[1:]):
+            hdf[pname] = arr
+
+
+def load_subcat_from_disk(fname):
+    data = dict()
+    with h5py.File(fname, "r") as hdf:
+        for key in hdf.keys():
+            data[key] = hdf[key][...]
+    data["mah_params"] = DEFAULT_MAH_PARAMS._make(
+        [data["mah_params"][:, i] for i in range(data["mah_params"].shape[1])]
+    )
+    subcat = SubhaloCatalog._make([*data.values()])
+    return subcat
