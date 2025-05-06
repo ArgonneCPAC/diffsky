@@ -7,6 +7,7 @@ import pytest
 from dsps.cosmology import flat_wcdm
 from jax import random as jran
 
+from ...mass_functions.mc_diffmah_tpeak import mc_subhalos
 from .. import load_hacc_cores as lhc
 
 NO_HACC_MSG = "Must have haccytrees installed to run this test"
@@ -26,6 +27,31 @@ try:
     CAN_RUN_HACC_DATA_TESTS = True
 except AssertionError:
     CAN_RUN_HACC_DATA_TESTS = False
+
+
+def test_concatenate_diffsky_subcats():
+    n_cats = 3
+    ran_key = jran.key(0)
+    z_obs = 0.05
+    lgmp_min = 11.5
+    volume_com = 25**3
+    subcats = []
+    for i in range(n_cats):
+        ran_key, cat_key = jran.split(ran_key, 2)
+        catdata = mc_subhalos(cat_key, z_obs, lgmp_min, volume_com)._asdict()
+        catdata.pop("halo_ids")
+        catdata.pop("host_mah_params")
+        catdata["fake_mah"] = np.ones(len(catdata["logmp0"])).astype(int)
+        cat = lhc.SubhaloCatalog._make(list(catdata.values()))
+        subcats.append(cat)
+
+    subcat = lhc.concatenate_diffsky_subcats(subcats)
+
+    # Enforce that the host index was correctly computed
+    host_logmp0_correct = np.concatenate(
+        [cat.logmp0[cat.ult_host_indx] for cat in subcats]
+    )
+    assert np.allclose(subcat.logmp0[subcat.ult_host_indx], host_logmp0_correct)
 
 
 @pytest.mark.skipif(not CAN_RUN_HACC_DATA_TESTS, reason=POBOY_MSG)
