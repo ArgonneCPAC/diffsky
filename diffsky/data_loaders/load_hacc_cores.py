@@ -412,3 +412,40 @@ def collate_hdf5_file_collection(fname_collection, fnout):
 
         with h5py.File(fnout, "w") as hdf_out:
             hdf_out[key] = complete_arr
+
+
+def concatenate_diffsky_subcats(subcats):
+    """Concatenate a collection of subhalo catalogs"""
+    mah_params_collector = []
+    for mah_pname in subcats[0].mah_params._fields:
+        seq = [getattr(cat.mah_params, mah_pname) for cat in subcats]
+        arr = np.concatenate(seq)
+        mah_params_collector.append(arr)
+    mah_params = subcats[0].mah_params._make(*[mah_params_collector])
+
+    data = dict()
+    data["mah_params"] = mah_params
+
+    for pname in subcats[0]._fields[1:]:
+        seq = [getattr(cat, pname) for cat in subcats]
+        if seq[0].shape == ():
+            assert np.allclose(seq, seq[0])
+            data[pname] = seq[0]
+        else:
+            arr = np.concatenate(seq)
+            data[pname] = arr
+
+    subcat = subcats[0]._make([*data.values()])
+
+    counts = [len(cat.logmp0) for cat in subcats]
+    nskip_per_chunk = np.insert(np.cumsum(counts), 0, 0)[:-1]
+    indx_skip = np.repeat(nskip_per_chunk, counts)
+    subcat = subcat._replace(ult_host_indx=subcat.ult_host_indx + indx_skip)
+    subcat = subcat._replace(pen_host_indx=subcat.pen_host_indx + indx_skip)
+
+    msk_cen = subcat.upids == -1
+    upids_correct = subcat.upids + indx_skip
+    upids_correct = np.where(msk_cen, -1, upids_correct)
+    subcat = subcat._replace(upids=upids_correct)
+
+    return subcat
