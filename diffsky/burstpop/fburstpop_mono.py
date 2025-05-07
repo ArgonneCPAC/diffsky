@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from collections import OrderedDict, namedtuple
 from copy import deepcopy
@@ -23,9 +22,9 @@ DEFAULT_FBURSTPOP_PDICT = OrderedDict(
     sufb_logsm_yhi_ms=-10.0,
 )
 
-LGSM_X0_BOUNDS = (8.0, 11.0)
+LGSM_X0_BOUNDS = (8.0, 12.0)  # original: (8.0, 11.0)
 LGSSFR_X0_BOUNDS = (-12.0, -8.0)
-SUFB_BOUNDS = (-15.0, -5.0)
+SUFB_BOUNDS = (-15.0, -2.0)  # original: (-15,-5)
 
 FBURSTPOP_PBOUNDS_PDICT = OrderedDict(
     sufb_logsm_x0=LGSM_X0_BOUNDS,
