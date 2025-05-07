@@ -263,7 +263,6 @@ def predict_lsst_phot_from_diffstar(
         diffsky_data["bursty_ssp_weights_q"] = bursty_weights
 
     # Compute dust attenuation with and without noise in dust params
-
     lsst_tcurves_interp, lsst_tcurves_sparse = load_interpolated_lsst_curves(
         ssp_data.ssp_wave, drn_ssp_data=drn_ssp_data
     )
