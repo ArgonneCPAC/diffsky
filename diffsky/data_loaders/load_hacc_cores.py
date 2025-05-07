@@ -466,5 +466,5 @@ def load_subcat_from_disk(fname):
     data["mah_params"] = DEFAULT_MAH_PARAMS._make(
         [data["mah_params"][:, i] for i in range(data["mah_params"].shape[1])]
     )
-    subcat = SubhaloCatalog._make([*data.values()])
+    subcat = SubhaloCatalog._make([data[key] for key in SubhaloCatalog._fields])
     return subcat
