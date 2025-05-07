@@ -14,7 +14,7 @@ LGSM_K = 5.0
 LGSSFR_K = 5.0
 
 DEFAULT_FBURSTPOP_PDICT = OrderedDict(
-    sufb_logsm_x0=10.0,  # original: 10
+    sufb_logsm_x0=10.0,
     sufb_logssfr_x0=-10.25,
     sufb_logsm_ylo_q=-10.0,
     sufb_logsm_ylo_ms=-10.0,
