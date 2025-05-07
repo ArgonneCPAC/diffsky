@@ -1,9 +1,9 @@
-"""
-"""
+""" """
 
 import numpy as np
+from jax import random as jran
 
-from .. import utils as ut
+from .. import utility_funcs as ut
 
 
 def test_sigmoid_inversion():
@@ -17,7 +17,10 @@ def test_sigmoid_inversion():
 
 def test_smhm_loss_penalty():
     logsm_target = np.linspace(8, 12, 100)
-    logsm_pred = np.random.uniform(-0.5, 0.5, 100) + logsm_target
+    ran_key = jran.key(0)
+    logsm_pred = (
+        jran.uniform(ran_key, minval=-0.5, maxval=0.5, shape=(100,)) + logsm_target
+    )
     penalty = 10.0
     loss = ut.smhm_loss_penalty(logsm_pred, logsm_target, penalty)
     assert np.all(loss >= 0)
