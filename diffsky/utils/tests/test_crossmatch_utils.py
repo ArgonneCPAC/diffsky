@@ -11,6 +11,10 @@ __all__ = ("test_crossmatch1",)
 FIXED_SEED = 43
 
 
+def test_crossmatch_import():
+    from ...utils import crossmatch
+
+
 def test_crossmatch1():
     """x has unique entries. All y values are in x. All x values are in y."""
     x = np.array([1, 3, 5])
