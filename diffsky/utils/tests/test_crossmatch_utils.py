@@ -12,7 +12,7 @@ FIXED_SEED = 43
 
 
 def test_crossmatch_import():
-    from ...utils import crossmatch
+    from ...utils import crossmatch  # noqa
 
 
 def test_crossmatch1():
