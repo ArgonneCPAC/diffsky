@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from jax import random as jran
 
-from ..crossmatch import crossmatch
+from ..crossmatch_utils import crossmatch
 
 __all__ = ("test_crossmatch1",)
 
