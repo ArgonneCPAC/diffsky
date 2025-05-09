@@ -108,16 +108,34 @@ def get_timestep_range_from_z_range(sim_name, z_min, z_max):
     timestep_min, timestep_max : ints
         Timesteps that span the input z-range
 
+    Notes
+    -----
+    sim = HACCSim.simulations[sim_name]
+    timesteps = np.array(sim.cosmotools_steps)
+    timestep_min = timesteps[idx_step_min]
+    timestep_max = timesteps[idx_step_max]
+
     """
     sim = HACCSim.simulations[sim_name]
     timesteps = np.array(sim.cosmotools_steps)
+    z_arr = sim.step2z(timesteps)
 
     a_max = 1 / (1 + z_min)
     a_min = 1 / (1 + z_max)
     a_arr = sim.step2a(timesteps)
 
-    idx_step_min = np.searchsorted(a_arr, a_min) - 1
-    idx_step_max = np.searchsorted(a_arr, a_max)
+    if a_min < a_arr[0]:
+        idx_step_min = 0
+    else:
+        idx_step_min = np.searchsorted(a_arr, a_min) - 1
+
+    if a_max > a_arr[-1]:
+        idx_step_max = len(timesteps) - 1
+        print(f"Input z_max={z_max} > largest lightcone redshift={z_arr.max()}")
+    else:
+        idx_step_max = np.searchsorted(a_arr, a_max)
+
     timestep_min = timesteps[idx_step_min]
     timestep_max = timesteps[idx_step_max]
+
     return idx_step_min, idx_step_max, timestep_min, timestep_max
