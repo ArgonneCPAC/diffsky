@@ -126,12 +126,15 @@ def get_timestep_range_from_z_range(sim_name, z_min, z_max):
 
     if a_min < a_arr[0]:
         idx_step_min = 0
+        print(f"Input z_max={z_max:.4f}>{z_arr.max():.4f} = largest lightcone redshift")
+        print(f"Using z_max={z_arr.max():.4f}")
     else:
         idx_step_min = np.searchsorted(a_arr, a_min) - 1
 
     if a_max > a_arr[-1]:
         idx_step_max = len(timesteps) - 1
-        print(f"Input z_max={z_max} > largest lightcone redshift={z_arr.max()}")
+        print(f"Input z_min={z_min} is less than smallest lightcone redshift")
+        print(f"Using z_min={z_arr.min():.4e}")
     else:
         idx_step_max = np.searchsorted(a_arr, a_max)
 
