@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import numpy as np
 import pytest
@@ -58,3 +57,23 @@ def test_get_timestep_range_from_z_range():
         # Enforce the next timestep would have undershot z_max
         if idx_step_max > 0:
             assert z_max > z_arr[idx_step_min + 1]
+
+
+@pytest.mark.skipif(not HAS_HACCYTREES, reason=NO_HACC_MSG)
+def test_get_timestep_range_from_z_range_edge_cases():
+    sim_name = "LastJourney"
+    sim = HACCSim.simulations[sim_name]
+    timesteps = np.array(sim.cosmotools_steps)
+    z_arr = sim.step2z(timesteps)
+
+    # z_min = 0.0
+    z_min, z_max = 0.0, 3.0
+    _res = hcu.get_timestep_range_from_z_range(sim_name, z_min, z_max)
+    idx_step_min, idx_step_max, timestep_min, timestep_max = _res
+    assert timestep_max == timesteps[-1]
+
+    # z_max > z_arr.max()
+    z_min, z_max = 0.1, z_arr.max() + 10.0
+    _res = hcu.get_timestep_range_from_z_range(sim_name, z_min, z_max)
+    idx_step_min, idx_step_max, timestep_min, timestep_max = _res
+    assert timestep_min == timesteps[0]
