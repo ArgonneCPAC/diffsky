@@ -1,10 +1,12 @@
 """
 """
 
+import os
+
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffstar.defaults import T_TABLE_MIN
 from diffstar.utils import cumulative_mstar_formed_galpop
-from diffstarpop import mc_diffstarpop_tpeak as mcdsp
+from diffstarpop import mc_diffstarpop_tpeak_sepms_satfrac as mcdsp
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
@@ -15,6 +17,12 @@ from jax import random as jran
 from jax import vmap
 
 from .mass_functions.mc_diffmah_tpeak import mc_host_halos, mc_subhalos
+
+try:
+    DSPS_DATA_DRN = os.environ["DSPS_DRN"]
+except KeyError:
+    DSPS_DATA_DRN = ""
+
 
 N_T = 100
 
@@ -89,6 +97,7 @@ def mc_diffstar_galpop(
         diffstarpop_params,
         subcat.mah_params,
         subcat.logmp0,
+        subcat.upids,
         logmu_infall,
         subcat.logmhost_ult_inf,
         t_obs - subcat.t_ult_inf,
@@ -201,6 +210,7 @@ def mc_diffstar_cenpop(
         diffstarpop_params,
         subcat.mah_params,
         subcat.logmp0,
+        subcat.upids,
         logmu_infall,
         subcat.logmhost_ult_inf,
         t_obs - subcat.t_ult_inf,
