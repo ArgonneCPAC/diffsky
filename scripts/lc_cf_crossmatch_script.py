@@ -12,6 +12,7 @@ from haccytrees import coretrees
 
 from diffsky.data_loaders import load_flat_hdf5
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
+from diffsky.data_loaders.hacc_utils.defaults import DIFFMAH_MASS_COLNAME
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -37,7 +38,7 @@ NCHUNKS = 20
 NUM_SUBVOLS_LJ_CF = 192
 SIM_NAME = "LastJourney"
 
-CF_FIELDS = ["central", "core_tag", "fof_halo_tag", "host_core"]
+CF_FIELDS = ["central", "core_tag", "fof_halo_tag", "host_core", DIFFMAH_MASS_COLNAME]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

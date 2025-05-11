@@ -12,6 +12,7 @@ from jax import vmap
 from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
 from . import load_hacc_cores as lhc
+from .defaults import DIFFMAH_MASS_COLNAME
 
 DEG_PER_RAD = 180 / np.pi
 SQDEG_PER_STER = DEG_PER_RAD**2
@@ -29,6 +30,7 @@ LC_PATCH_OUT_KEYS = (
     "indx_t_ult_inf",
     "indx_t_pen_inf",
     "n_cf_match",
+    "mp_obs",
 )
 LC_PATCH_OUT_INT_KEYS = (
     "n_points_per_fit",
@@ -169,6 +171,8 @@ def get_diffsky_quantities_for_lc_patch(
     msk_olap = lc_patch_data["file_idx"] == cf_file_idx
     msk_olap &= lc_patch_data["row_idx"] >= cf_first_row
     msk_olap &= lc_patch_data["row_idx"] <= cf_last_row
+    mpeak_history = np.maximum.accumulate(cf_matrices[DIFFMAH_MASS_COLNAME], axis=1)
+    mp_obs = mpeak_history[:, timestep_idx]
 
     n_olap = msk_olap.sum()
     if n_olap > 0:
@@ -179,6 +183,8 @@ def get_diffsky_quantities_for_lc_patch(
         olap_chunk_pen_host_idx = cf_matrices["secondary_top_host_row"][
             :, timestep_idx
         ][olap_chunk_idx]
+
+        lc_patch_data_out["mp_obs"][msk_olap] = mp_obs[olap_chunk_idx]
 
         olap_indx_t_ult_inf = cf_indx_t_ult_inf[olap_chunk_idx]
         lc_patch_data_out["indx_t_ult_inf"][msk_olap] = olap_indx_t_ult_inf
