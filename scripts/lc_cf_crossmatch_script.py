@@ -11,7 +11,6 @@ from haccytrees import Simulation as HACCSim
 from haccytrees import coretrees
 
 from diffsky.data_loaders import load_flat_hdf5
-from diffsky.data_loaders.hacc_utils import hacc_core_utils as hcu
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
@@ -170,7 +169,7 @@ if __name__ == "__main__":
                     ishell, ipatch = olap_patch_id
                     bn_patch_in = BNPAT_LC_CORES.format(ishell, ipatch)
                     fn_patch_in = os.path.join(drn_lc, bn_patch_in)
-                    lc_patch_data = hcu.load_flat_hdf5(fn_patch_in)
+                    lc_patch_data = load_flat_hdf5(fn_patch_in)
                     n_patch = len(lc_patch_data["file_idx"])
 
                     try:
