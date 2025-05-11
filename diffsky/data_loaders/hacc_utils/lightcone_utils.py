@@ -6,6 +6,8 @@ from copy import deepcopy
 import h5py
 import numpy as np
 from diffmah.defaults import DEFAULT_MAH_PARAMS
+from jax import jit as jjit
+from jax import vmap
 
 from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
@@ -37,6 +39,19 @@ LC_PATCH_OUT_INT_KEYS = (
 LC_SUBVOL_DRNPAT = "subvols_*"
 LC_PATCH_DIFFSKY_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_PATCH_BNPAT = "lc_cores-{0}.{1}.hdf5"
+
+
+@jjit
+def _jnp_take_kern(arr, indx):
+    return arr[indx]
+
+
+_jnp_take_vmap = jjit(vmap(_jnp_take_kern, in_axes=(0, 0)))
+
+
+@jjit
+def jnp_take_matrix(matrix, indxarr):
+    return _jnp_take_vmap(matrix, indxarr)
 
 
 def read_lc_ra_dec_patch_decomposition(fn):
