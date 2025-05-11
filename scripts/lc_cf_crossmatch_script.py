@@ -10,6 +10,7 @@ from diffmah.defaults import DEFAULT_MAH_PARAMS
 from haccytrees import Simulation as HACCSim
 from haccytrees import coretrees
 
+from diffsky.data_loaders import load_flat_hdf5
 from diffsky.data_loaders.hacc_utils import hacc_core_utils as hcu
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
@@ -143,11 +144,11 @@ if __name__ == "__main__":
             cf_first_row = forest_matrices["absolute_row_idx"][0]
             cf_last_row = forest_matrices["absolute_row_idx"][-1]
             if ichunk < nchunks - 1:
-                diffmah_data = hcu.load_flat_hdf5(
+                diffmah_data = load_flat_hdf5(
                     fname_dmah, istart=cf_first_row, iend=cf_last_row + 1
                 )
             else:
-                diffmah_data = hcu.load_flat_hdf5(fname_dmah, istart=cf_first_row)
+                diffmah_data = load_flat_hdf5(fname_dmah, istart=cf_first_row)
 
             _some_diffmah_key = DEFAULT_MAH_PARAMS._fields[0]
             n_diffmah = len(diffmah_data[_some_diffmah_key])
