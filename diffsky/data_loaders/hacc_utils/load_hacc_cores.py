@@ -17,7 +17,7 @@ from jax import vmap
 
 from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
-from .defaults import N_MIN_MAH_PTS
+from .defaults import DIFFMAH_MASS_COLNAME, N_MIN_MAH_PTS
 
 try:
     from mpi4py import MPI
@@ -82,7 +82,7 @@ def load_diffsky_data_per_rank(
     ran_key,
     drn_cores,
     drn_diffmah,
-    mass_colname=hcu.DIFFMAH_MASS_COLNAME,
+    mass_colname=DIFFMAH_MASS_COLNAME,
     comm=None,
 ):
     if comm is None:
@@ -124,7 +124,7 @@ def load_diffsky_data(
     ran_key,
     drn_cores,
     drn_diffmah,
-    mass_colname=hcu.DIFFMAH_MASS_COLNAME,
+    mass_colname=DIFFMAH_MASS_COLNAME,
     include_fields=(),
 ):
     fn_cores = os.path.join(drn_cores, BNPAT_CORES.format(subvol))

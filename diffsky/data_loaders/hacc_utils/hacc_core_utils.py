@@ -20,10 +20,6 @@ except ImportError:
     HAS_HACCYTREES = False
 
 
-# DIFFMAH_MASS_COLNAME should be consistent with the column used in the diffmah fits
-DIFFMAH_MASS_COLNAME = "infall_tree_node_mass"
-
-
 def scatter_subcat(subcat, comm):
     mah_params = scatter_mah_params(subcat.mah_params, comm)
     seq = []
