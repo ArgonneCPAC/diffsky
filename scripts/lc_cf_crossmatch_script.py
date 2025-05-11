@@ -10,7 +10,7 @@ from diffmah.defaults import DEFAULT_MAH_PARAMS
 from haccytrees import Simulation as HACCSim
 from haccytrees import coretrees
 
-from diffsky.data_loaders import hacc_core_utils as hcu
+from diffsky.data_loaders.hacc_utils import hacc_core_utils as hcu
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
