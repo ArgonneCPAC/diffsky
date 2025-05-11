@@ -15,6 +15,7 @@ from jax import jit as jjit
 from jax import random as jran
 from jax import vmap
 
+from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
 
 try:
@@ -328,7 +329,7 @@ def load_diffmah_data_for_forest(drn, subvol, forest):
     cf_first_row = forest["absolute_row_idx"][0]
     cf_last_row = forest["absolute_row_idx"][-1]
 
-    diffmah_fit_data = hcu.load_flat_hdf5(
+    diffmah_fit_data = load_flat_hdf5(
         fn_diffmah, istart=cf_first_row, iend=cf_last_row + 1
     )
     mah_params = DEFAULT_MAH_PARAMS._make(

@@ -1,8 +1,9 @@
 """Utility functions for loading HACC cores"""
 
-import h5py
 import numpy as np
 from dsps.cosmology import flat_wcdm
+
+from ..mpi_utils import scatter_ndarray
 
 try:
     from mpi4py import MPI
@@ -21,43 +22,6 @@ except ImportError:
 
 # DIFFMAH_MASS_COLNAME should be consistent with the column used in the diffmah fits
 DIFFMAH_MASS_COLNAME = "infall_tree_node_mass"
-
-
-def scatter_ndarray(array, axis=0, comm=COMM, root=0):
-    """Scatter n-dimensional array from root to all ranks
-
-    This function is taken from https://github.com/AlanPearl/diffopt
-
-    """
-    ans: np.ndarray = np.array([])
-    if comm.rank == root:
-        splits = np.array_split(array, comm.size, axis=axis)
-        for i in range(comm.size):
-            if i == root:
-                ans = splits[i]
-            else:
-                comm.send(splits[i], dest=i)
-    else:
-        ans = comm.recv(source=root)
-    return ans
-
-
-def load_flat_hdf5(fn, istart=0, iend=None, keys=None):
-    """"""
-
-    data = dict()
-    with h5py.File(fn, "r") as hdf:
-
-        if keys is None:
-            keys = list(hdf.keys())
-
-        for key in keys:
-            if iend is None:
-                data[key] = hdf[key][istart:]
-            else:
-                data[key] = hdf[key][istart:iend]
-
-    return data
 
 
 def scatter_subcat(subcat, comm):
