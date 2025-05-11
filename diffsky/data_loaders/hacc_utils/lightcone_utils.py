@@ -7,6 +7,7 @@ import h5py
 import numpy as np
 from diffmah.defaults import DEFAULT_MAH_PARAMS
 
+from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
 from . import load_hacc_cores as lhc
 
@@ -207,7 +208,7 @@ def _get_lc_patch_data_out_bname(bn_patch):
 def load_lc_patch_data_out(drn, bn_patch):
     bn_out = _get_lc_patch_data_out_bname(bn_patch)
     fn_out = os.path.join(drn, bn_out)
-    lc_patch_data_out = hcu.load_flat_hdf5(fn_out)
+    lc_patch_data_out = load_flat_hdf5(fn_out)
     return lc_patch_data_out
 
 
@@ -260,7 +261,7 @@ def get_lc_patches_in_zrange(sim_name, lc_xdict, z_min, z_max, patch_list=None):
 
 def check_lc_cores_diffsky_data(fn):
     report = dict()
-    data = hcu.load_flat_hdf5(fn)
+    data = load_flat_hdf5(fn)
     n_cf_match_list = np.unique(data["n_cf_match"])
     report["n_cf_match_list"] = n_cf_match_list
     return report
