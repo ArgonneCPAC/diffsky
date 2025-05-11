@@ -17,6 +17,7 @@ from jax import vmap
 
 from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
+from .defaults import N_MIN_MAH_PTS
 
 try:
     from mpi4py import MPI
@@ -39,8 +40,6 @@ log_mah_kern_vmap = jjit(vmap(_log_mah_kern, in_axes=_H))
 BNPAT_DIFFMAH = "subvol_{0}_diffmah_fits.hdf5"
 BNPAT_CORES = "m000p.coreforest.{0}.hdf5"
 
-# Simulated MAHs with fewer points than N_MIN_MAH_PTS will get a synthetic MAH
-N_MIN_MAH_PTS = 4
 
 _SUBCAT_COLNAMES = (
     "mah_params",
