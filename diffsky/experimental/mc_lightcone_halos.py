@@ -176,7 +176,7 @@ def mc_lightcone_host_halo_mass_function(
     nhalos_tot = nhalos_grid.sum()
 
     # Compute the CDF of the volume
-    weights_grid = vol_shell_grid / vol_shell_grid.sum()
+    weights_grid = mean_nhalos_grid / mean_nhalos_grid.sum()
     cdf_grid = jnp.cumsum(weights_grid)
 
     # Assign redshift via inverse transformation sampling of the shell volume CDF
