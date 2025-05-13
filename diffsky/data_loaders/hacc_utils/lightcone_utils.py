@@ -332,7 +332,7 @@ def collate_rank_data(drn_in, drn_out, lc_patches, nranks):
 
 
 def _check_serial_vs_parallel(drn1, drn2):
-    fn_list1 = glob(drn1, LC_PATCH_BNPAT.format("*", "*"))
+    fn_list1 = glob(os.path.join(drn1, LC_PATCH_BNPAT.format("*", "*")))
     for fn1 in fn_list1:
         bn1 = os.path.basename(fn1)
         fn2 = os.path.join(drn2, bn1)
