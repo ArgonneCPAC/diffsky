@@ -1,6 +1,7 @@
 """"""
 
 import os
+import subprocess
 from copy import deepcopy
 
 import h5py
@@ -221,13 +222,13 @@ def get_diffsky_quantities_for_lc_patch(
     return lc_patch_data_out
 
 
-def _get_lc_patch_data_out_bname(bn_patch, rank):
+def _get_lc_patch_data_out_bname_for_rank(bn_patch, rank):
     bn_out = bn_patch.replace(".hdf5", f".diffsky_data_rank_{rank}.hdf5")
     return bn_out
 
 
 def load_lc_patch_data_out(drn, bn_patch, rank):
-    bn_out = _get_lc_patch_data_out_bname(bn_patch, rank)
+    bn_out = _get_lc_patch_data_out_bname_for_rank(bn_patch, rank)
     fn_out = os.path.join(drn, bn_out)
     lc_patch_data_out = load_flat_hdf5(fn_out)
     return lc_patch_data_out
@@ -245,7 +246,7 @@ def initialize_lc_patch_data_out(n_patch):
 
 
 def overwrite_lc_patch_data_out(lc_patch_data_out, drn_out, bn_patch, rank):
-    bn_out = _get_lc_patch_data_out_bname(bn_patch, rank)
+    bn_out = _get_lc_patch_data_out_bname_for_rank(bn_patch, rank)
     fn_out = os.path.join(drn_out, bn_out)
 
     with h5py.File(fn_out, "w") as hdf_out:
@@ -298,3 +299,32 @@ def write_lc_cores_diffsky_data_report_to_disk(report, fnout):
     all_good = deepcopy(lc_cf_perfect_match)
 
     return all_good
+
+
+def collate_rank_data(drn_in, drn_out, lc_patches, nranks):
+    for patch_info in lc_patches:
+        stepnum, patchnum = patch_info
+        bn_patch_out = LC_PATCH_DIFFSKY_BNPAT.format(stepnum, patchnum)
+
+        # Collect patch data from all ranks
+        data_collector = []
+        fname_collector = []
+        for rank in range(nranks):
+            bname_in = _get_lc_patch_data_out_bname_for_rank(
+                LC_PATCH_BNPAT(stepnum, patchnum), rank
+            )
+            fname_in = os.path.join(drn_in, bname_in)
+            data_collector.append(load_flat_hdf5(fname_in))
+            fname_collector.append(fname_in)
+
+        # Write collated data to disk in a single file
+        fn_patch_out = os.path.join(drn_out, bn_patch_out)
+        with h5py.File(fn_patch_out, "w") as hdf_out:
+            for key in LC_PATCH_OUT_KEYS:
+                arr = np.concatenate([x[key] for x in data_collector])
+                hdf_out[key] = arr
+
+        # Delete temporary files created by each rank
+        for fn in fname_collector:
+            command = f"rm {fn}"
+            subprocess.check_output(command, shell=True)
