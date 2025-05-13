@@ -32,7 +32,6 @@ DRN_LC_CF_XDATA_POBOY = os.path.join(DRN_LJ_CROSSX_OUT_POBOY, "LC_CF_XDATA")
 DRN_LJ_CROSSX_OUT_LCRC_SCRATCH = "/lcrc/globalscratch/ahearin"
 
 BNPAT_COREFOREST = "m000p.coreforest.{}.hdf5"
-BNPAT_LC_CORES = "lc_cores-{0}.{1}.hdf5"
 BNPAT_DIFFMAH_FITS = "subvol_{0}_diffmah_fits.hdf5"
 
 NCHUNKS = 20
@@ -110,7 +109,8 @@ if __name__ == "__main__":
         subvolumes_for_patch = lc_xdict[patch_info]
         subvolumes.extend(subvolumes_for_patch)
     all_overlapping_subvolumes = np.unique(subvolumes)
-    print(f"Overlapping subvolumes = {all_overlapping_subvolumes}")
+    if rank == 0:
+        print(f"Overlapping subvolumes = {all_overlapping_subvolumes}")
 
     if itest == 1:
         all_overlapping_subvolumes = [all_overlapping_subvolumes[0]]
@@ -124,7 +124,8 @@ if __name__ == "__main__":
     for isubvol in all_overlapping_subvolumes:
 
         start_subvol = time()
-        print(f"\n...working on subvolume {isubvol}")
+        if rank == 0:
+            print(f"\n...working on subvolume {isubvol}")
 
         bname_coretree = BNPAT_COREFOREST.format(isubvol)
         fname_coretree = os.path.join(drn_cf, bname_coretree)
@@ -138,7 +139,6 @@ if __name__ == "__main__":
         for ichunk in chunks_for_rank:
             comm.Barrier()
             start_chunk = time()
-            print(f"...working on chunk {ichunk}")
 
             forest_matrices = coretrees.corematrix_reader(
                 fname_coretree,
@@ -176,7 +176,7 @@ if __name__ == "__main__":
 
                 for olap_patch_id in olap_patch_ids_ishell:
                     ishell, ipatch = olap_patch_id
-                    bn_patch_in = BNPAT_LC_CORES.format(ishell, ipatch)
+                    bn_patch_in = hlu.LC_PATCH_BNPAT.format(ishell, ipatch)
                     fn_patch_in = os.path.join(drn_lc, bn_patch_in)
                     lc_patch_data = load_flat_hdf5(fn_patch_in)
                     n_patch = len(lc_patch_data["file_idx"])
@@ -204,12 +204,13 @@ if __name__ == "__main__":
 
             end_chunk = time()
             runtime_chunk = end_chunk - start_chunk
-            print(f"Runtime for chunk {ichunk} = {runtime_chunk:.2f} seconds\n")
 
         end_subvol = time()
         runtime_subvol = end_subvol - start_subvol
-        print(f"Runtime for subvolume {isubvol} = {runtime_subvol:.2f} seconds\n")
+        if rank == 0:
+            print(f"Runtime for subvolume {isubvol} = {runtime_subvol:.2f} seconds\n")
 
     end_script = time()
     runtime_script = end_script - start_script
-    print(f"Runtime for script = {runtime_script:.2f} seconds\n")
+    if rank == 0:
+        print(f"Runtime for script = {runtime_script:.2f} seconds\n")
