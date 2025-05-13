@@ -33,6 +33,7 @@ LC_PATCH_OUT_KEYS = (
     "indx_t_pen_inf",
     "n_cf_match",
     "mp_obs",
+    "mp0",
 )
 LC_PATCH_OUT_INT_KEYS = (
     "n_points_per_fit",
@@ -175,6 +176,7 @@ def get_diffsky_quantities_for_lc_patch(
     msk_olap &= lc_patch_data["row_idx"] <= cf_last_row
     mpeak_history = np.maximum.accumulate(cf_matrices[DIFFMAH_MASS_COLNAME], axis=1)
     mp_obs = mpeak_history[:, timestep_idx]
+    mp0 = mpeak_history[:, -1]
 
     n_olap = msk_olap.sum()
     if n_olap > 0:
@@ -187,6 +189,7 @@ def get_diffsky_quantities_for_lc_patch(
         ][olap_chunk_idx]
 
         lc_patch_data_out["mp_obs"][msk_olap] = mp_obs[olap_chunk_idx]
+        lc_patch_data_out["mp0"][msk_olap] = mp0[olap_chunk_idx]
 
         olap_indx_t_ult_inf = cf_indx_t_ult_inf[olap_chunk_idx]
         lc_patch_data_out["indx_t_ult_inf"][msk_olap] = olap_indx_t_ult_inf
