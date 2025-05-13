@@ -311,7 +311,7 @@ def collate_rank_data(drn_in, drn_out, lc_patches, nranks):
         fname_collector = []
         for rank in range(nranks):
             bname_in = _get_lc_patch_data_out_bname_for_rank(
-                LC_PATCH_BNPAT(stepnum, patchnum), rank
+                LC_PATCH_BNPAT.format(stepnum, patchnum), rank
             )
             fname_in = os.path.join(drn_in, bname_in)
             data_collector.append(load_flat_hdf5(fname_in))
