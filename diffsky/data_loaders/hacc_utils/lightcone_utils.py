@@ -3,6 +3,7 @@
 import os
 import subprocess
 from copy import deepcopy
+from glob import glob
 
 import h5py
 import numpy as np
@@ -328,3 +329,14 @@ def collate_rank_data(drn_in, drn_out, lc_patches, nranks):
         for fn in fname_collector:
             command = f"rm {fn}"
             subprocess.check_output(command, shell=True)
+
+
+def _check_serial_vs_parallel(drn1, drn2):
+    fn_list1 = glob(drn1, LC_PATCH_BNPAT.format("*", "*"))
+    for fn1 in fn_list1:
+        bn1 = os.path.basename(fn1)
+        fn2 = os.path.join(drn2, bn1)
+        data1 = load_flat_hdf5(fn1)
+        data2 = load_flat_hdf5(fn2)
+        for key in data1.keys():
+            assert np.allclose(data1[key], data2[key])
