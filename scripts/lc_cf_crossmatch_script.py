@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
     end_script = time()
     if rank == 0:
-        hlu.collate_rank_data(drn_out, drn_out, lc_patches, nranks, cleanup=False)
+        hlu.collate_rank_data(drn_out, drn_out, lc_patches, nranks)
 
     if rank == 0:
         runtime_script = end_script - start_script

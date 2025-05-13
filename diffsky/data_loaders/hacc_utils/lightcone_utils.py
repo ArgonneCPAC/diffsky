@@ -340,10 +340,19 @@ def collate_rank_data(drn_in, drn_out, lc_patches, nranks, cleanup=True):
 
 def _check_serial_vs_parallel(drn1, drn2):
     fn_list1 = glob(os.path.join(drn1, LC_PATCH_BNPAT.format("*", "*")))
+    discrepant_file_list = []
     for fn1 in fn_list1:
         bn1 = os.path.basename(fn1)
         fn2 = os.path.join(drn2, bn1)
         data1 = load_flat_hdf5(fn1)
         data2 = load_flat_hdf5(fn2)
+
         for key in data1.keys():
-            assert np.allclose(data1[key], data2[key])
+            try:
+                assert np.allclose(data1[key], data2[key])
+            except AssertionError:
+                discrepant_file_list.append(bn1)
+    if len(discrepant_file_list) == 0:
+        print("Every pair of matching files is identical")
+    else:
+        print(f"The following files have discrepancies:{discrepant_file_list}")
