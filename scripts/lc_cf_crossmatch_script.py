@@ -9,6 +9,7 @@ import numpy as np
 from diffmah.defaults import DEFAULT_MAH_PARAMS
 from haccytrees import Simulation as HACCSim
 from haccytrees import coretrees
+from mpi4py import MPI
 
 from diffsky.data_loaders import load_flat_hdf5
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
@@ -61,6 +62,9 @@ if __name__ == "__main__":
         default=DRN_LJ_CROSSX_OUT_LCRC_SCRATCH,
     )
 
+    comm = MPI.COMM_WORLD
+    rank, nranks = comm.Get_rank(), comm.Get_size()
+
     args = parser.parse_args()
     z_min = args.z_min
     z_max = args.z_max
@@ -106,12 +110,15 @@ if __name__ == "__main__":
         subvolumes_for_patch = lc_xdict[patch_info]
         subvolumes.extend(subvolumes_for_patch)
     all_overlapping_subvolumes = np.unique(subvolumes)
+    print(f"Overlapping subvolumes = {all_overlapping_subvolumes}")
 
     if itest == 1:
         all_overlapping_subvolumes = [all_overlapping_subvolumes[0]]
-        chunks = [0, 1]
+        all_chunks = [0, 1]
     else:
-        chunks = np.arange(NCHUNKS).astype(int)
+        all_chunks = np.arange(NCHUNKS).astype(int)
+
+    chunks_for_rank = np.array_split(all_chunks, nranks)[rank]
 
     start_script = time()
     for isubvol in all_overlapping_subvolumes:
@@ -128,7 +135,8 @@ if __name__ == "__main__":
         bname_dmah = BNPAT_DIFFMAH_FITS.format(isubvol)
         fname_dmah = os.path.join(drn_dmah, bname_dmah)
 
-        for ichunk in chunks:
+        for ichunk in chunks_for_rank:
+            comm.Barrier()
             start_chunk = time()
             print(f"...working on chunk {ichunk}")
 
