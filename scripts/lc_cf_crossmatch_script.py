@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-drn_out",
-        help="Output directory of lightcone data",
+        help="Output drn of lightcone data",
         default=DRN_LJ_CROSSX_OUT_LCRC_SCRATCH,
     )
 
@@ -84,15 +84,19 @@ if __name__ == "__main__":
         drn_dmah = DRN_LJ_DIFFMAH_LCRC
         fn_cf_xdict = os.path.join(DRN_LC_CF_XDATA_LCRC, "cf_xdict.pickle")
         fn_lc_xdict = os.path.join(DRN_LC_CF_XDATA_LCRC, "lc_xdict.pickle")
-        os.makedirs(DRN_LJ_CROSSX_OUT_LCRC_SCRATCH, exist_ok=True)
+        drn_out_scratch = DRN_LJ_CROSSX_OUT_LCRC_SCRATCH
     elif machine == "poboy":
         drn_lc = DRN_LJ_LC_POBOY
         drn_cf = DRN_LJ_CF_POBOY
         drn_dmah = DRN_LJ_DIFFMAH_LCRC
         fn_cf_xdict = os.path.join(DRN_LC_CF_XDATA_POBOY, "cf_xdict.pickle")
         fn_lc_xdict = os.path.join(DRN_LC_CF_XDATA_POBOY, "lc_xdict.pickle")
+        drn_out_scratch = "DRN_TEMP"
+        os.makedirs(DRN_LJ_CROSSX_OUT_LCRC_SCRATCH, exist_ok=True)
     else:
         raise ValueError(f"Unrecognized machine name = `{machine}`")
+
+    os.makedirs(drn_out_scratch, exist_ok=True)
 
     with open(fn_cf_xdict, "rb") as handle:
         cf_xdict = pickle.load(handle)
@@ -183,7 +187,7 @@ if __name__ == "__main__":
 
                     try:
                         lc_patch_data_out = hlu.load_lc_patch_data_out(
-                            drn_out, bn_patch_in, rank
+                            drn_out_scratch, bn_patch_in, rank
                         )
                     except FileNotFoundError:
                         lc_patch_data_out = hlu.initialize_lc_patch_data_out(n_patch)
@@ -199,7 +203,7 @@ if __name__ == "__main__":
                         timestep_idx,
                     )
                     hlu.overwrite_lc_patch_data_out(
-                        lc_patch_data_out, drn_out, bn_patch_in, rank
+                        lc_patch_data_out, drn_out_scratch, bn_patch_in, rank
                     )
 
             end_chunk = time()
@@ -212,7 +216,7 @@ if __name__ == "__main__":
 
     end_script = time()
     if rank == 0:
-        hlu.collate_rank_data(drn_out, drn_out, lc_patches, nranks)
+        hlu.collate_rank_data(drn_out_scratch, drn_out, lc_patches, nranks)
 
     if rank == 0:
         runtime_script = end_script - start_script
