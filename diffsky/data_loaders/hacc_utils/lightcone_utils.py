@@ -302,7 +302,7 @@ def write_lc_cores_diffsky_data_report_to_disk(report, fnout):
     return all_good
 
 
-def collate_rank_data(drn_in, drn_out, lc_patches, nranks):
+def collate_rank_data(drn_in, drn_out, lc_patches, nranks, cleanup=True):
     for patch_info in lc_patches:
         stepnum, patchnum = patch_info
         bn_patch_out = LC_PATCH_DIFFSKY_BNPAT.format(stepnum, patchnum)
@@ -318,17 +318,25 @@ def collate_rank_data(drn_in, drn_out, lc_patches, nranks):
             data_collector.append(load_flat_hdf5(fname_in))
             fname_collector.append(fname_in)
 
+        # Initialize output data
+        example_key = LC_PATCH_OUT_KEYS[0]
+        n_patch_ranks = [x[example_key].size for x in data_collector]
+        n_patch_tot = np.sum(n_patch_ranks)
+        data_out = initialize_lc_patch_data_out(n_patch_tot)
+
         # Write collated data to disk in a single file
         fn_patch_out = os.path.join(drn_out, bn_patch_out)
         with h5py.File(fn_patch_out, "w") as hdf_out:
             for key in LC_PATCH_OUT_KEYS:
-                arr = np.concatenate([x[key] for x in data_collector])
-                hdf_out[key] = arr
+                for rank_data in data_collector:
+                    data_out[key] = data_out[key] + rank_data[key]
+                hdf_out[key] = data_out[key]
 
         # Delete temporary files created by each rank
-        for fn in fname_collector:
-            command = f"rm {fn}"
-            subprocess.check_output(command, shell=True)
+        if cleanup:
+            for fn in fname_collector:
+                command = f"rm {fn}"
+                subprocess.check_output(command, shell=True)
 
 
 def _check_serial_vs_parallel(drn1, drn2):

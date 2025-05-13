@@ -211,6 +211,10 @@ if __name__ == "__main__":
             print(f"Runtime for subvolume {isubvol} = {runtime_subvol:.2f} seconds\n")
 
     end_script = time()
-    runtime_script = end_script - start_script
     if rank == 0:
-        print(f"Runtime for script = {runtime_script:.2f} seconds\n")
+        hlu.collate_rank_data(drn_out, drn_out, lc_patches, nranks, cleanup=False)
+
+    if rank == 0:
+        runtime_script = end_script - start_script
+        if rank == 0:
+            print(f"Runtime for script = {runtime_script:.2f} seconds\n")
