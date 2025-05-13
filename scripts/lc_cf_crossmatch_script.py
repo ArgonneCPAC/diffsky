@@ -183,7 +183,7 @@ if __name__ == "__main__":
 
                     try:
                         lc_patch_data_out = hlu.load_lc_patch_data_out(
-                            drn_out, bn_patch_in
+                            drn_out, bn_patch_in, rank
                         )
                     except FileNotFoundError:
                         lc_patch_data_out = hlu.initialize_lc_patch_data_out(n_patch)
@@ -199,7 +199,7 @@ if __name__ == "__main__":
                         timestep_idx,
                     )
                     hlu.overwrite_lc_patch_data_out(
-                        lc_patch_data_out, drn_out, bn_patch_in
+                        lc_patch_data_out, drn_out, bn_patch_in, rank
                     )
 
             end_chunk = time()

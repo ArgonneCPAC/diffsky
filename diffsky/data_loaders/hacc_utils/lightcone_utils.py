@@ -221,13 +221,13 @@ def get_diffsky_quantities_for_lc_patch(
     return lc_patch_data_out
 
 
-def _get_lc_patch_data_out_bname(bn_patch):
-    bn_out = bn_patch.replace(".hdf5", ".diffsky_data.hdf5")
+def _get_lc_patch_data_out_bname(bn_patch, rank):
+    bn_out = bn_patch.replace(".hdf5", f".diffsky_data_rank_{rank}.hdf5")
     return bn_out
 
 
-def load_lc_patch_data_out(drn, bn_patch):
-    bn_out = _get_lc_patch_data_out_bname(bn_patch)
+def load_lc_patch_data_out(drn, bn_patch, rank):
+    bn_out = _get_lc_patch_data_out_bname(bn_patch, rank)
     fn_out = os.path.join(drn, bn_out)
     lc_patch_data_out = load_flat_hdf5(fn_out)
     return lc_patch_data_out
@@ -244,8 +244,8 @@ def initialize_lc_patch_data_out(n_patch):
     return lc_patch_data_out
 
 
-def overwrite_lc_patch_data_out(lc_patch_data_out, drn_out, bn_patch):
-    bn_out = _get_lc_patch_data_out_bname(bn_patch)
+def overwrite_lc_patch_data_out(lc_patch_data_out, drn_out, bn_patch, rank):
+    bn_out = _get_lc_patch_data_out_bname(bn_patch, rank)
     fn_out = os.path.join(drn_out, bn_out)
 
     with h5py.File(fn_out, "w") as hdf_out:
