@@ -320,9 +320,8 @@ def collate_rank_data(drn_in, drn_out, lc_patches, nranks, cleanup=True):
 
         # Initialize output data
         example_key = LC_PATCH_OUT_KEYS[0]
-        n_patch_ranks = [x[example_key].size for x in data_collector]
-        n_patch_tot = np.sum(n_patch_ranks)
-        data_out = initialize_lc_patch_data_out(n_patch_tot)
+        n_patch = data_collector[0][example_key].size
+        data_out = initialize_lc_patch_data_out(n_patch)
 
         # Write collated data to disk in a single file
         fn_patch_out = os.path.join(drn_out, bn_patch_out)
