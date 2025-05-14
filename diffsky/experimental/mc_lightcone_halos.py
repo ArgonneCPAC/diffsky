@@ -20,6 +20,7 @@ from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
+from ..burstpop import diffqburstpop_mono
 from ..mass_functions import mc_hosts
 from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psp
@@ -49,6 +50,14 @@ dist_com_grad_kern = jjit(
 _M = (0, None, None)
 _calc_lgmet_weights_galpop = jjit(
     vmap(zmetw.calc_lgmet_weights_from_lognormal_mdf, in_axes=_M)
+)
+
+# diffburstpop_params, logsm, logssfr, ssp_lg_age_gyr, smooth_age_weights
+_B = (None, 0, 0, None, 0)
+_calc_bursty_age_weights_vmap = jjit(
+    vmap(
+        diffqburstpop_mono.calc_bursty_age_weights_from_diffburstpop_params, in_axes=_B
+    )
 )
 
 
@@ -560,6 +569,7 @@ def mc_lightcone_obs_mags_cens(
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
+    diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
     n_grid=2_000,
     n_t_table=100,
     phot_keys=LSST_PHOTKEYS,
@@ -665,13 +675,27 @@ def mc_lightcone_obs_mags_cens(
         cenpop["z_obs"], z_phot_table, precomputed_ssp_mag_table
     )
     cenpop["precomputed_ssp_mag_table"] = precomputed_ssp_mag_table
-    cenpop["photflux_table"] = 10 ** (-0.4 * photmag_table_galpop)
+    cenpop["ssp_photflux_table"] = 10 ** (-0.4 * photmag_table_galpop)
     cenpop["z_phot_table"] = z_phot_table
 
-    n_gals, n_bands, n_met, n_age = cenpop["photflux_table"].shape
+    n_gals, n_bands, n_met, n_age = cenpop["ssp_photflux_table"].shape
     w = cenpop["ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     sm = 10 ** cenpop["logmp_obs"].reshape((n_gals, 1))
-    photflux_galpop = jnp.sum(w * cenpop["photflux_table"], axis=(2, 3)) * sm
+    photflux_galpop = jnp.sum(w * cenpop["ssp_photflux_table"], axis=(2, 3)) * sm
     cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
+
+    # Compute age weights with burstiness
+    _args = (
+        diffburstpop_params,
+        cenpop["logsm_obs"],
+        cenpop["logssfr_obs"],
+        ssp_data.ssp_lg_age_gyr,
+        cenpop["age_weights"],
+    )
+    bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
+    cenpop["smooth_age_weights"] = cenpop["age_weights"].copy()
+    cenpop["bursty_age_weights"] = bursty_age_weights
+    for param, pname in zip(burst_params, burst_params._fields):
+        cenpop[pname] = param
 
     return cenpop
