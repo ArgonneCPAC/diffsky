@@ -23,6 +23,7 @@ from ..burstpop import diffqburstpop_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..mass_functions import mc_hosts
 from ..phot_utils import get_wave_eff_from_tcurves
+from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psp
 
@@ -599,6 +600,7 @@ def mc_lightcone_obs_mags_cens(
     diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
     dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
     dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    ssp_err_pop_params=ssp_err_model.DEFAULT_SSPERR_PARAMS,
     n_grid=2_000,
     n_t_table=100,
 ):
@@ -705,6 +707,16 @@ def mc_lightcone_obs_mags_cens(
 
     cenpop["wave_eff"] = interp_vmap2(cenpop["z_obs"], z_phot_table, wave_eff_table)
 
+    # Delta mags
+    frac_ssp_err = get_frac_ssp_err_vmap(
+        ssp_err_pop_params,
+        cenpop["z_obs"],
+        cenpop["logsm_obs"],
+        cenpop["wave_eff"],
+        ssp_err_model.LAMBDA_REST,
+    )
+    cenpop["frac_ssp_err"] = frac_ssp_err
+
     n_gals = cenpop["z_obs"].size
     ran_key, dust_key = jran.split(ran_key, 2)
     av_key, delta_key, funo_key = jran.split(dust_key, 3)
@@ -738,11 +750,18 @@ def mc_lightcone_obs_mags_cens(
     n_gals, n_bands, n_met, n_age = cenpop["ssp_photflux_table"].shape
     w = cenpop["ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     sm = 10 ** cenpop["logmp_obs"].reshape((n_gals, 1))
-    photflux_galpop = jnp.sum(w * cenpop["ssp_photflux_table"], axis=(2, 3)) * sm
-    cenpop["obs_mags_nodust"] = -2.5 * np.log10(photflux_galpop)
 
-    _ft = ftrans.reshape((n_gals, n_bands, 1, n_age))
-    integrand = w * cenpop["ssp_photflux_table"] * _ft
+    integrand = w * cenpop["ssp_photflux_table"]
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+    cenpop["obs_mags_nodust_noerr"] = -2.5 * np.log10(photflux_galpop)
+
+    _ftrans = ftrans.reshape((n_gals, n_bands, 1, n_age))
+    integrand = w * cenpop["ssp_photflux_table"] * _ftrans
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+    cenpop["obs_mags_noerr"] = -2.5 * np.log10(photflux_galpop)
+
+    _ferr_ssp = cenpop["frac_ssp_err"].reshape((n_gals, n_bands, 1, 1))
+    integrand = w * cenpop["ssp_photflux_table"] * _ftrans * _ferr_ssp
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
     cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
 
@@ -758,3 +777,10 @@ vmap_kern1 = jjit(
 )
 _E = (None, 0, 0, 0, 0, None, 0, 0, 0, None)
 calc_dust_ftrans_vmap = jjit(vmap(vmap_kern1, in_axes=_E))
+
+
+_F = (None, None, None, 0, None)
+_G = (None, 0, 0, 0, None)
+get_frac_ssp_err_vmap = jjit(
+    vmap(vmap(ssp_err_model.F_sps_err_lambda, in_axes=_F), in_axes=_G)
+)
