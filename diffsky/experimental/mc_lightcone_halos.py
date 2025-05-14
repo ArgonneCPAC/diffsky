@@ -1,7 +1,5 @@
 """Functions to generate Monte Carlo realizations of galaxies on a lightcone"""
 
-from functools import partial
-
 import numpy as np
 from diffmah.diffmah_kernels import _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
@@ -71,52 +69,6 @@ def _spherical_shell_comoving_volume(z_grid, cosmo_params):
     return vol_shell_grid
 
 
-@partial(jjit, static_argnames=["npts"])
-def mc_lightcone_redshift(
-    ran_key, npts, z_min, z_max, cosmo_params=flat_wcdm.PLANCK15, n_table=1000
-):
-    """Generate a realization of redshifts in a lightcone spanning the input z-range
-
-    Parameters
-    ----------
-    ran_key : jax.random
-
-    n_pts : int
-        Number of points to generate
-
-    z_min : float
-
-    z_max : float
-
-    cosmo_params : namedtuple
-        dsps.cosmology.flat_wcdm cosmology
-        cosmo_params = (Om0, w0, wa, h)
-
-    n_table : int, optional
-        Number of points in the lookup table used to numerically invert the cdf
-
-    Returns
-    -------
-    mc_redshifts : ndarray, shape (n_pts, )
-        Redshifts distributed randomly within the lightcone volume
-
-    """
-    # Set up a uniform grid in redshift
-    z_grid = jnp.linspace(z_min, z_max, n_table)
-
-    # Compute the comoving volume of a thin shell at each grid point
-    vol_shell_grid = _spherical_shell_comoving_volume(z_grid, cosmo_params)
-
-    weights_grid = vol_shell_grid / vol_shell_grid.sum()
-    cdf_grid = jnp.cumsum(weights_grid)
-
-    # Assign redshift via inverse transformation sampling of the shell volume CDF
-    uran_z = jran.uniform(ran_key, minval=0, maxval=1, shape=(npts,))
-    mc_redshifts = jnp.interp(uran_z, cdf_grid, z_grid)
-
-    return mc_redshifts
-
-
 def mc_lightcone_host_halo_mass_function(
     ran_key,
     lgmp_min,
@@ -176,7 +128,7 @@ def mc_lightcone_host_halo_mass_function(
     nhalos_tot = nhalos_grid.sum()
 
     # Compute the CDF of the volume
-    weights_grid = vol_shell_grid / vol_shell_grid.sum()
+    weights_grid = mean_nhalos_grid / mean_nhalos_grid.sum()
     cdf_grid = jnp.cumsum(weights_grid)
 
     # Assign redshift via inverse transformation sampling of the shell volume CDF

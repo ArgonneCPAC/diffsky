@@ -7,7 +7,7 @@ import pytest
 from dsps.cosmology import flat_wcdm
 from jax import random as jran
 
-from ...mass_functions.mc_diffmah_tpeak import mc_subhalos
+from ....mass_functions.mc_diffmah_tpeak import mc_subhalos
 from .. import load_hacc_cores as lhc
 
 NO_HACC_MSG = "Must have haccytrees installed to run this test"
