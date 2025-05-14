@@ -2,6 +2,8 @@
 
 # flake8: noqa
 
+__all__ = ("N_MIN_MAH_PTS", "DIFFMAH_MASS_COLNAME", "N_PTCL_COREFOREST")
+
 # Simulated MAHs with fewer points than N_MIN_MAH_PTS will get a synthetic MAH
 N_MIN_MAH_PTS = 4
 
