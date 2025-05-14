@@ -1,7 +1,7 @@
 [build-system]
 requires = [
     "setuptools>=45",
-    "setuptools_scm>=7", 
+    "setuptools_scm>=7",
     "tomli>=1.0.0; python_version>='3.11'",
 ]
 build-backend = "setuptools.build_meta"
@@ -13,7 +13,7 @@ write_to_template = "__version__ = '{version}'\n"
 [tool.setuptools]
 include-package-data = true
 packages = {find = {exclude=["tests*", "scripts*", "docs*", "notebooks*"]}}
-package-data = {diffsky = ["tests/testing_data/*.dat", "*/tests/testing_data/*.dat", "tests/testing_data/*.txt", "*/tests/testing_data/*.txt"]}
+package-data = {diffsky = ["tests/testing_data/*.dat", "*/tests/testing_data/*.dat", "tests/testing_data/*.txt", "*/tests/testing_data/*.txt", "*/*/tests/testing_data/*.txt"]}
 package-dir = {diffsky = "diffsky"}
 
 [project.urls]

@@ -56,6 +56,7 @@ _jnp_take_vmap = jjit(vmap(_jnp_take_kern, in_axes=(0, 0)))
 
 @jjit
 def jnp_take_matrix(matrix, indxarr):
+    """Retrieve entries indxarr from the second column of the input matrix"""
     return _jnp_take_vmap(matrix, indxarr)
 
 
@@ -138,11 +139,9 @@ def calculate_solid_angle(ra_min, ra_max, dec_min, dec_max, epsilon=0.001):
 
     delta_ra = ra_max - ra_min
     solid_angle = delta_ra * (np.cos(dec_min) - np.cos(dec_max))  # in steradians
-    solid_angle = solid_angle * SQDEG_PER_STER
+    solid_angle = solid_angle * SQDEG_PER_STER  # in degrees
 
-    # Full sky is 4π steradians
-    full_sky = 4 * np.pi
-    fsky = solid_angle / full_sky
+    fsky = solid_angle / SQDEG_OF_SPHERE
 
     return solid_angle, fsky
 
