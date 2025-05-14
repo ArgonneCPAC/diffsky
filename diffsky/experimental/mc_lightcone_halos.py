@@ -29,6 +29,9 @@ from . import precompute_ssp_phot as psp
 
 config.update("jax_enable_x64", True)
 
+N_HMF_GRID = 2_000
+N_SFH_TABLE = 100
+
 _AGEPOP = (None, 0, None, 0)
 calc_age_weights_from_sfh_table_vmap = jjit(
     vmap(calc_age_weights_from_sfh_table, in_axes=_AGEPOP)
@@ -93,7 +96,7 @@ def mc_lightcone_host_halo_mass_function(
     sky_area_degsq,
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
-    n_grid=2_000,
+    n_hmf_grid=N_HMF_GRID,
 ):
     """Generate a Monte Carlo realization of a lightcone of host halo mass and redshift
 
@@ -128,7 +131,7 @@ def mc_lightcone_host_halo_mass_function(
     halo_counts_key, m_key, z_key = jran.split(ran_key, 3)
 
     # Set up a uniform grid in redshift
-    z_grid = jnp.linspace(z_min, z_max, n_grid)
+    z_grid = jnp.linspace(z_min, z_max, n_hmf_grid)
 
     # Compute the comoving volume of a thin shell at each grid point
     fsky = sky_area_degsq / FULL_SKY_AREA
@@ -172,7 +175,7 @@ def mc_lightcone_host_halo_diffmah(
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
-    n_grid=2_000,
+    n_hmf_grid=N_HMF_GRID,
 ):
     """Generate halo MAHs for host halos sampled from a lightcone
 
@@ -219,7 +222,7 @@ def mc_lightcone_host_halo_diffmah(
         sky_area_degsq,
         cosmo_params=cosmo_params,
         hmf_params=hmf_params,
-        n_grid=n_grid,
+        n_hmf_grid=n_hmf_grid,
     )
     t_obs_halopop = flat_wcdm.age_at_z(z_halopop, *cosmo_params)
     t_0 = flat_wcdm.age_at_z0(*cosmo_params)
@@ -257,8 +260,8 @@ def mc_lightcone_diffstar_cens(
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
-    n_grid=2_000,
-    n_t_table=100,
+    n_hmf_grid=N_HMF_GRID,
+    n_sfh_table=N_SFH_TABLE,
 ):
     """
     Generate halo MAH and galaxy SFH for host halos sampled from a lightcone
@@ -322,12 +325,12 @@ def mc_lightcone_diffstar_cens(
         cosmo_params=cosmo_params,
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
-        n_grid=n_grid,
+        n_hmf_grid=n_hmf_grid,
     )
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
 
-    t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, n_sfh_table)
 
     upids = jnp.zeros_like(cenpop["logmp0"]).astype(int) - 1
     lgmu_infall = jnp.zeros_like(cenpop["logmp0"])
@@ -403,8 +406,8 @@ def mc_lightcone_diffstar_stellar_ages_cens(
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
-    n_grid=2_000,
-    n_t_table=100,
+    n_hmf_grid=N_HMF_GRID,
+    n_sfh_table=N_SFH_TABLE,
 ):
     """
     Generate halo MAH and galaxy SFH and stellar age weights
@@ -476,8 +479,8 @@ def mc_lightcone_diffstar_stellar_ages_cens(
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
         diffstarpop_params=diffstarpop_params,
-        n_grid=n_grid,
-        n_t_table=n_t_table,
+        n_hmf_grid=n_hmf_grid,
+        n_sfh_table=n_sfh_table,
     )
     age_weights_galpop = calc_age_weights_from_sfh_table_vmap(
         cenpop["t_table"], cenpop["sfh_table"], ssp_data.ssp_lg_age_gyr, cenpop["t_obs"]
@@ -505,8 +508,8 @@ def mc_lightcone_diffstar_ssp_weights_cens(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
-    n_grid=2_000,
-    n_t_table=100,
+    n_hmf_grid=N_HMF_GRID,
+    n_sfh_table=N_SFH_TABLE,
 ):
     cenpop = mc_lightcone_diffstar_stellar_ages_cens(
         ran_key,
@@ -519,8 +522,8 @@ def mc_lightcone_diffstar_ssp_weights_cens(
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
         diffstarpop_params=diffstarpop_params,
-        n_grid=n_grid,
-        n_t_table=n_t_table,
+        n_hmf_grid=n_hmf_grid,
+        n_sfh_table=n_sfh_table,
     )
 
     lgmet_med = umzr.mzr_model(cenpop["logsm_obs"], cenpop["t_obs"], *mzr_params)
@@ -601,8 +604,8 @@ def mc_lightcone_obs_mags_cens(
     dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
     dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_model.DEFAULT_SSPERR_PARAMS,
-    n_grid=2_000,
-    n_t_table=100,
+    n_hmf_grid=N_HMF_GRID,
+    n_sfh_table=N_SFH_TABLE,
 ):
     """
     Generate photometry for host halos sampled from a lightcone
@@ -688,8 +691,8 @@ def mc_lightcone_obs_mags_cens(
         mzr_params=mzr_params,
         lgmet_scatter=lgmet_scatter,
         diffburstpop_params=diffburstpop_params,
-        n_grid=n_grid,
-        n_t_table=n_t_table,
+        n_hmf_grid=n_hmf_grid,
+        n_sfh_table=n_sfh_table,
     )
 
     photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
