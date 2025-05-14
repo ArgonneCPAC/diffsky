@@ -152,7 +152,9 @@ def test_mc_lightcone_diffstar_ssp_weights_cens():
     ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
 
     args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
-    cenpop = mclh.mc_lightcone_diffstar_ssp_weights_cens(*args)
+    cenpop = mclh.mc_lightcone_diffstar_ssp_weights_cens(
+        *args, return_internal_quantities=True
+    )
     assert np.all(np.isfinite(cenpop["logsm_obs"]))
     assert np.all(np.isfinite(cenpop["logssfr_obs"]))
     assert cenpop["logsm_obs"].min() > 4

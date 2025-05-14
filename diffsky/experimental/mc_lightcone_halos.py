@@ -575,6 +575,7 @@ def mc_lightcone_diffstar_ssp_weights_cens(
     diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
     n_hmf_grid=N_HMF_GRID,
     n_sfh_table=N_SFH_TABLE,
+    return_internal_quantities=False,
 ):
     cenpop = mc_lightcone_diffstar_stellar_ages_cens(
         ran_key,
@@ -589,9 +590,12 @@ def mc_lightcone_diffstar_ssp_weights_cens(
         diffstarpop_params=diffstarpop_params,
         n_hmf_grid=n_hmf_grid,
         n_sfh_table=n_sfh_table,
+        return_internal_quantities=return_internal_quantities,
     )
-
-    lgmet_med = umzr.mzr_model(cenpop["logsm_obs"], cenpop["t_obs"], *mzr_params)
+    cenpop["smooth_age_weights"] = cenpop["age_weights"].copy()
+    if return_internal_quantities:
+        cenpop["smooth_age_weights_ms"] = cenpop["age_weights_ms"].copy()
+        cenpop["smooth_age_weights_q"] = cenpop["age_weights_q"].copy()
 
     # Compute age weights with burstiness
     _args = (
@@ -602,10 +606,32 @@ def mc_lightcone_diffstar_ssp_weights_cens(
         cenpop["age_weights"],
     )
     bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
-    cenpop["smooth_age_weights"] = cenpop["age_weights"].copy()
     cenpop["age_weights"] = bursty_age_weights
     for param, pname in zip(burst_params, burst_params._fields):
         cenpop[pname] = param
+
+    if return_internal_quantities:
+        _args = (
+            diffburstpop_params,
+            cenpop["logsm_obs_ms"],
+            cenpop["logssfr_obs_ms"],
+            ssp_data.ssp_lg_age_gyr,
+            cenpop["age_weights_ms"],
+        )
+        bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
+        cenpop["age_weights_ms"] = bursty_age_weights
+
+        _args = (
+            diffburstpop_params,
+            cenpop["logsm_obs_q"],
+            cenpop["logssfr_obs_q"],
+            ssp_data.ssp_lg_age_gyr,
+            cenpop["age_weights_q"],
+        )
+        bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
+        cenpop["age_weights_q"] = bursty_age_weights
+
+    lgmet_med = umzr.mzr_model(cenpop["logsm_obs"], cenpop["t_obs"], *mzr_params)
 
     cenpop["lgmet_weights"] = _calc_lgmet_weights_galpop(
         lgmet_med, lgmet_scatter, ssp_data.ssp_lgmet
@@ -619,6 +645,18 @@ def mc_lightcone_diffstar_ssp_weights_cens(
 
     _w_age = cenpop["smooth_age_weights"].reshape((n_gals, 1, n_age))
     cenpop["smooth_ssp_weights"] = _w_lgmet * _w_age
+
+    if return_internal_quantities:
+        _w_age_ms = cenpop["age_weights_ms"].reshape((n_gals, 1, n_age))
+        _w_age_q = cenpop["age_weights_q"].reshape((n_gals, 1, n_age))
+
+        cenpop["ssp_weights_ms"] = _w_lgmet * _w_age_ms
+        cenpop["ssp_weights_q"] = _w_lgmet * _w_age_q
+
+        _w_age_smooth_ms = cenpop["smooth_age_weights_ms"].reshape((n_gals, 1, n_age))
+        _w_age_smooth_q = cenpop["smooth_age_weights_q"].reshape((n_gals, 1, n_age))
+        cenpop["smooth_ssp_weights_ms"] = _w_lgmet * _w_age_smooth_ms
+        cenpop["smooth_ssp_weights_q"] = _w_lgmet * _w_age_smooth_q
 
     return cenpop
 
