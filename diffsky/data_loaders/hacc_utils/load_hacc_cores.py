@@ -15,7 +15,9 @@ from jax import jit as jjit
 from jax import random as jran
 from jax import vmap
 
+from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
+from .defaults import DIFFMAH_MASS_COLNAME, N_MIN_MAH_PTS
 
 try:
     from mpi4py import MPI
@@ -38,8 +40,6 @@ log_mah_kern_vmap = jjit(vmap(_log_mah_kern, in_axes=_H))
 BNPAT_DIFFMAH = "subvol_{0}_diffmah_fits.hdf5"
 BNPAT_CORES = "m000p.coreforest.{0}.hdf5"
 
-# Simulated MAHs with fewer points than N_MIN_MAH_PTS will get a synthetic MAH
-N_MIN_MAH_PTS = 4
 
 _SUBCAT_COLNAMES = (
     "mah_params",
@@ -82,7 +82,7 @@ def load_diffsky_data_per_rank(
     ran_key,
     drn_cores,
     drn_diffmah,
-    mass_colname=hcu.DIFFMAH_MASS_COLNAME,
+    mass_colname=DIFFMAH_MASS_COLNAME,
     comm=None,
 ):
     if comm is None:
@@ -124,7 +124,7 @@ def load_diffsky_data(
     ran_key,
     drn_cores,
     drn_diffmah,
-    mass_colname=hcu.DIFFMAH_MASS_COLNAME,
+    mass_colname=DIFFMAH_MASS_COLNAME,
     include_fields=(),
 ):
     fn_cores = os.path.join(drn_cores, BNPAT_CORES.format(subvol))
@@ -328,7 +328,7 @@ def load_diffmah_data_for_forest(drn, subvol, forest):
     cf_first_row = forest["absolute_row_idx"][0]
     cf_last_row = forest["absolute_row_idx"][-1]
 
-    diffmah_fit_data = hcu.load_flat_hdf5(
+    diffmah_fit_data = load_flat_hdf5(
         fn_diffmah, istart=cf_first_row, iend=cf_last_row + 1
     )
     mah_params = DEFAULT_MAH_PARAMS._make(

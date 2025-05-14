@@ -13,8 +13,15 @@ from haccytrees import Simulation as HACCSim
 from jax import random as jran
 from mpi4py import MPI
 
-from diffsky.data_loaders import hacc_core_utils as hcu
-from diffsky.data_loaders import load_hacc_cores as lhc
+from diffsky.data_loaders.hacc_utils.hacc_core_utils import (
+    get_diffstar_cosmo_quantities,
+)
+from diffsky.data_loaders.hacc_utils.load_hacc_cores import (
+    _get_all_avail_basenames,
+    collate_hdf5_file_collection,
+    load_diffsky_data_per_rank,
+    write_sfh_mock_to_disk,
+)
 
 OUTPAT_CHUNK_RANK = "sfh_mock_subvol_{0}_chunk_{1}_rank_{2}.hdf5"
 OUTPAT_CHUNK = "sfh_mock_subvol_{0}_chunk_{1}.hdf5"
@@ -106,7 +113,7 @@ if __name__ == "__main__":
         chunks = np.arange(nchunks).astype(int)
     subvolumes = sorted(subvolumes)
 
-    all_avail_subvol_fnames = lhc._get_all_avail_basenames(
+    all_avail_subvol_fnames = _get_all_avail_basenames(
         indir_cores, BNPAT_CORE_DATA, subvolumes
     )
 
@@ -122,7 +129,7 @@ if __name__ == "__main__":
             rank_key, chunk_key_for_rank = jran.split(rank_key, 2)
             ichunk_start = time()
 
-            diffsky_data = lhc.load_diffsky_data_per_rank(
+            diffsky_data = load_diffsky_data_per_rank(
                 sim_name,
                 isubvol,
                 chunknum,
@@ -133,7 +140,7 @@ if __name__ == "__main__":
                 indir_diffmah,
                 comm=MPI.COMM_WORLD,
             )
-            fb, lgt0 = hcu.get_diffstar_cosmo_quantities(sim_name)
+            fb, lgt0 = get_diffstar_cosmo_quantities(sim_name)
 
             comm.Barrier()
             args = (
@@ -154,7 +161,7 @@ if __name__ == "__main__":
             bname = OUTPAT_CHUNK_RANK.format(subvol_str, chunknum_str, rank)
             rank_outname = os.path.join(outdir, bname)
 
-            lhc.write_sfh_mock_to_disk(diffsky_data, sfh_params, rank_outname)
+            write_sfh_mock_to_disk(diffsky_data, sfh_params, rank_outname)
 
             comm.Barrier()
             ichunk_end = time()
@@ -167,7 +174,7 @@ if __name__ == "__main__":
                     chunk_fnames.append(fname)
                 bnout = OUTPAT_CHUNK.format(subvol_str, chunknum_str)
                 fnout = os.path.join(outdir, bnout)
-                lhc.collate_hdf5_file_collection(chunk_fnames, fnout)
+                collate_hdf5_file_collection(chunk_fnames, fnout)
                 bnpat = OUTPAT_CHUNK_RANK.format(subvol_str, chunknum_str, "*")
                 fnpat = os.path.join(outdir, bnpat)
                 command = "rm -rf " + fnpat
