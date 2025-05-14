@@ -391,11 +391,11 @@ def mc_lightcone_diffstar_stellar_ages_cens(
     z_min,
     z_max,
     sky_area_degsq,
+    ssp_data,
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
-    ssp_lg_age_gyr=np.linspace(5.0, 10.25, 90) - 9.0,
     n_grid=2_000,
     n_t_table=100,
 ):
@@ -473,10 +473,10 @@ def mc_lightcone_diffstar_stellar_ages_cens(
         n_t_table=n_t_table,
     )
     age_weights_galpop = calc_age_weights_from_sfh_table_vmap(
-        cenpop["t_table"], cenpop["sfh_table"], ssp_lg_age_gyr, cenpop["t_obs"]
+        cenpop["t_table"], cenpop["sfh_table"], ssp_data.ssp_lg_age_gyr, cenpop["t_obs"]
     )
     fields = (*cenpop.keys(), "age_weights", "ssp_lg_age_gyr")
-    values = (*cenpop.values(), age_weights_galpop, ssp_lg_age_gyr)
+    values = (*cenpop.values(), age_weights_galpop, ssp_data.ssp_lg_age_gyr)
     cenpop_out = dict()
     for key, value in zip(fields, values):
         cenpop_out[key] = value
@@ -490,14 +490,14 @@ def mc_lightcone_diffstar_ssp_weights_cens(
     z_min,
     z_max,
     sky_area_degsq,
+    ssp_data,
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
-    ssp_lg_age_gyr=np.linspace(5.0, 10.25, 90) - 9.0,
-    ssp_lgmet=np.linspace(-4, -1.3, 11),
+    diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
     n_grid=2_000,
     n_t_table=100,
 ):
@@ -507,24 +507,44 @@ def mc_lightcone_diffstar_ssp_weights_cens(
         z_min,
         z_max,
         sky_area_degsq,
+        ssp_data,
         cosmo_params=cosmo_params,
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
         diffstarpop_params=diffstarpop_params,
         n_grid=n_grid,
         n_t_table=n_t_table,
-        ssp_lg_age_gyr=ssp_lg_age_gyr,
     )
 
     lgmet_med = umzr.mzr_model(cenpop["logsm_obs"], cenpop["t_obs"], *mzr_params)
+
+    # Compute age weights with burstiness
+    _args = (
+        diffburstpop_params,
+        cenpop["logsm_obs"],
+        cenpop["logssfr_obs"],
+        ssp_data.ssp_lg_age_gyr,
+        cenpop["age_weights"],
+    )
+    bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
+    cenpop["smooth_age_weights"] = cenpop["age_weights"].copy()
+    cenpop["age_weights"] = bursty_age_weights
+    for param, pname in zip(burst_params, burst_params._fields):
+        cenpop[pname] = param
+
     cenpop["lgmet_weights"] = _calc_lgmet_weights_galpop(
-        lgmet_med, lgmet_scatter, ssp_lgmet
+        lgmet_med, lgmet_scatter, ssp_data.ssp_lgmet
     )
     n_gals, n_met = cenpop["lgmet_weights"].shape
-    n_age = len(ssp_lg_age_gyr)
+    n_age = len(ssp_data.ssp_lg_age_gyr)
     _w_lgmet = cenpop["lgmet_weights"].reshape((n_gals, n_met, 1))
+
     _w_age = cenpop["age_weights"].reshape((n_gals, 1, n_age))
     cenpop["ssp_weights"] = _w_lgmet * _w_age
+
+    _w_age = cenpop["smooth_age_weights"].reshape((n_gals, 1, n_age))
+    cenpop["smooth_ssp_weights"] = _w_lgmet * _w_age
+
     return cenpop
 
 
@@ -649,16 +669,16 @@ def mc_lightcone_obs_mags_cens(
         z_min,
         z_max,
         sky_area_degsq,
+        ssp_data,
         cosmo_params=cosmo_params,
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
         diffstarpop_params=diffstarpop_params,
         mzr_params=mzr_params,
         lgmet_scatter=lgmet_scatter,
+        diffburstpop_params=diffburstpop_params,
         n_grid=n_grid,
         n_t_table=n_t_table,
-        ssp_lgmet=ssp_data.ssp_lgmet,
-        ssp_lg_age_gyr=ssp_data.ssp_lg_age_gyr,
     )
     if precomputed_ssp_mag_table is None:
         tcurves = [load_transmission_curve(bn_pat=key) for key in phot_keys]
@@ -683,19 +703,5 @@ def mc_lightcone_obs_mags_cens(
     sm = 10 ** cenpop["logmp_obs"].reshape((n_gals, 1))
     photflux_galpop = jnp.sum(w * cenpop["ssp_photflux_table"], axis=(2, 3)) * sm
     cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
-
-    # Compute age weights with burstiness
-    _args = (
-        diffburstpop_params,
-        cenpop["logsm_obs"],
-        cenpop["logssfr_obs"],
-        ssp_data.ssp_lg_age_gyr,
-        cenpop["age_weights"],
-    )
-    bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
-    cenpop["smooth_age_weights"] = cenpop["age_weights"].copy()
-    cenpop["bursty_age_weights"] = bursty_age_weights
-    for param, pname in zip(burst_params, burst_params._fields):
-        cenpop[pname] = param
 
     return cenpop

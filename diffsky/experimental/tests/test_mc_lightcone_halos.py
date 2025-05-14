@@ -126,7 +126,10 @@ def test_mc_lightcone_diffstar_stellar_ages_cens():
 
     z_min, z_max = 0.1, 0.5
     z_min = z_max - 0.05
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
+
+    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
+
+    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
     cenpop = mclh.mc_lightcone_diffstar_stellar_ages_cens(*args)
     assert np.all(np.isfinite(cenpop["logsm_obs"]))
     assert np.all(np.isfinite(cenpop["logssfr_obs"]))
@@ -143,7 +146,10 @@ def test_mc_lightcone_diffstar_ssp_weights_cens():
 
     z_min, z_max = 0.1, 0.5
     z_min = z_max - 0.05
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
+
+    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
+
+    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
     cenpop = mclh.mc_lightcone_diffstar_ssp_weights_cens(*args)
     assert np.all(np.isfinite(cenpop["logsm_obs"]))
     assert np.all(np.isfinite(cenpop["logssfr_obs"]))
