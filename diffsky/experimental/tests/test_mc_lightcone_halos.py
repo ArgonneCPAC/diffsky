@@ -184,10 +184,15 @@ def test_mc_lightcone_obs_mags_cens():
         tcurves, ssp_data, z_phot_table
     )
 
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
-    cenpop = mclh.mc_lightcone_obs_mags_cens(
-        *args,
-        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
-        z_phot_table=z_phot_table,
+    args = (
+        ran_key,
+        lgmp_min,
+        z_min,
+        z_max,
+        sky_area_degsq,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
     )
+    cenpop = mclh.mc_lightcone_obs_mags_cens(*args)
     assert np.all(np.isfinite(cenpop["obs_mags"]))

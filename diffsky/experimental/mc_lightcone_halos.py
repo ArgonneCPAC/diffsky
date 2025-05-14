@@ -592,7 +592,6 @@ def mc_lightcone_obs_mags_cens(
     diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
     n_grid=2_000,
     n_t_table=100,
-    phot_keys=LSST_PHOTKEYS,
 ):
     """
     Generate photometry for host halos sampled from a lightcone
@@ -680,16 +679,6 @@ def mc_lightcone_obs_mags_cens(
         n_grid=n_grid,
         n_t_table=n_t_table,
     )
-    if precomputed_ssp_mag_table is None:
-        tcurves = [load_transmission_curve(bn_pat=key) for key in phot_keys]
-
-        collector = []
-        for z_obs in z_phot_table:
-            ssp_obsflux_table = psp.get_ssp_obsflux_table(
-                ssp_data, tcurves, z_obs, flat_wcdm.PLANCK15
-            )
-            collector.append(ssp_obsflux_table)
-        precomputed_ssp_mag_table = -2.5 * np.log10(np.array(collector))
 
     photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
         cenpop["z_obs"], z_phot_table, precomputed_ssp_mag_table
