@@ -205,3 +205,12 @@ def test_mc_lightcone_obs_mags_cens():
     assert np.all(np.isfinite(cenpop["wave_eff"]))
     assert np.all(cenpop["wave_eff"] > 100)
     assert np.all(cenpop["wave_eff"] < 1e5)
+
+    assert cenpop["obs_mags_nodust"].shape == (n_gals, n_bands)
+    assert cenpop["obs_mags"].shape == (n_gals, n_bands)
+    assert np.all(cenpop["obs_mags"] >= cenpop["obs_mags_nodust"])
+
+    assert np.all(cenpop["ftrans"] >= 0)
+    assert np.all(cenpop["ftrans"] <= 1)
+    assert np.any(cenpop["ftrans"] > 0)
+    assert np.any(cenpop["ftrans"] < 1)

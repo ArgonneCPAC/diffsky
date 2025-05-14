@@ -697,12 +697,6 @@ def mc_lightcone_obs_mags_cens(
     cenpop["ssp_photflux_table"] = 10 ** (-0.4 * photmag_table_galpop)
     cenpop["z_phot_table"] = z_phot_table
 
-    n_gals, n_bands, n_met, n_age = cenpop["ssp_photflux_table"].shape
-    w = cenpop["ssp_weights"].reshape((n_gals, 1, n_met, n_age))
-    sm = 10 ** cenpop["logmp_obs"].reshape((n_gals, 1))
-    photflux_galpop = jnp.sum(w * cenpop["ssp_photflux_table"], axis=(2, 3)) * sm
-    cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
-
     collector = []
     for z_obs in z_phot_table:
         wave_eff = get_wave_eff_from_tcurves(tcurves, z_obs)
@@ -731,15 +725,26 @@ def mc_lightcone_obs_mags_cens(
         dustpop_scatter_params,
     )
     _res = calc_dust_ftrans_vmap(*ftrans_args)
-    ftrans, noisy_ftrans, dust_params, noisy_dust_params = _res
+    ftrans_nonoise, ftrans, dust_params, noisy_dust_params = _res
 
     for param, pname in zip(dust_params, dust_params._fields):
         cenpop[pname + "_nonoise"] = param
     for param, pname in zip(noisy_dust_params, noisy_dust_params._fields):
         cenpop[pname] = param
 
-    cenpop["ftrans_nonoise"] = ftrans
-    cenpop["ftrans"] = noisy_ftrans
+    cenpop["ftrans_nonoise"] = ftrans_nonoise
+    cenpop["ftrans"] = ftrans
+
+    n_gals, n_bands, n_met, n_age = cenpop["ssp_photflux_table"].shape
+    w = cenpop["ssp_weights"].reshape((n_gals, 1, n_met, n_age))
+    sm = 10 ** cenpop["logmp_obs"].reshape((n_gals, 1))
+    photflux_galpop = jnp.sum(w * cenpop["ssp_photflux_table"], axis=(2, 3)) * sm
+    cenpop["obs_mags_nodust"] = -2.5 * np.log10(photflux_galpop)
+
+    _ft = ftrans.reshape((n_gals, n_bands, 1, n_age))
+    integrand = w * cenpop["ssp_photflux_table"] * _ft
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+    cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
 
     return cenpop
 
