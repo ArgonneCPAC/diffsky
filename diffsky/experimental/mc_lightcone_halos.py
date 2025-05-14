@@ -755,12 +755,16 @@ def mc_lightcone_obs_mags_cens(
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
     cenpop["obs_mags_nodust_noerr"] = -2.5 * np.log10(photflux_galpop)
 
+    _ferr_ssp = cenpop["frac_ssp_err"].reshape((n_gals, n_bands, 1, 1))
+    integrand = w * cenpop["ssp_photflux_table"] * _ferr_ssp
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+    cenpop["obs_mags_nodust"] = -2.5 * np.log10(photflux_galpop)
+
     _ftrans = ftrans.reshape((n_gals, n_bands, 1, n_age))
     integrand = w * cenpop["ssp_photflux_table"] * _ftrans
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
     cenpop["obs_mags_noerr"] = -2.5 * np.log10(photflux_galpop)
 
-    _ferr_ssp = cenpop["frac_ssp_err"].reshape((n_gals, n_bands, 1, 1))
     integrand = w * cenpop["ssp_photflux_table"] * _ftrans * _ferr_ssp
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
     cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
