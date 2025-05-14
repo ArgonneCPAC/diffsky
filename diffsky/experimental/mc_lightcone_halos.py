@@ -262,6 +262,7 @@ def mc_lightcone_diffstar_cens(
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     n_hmf_grid=N_HMF_GRID,
     n_sfh_table=N_SFH_TABLE,
+    return_internal_quantities=False,
 ):
     """
     Generate halo MAH and galaxy SFH for host halos sampled from a lightcone
@@ -370,6 +371,25 @@ def mc_lightcone_diffstar_cens(
     logsfr_obs = interp_vmap(cenpop["t_obs"], t_table, np.log10(sfh_table))
     logssfr_obs = logsfr_obs - logsm_obs
 
+    if return_internal_quantities:
+        logsmh_table_q = np.log10(
+            cumulative_mstar_formed_galpop(t_table, diffstarpop_data["sfh_q"])
+        )
+        logsm_obs_q = interp_vmap(cenpop["t_obs"], t_table, logsmh_table_q)
+        logsfr_obs_q = interp_vmap(
+            cenpop["t_obs"], t_table, np.log10(diffstarpop_data["sfh_q"])
+        )
+        logssfr_obs_q = logsfr_obs_q - logsm_obs_q
+
+        logsmh_table_ms = np.log10(
+            cumulative_mstar_formed_galpop(t_table, diffstarpop_data["sfh_ms"])
+        )
+        logsm_obs_ms = interp_vmap(cenpop["t_obs"], t_table, logsmh_table_ms)
+        logsfr_obs_ms = interp_vmap(
+            cenpop["t_obs"], t_table, np.log10(diffstarpop_data["sfh_ms"])
+        )
+        logssfr_obs_ms = logsfr_obs_ms - logsm_obs_ms
+
     fields = (
         *cenpop.keys(),
         "logsm_obs",
@@ -388,6 +408,31 @@ def mc_lightcone_diffstar_cens(
         t_table,
         diffstarpop_data,
     )
+
+    if return_internal_quantities:
+        fields = (
+            *fields,
+            "logsm_obs_ms",
+            "logssfr_obs_ms",
+            "sfh_params_ms",
+            "sfh_table_ms",
+            "logsm_obs_q",
+            "logssfr_obs_q",
+            "sfh_params_q",
+            "sfh_table_q",
+        )
+        values = (
+            *values,
+            logsm_obs_ms,
+            logssfr_obs_ms,
+            diffstarpop_data["sfh_params_ms"],
+            diffstarpop_data["sfh_ms"],
+            logsm_obs_q,
+            logssfr_obs_q,
+            diffstarpop_data["sfh_params_q"],
+            diffstarpop_data["sfh_q"],
+        )
+
     cenpop_out = dict()
     for key, value in zip(fields, values):
         cenpop_out[key] = value
@@ -408,6 +453,7 @@ def mc_lightcone_diffstar_stellar_ages_cens(
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     n_hmf_grid=N_HMF_GRID,
     n_sfh_table=N_SFH_TABLE,
+    return_internal_quantities=False,
 ):
     """
     Generate halo MAH and galaxy SFH and stellar age weights
@@ -481,12 +527,31 @@ def mc_lightcone_diffstar_stellar_ages_cens(
         diffstarpop_params=diffstarpop_params,
         n_hmf_grid=n_hmf_grid,
         n_sfh_table=n_sfh_table,
+        return_internal_quantities=return_internal_quantities,
     )
     age_weights_galpop = calc_age_weights_from_sfh_table_vmap(
         cenpop["t_table"], cenpop["sfh_table"], ssp_data.ssp_lg_age_gyr, cenpop["t_obs"]
     )
     fields = (*cenpop.keys(), "age_weights", "ssp_lg_age_gyr")
     values = (*cenpop.values(), age_weights_galpop, ssp_data.ssp_lg_age_gyr)
+
+    if return_internal_quantities:
+        age_weights_galpop_ms = calc_age_weights_from_sfh_table_vmap(
+            cenpop["t_table"],
+            cenpop["sfh_table_ms"],
+            ssp_data.ssp_lg_age_gyr,
+            cenpop["t_obs"],
+        )
+        age_weights_galpop_q = calc_age_weights_from_sfh_table_vmap(
+            cenpop["t_table"],
+            cenpop["sfh_table_q"],
+            ssp_data.ssp_lg_age_gyr,
+            cenpop["t_obs"],
+        )
+
+        fields = (*fields, "age_weights_ms", "age_weights_q")
+        values = (*values, age_weights_galpop_ms, age_weights_galpop_q)
+
     cenpop_out = dict()
     for key, value in zip(fields, values):
         cenpop_out[key] = value
