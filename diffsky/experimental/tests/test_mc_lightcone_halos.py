@@ -178,8 +178,10 @@ def test_mc_lightcone_obs_mags_cens():
     wave, u, g, r, i, z, y = _res
 
     tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+    n_bands = len(tcurves)
 
-    z_phot_table = np.linspace(z_min, z_max, 5)
+    n_z_phot_table = 15
+    z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
     precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
         tcurves, ssp_data, z_phot_table
     )
@@ -191,8 +193,15 @@ def test_mc_lightcone_obs_mags_cens():
         z_max,
         sky_area_degsq,
         ssp_data,
+        tcurves,
         precomputed_ssp_mag_table,
         z_phot_table,
     )
     cenpop = mclh.mc_lightcone_obs_mags_cens(*args)
+    n_gals = cenpop["logsm_obs"].size
+
     assert np.all(np.isfinite(cenpop["obs_mags"]))
+    assert cenpop["wave_eff"].shape == (n_gals, n_bands)
+    assert np.all(np.isfinite(cenpop["wave_eff"]))
+    assert np.all(cenpop["wave_eff"] > 100)
+    assert np.all(cenpop["wave_eff"] < 1e5)

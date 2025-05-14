@@ -10,7 +10,6 @@ from diffstarpop import param_utils as dpu
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
-from dsps.data_loaders import load_transmission_curve
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
@@ -21,7 +20,9 @@ from jax import random as jran
 from jax import vmap
 
 from ..burstpop import diffqburstpop_mono
+from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..mass_functions import mc_hosts
+from ..phot_utils import get_wave_eff_from_tcurves
 from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psp
 
@@ -37,6 +38,11 @@ FULL_SKY_AREA = (4 * jnp.pi) * (180 / jnp.pi) ** 2
 LSST_PHOTKEYS = ("lsst_u*", "lsst_g*", "lsst_r*", "lsst_i*", "lsst_z*", "lsst_y*")
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
+
+_A = (None, None, 0)
+_B = (None, None, 1)
+interp_vmap2 = jjit(vmap(jnp.interp, in_axes=_B, out_axes=1))
+
 
 _G = (0, None, None, 0, 0)
 mc_logmp_vmap = jjit(vmap(mc_hosts._mc_host_halos_singlez_kern, in_axes=_G))
@@ -581,6 +587,7 @@ def mc_lightcone_obs_mags_cens(
     z_max,
     sky_area_degsq,
     ssp_data,
+    tcurves,
     precomputed_ssp_mag_table,
     z_phot_table,
     cosmo_params=flat_wcdm.PLANCK15,
@@ -590,6 +597,8 @@ def mc_lightcone_obs_mags_cens(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
+    dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
+    dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
     n_grid=2_000,
     n_t_table=100,
 ):
@@ -662,8 +671,9 @@ def mc_lightcone_obs_mags_cens(
             Apparent magnitude of each galaxy in each band
 
     """
+    ran_key, cenpop_key = jran.split(ran_key, 2)
     cenpop = mc_lightcone_diffstar_ssp_weights_cens(
-        ran_key,
+        cenpop_key,
         lgmp_min,
         z_min,
         z_max,
@@ -693,4 +703,53 @@ def mc_lightcone_obs_mags_cens(
     photflux_galpop = jnp.sum(w * cenpop["ssp_photflux_table"], axis=(2, 3)) * sm
     cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
 
+    collector = []
+    for z_obs in z_phot_table:
+        wave_eff = get_wave_eff_from_tcurves(tcurves, z_obs)
+        collector.append(wave_eff)
+    wave_eff_table = np.array(collector)
+
+    cenpop["wave_eff"] = interp_vmap2(cenpop["z_obs"], z_phot_table, wave_eff_table)
+
+    n_gals = cenpop["z_obs"].size
+    ran_key, dust_key = jran.split(ran_key, 2)
+    av_key, delta_key, funo_key = jran.split(dust_key, 3)
+    uran_av = jran.uniform(av_key, shape=(n_gals,))
+    uran_delta = jran.uniform(delta_key, shape=(n_gals,))
+    uran_funo = jran.uniform(funo_key, shape=(n_gals,))
+
+    ftrans_args = (
+        dustpop_params,
+        cenpop["wave_eff"],
+        cenpop["logsm_obs"],
+        cenpop["logssfr_obs"],
+        cenpop["z_obs"],
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        dustpop_scatter_params,
+    )
+    _res = calc_dust_ftrans_vmap(*ftrans_args)
+    ftrans, noisy_ftrans, dust_params, noisy_dust_params = _res
+
+    for param, pname in zip(dust_params, dust_params._fields):
+        cenpop[pname + "_nonoise"] = param
+    for param, pname in zip(noisy_dust_params, noisy_dust_params._fields):
+        cenpop[pname] = param
+
+    cenpop["ftrans_nonoise"] = ftrans
+    cenpop["ftrans"] = noisy_ftrans
+
     return cenpop
+
+
+_D = (None, 0, None, None, None, None, None, None, None, None)
+vmap_kern1 = jjit(
+    vmap(
+        tw_dustpop_mono_noise.calc_ftrans_singlegal_singlewave_from_dustpop_params,
+        in_axes=_D,
+    )
+)
+_E = (None, 0, 0, 0, 0, None, 0, 0, 0, None)
+calc_dust_ftrans_vmap = jjit(vmap(vmap_kern1, in_axes=_E))
