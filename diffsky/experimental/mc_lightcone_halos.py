@@ -709,6 +709,7 @@ def mc_lightcone_obs_mags_cens(
     ssp_err_pop_params=ssp_err_model.DEFAULT_SSPERR_PARAMS,
     n_hmf_grid=N_HMF_GRID,
     n_sfh_table=N_SFH_TABLE,
+    return_internal_quantities=False,
 ):
     """
     Generate photometry for host halos sampled from a lightcone
@@ -796,6 +797,7 @@ def mc_lightcone_obs_mags_cens(
         diffburstpop_params=diffburstpop_params,
         n_hmf_grid=n_hmf_grid,
         n_sfh_table=n_sfh_table,
+        return_internal_quantities=return_internal_quantities,
     )
 
     photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
@@ -887,6 +889,17 @@ def mc_lightcone_obs_mags_cens(
     integrand = w_noburst * cenpop["ssp_photflux_table"] * _ftrans * _ferr_ssp
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
     cenpop["obs_mags_noburst"] = -2.5 * np.log10(photflux_galpop)
+
+    if return_internal_quantities:
+        w_ms = cenpop["ssp_weights_ms"].reshape((n_gals, 1, n_met, n_age))
+        integrand = w_ms * cenpop["ssp_photflux_table"]
+        photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+        cenpop["obs_mags_nodust_noerr_ms"] = -2.5 * np.log10(photflux_galpop)
+
+        w_q = cenpop["ssp_weights_q"].reshape((n_gals, 1, n_met, n_age))
+        integrand = w_q * cenpop["ssp_photflux_table"]
+        photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+        cenpop["obs_mags_nodust_noerr_q"] = -2.5 * np.log10(photflux_galpop)
 
     return cenpop
 

@@ -201,7 +201,7 @@ def test_mc_lightcone_obs_mags_cens():
         precomputed_ssp_mag_table,
         z_phot_table,
     )
-    cenpop = mclh.mc_lightcone_obs_mags_cens(*args)
+    cenpop = mclh.mc_lightcone_obs_mags_cens(*args, return_internal_quantities=True)
     n_gals = cenpop["logsm_obs"].size
 
     assert np.all(np.isfinite(cenpop["obs_mags"]))
