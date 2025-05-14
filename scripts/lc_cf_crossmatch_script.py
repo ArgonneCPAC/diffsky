@@ -12,8 +12,17 @@ from haccytrees import coretrees
 from mpi4py import MPI
 
 from diffsky.data_loaders import load_flat_hdf5
-from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils.defaults import DIFFMAH_MASS_COLNAME
+from diffsky.data_loaders.hacc_utils.lightcone_utils import (
+    LC_PATCH_BNPAT,
+    collate_rank_data,
+    get_diffsky_quantities_for_lc_patch,
+    get_infall_times_lc_shell,
+    get_lc_patches_in_zrange,
+    initialize_lc_patch_data_out,
+    load_lc_patch_data_out,
+    overwrite_lc_patch_data_out,
+)
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -104,7 +113,7 @@ if __name__ == "__main__":
     with open(fn_lc_xdict, "rb") as handle:
         lc_xdict = pickle.load(handle)
 
-    lc_patches = hlu.get_lc_patches_in_zrange(
+    lc_patches = get_lc_patches_in_zrange(
         SIM_NAME, lc_xdict, z_min, z_max, patch_list=lc_patch_list
     )
 
@@ -175,24 +184,24 @@ if __name__ == "__main__":
                 ]
 
                 timestep_idx = np.searchsorted(sim.cosmotools_steps, ishell)
-                _res = hlu.get_infall_times_lc_shell(forest_matrices, timestep_idx)
+                _res = get_infall_times_lc_shell(forest_matrices, timestep_idx)
                 cf_indx_t_ult_inf, cf_indx_t_pen_inf = _res
 
                 for olap_patch_id in olap_patch_ids_ishell:
                     ishell, ipatch = olap_patch_id
-                    bn_patch_in = hlu.LC_PATCH_BNPAT.format(ishell, ipatch)
+                    bn_patch_in = LC_PATCH_BNPAT.format(ishell, ipatch)
                     fn_patch_in = os.path.join(drn_lc, bn_patch_in)
                     lc_patch_data = load_flat_hdf5(fn_patch_in)
                     n_patch = len(lc_patch_data["file_idx"])
 
                     try:
-                        lc_patch_data_out = hlu.load_lc_patch_data_out(
+                        lc_patch_data_out = load_lc_patch_data_out(
                             drn_out_scratch, bn_patch_in, rank
                         )
                     except FileNotFoundError:
-                        lc_patch_data_out = hlu.initialize_lc_patch_data_out(n_patch)
+                        lc_patch_data_out = initialize_lc_patch_data_out(n_patch)
 
-                    lc_patch_data_out = hlu.get_diffsky_quantities_for_lc_patch(
+                    lc_patch_data_out = get_diffsky_quantities_for_lc_patch(
                         lc_patch_data,
                         lc_patch_data_out,
                         forest_matrices,
@@ -202,7 +211,7 @@ if __name__ == "__main__":
                         cf_indx_t_pen_inf,
                         timestep_idx,
                     )
-                    hlu.overwrite_lc_patch_data_out(
+                    overwrite_lc_patch_data_out(
                         lc_patch_data_out, drn_out_scratch, bn_patch_in, rank
                     )
 
@@ -216,7 +225,7 @@ if __name__ == "__main__":
 
     end_script = time()
     if rank == 0:
-        hlu.collate_rank_data(drn_out_scratch, drn_out, lc_patches, nranks)
+        collate_rank_data(drn_out_scratch, drn_out, lc_patches, nranks)
 
     if rank == 0:
         runtime_script = (end_script - start_script) / 60.0

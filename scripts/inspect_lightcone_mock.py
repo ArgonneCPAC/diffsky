@@ -4,7 +4,10 @@ import argparse
 import os
 from glob import glob
 
-from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
+from diffsky.data_loaders.hacc_utils.lightcone_utils import (
+    check_lc_cores_diffsky_data,
+    write_lc_cores_diffsky_data_report_to_disk,
+)
 
 BN_GLOBPAT_LC_CORES = "lc_cores-*.*.diffsky_data.hdf5"
 
@@ -23,9 +26,9 @@ if __name__ == "__main__":
     all_good = True
     failure_collector = dict()
     for fn in fn_list:
-        report = hlu.check_lc_cores_diffsky_data(fn)
+        report = check_lc_cores_diffsky_data(fn)
         fn_report = fn.replace(".hdf5", ".report.txt")
-        all_good_fn = hlu.write_lc_cores_diffsky_data_report_to_disk(report, fn_report)
+        all_good_fn = write_lc_cores_diffsky_data_report_to_disk(report, fn_report)
         all_good = all_good & all_good_fn
         if not all_good_fn:
             bname = os.path.basename(fn)
