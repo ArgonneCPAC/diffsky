@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 from collections import namedtuple
 
 from dsps.constants import SFR_MIN
@@ -26,7 +26,7 @@ from .dustpop.sbl18_dustpop import (
     get_bounded_dustpop_params,
     get_unbounded_dustpop_params,
 )
-from .tw_utils import _tw_gauss
+from .utils.tw_utils import _tw_gauss
 
 LGMET_SCATTER = 0.20
 TCURVE_WIDTH = 50.0

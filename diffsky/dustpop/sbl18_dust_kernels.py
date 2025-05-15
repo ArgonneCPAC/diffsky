@@ -1,10 +1,10 @@
-"""
-"""
+""" """
+
 from dsps.dust.att_curves import sbl18_k_lambda
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from ..tw_utils import _tw_sig_slope
+from ..utils.tw_utils import _tw_sig_slope
 
 RV_C00 = 4.05
 UV_BUMP_W0_MICRON = 0.2175  # Center of UV bump in micron
