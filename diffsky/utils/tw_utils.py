@@ -1,5 +1,5 @@
-"""Triweight kernels in JAX
-"""
+"""Triweight kernels in JAX"""
+
 from jax import jit as jjit
 from jax import lax
 from jax import numpy as jnp
@@ -85,13 +85,7 @@ def _tw_erf_scalar(x, m, h):
 def _tw_erf(x, m, h):
     """Triweight kernel version of an err function."""
     z = (x - m) / h
-    val = (
-        -5 * z**7 / 69984
-        + 7 * z**5 / 2592
-        - 35 * z**3 / 864
-        + 35 * z / 96
-        + 1 / 2
-    )
+    val = -5 * z**7 / 69984 + 7 * z**5 / 2592 - 35 * z**3 / 864 + 35 * z / 96 + 1 / 2
     val = jnp.where(z < -3, 0, val)
     val = jnp.where(z > 3, 1, val)
     return val
@@ -143,3 +137,21 @@ def _tw_sigmoid(x, x0, tw_h, ymin, ymax):
 def _tw_sig_slope(x, xtp, ytp, x0, tw_h, lo, hi):
     slope = _tw_sigmoid(x, x0, tw_h, lo, hi)
     return ytp + slope * (x - xtp)
+
+
+@jjit
+def _tw_interp_kern(zarr, x0, x1, x2, y0, y1, y2):
+    xa = 0.5 * (x0 + x1)
+    xb = 0.5 * (x1 + x2)
+
+    dx01 = (x1 - x0) / 3
+    dx12 = (x2 - x1) / 3
+
+    w01 = _tw_sigmoid(zarr, xa, dx01, y0, y1)
+    w12 = _tw_sigmoid(zarr, xb, dx12, y1, y2)
+
+    dxab = (xb - xa) / 3
+    xab = x1
+    w02 = _tw_sigmoid(zarr, xab, dxab, w01, w12)
+
+    return w02
