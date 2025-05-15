@@ -2,7 +2,6 @@
 
 from collections import OrderedDict, namedtuple
 
-from dsps.utils import _tw_sigmoid
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
@@ -405,12 +404,12 @@ def compute_delta_mags_all_bands(logsm, z_obs, ssperr_params):
     delta_mags_r = jnp.array((delta_mag_r_z0p0, delta_mag_r_z0p5, delta_mag_r_z1p1))
     delta_mags_i = jnp.array((delta_mag_i_z0p0, delta_mag_i_z0p5, delta_mag_i_z1p1))
 
-    delta_mag_fuv_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_fuv)
-    delta_mag_nuv_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_nuv)
-    delta_mag_u_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_u)
-    delta_mag_g_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_g)
-    delta_mag_r_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_r)
-    delta_mag_i_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_i)
+    delta_mag_fuv_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_fuv)
+    delta_mag_nuv_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_nuv)
+    delta_mag_u_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_u)
+    delta_mag_g_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_g)
+    delta_mag_r_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_r)
+    delta_mag_i_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_i)
 
     delta_mags = jnp.array(
         (
@@ -424,52 +423,6 @@ def compute_delta_mags_all_bands(logsm, z_obs, ssperr_params):
     )
 
     return delta_mags
-
-
-@jjit
-def _redshift_interpolation_kern(zarr, y0, y1, y2, k=10.0, xa=0.5, xb=0.75):
-    dxab = xb - xa
-    xab = xa + 0.5 * dxab
-    w0 = _sigmoid(zarr, xa, k, y0, y1)
-    w1 = _sigmoid(zarr, xb, k, y1, y2)
-    w01 = _sigmoid(zarr, xab, k, w0, w1)
-    return w01
-
-
-@jjit
-def _tw_interp_kern(zarr, x0, x1, x2, y0, y1, y2):
-    xa = 0.5 * (x0 + x1)
-    xb = 0.5 * (x1 + x2)
-
-    dx01 = (x1 - x0) / 3
-    dx12 = (x2 - x1) / 3
-
-    w01 = _tw_sigmoid(zarr, xa, dx01, y0, y1)
-    w12 = _tw_sigmoid(zarr, xb, dx12, y1, y2)
-
-    dxab = (xb - xa) / 3
-    xab = x1
-    w02 = _tw_sigmoid(zarr, xab, dxab, w01, w12)
-
-    return w02
-
-
-@jjit
-def _tw_wave_interp_kern(wave, y_table, x_table=LAMBDA_REST):
-    x0, x1, x2, x3, x4, x5 = x_table
-    y0, y1, y2, y3, y4, y5 = y_table
-
-    w02 = _tw_interp_kern(wave, x0, x1, x2, y0, y1, y2)
-    w24 = _tw_interp_kern(wave, x2, x3, x4, y2, y3, y4)
-
-    dx13 = (x3 - x1) / 3
-    w04 = _tw_sigmoid(wave, x2, dx13, w02, w24)
-
-    dx45 = (x5 - x4) / 3
-    x45 = 0.5 * (x4 + x5)
-    w05 = _tw_sigmoid(wave, x45, dx45, w04, y5)
-
-    return w05
 
 
 @jjit
@@ -495,10 +448,7 @@ def F_sps_err_lambda(ssperr_params, logsm, z_obs, wave_obs, wave_eff_rest):
 
     F_sps_err_wave_eff_rest = F_sps_err_from_delta_mag(delta_mags_rest)
 
-    # F_sps_err_z_obs = jnp.interp(wave_obs, wave_eff_rest, F_sps_err_wave_eff_rest)
-    F_sps_err_z_obs = _tw_wave_interp_kern(
-        wave_obs, F_sps_err_wave_eff_rest, wave_eff_rest
-    )
+    F_sps_err_z_obs = jnp.interp(wave_obs, wave_eff_rest, F_sps_err_wave_eff_rest)
 
     return F_sps_err_z_obs
 
