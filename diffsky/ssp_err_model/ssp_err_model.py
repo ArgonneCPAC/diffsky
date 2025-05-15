@@ -2,6 +2,7 @@
 
 from collections import OrderedDict, namedtuple
 
+from dsps.utils import _tw_sigmoid
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
@@ -436,6 +437,42 @@ def _redshift_interpolation_kern(zarr, y0, y1, y2, k=10.0, xa=0.5, xb=0.75):
 
 
 @jjit
+def _tw_interp_kern(zarr, x0, x1, x2, y0, y1, y2):
+    xa = 0.5 * (x0 + x1)
+    xb = 0.5 * (x1 + x2)
+
+    dx01 = (x1 - x0) / 3
+    dx12 = (x2 - x1) / 3
+
+    w01 = _tw_sigmoid(zarr, xa, dx01, y0, y1)
+    w12 = _tw_sigmoid(zarr, xb, dx12, y1, y2)
+
+    dxab = (xb - xa) / 3
+    xab = x1
+    w02 = _tw_sigmoid(zarr, xab, dxab, w01, w12)
+
+    return w02
+
+
+@jjit
+def _tw_wave_interp_kern(wave, y_table, x_table=LAMBDA_REST):
+    x0, x1, x2, x3, x4, x5 = x_table
+    y0, y1, y2, y3, y4, y5 = y_table
+
+    w02 = _tw_interp_kern(wave, x0, x1, x2, y0, y1, y2)
+    w24 = _tw_interp_kern(wave, x2, x3, x4, y2, y3, y4)
+
+    dx13 = (x3 - x1) / 3
+    w04 = _tw_sigmoid(wave, x2, dx13, w02, w24)
+
+    dx45 = (x5 - x4) / 3
+    x45 = 0.5 * (x4 + x5)
+    w05 = _tw_sigmoid(wave, x45, dx45, w04, y5)
+
+    return w05
+
+
+@jjit
 def F_sps_err_from_delta_mag(delta_mag):
 
     F_ssp_err = 10 ** (-0.4 * delta_mag)
@@ -458,7 +495,10 @@ def F_sps_err_lambda(ssperr_params, logsm, z_obs, wave_obs, wave_eff_rest):
 
     F_sps_err_wave_eff_rest = F_sps_err_from_delta_mag(delta_mags_rest)
 
-    F_sps_err_z_obs = jnp.interp(wave_obs, wave_eff_rest, F_sps_err_wave_eff_rest)
+    # F_sps_err_z_obs = jnp.interp(wave_obs, wave_eff_rest, F_sps_err_wave_eff_rest)
+    F_sps_err_z_obs = _tw_wave_interp_kern(
+        wave_obs, F_sps_err_wave_eff_rest, wave_eff_rest
+    )
 
     return F_sps_err_z_obs
 
