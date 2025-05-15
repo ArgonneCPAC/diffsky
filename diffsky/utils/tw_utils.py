@@ -140,18 +140,19 @@ def _tw_sig_slope(x, xtp, ytp, x0, tw_h, lo, hi):
 
 
 @jjit
-def _tw_interp_kern(zarr, x0, x1, x2, y0, y1, y2):
+def _tw_interp_kern(xarr, x0, x1, x2, y0, y1, y2):
+    """Smooth version of np.interp(xarr, (x0, x1, x2), (y0, y1, y2))"""
     xa = 0.5 * (x0 + x1)
     xb = 0.5 * (x1 + x2)
 
     dx01 = (x1 - x0) / 3
     dx12 = (x2 - x1) / 3
 
-    w01 = _tw_sigmoid(zarr, xa, dx01, y0, y1)
-    w12 = _tw_sigmoid(zarr, xb, dx12, y1, y2)
+    w01 = _tw_sigmoid(xarr, xa, dx01, y0, y1)
+    w12 = _tw_sigmoid(xarr, xb, dx12, y1, y2)
 
     dxab = (xb - xa) / 3
     xab = x1
-    w02 = _tw_sigmoid(zarr, xab, dxab, w01, w12)
+    w02 = _tw_sigmoid(xarr, xab, dxab, w01, w12)
 
     return w02
