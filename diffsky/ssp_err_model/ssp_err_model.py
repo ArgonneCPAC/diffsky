@@ -404,12 +404,12 @@ def compute_delta_mags_all_bands(logsm, z_obs, ssperr_params):
     delta_mags_r = jnp.array((delta_mag_r_z0p0, delta_mag_r_z0p5, delta_mag_r_z1p1))
     delta_mags_i = jnp.array((delta_mag_i_z0p0, delta_mag_i_z0p5, delta_mag_i_z1p1))
 
-    delta_mag_fuv_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_fuv)
-    delta_mag_nuv_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_nuv)
-    delta_mag_u_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_u)
-    delta_mag_g_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_g)
-    delta_mag_r_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_r)
-    delta_mag_i_zobs = jnp.interp(z_obs, Z_CONTROL, delta_mags_i)
+    delta_mag_fuv_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_fuv)
+    delta_mag_nuv_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_nuv)
+    delta_mag_u_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_u)
+    delta_mag_g_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_g)
+    delta_mag_r_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_r)
+    delta_mag_i_zobs = _redshift_interpolation_kern(z_obs, *delta_mags_i)
 
     delta_mags = jnp.array(
         (
@@ -423,6 +423,16 @@ def compute_delta_mags_all_bands(logsm, z_obs, ssperr_params):
     )
 
     return delta_mags
+
+
+@jjit
+def _redshift_interpolation_kern(zarr, y0, y1, y2, k=10.0, xa=0.5, xb=0.75):
+    dxab = xb - xa
+    xab = xa + 0.5 * dxab
+    w0 = _sigmoid(zarr, xa, k, y0, y1)
+    w1 = _sigmoid(zarr, xb, k, y1, y2)
+    w01 = _sigmoid(zarr, xab, k, w0, w1)
+    return w01
 
 
 @jjit
