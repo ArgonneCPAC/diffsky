@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 from collections import namedtuple
 
 from dsps.constants import SFR_MIN
@@ -22,7 +22,7 @@ from .dustpop.tw_dustpop import (
     calc_dust_ftrans_singlegal_multiwave_from_dustpop_params,
     calc_dust_ftrans_singlegal_singlewave_from_dustpop_params,
 )
-from .tw_utils import _tw_gauss
+from .utils.tw_utils import _tw_gauss
 
 LGMET_SCATTER = 0.20
 TCURVE_WIDTH = 50.0

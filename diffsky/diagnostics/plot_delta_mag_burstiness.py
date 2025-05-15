@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import os
 
@@ -23,7 +22,7 @@ from jax import jit as jjit
 from jax import random as jran
 from jax import vmap
 
-from diffsky import tw_photgrad
+from .. import tw_photgrad
 
 try:
     from matplotlib import pyplot as plt

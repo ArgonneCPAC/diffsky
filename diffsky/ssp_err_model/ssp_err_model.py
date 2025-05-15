@@ -7,7 +7,7 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
 
-from ..utils import _inverse_sigmoid, _sigmoid
+from ..utils import _inverse_sigmoid, _sigmoid, _tw_interp_kern
 
 K_LOGSM = 5.0
 
@@ -434,24 +434,6 @@ def _redshift_interpolation_kern(zarr, y0, y1, y2, k=10.0, xa=0.5, xb=0.75):
     w1 = _sigmoid(zarr, xb, k, y1, y2)
     w01 = _sigmoid(zarr, xab, k, w0, w1)
     return w01
-
-
-@jjit
-def _tw_interp_kern(zarr, x0, x1, x2, y0, y1, y2):
-    xa = 0.5 * (x0 + x1)
-    xb = 0.5 * (x1 + x2)
-
-    dx01 = (x1 - x0) / 3
-    dx12 = (x2 - x1) / 3
-
-    w01 = _tw_sigmoid(zarr, xa, dx01, y0, y1)
-    w12 = _tw_sigmoid(zarr, xb, dx12, y1, y2)
-
-    dxab = (xb - xa) / 3
-    xab = x1
-    w02 = _tw_sigmoid(zarr, xab, dxab, w01, w12)
-
-    return w02
 
 
 @jjit
