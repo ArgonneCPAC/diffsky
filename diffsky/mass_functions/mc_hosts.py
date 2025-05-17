@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import numpy as np
 from jax import jit as jjit
@@ -21,8 +20,10 @@ def _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com):
 
 
 @jjit
-def _get_hmf_cdf_interp_tables(hmf_params, lgmp_min, redshift, volume_com):
-    dlgmp = LGMH_MAX - lgmp_min
+def _get_hmf_cdf_interp_tables(
+    hmf_params, lgmp_min, redshift, volume_com, lgmp_max=LGMH_MAX
+):
+    dlgmp = lgmp_max - lgmp_min
     lgmp_table = U_TABLE * dlgmp + lgmp_min
 
     cdf_table = volume_com * 10 ** predict_cuml_hmf(hmf_params, lgmp_table, redshift)
@@ -33,16 +34,23 @@ def _get_hmf_cdf_interp_tables(hmf_params, lgmp_min, redshift, volume_com):
 
 
 @jjit
-def _mc_host_halos_singlez_kern(uran, hmf_params, lgmp_min, redshift, volume_com):
+def _mc_host_halos_singlez_kern(
+    uran, hmf_params, lgmp_min, redshift, volume_com, lgmp_max=LGMH_MAX
+):
     lgmp_table, cdf_table = _get_hmf_cdf_interp_tables(
-        hmf_params, lgmp_min, redshift, volume_com
+        hmf_params, lgmp_min, redshift, volume_com, lgmp_max=lgmp_max
     )
     mc_lg_mp = jnp.interp(uran, cdf_table, lgmp_table)
     return mc_lg_mp
 
 
 def mc_host_halos_singlez(
-    ran_key, lgmp_min, redshift, volume_com, hmf_params=DEFAULT_HMF_PARAMS
+    ran_key,
+    lgmp_min,
+    redshift,
+    volume_com,
+    hmf_params=DEFAULT_HMF_PARAMS,
+    lgmp_max=LGMH_MAX,
 ):
     """Monte Carlo realization of the host halo mass function at the input redshift
 
@@ -71,9 +79,12 @@ def mc_host_halos_singlez(
     """
     counts_key, u_key = jran.split(ran_key, 2)
     mean_nhalos = _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com)
+    mean_nhalos_lgmax = _compute_nhalos_tot(hmf_params, lgmp_max, redshift, volume_com)
+    mean_nhalos = mean_nhalos - mean_nhalos_lgmax
+
     nhalos = jran.poisson(counts_key, mean_nhalos)
     uran = jran.uniform(u_key, minval=0, maxval=1, shape=(nhalos,))
     lgmp_halopop = _mc_host_halos_singlez_kern(
-        uran, hmf_params, lgmp_min, redshift, volume_com
+        uran, hmf_params, lgmp_min, redshift, volume_com, lgmp_max=lgmp_max
     )
     return np.array(lgmp_halopop)
