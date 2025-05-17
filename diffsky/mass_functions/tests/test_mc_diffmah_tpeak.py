@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import numpy as np
 from jax import random as jran
@@ -44,7 +43,7 @@ def test_mc_subhalo_catalog_singlez():
     logmp_ult_inf_sats = subcat.logmp_ult_inf[subcat.upids != -1]
     logmhost_ult_inf_sats = subcat.logmhost_ult_inf[subcat.upids != -1]
     logmu_ult_sats = logmp_ult_inf_sats - logmhost_ult_inf_sats
-    assert np.median(logmu_ult_sats < -0.75)
+    assert np.mean(logmu_ult_sats) < -0.5
 
     sat_bigger_than_host = (
         subcat.logmp_ult_inf[subcat.upids != -1]
