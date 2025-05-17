@@ -79,6 +79,9 @@ def mc_host_halos_singlez(
     """
     counts_key, u_key = jran.split(ran_key, 2)
     mean_nhalos = _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com)
+    mean_nhalos_lgmax = _compute_nhalos_tot(hmf_params, lgmp_max, redshift, volume_com)
+    mean_nhalos = mean_nhalos - mean_nhalos_lgmax
+
     nhalos = jran.poisson(counts_key, mean_nhalos)
     uran = jran.uniform(u_key, minval=0, maxval=1, shape=(nhalos,))
     lgmp_halopop = _mc_host_halos_singlez_kern(
