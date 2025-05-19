@@ -37,8 +37,11 @@ LSST_PHOTKEYS = ("lsst_u*", "lsst_g*", "lsst_r*", "lsst_i*", "lsst_z*", "lsst_y*
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
-_G = (0, None, None, 0, 0)
+_G = (0, None, None, 0, 0, None)
 mc_logmp_vmap = jjit(vmap(mc_hosts._mc_host_halos_singlez_kern, in_axes=_G))
+
+_LCA = (None, 0, None, None)
+_compute_nhalos_tot_vmap = jjit(vmap(mc_hosts._compute_nhalos_tot, in_axes=_LCA))
 
 _Z = (0, None, None, None, None)
 dist_com_grad_kern = jjit(
@@ -69,6 +72,50 @@ def _spherical_shell_comoving_volume(z_grid, cosmo_params):
     return vol_shell_grid
 
 
+@jjit
+def _calculate_lgmp_min_extension_for_nhalos(
+    n_halos,
+    lgmp_max,
+    z_min,
+    z_max,
+    sky_area_degsq,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    n_grid=2_000,
+    n_lgmp_min_grid=250,
+    lgmp_min_guess=5,
+):
+    # Set up a uniform grid in redshift
+    z_grid = jnp.linspace(z_min, z_max, n_grid)
+
+    # Compute the comoving volume of a thin shell at each grid point
+    fsky = sky_area_degsq / FULL_SKY_AREA
+    vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
+    vol_shell_grid_mpch = vol_shell_grid_mpc * (cosmo_params.h**3)
+
+    # At each grid point, compute <Nhalos> for the shell volume
+    mean_nhalos_lgmp_max_z_grid = mc_hosts._compute_nhalos_tot(
+        hmf_params, lgmp_max, z_grid, vol_shell_grid_mpch
+    )
+    _EPS = 0.0001
+    lgmp_min_guess_grid = jnp.linspace(lgmp_min_guess, lgmp_max - _EPS, n_lgmp_min_grid)
+    mean_nhalos_lgmp_min_guess_grid = _compute_nhalos_tot_vmap(
+        hmf_params, lgmp_min_guess_grid, z_grid, vol_shell_grid_mpch
+    )
+    mean_nhalos_lgmp_min_guess_grid = (
+        mean_nhalos_lgmp_min_guess_grid - mean_nhalos_lgmp_max_z_grid.reshape((1, -1))
+    )
+
+    nhalos_tot_lgmp_min_guess_grid = jnp.sum(mean_nhalos_lgmp_min_guess_grid, axis=1)
+
+    lognh_table = jnp.log10(nhalos_tot_lgmp_min_guess_grid)
+    lgmp_min_extension = jnp.interp(
+        jnp.log10(n_halos), lognh_table[::-1], lgmp_min_guess_grid[::-1]
+    )
+
+    return lgmp_min_extension
+
+
 def mc_lightcone_host_halo_mass_function(
     ran_key,
     lgmp_min,
@@ -77,7 +124,9 @@ def mc_lightcone_host_halo_mass_function(
     sky_area_degsq,
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    lgmp_max=mc_hosts.LGMH_MAX,
     n_grid=2_000,
+    nhalos_tot=None,
 ):
     """Generate a Monte Carlo realization of a lightcone of host halo mass and redshift
 
@@ -116,16 +165,22 @@ def mc_lightcone_host_halo_mass_function(
 
     # Compute the comoving volume of a thin shell at each grid point
     fsky = sky_area_degsq / FULL_SKY_AREA
-    vol_shell_grid = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
+    vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
+    vol_shell_grid_mpch = vol_shell_grid_mpc * (cosmo_params.h**3)
 
     # At each grid point, compute <Nhalos> for the shell volume
     mean_nhalos_grid = mc_hosts._compute_nhalos_tot(
-        hmf_params, lgmp_min, z_grid, vol_shell_grid
+        hmf_params, lgmp_min, z_grid, vol_shell_grid_mpch
     )
+    mean_nhalos_lgmp_max = mc_hosts._compute_nhalos_tot(
+        hmf_params, lgmp_max, z_grid, vol_shell_grid_mpch
+    )
+    mean_nhalos_grid = mean_nhalos_grid - mean_nhalos_lgmp_max
 
-    # At each grid point, compute a Poisson realization of <Nhalos>
-    nhalos_grid = jran.poisson(halo_counts_key, mean_nhalos_grid)
-    nhalos_tot = nhalos_grid.sum()
+    if nhalos_tot is None:
+        # At each grid point, compute a Poisson realization of <Nhalos>
+        nhalos_grid = jran.poisson(halo_counts_key, mean_nhalos_grid)
+        nhalos_tot = nhalos_grid.sum()
 
     # Compute the CDF of the volume
     weights_grid = mean_nhalos_grid / mean_nhalos_grid.sum()
@@ -139,11 +194,48 @@ def mc_lightcone_host_halo_mass_function(
     uran_m = jran.uniform(m_key, minval=0, maxval=1, shape=(nhalos_tot,))
 
     # Compute the effective volume of each halo according to its redshift
-    vol_galpop = jnp.interp(z_halopop, z_grid, vol_shell_grid)
+    vol_galpop_mpc = jnp.interp(z_halopop, z_grid, vol_shell_grid_mpc)
 
     # Draw a halo mass from the HMF at the particular redshift of each halo
-    logmp_halopop = mc_logmp_vmap(uran_m, hmf_params, lgmp_min, z_halopop, vol_galpop)
+    logmp_halopop = mc_logmp_vmap(
+        uran_m, hmf_params, lgmp_min, z_halopop, vol_galpop_mpc, lgmp_max
+    )
 
+    return z_halopop, logmp_halopop
+
+
+def mc_lightcone_extension(
+    ran_key,
+    nhalos_tot,
+    lgmp_max,
+    z_min,
+    z_max,
+    sky_area_degsq,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    lgmp_min_guess=5,
+):
+    lgmp_min = _calculate_lgmp_min_extension_for_nhalos(
+        nhalos_tot,
+        lgmp_max,
+        z_min,
+        z_max,
+        sky_area_degsq,
+        cosmo_params=cosmo_params,
+        hmf_params=hmf_params,
+        lgmp_min_guess=lgmp_min_guess,
+    )
+    z_halopop, logmp_halopop = mc_lightcone_host_halo_mass_function(
+        ran_key,
+        lgmp_min,
+        z_min,
+        z_max,
+        sky_area_degsq,
+        cosmo_params=cosmo_params,
+        hmf_params=hmf_params,
+        lgmp_max=lgmp_max,
+        nhalos_tot=nhalos_tot,
+    )
     return z_halopop, logmp_halopop
 
 
