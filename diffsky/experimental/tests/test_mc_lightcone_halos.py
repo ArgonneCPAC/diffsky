@@ -192,7 +192,7 @@ def test_mc_lightcone_diffstar_cens():
     z_min, z_max = 0.1, 0.5
     z_min = z_max - 0.05
     args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
-    cenpop = mclh.mc_lightcone_diffstar_cens(*args)
+    cenpop = mclh.mc_lightcone_diffstar_cens(*args, return_internal_quantities=True)
     assert np.all(np.isfinite(cenpop["logsm_obs"]))
     assert np.all(np.isfinite(cenpop["logssfr_obs"]))
     assert cenpop["logsm_obs"].min() > 4
@@ -216,8 +216,13 @@ def test_mc_lightcone_diffstar_stellar_ages_cens():
 
     z_min, z_max = 0.1, 0.5
     z_min = z_max - 0.05
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
-    cenpop = mclh.mc_lightcone_diffstar_stellar_ages_cens(*args)
+
+    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
+
+    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
+    cenpop = mclh.mc_lightcone_diffstar_stellar_ages_cens(
+        *args, return_internal_quantities=True
+    )
     assert np.all(np.isfinite(cenpop["logsm_obs"]))
     assert np.all(np.isfinite(cenpop["logssfr_obs"]))
     assert cenpop["logsm_obs"].min() > 4
@@ -233,8 +238,13 @@ def test_mc_lightcone_diffstar_ssp_weights_cens():
 
     z_min, z_max = 0.1, 0.5
     z_min = z_max - 0.05
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
-    cenpop = mclh.mc_lightcone_diffstar_ssp_weights_cens(*args)
+
+    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
+
+    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
+    cenpop = mclh.mc_lightcone_diffstar_ssp_weights_cens(
+        *args, return_internal_quantities=True
+    )
     assert np.all(np.isfinite(cenpop["logsm_obs"]))
     assert np.all(np.isfinite(cenpop["logssfr_obs"]))
     assert cenpop["logsm_obs"].min() > 4
@@ -262,16 +272,39 @@ def test_mc_lightcone_obs_mags_cens():
     wave, u, g, r, i, z, y = _res
 
     tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+    n_bands = len(tcurves)
 
-    z_phot_table = np.linspace(z_min, z_max, 5)
+    n_z_phot_table = 15
+    z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
     precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
         tcurves, ssp_data, z_phot_table
     )
 
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
-    cenpop = mclh.mc_lightcone_obs_mags_cens(
-        *args,
-        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
-        z_phot_table=z_phot_table,
+    args = (
+        ran_key,
+        lgmp_min,
+        z_min,
+        z_max,
+        sky_area_degsq,
+        ssp_data,
+        tcurves,
+        precomputed_ssp_mag_table,
+        z_phot_table,
     )
+    cenpop = mclh.mc_lightcone_obs_mags_cens(*args, return_internal_quantities=True)
+    n_gals = cenpop["logsm_obs"].size
+
     assert np.all(np.isfinite(cenpop["obs_mags"]))
+    assert cenpop["wave_eff"].shape == (n_gals, n_bands)
+    assert np.all(np.isfinite(cenpop["wave_eff"]))
+    assert np.all(cenpop["wave_eff"] > 100)
+    assert np.all(cenpop["wave_eff"] < 1e5)
+
+    assert cenpop["obs_mags_nodust_noerr"].shape == (n_gals, n_bands)
+    assert cenpop["obs_mags"].shape == (n_gals, n_bands)
+    assert np.all(cenpop["obs_mags_noerr"] >= cenpop["obs_mags_nodust_noerr"])
+
+    assert np.all(cenpop["ftrans"] >= 0)
+    assert np.all(cenpop["ftrans"] <= 1)
+    assert np.any(cenpop["ftrans"] > 0)
+    assert np.any(cenpop["ftrans"] < 1)

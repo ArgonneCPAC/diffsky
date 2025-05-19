@@ -116,3 +116,4 @@ def test_delta_mag_from_lambda_rest():
     )
 
     assert np.all(~np.isnan(delta_mag))
+    assert delta_mag.shape == (n_gals,)

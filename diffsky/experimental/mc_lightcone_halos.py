@@ -5,12 +5,11 @@ from diffmah.diffmah_kernels import _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
 from diffstar.utils import cumulative_mstar_formed_galpop
-from diffstarpop import mc_diffstarpop_cen_tpeak as mcdct
+from diffstarpop import mc_diffstar_sfh_galpop
 from diffstarpop import param_utils as dpu
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
-from dsps.data_loaders import load_transmission_curve
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
@@ -20,11 +19,18 @@ from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
+from ..burstpop import diffqburstpop_mono
+from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..mass_functions import mc_hosts
+from ..phot_utils import get_wave_eff_from_tcurves
+from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psp
 
 config.update("jax_enable_x64", True)
+
+N_HMF_GRID = 2_000
+N_SFH_TABLE = 100
 
 _AGEPOP = (None, 0, None, 0)
 calc_age_weights_from_sfh_table_vmap = jjit(
@@ -36,6 +42,11 @@ FULL_SKY_AREA = (4 * jnp.pi) * (180 / jnp.pi) ** 2
 LSST_PHOTKEYS = ("lsst_u*", "lsst_g*", "lsst_r*", "lsst_i*", "lsst_z*", "lsst_y*")
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
+
+_A = (None, None, 0)
+_B = (None, None, 1)
+interp_vmap2 = jjit(vmap(jnp.interp, in_axes=_B, out_axes=1))
+
 
 _G = (0, None, None, 0, 0, None)
 mc_logmp_vmap = jjit(vmap(mc_hosts._mc_host_halos_singlez_kern, in_axes=_G))
@@ -52,6 +63,14 @@ dist_com_grad_kern = jjit(
 _M = (0, None, None)
 _calc_lgmet_weights_galpop = jjit(
     vmap(zmetw.calc_lgmet_weights_from_lognormal_mdf, in_axes=_M)
+)
+
+# diffburstpop_params, logsm, logssfr, ssp_lg_age_gyr, smooth_age_weights
+_B = (None, 0, 0, None, 0)
+_calc_bursty_age_weights_vmap = jjit(
+    vmap(
+        diffqburstpop_mono.calc_bursty_age_weights_from_diffburstpop_params, in_axes=_B
+    )
 )
 
 
@@ -124,8 +143,8 @@ def mc_lightcone_host_halo_mass_function(
     sky_area_degsq,
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    n_hmf_grid=N_HMF_GRID,
     lgmp_max=mc_hosts.LGMH_MAX,
-    n_grid=2_000,
     nhalos_tot=None,
 ):
     """Generate a Monte Carlo realization of a lightcone of host halo mass and redshift
@@ -161,7 +180,7 @@ def mc_lightcone_host_halo_mass_function(
     halo_counts_key, m_key, z_key = jran.split(ran_key, 3)
 
     # Set up a uniform grid in redshift
-    z_grid = jnp.linspace(z_min, z_max, n_grid)
+    z_grid = jnp.linspace(z_min, z_max, n_hmf_grid)
 
     # Compute the comoving volume of a thin shell at each grid point
     fsky = sky_area_degsq / FULL_SKY_AREA
@@ -248,7 +267,7 @@ def mc_lightcone_host_halo_diffmah(
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
-    n_grid=2_000,
+    n_hmf_grid=N_HMF_GRID,
 ):
     """Generate halo MAHs for host halos sampled from a lightcone
 
@@ -295,7 +314,7 @@ def mc_lightcone_host_halo_diffmah(
         sky_area_degsq,
         cosmo_params=cosmo_params,
         hmf_params=hmf_params,
-        n_grid=n_grid,
+        n_hmf_grid=n_hmf_grid,
     )
     t_obs_halopop = flat_wcdm.age_at_z(z_halopop, *cosmo_params)
     t_0 = flat_wcdm.age_at_z0(*cosmo_params)
@@ -333,8 +352,9 @@ def mc_lightcone_diffstar_cens(
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
-    n_grid=2_000,
-    n_t_table=100,
+    n_hmf_grid=N_HMF_GRID,
+    n_sfh_table=N_SFH_TABLE,
+    return_internal_quantities=False,
 ):
     """
     Generate halo MAH and galaxy SFH for host halos sampled from a lightcone
@@ -398,22 +418,31 @@ def mc_lightcone_diffstar_cens(
         cosmo_params=cosmo_params,
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
-        n_grid=n_grid,
+        n_hmf_grid=n_hmf_grid,
     )
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
 
-    t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, n_sfh_table)
+
+    upids = jnp.zeros_like(cenpop["logmp0"]).astype(int) - 1
+    lgmu_infall = jnp.zeros_like(cenpop["logmp0"])
+    logmhost_infall = jnp.zeros_like(cenpop["logmp0"]) + cenpop["logmp0"]
+    gyr_since_infall = jnp.zeros_like(cenpop["logmp0"])
     args = (
         diffstarpop_params,
         cenpop["mah_params"],
         cenpop["logmp0"],
+        upids,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
         ran_key,
         t_table,
     )
 
     ddp_fields = "sfh_params_ms", "sfh_params_q", "sfh_ms", "sfh_q", "frac_q", "mc_is_q"
-    ddp_values = mcdct.mc_diffstar_sfh_galpop_cen(*args)
+    ddp_values = mc_diffstar_sfh_galpop(*args)
     diffstarpop_data = dict()
     for key, value in zip(ddp_fields, ddp_values):
         diffstarpop_data[key] = value
@@ -434,6 +463,25 @@ def mc_lightcone_diffstar_cens(
     logsfr_obs = interp_vmap(cenpop["t_obs"], t_table, np.log10(sfh_table))
     logssfr_obs = logsfr_obs - logsm_obs
 
+    if return_internal_quantities:
+        logsmh_table_q = np.log10(
+            cumulative_mstar_formed_galpop(t_table, diffstarpop_data["sfh_q"])
+        )
+        logsm_obs_q = interp_vmap(cenpop["t_obs"], t_table, logsmh_table_q)
+        logsfr_obs_q = interp_vmap(
+            cenpop["t_obs"], t_table, np.log10(diffstarpop_data["sfh_q"])
+        )
+        logssfr_obs_q = logsfr_obs_q - logsm_obs_q
+
+        logsmh_table_ms = np.log10(
+            cumulative_mstar_formed_galpop(t_table, diffstarpop_data["sfh_ms"])
+        )
+        logsm_obs_ms = interp_vmap(cenpop["t_obs"], t_table, logsmh_table_ms)
+        logsfr_obs_ms = interp_vmap(
+            cenpop["t_obs"], t_table, np.log10(diffstarpop_data["sfh_ms"])
+        )
+        logssfr_obs_ms = logsfr_obs_ms - logsm_obs_ms
+
     fields = (
         *cenpop.keys(),
         "logsm_obs",
@@ -452,6 +500,31 @@ def mc_lightcone_diffstar_cens(
         t_table,
         diffstarpop_data,
     )
+
+    if return_internal_quantities:
+        fields = (
+            *fields,
+            "logsm_obs_ms",
+            "logssfr_obs_ms",
+            "sfh_params_ms",
+            "sfh_table_ms",
+            "logsm_obs_q",
+            "logssfr_obs_q",
+            "sfh_params_q",
+            "sfh_table_q",
+        )
+        values = (
+            *values,
+            logsm_obs_ms,
+            logssfr_obs_ms,
+            diffstarpop_data["sfh_params_ms"],
+            diffstarpop_data["sfh_ms"],
+            logsm_obs_q,
+            logssfr_obs_q,
+            diffstarpop_data["sfh_params_q"],
+            diffstarpop_data["sfh_q"],
+        )
+
     cenpop_out = dict()
     for key, value in zip(fields, values):
         cenpop_out[key] = value
@@ -465,13 +538,14 @@ def mc_lightcone_diffstar_stellar_ages_cens(
     z_min,
     z_max,
     sky_area_degsq,
+    ssp_data,
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
-    ssp_lg_age_gyr=np.linspace(5.0, 10.25, 90) - 9.0,
-    n_grid=2_000,
-    n_t_table=100,
+    n_hmf_grid=N_HMF_GRID,
+    n_sfh_table=N_SFH_TABLE,
+    return_internal_quantities=False,
 ):
     """
     Generate halo MAH and galaxy SFH and stellar age weights
@@ -543,14 +617,33 @@ def mc_lightcone_diffstar_stellar_ages_cens(
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
         diffstarpop_params=diffstarpop_params,
-        n_grid=n_grid,
-        n_t_table=n_t_table,
+        n_hmf_grid=n_hmf_grid,
+        n_sfh_table=n_sfh_table,
+        return_internal_quantities=return_internal_quantities,
     )
     age_weights_galpop = calc_age_weights_from_sfh_table_vmap(
-        cenpop["t_table"], cenpop["sfh_table"], ssp_lg_age_gyr, cenpop["t_obs"]
+        cenpop["t_table"], cenpop["sfh_table"], ssp_data.ssp_lg_age_gyr, cenpop["t_obs"]
     )
     fields = (*cenpop.keys(), "age_weights", "ssp_lg_age_gyr")
-    values = (*cenpop.values(), age_weights_galpop, ssp_lg_age_gyr)
+    values = (*cenpop.values(), age_weights_galpop, ssp_data.ssp_lg_age_gyr)
+
+    if return_internal_quantities:
+        age_weights_galpop_ms = calc_age_weights_from_sfh_table_vmap(
+            cenpop["t_table"],
+            cenpop["sfh_table_ms"],
+            ssp_data.ssp_lg_age_gyr,
+            cenpop["t_obs"],
+        )
+        age_weights_galpop_q = calc_age_weights_from_sfh_table_vmap(
+            cenpop["t_table"],
+            cenpop["sfh_table_q"],
+            ssp_data.ssp_lg_age_gyr,
+            cenpop["t_obs"],
+        )
+
+        fields = (*fields, "age_weights_ms", "age_weights_q")
+        values = (*values, age_weights_galpop_ms, age_weights_galpop_q)
+
     cenpop_out = dict()
     for key, value in zip(fields, values):
         cenpop_out[key] = value
@@ -564,16 +657,17 @@ def mc_lightcone_diffstar_ssp_weights_cens(
     z_min,
     z_max,
     sky_area_degsq,
+    ssp_data,
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
-    ssp_lg_age_gyr=np.linspace(5.0, 10.25, 90) - 9.0,
-    ssp_lgmet=np.linspace(-4, -1.3, 11),
-    n_grid=2_000,
-    n_t_table=100,
+    diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
+    n_hmf_grid=N_HMF_GRID,
+    n_sfh_table=N_SFH_TABLE,
+    return_internal_quantities=False,
 ):
     cenpop = mc_lightcone_diffstar_stellar_ages_cens(
         ran_key,
@@ -581,24 +675,81 @@ def mc_lightcone_diffstar_ssp_weights_cens(
         z_min,
         z_max,
         sky_area_degsq,
+        ssp_data,
         cosmo_params=cosmo_params,
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
         diffstarpop_params=diffstarpop_params,
-        n_grid=n_grid,
-        n_t_table=n_t_table,
-        ssp_lg_age_gyr=ssp_lg_age_gyr,
+        n_hmf_grid=n_hmf_grid,
+        n_sfh_table=n_sfh_table,
+        return_internal_quantities=return_internal_quantities,
     )
+    cenpop["smooth_age_weights"] = cenpop["age_weights"].copy()
+    if return_internal_quantities:
+        cenpop["smooth_age_weights_ms"] = cenpop["age_weights_ms"].copy()
+        cenpop["smooth_age_weights_q"] = cenpop["age_weights_q"].copy()
+
+    # Compute age weights with burstiness
+    _args = (
+        diffburstpop_params,
+        cenpop["logsm_obs"],
+        cenpop["logssfr_obs"],
+        ssp_data.ssp_lg_age_gyr,
+        cenpop["age_weights"],
+    )
+    bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
+    cenpop["age_weights"] = bursty_age_weights
+    for param, pname in zip(burst_params, burst_params._fields):
+        cenpop[pname] = param
+
+    if return_internal_quantities:
+        _args = (
+            diffburstpop_params,
+            cenpop["logsm_obs_ms"],
+            cenpop["logssfr_obs_ms"],
+            ssp_data.ssp_lg_age_gyr,
+            cenpop["age_weights_ms"],
+        )
+        bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
+        cenpop["age_weights_ms"] = bursty_age_weights
+
+        _args = (
+            diffburstpop_params,
+            cenpop["logsm_obs_q"],
+            cenpop["logssfr_obs_q"],
+            ssp_data.ssp_lg_age_gyr,
+            cenpop["age_weights_q"],
+        )
+        bursty_age_weights, burst_params = _calc_bursty_age_weights_vmap(*_args)
+        cenpop["age_weights_q"] = bursty_age_weights
 
     lgmet_med = umzr.mzr_model(cenpop["logsm_obs"], cenpop["t_obs"], *mzr_params)
+
     cenpop["lgmet_weights"] = _calc_lgmet_weights_galpop(
-        lgmet_med, lgmet_scatter, ssp_lgmet
+        lgmet_med, lgmet_scatter, ssp_data.ssp_lgmet
     )
     n_gals, n_met = cenpop["lgmet_weights"].shape
-    n_age = len(ssp_lg_age_gyr)
+    n_age = len(ssp_data.ssp_lg_age_gyr)
     _w_lgmet = cenpop["lgmet_weights"].reshape((n_gals, n_met, 1))
+
     _w_age = cenpop["age_weights"].reshape((n_gals, 1, n_age))
     cenpop["ssp_weights"] = _w_lgmet * _w_age
+
+    _w_age = cenpop["smooth_age_weights"].reshape((n_gals, 1, n_age))
+    cenpop["smooth_ssp_weights"] = _w_lgmet * _w_age
+
+    if return_internal_quantities:
+        _w_age_ms = cenpop["age_weights_ms"].reshape((n_gals, 1, n_age))
+        _w_age_q = cenpop["age_weights_q"].reshape((n_gals, 1, n_age))
+
+        cenpop["ssp_weights_ms"] = _w_lgmet * _w_age_ms
+        cenpop["ssp_weights_q"] = _w_lgmet * _w_age_q
+
+        _w_age_smooth_ms = cenpop["smooth_age_weights_ms"].reshape((n_gals, 1, n_age))
+        _w_age_smooth_q = cenpop["smooth_age_weights_q"].reshape((n_gals, 1, n_age))
+        cenpop["smooth_ssp_weights_ms"] = _w_lgmet * _w_age_smooth_ms
+        cenpop["smooth_ssp_weights_q"] = _w_lgmet * _w_age_smooth_q
+
     return cenpop
 
 
@@ -635,6 +786,7 @@ def mc_lightcone_obs_mags_cens(
     z_max,
     sky_area_degsq,
     ssp_data,
+    tcurves,
     precomputed_ssp_mag_table,
     z_phot_table,
     cosmo_params=flat_wcdm.PLANCK15,
@@ -643,9 +795,13 @@ def mc_lightcone_obs_mags_cens(
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
-    n_grid=2_000,
-    n_t_table=100,
-    phot_keys=LSST_PHOTKEYS,
+    diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
+    dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
+    dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    ssp_err_pop_params=ssp_err_model.DEFAULT_SSPERR_PARAMS,
+    n_hmf_grid=N_HMF_GRID,
+    n_sfh_table=N_SFH_TABLE,
+    return_internal_quantities=False,
 ):
     """
     Generate photometry for host halos sampled from a lightcone
@@ -716,45 +872,143 @@ def mc_lightcone_obs_mags_cens(
             Apparent magnitude of each galaxy in each band
 
     """
+    ran_key, cenpop_key = jran.split(ran_key, 2)
     cenpop = mc_lightcone_diffstar_ssp_weights_cens(
-        ran_key,
+        cenpop_key,
         lgmp_min,
         z_min,
         z_max,
         sky_area_degsq,
+        ssp_data,
         cosmo_params=cosmo_params,
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
         diffstarpop_params=diffstarpop_params,
         mzr_params=mzr_params,
         lgmet_scatter=lgmet_scatter,
-        n_grid=n_grid,
-        n_t_table=n_t_table,
-        ssp_lgmet=ssp_data.ssp_lgmet,
-        ssp_lg_age_gyr=ssp_data.ssp_lg_age_gyr,
+        diffburstpop_params=diffburstpop_params,
+        n_hmf_grid=n_hmf_grid,
+        n_sfh_table=n_sfh_table,
+        return_internal_quantities=return_internal_quantities,
     )
-    if precomputed_ssp_mag_table is None:
-        tcurves = [load_transmission_curve(bn_pat=key) for key in phot_keys]
-
-        collector = []
-        for z_obs in z_phot_table:
-            ssp_obsflux_table = psp.get_ssp_obsflux_table(
-                ssp_data, tcurves, z_obs, flat_wcdm.PLANCK15
-            )
-            collector.append(ssp_obsflux_table)
-        precomputed_ssp_mag_table = -2.5 * np.log10(np.array(collector))
 
     photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
         cenpop["z_obs"], z_phot_table, precomputed_ssp_mag_table
     )
     cenpop["precomputed_ssp_mag_table"] = precomputed_ssp_mag_table
-    cenpop["photflux_table"] = 10 ** (-0.4 * photmag_table_galpop)
+    cenpop["ssp_photflux_table"] = 10 ** (-0.4 * photmag_table_galpop)
     cenpop["z_phot_table"] = z_phot_table
 
-    n_gals, n_bands, n_met, n_age = cenpop["photflux_table"].shape
+    collector = []
+    for z_obs in z_phot_table:
+        wave_eff = get_wave_eff_from_tcurves(tcurves, z_obs)
+        collector.append(wave_eff)
+    wave_eff_table = np.array(collector)
+
+    cenpop["wave_eff"] = interp_vmap2(cenpop["z_obs"], z_phot_table, wave_eff_table)
+
+    # Delta mags
+    frac_ssp_err = get_frac_ssp_err_vmap(
+        ssp_err_pop_params,
+        cenpop["z_obs"],
+        cenpop["logsm_obs"],
+        cenpop["wave_eff"],
+        ssp_err_model.LAMBDA_REST,
+    )
+    cenpop["frac_ssp_err"] = frac_ssp_err
+
+    n_gals = cenpop["z_obs"].size
+    ran_key, dust_key = jran.split(ran_key, 2)
+    av_key, delta_key, funo_key = jran.split(dust_key, 3)
+    uran_av = jran.uniform(av_key, shape=(n_gals,))
+    uran_delta = jran.uniform(delta_key, shape=(n_gals,))
+    uran_funo = jran.uniform(funo_key, shape=(n_gals,))
+
+    ftrans_args = (
+        dustpop_params,
+        cenpop["wave_eff"],
+        cenpop["logsm_obs"],
+        cenpop["logssfr_obs"],
+        cenpop["z_obs"],
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        dustpop_scatter_params,
+    )
+    _res = calc_dust_ftrans_vmap(*ftrans_args)
+    ftrans_nonoise, ftrans, dust_params, noisy_dust_params = _res
+
+    for param, pname in zip(dust_params, dust_params._fields):
+        cenpop[pname + "_nonoise"] = param
+    for param, pname in zip(noisy_dust_params, noisy_dust_params._fields):
+        cenpop[pname] = param
+
+    cenpop["ftrans_nonoise"] = ftrans_nonoise
+    cenpop["ftrans"] = ftrans
+
+    n_gals, n_bands, n_met, n_age = cenpop["ssp_photflux_table"].shape
     w = cenpop["ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     sm = 10 ** cenpop["logmp_obs"].reshape((n_gals, 1))
-    photflux_galpop = jnp.sum(w * cenpop["photflux_table"], axis=(2, 3)) * sm
+
+    integrand = w * cenpop["ssp_photflux_table"]
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+    cenpop["obs_mags_nodust_noerr"] = -2.5 * np.log10(photflux_galpop)
+
+    _ferr_ssp = cenpop["frac_ssp_err"].reshape((n_gals, n_bands, 1, 1))
+    integrand = w * cenpop["ssp_photflux_table"] * _ferr_ssp
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+    cenpop["obs_mags_nodust"] = -2.5 * np.log10(photflux_galpop)
+
+    _ftrans = ftrans.reshape((n_gals, n_bands, 1, n_age))
+    integrand = w * cenpop["ssp_photflux_table"] * _ftrans
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+    cenpop["obs_mags_noerr"] = -2.5 * np.log10(photflux_galpop)
+
+    integrand = w * cenpop["ssp_photflux_table"] * _ftrans * _ferr_ssp
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
     cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
 
+    w_noburst = cenpop["smooth_ssp_weights"].reshape((n_gals, 1, n_met, n_age))
+    integrand = w_noburst * cenpop["ssp_photflux_table"]
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+    cenpop["obs_mags_nodust_noerr_noburst"] = -2.5 * np.log10(photflux_galpop)
+
+    integrand = w_noburst * cenpop["ssp_photflux_table"] * _ftrans
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+    cenpop["obs_mags_noerr_noburst"] = -2.5 * np.log10(photflux_galpop)
+
+    integrand = w_noburst * cenpop["ssp_photflux_table"] * _ftrans * _ferr_ssp
+    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+    cenpop["obs_mags_noburst"] = -2.5 * np.log10(photflux_galpop)
+
+    if return_internal_quantities:
+        w_ms = cenpop["ssp_weights_ms"].reshape((n_gals, 1, n_met, n_age))
+        integrand = w_ms * cenpop["ssp_photflux_table"]
+        photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+        cenpop["obs_mags_nodust_noerr_ms"] = -2.5 * np.log10(photflux_galpop)
+
+        w_q = cenpop["ssp_weights_q"].reshape((n_gals, 1, n_met, n_age))
+        integrand = w_q * cenpop["ssp_photflux_table"]
+        photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
+        cenpop["obs_mags_nodust_noerr_q"] = -2.5 * np.log10(photflux_galpop)
+
     return cenpop
+
+
+_D = (None, 0, None, None, None, None, None, None, None, None)
+vmap_kern1 = jjit(
+    vmap(
+        tw_dustpop_mono_noise.calc_ftrans_singlegal_singlewave_from_dustpop_params,
+        in_axes=_D,
+    )
+)
+_E = (None, 0, 0, 0, 0, None, 0, 0, 0, None)
+calc_dust_ftrans_vmap = jjit(vmap(vmap_kern1, in_axes=_E))
+
+
+_F = (None, None, None, 0, None)
+_G = (None, 0, 0, 0, None)
+get_frac_ssp_err_vmap = jjit(
+    vmap(vmap(ssp_err_model.F_sps_err_lambda, in_axes=_F), in_axes=_G)
+)

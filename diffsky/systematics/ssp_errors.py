@@ -7,9 +7,9 @@ that can be applied to any SSP flux table:
 
 Under the hood, the ssp_flux_factor is parameterized by a sigmoid in log-log space:
 
-    * ssp_lgff_x0 sets log10(wave) of the sigmoid inflection point
-    * ssp_lgff_ylo sets log10(flux_factor) at small wavelengths
-    * ssp_lgff_yhi sets log10(flux_factor) at large wavelengths
+    * ssp_ff_x0 sets log10(wave) of the sigmoid inflection point
+    * ssp_ff_ylo sets log10(flux_factor) at small wavelengths
+    * ssp_ff_yhi sets log10(flux_factor) at large wavelengths
 
 """
 
@@ -21,19 +21,20 @@ from jax import vmap
 
 from ..utils import _inverse_sigmoid, _sigmoid
 
-DEFAULT_SSPERR_PDICT = OrderedDict(ssp_lgff_x0=3.78, ssp_lgff_ylo=0.0, ssp_lgff_yhi=0.0)
+DEFAULT_SSPERR_PDICT = OrderedDict(ssp_ff_x0=3.5, ssp_ff_ylo=0.0, ssp_ff_yhi=0.0)
 SSPerrParams = namedtuple("SSPerrParams", DEFAULT_SSPERR_PDICT.keys())
 DEFAULT_SSPERR_PARAMS = SSPerrParams(**DEFAULT_SSPERR_PDICT)
 U_PNAMES = ["u_" + key for key in DEFAULT_SSPERR_PARAMS._fields]
 SSPerrUParams = namedtuple("SSPerrUParams", U_PNAMES)
 
+SSPERR_FF_BOUNDS = (-0.75, 0.75)
 SSPERR_BOUNDS_DICT = OrderedDict(
-    ssp_lgff_x0=(3.4, 3.9), ssp_lgff_ylo=(-0.25, 0.25), ssp_lgff_yhi=(-0.25, 0.25)
+    ssp_ff_x0=(3.1, 4.1), ssp_ff_ylo=SSPERR_FF_BOUNDS, ssp_ff_yhi=SSPERR_FF_BOUNDS
 )
 SSPERR_PBOUNDS = SSPerrParams(**SSPERR_BOUNDS_DICT)
 
 BOUNDING_K = 0.1
-LGAA_K = 10.0
+LGAA_K = 15.0
 
 
 @jjit
@@ -54,22 +55,16 @@ def ssp_flux_factor(params, wave):
         new_ssp_flux = flux_factor*orig_ssp_flux
 
     """
-    flux_factor = 10 ** _ssp_lg_flux_factor_kern(params, jnp.log10(wave))
+    flux_factor = 1.0 + _ssp_flux_factor_kern(params, jnp.log10(wave))
     return flux_factor
 
 
 @jjit
-def _ssp_lg_flux_factor_kern(params, lgwave):
-    lg_flux_factor = _sigmoid(
-        lgwave, params.ssp_lgff_x0, LGAA_K, params.ssp_lgff_ylo, params.ssp_lgff_yhi
+def _ssp_flux_factor_kern(params, lgwave):
+    flux_factor = _sigmoid(
+        lgwave, params.ssp_ff_x0, LGAA_K, params.ssp_ff_ylo, params.ssp_ff_yhi
     )
-    return lg_flux_factor
-
-
-@jjit
-def _ssp_delta_mag_kern(params, lgwave):
-    delta_mag = -2.5 * _ssp_lg_flux_factor_kern(params, lgwave)
-    return delta_mag
+    return flux_factor
 
 
 @jjit
