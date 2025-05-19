@@ -10,6 +10,69 @@ from ...mass_functions import mc_hosts
 from .. import mc_lightcone_halos as mclh
 
 
+def test_mc_lightcone_extension():
+    ran_key = jran.key(0)
+    z_min, z_max = 0.45, 0.5
+    sky_area_degsq = 10.0
+
+    n_halos_tot = int(1e5)
+    lgmp_max = 12.0
+    args = (
+        ran_key,
+        n_halos_tot,
+        lgmp_max,
+        z_min,
+        z_max,
+        sky_area_degsq,
+    )
+    z_obs, lgm_obs = mclh.mc_lightcone_extension(*args)
+    assert lgm_obs.size == n_halos_tot
+
+    n_halos_tot2 = int(1e4)
+    args2 = (
+        ran_key,
+        n_halos_tot2,
+        lgmp_max,
+        z_min,
+        z_max,
+        sky_area_degsq,
+    )
+    z_obs2, lgm_obs2 = mclh.mc_lightcone_extension(*args2)
+    assert lgm_obs2.size == n_halos_tot2
+
+    assert lgm_obs.min() < lgm_obs2.min()
+
+
+def test_calculate_lgmp_min_extension_for_nhalos():
+    ran_key = jran.key(0)
+    z_min, z_max = 0.45, 0.5
+    sky_area_degsq = 10.0
+
+    n_tests = 10
+    for __ in range(n_tests):
+        ran_key, lc1_key, lc2_key, lgmp_min_key = jran.split(ran_key, 4)
+
+        lgmp_min_test = jran.uniform(lgmp_min_key, minval=11, maxval=12.5, shape=())
+        args = (lc1_key, lgmp_min_test, z_min, z_max, sky_area_degsq)
+        redshifts_galpop, logmp_halopop = mclh.mc_lightcone_host_halo_mass_function(
+            *args
+        )
+
+        n_halos_extra = logmp_halopop.size  # double the size of the halopop
+        lgmp_max = lgmp_min_test
+        args = (n_halos_extra, lgmp_max, z_min, z_max, sky_area_degsq)
+        lgmp_min_extension = mclh._calculate_lgmp_min_extension_for_nhalos(*args)
+
+        args = (lc2_key, lgmp_min_extension, z_min, z_max, sky_area_degsq)
+        redshifts_galpop2, logmp_halopop2 = mclh.mc_lightcone_host_halo_mass_function(
+            *args, lgmp_max=lgmp_min_test
+        )
+        sigma = np.sqrt(n_halos_extra)  # σ = std of a Poisson distribution
+        delta_n = logmp_halopop2.size - n_halos_extra
+        delta_n_z_score = delta_n / sigma
+        assert np.abs(delta_n_z_score) < 3  # MC counts within 3σ
+
+
 def test_mc_lightcone_host_halo_mass_function():
     """Enforce mc_lightcone_host_halo_mass_function produces consistent halo mass functions as
     the diffsky.mass_functions.mc_hosts function evaluated at the median redshift
@@ -48,10 +111,11 @@ def test_mc_lightcone_host_halo_mass_function():
             * flat_wcdm.comoving_distance_to_z(z_max, *cosmo_params) ** 3
         )
         fsky = sky_area_degsq / mclh.FULL_SKY_AREA
-        vol_com = fsky * (vol_hi - vol_lo)
+        vol_com_mpc = fsky * (vol_hi - vol_lo)
+        vol_com_mpch = vol_com_mpc * (cosmo_params.h**3)
 
         lgmp_halopop_zmed = mc_hosts.mc_host_halos_singlez(
-            ran_key, lgmp_min, z_med, vol_com
+            ran_key, lgmp_min, z_med, vol_com_mpch
         )
 
         n_lightcone, n_snapshot = redshifts_galpop.size, lgmp_halopop_zmed.size
@@ -65,6 +129,32 @@ def test_mc_lightcone_host_halo_mass_function():
             lgmp_hist_lc[msk_counts] - lgmp_hist_zmed[msk_counts]
         ) / lgmp_hist_zmed[msk_counts]
         assert np.all(np.abs(fracdiff) < 0.1)
+
+
+def test_mc_lightcone_host_halo_mass_function_lgmp_max_feature():
+    """Using lgmp_max gives the same halo counts as when not using it and masking"""
+    ran_key = jran.key(0)
+    lgmp_min = 12.0
+    z_min, z_max = 0.45, 0.5
+    sky_area_degsq = 200.0
+
+    lgmp_max_test = 13.0
+
+    n_tests = 10
+    for __ in range(n_tests):
+        ran_key, test_key = jran.split(ran_key, 2)
+        args = (test_key, lgmp_min, z_min, z_max, sky_area_degsq)
+
+        z_halopop, logmp_halopop = mclh.mc_lightcone_host_halo_mass_function(*args)
+        z_halopop2, logmp_halopop2 = mclh.mc_lightcone_host_halo_mass_function(
+            *args, lgmp_max=lgmp_max_test
+        )
+        assert z_halopop.size > z_halopop2.size
+        assert z_halopop2.size == logmp_halopop2.size
+
+        n1 = np.sum(logmp_halopop < lgmp_max_test)
+        n2 = logmp_halopop2.size
+        assert np.allclose(n1, n2, rtol=0.02)
 
 
 def test_mc_lightcone_host_halo_diffmah():
