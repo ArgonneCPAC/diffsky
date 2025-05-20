@@ -79,6 +79,8 @@ _LCPHOT_RET_KEYS = (
 LCPhot = namedtuple("LCPhot", _LCPHOT_RET_KEYS)
 LCPHOT_EMPTY = LCPhot._make([None] * len(LCPhot._fields))
 
+LGMET_SCATTER = 0.2
+
 
 def get_wave_eff_table(z_phot_table, tcurves):
     collector = []
@@ -151,7 +153,6 @@ def multiband_lc_phot_kern(
     wave_eff_table,
     diffstarpop_params,
     mzr_params,
-    lgmet_scatter,
     diffburstpop_params,
     dustpop_params,
     dustpop_scatter_params,
@@ -191,10 +192,10 @@ def multiband_lc_phot_kern(
     lgmet_med_q = umzr.mzr_model(diffstar_galpop.logsm_obs_q, t_obs, *mzr_params)
 
     lgmet_weights_ms = _calc_lgmet_weights_galpop(
-        lgmet_med_ms, lgmet_scatter, ssp_data.ssp_lgmet
+        lgmet_med_ms, LGMET_SCATTER, ssp_data.ssp_lgmet
     )
     lgmet_weights_q = _calc_lgmet_weights_galpop(
-        lgmet_med_q, lgmet_scatter, ssp_data.ssp_lgmet
+        lgmet_med_q, LGMET_SCATTER, ssp_data.ssp_lgmet
     )
 
     _w_age_q = smooth_age_weights_q.reshape((n_gals, 1, n_age))
