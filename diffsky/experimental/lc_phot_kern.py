@@ -1,5 +1,9 @@
 """ """
 
+from collections import namedtuple
+
+from diffstar.utils import cumulative_mstar_formed_galpop
+from diffstarpop import mc_diffstar_sfh_galpop
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -9,6 +13,7 @@ from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
 
+interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 _B = (None, None, 1)
 interp_vmap2 = jjit(vmap(jnp.interp, in_axes=_B, out_axes=1))
 
@@ -28,25 +33,78 @@ vmap_kern1 = jjit(
 _E = (None, 0, 0, 0, 0, None, 0, 0, 0, None)
 calc_dust_ftrans_vmap = jjit(vmap(vmap_kern1, in_axes=_E))
 
+_DPKEYS = (
+    "frac_q",
+    "sfh_ms",
+    "logsm_obs_ms",
+    "logssfr_obs_ms",
+    "sfh_q",
+    "logsm_obs_q",
+    "logssfr_obs_q",
+)
+DiffstarPopQuantities = namedtuple("DiffstarPopQuantities", _DPKEYS)
+DPQ_EMPTY = DiffstarPopQuantities._make([None] * len(_DPKEYS))
+
+
+@jjit
+def diffstarpop_lc_cen_wrapper(
+    diffstarpop_params, ran_key, mah_params, logmp0, t_table, t_obs
+):
+    n_gals = logmp0.size
+    upids = jnp.zeros(n_gals).astype(int) - 1
+    lgmu_infall = jnp.zeros(n_gals) - 1.0
+    logmhost_infall = jnp.copy(logmp0)
+    lgmu_infall = jnp.zeros(n_gals) - 1.0
+    gyr_since_infall = jnp.zeros(n_gals)
+
+    args = (
+        diffstarpop_params,
+        mah_params,
+        logmp0,
+        upids,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        ran_key,
+        t_table,
+    )
+    dgp = mc_diffstar_sfh_galpop(*args)
+
+    logsmh_table_ms = jnp.log10(cumulative_mstar_formed_galpop(t_table, dgp.sfh_ms))
+    logsm_obs_ms = interp_vmap(t_obs, t_table, logsmh_table_ms)
+    logsfr_obs_ms = interp_vmap(t_obs, t_table, jnp.log10(dgp.sfh_ms))
+    logssfr_obs_ms = logsfr_obs_ms - logsm_obs_ms
+
+    logsmh_table_q = jnp.log10(cumulative_mstar_formed_galpop(t_table, dgp.sfh_q))
+    logsm_obs_q = interp_vmap(t_obs, t_table, logsmh_table_q)
+    logsfr_obs_q = interp_vmap(t_obs, t_table, jnp.log10(dgp.sfh_q))
+    logssfr_obs_q = logsfr_obs_q - logsm_obs_q
+
+    diffstar_galpop = DPQ_EMPTY._replace(
+        frac_q=dgp.frac_q,
+        sfh_ms=dgp.sfh_ms,
+        logsm_obs_ms=logsm_obs_ms,
+        logssfr_obs_ms=logssfr_obs_ms,
+        sfh_q=dgp.sfh_q,
+        logsm_obs_q=logsm_obs_q,
+        logssfr_obs_q=logssfr_obs_q,
+    )
+
+    return diffstar_galpop
+
 
 @jjit
 def multiband_lc_phot_kern(
     ran_key,
-    lgmp_min,
-    z_min,
-    z_max,
-    sky_area_degsq,
     z_obs,
-    lgmp_obs,
+    t_obs,
     mah_params,
+    logmp0,
+    t_table,
     ssp_data,
-    tcurves,
     precomputed_ssp_mag_table,
     z_phot_table,
     wave_eff_table,
-    cosmo_params,
-    hmf_params,
-    diffmahpop_params,
     diffstarpop_params,
     mzr_params,
     lgmet_scatter,
@@ -54,10 +112,10 @@ def multiband_lc_phot_kern(
     dustpop_params,
     dustpop_scatter_params,
     ssp_err_pop_params,
-    n_hmf_grid,
-    n_sfh_table,
-    return_internal_quantities,
 ):
+    diffstar_galpop = diffstarpop_lc_cen_wrapper(
+        diffstarpop_params, ran_key, mah_params, logmp0, t_table, t_obs
+    )
     photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
         z_obs, z_phot_table, precomputed_ssp_mag_table
     )
