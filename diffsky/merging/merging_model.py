@@ -129,7 +129,7 @@ def p_infall(t_interest, k_infall, t_infall, t_delay, p_max):
     """
     t_start = t_infall + t_delay
     s = _sigmoid(t_interest, t_start, k_infall, -0.999999, p_max)
-    ss = jnp.sqrt(s*s) * _sigmoid(s, 0.05, 20., 0.0, 1.0)
+    ss = jnp.sqrt(s * s) * _sigmoid(s, 0.05, 20., 0.0, 1.0)
     return ss
 
 

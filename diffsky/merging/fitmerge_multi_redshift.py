@@ -460,6 +460,6 @@ def sat_frac(
     sats_logsm = jnp.where(upids != -1, logsm, 0)
     sm = mapped_weighted_tw_histogram(logsm, 0.05, 1, bins, bin_width)
     sat_sm = mapped_weighted_tw_histogram(sats_logsm, 0.05, 1, bins, bin_width)
-    sat_frac = sat_sm/sm
+    sat_frac = sat_sm / sm
 
     return sat_frac
