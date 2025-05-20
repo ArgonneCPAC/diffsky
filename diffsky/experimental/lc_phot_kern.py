@@ -4,16 +4,23 @@ from collections import namedtuple
 
 from diffstar.utils import cumulative_mstar_formed_galpop
 from diffstarpop import mc_diffstar_sfh_galpop
+from dsps.metallicity import umzr
+from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
-from ..burstpop import diffqburstpop_mono
+from ..burstpop import diffqburstpop_mono, freqburst_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
+
+_M = (0, None, None)
+_calc_lgmet_weights_galpop = jjit(
+    vmap(zmetw.calc_lgmet_weights_from_lognormal_mdf, in_axes=_M)
+)
 
 _B = (None, 0, 0, None, 0)
 _calc_bursty_age_weights_vmap = jjit(
@@ -21,7 +28,6 @@ _calc_bursty_age_weights_vmap = jjit(
         diffqburstpop_mono.calc_bursty_age_weights_from_diffburstpop_params, in_axes=_B
     )
 )
-
 
 _AGEPOP = (None, 0, None, 0)
 calc_age_weights_from_sfh_table_vmap = jjit(
@@ -59,6 +65,18 @@ _DPKEYS = (
 )
 DiffstarPopQuantities = namedtuple("DiffstarPopQuantities", _DPKEYS)
 DPQ_EMPTY = DiffstarPopQuantities._make([None] * len(_DPKEYS))
+
+
+_LCPHOT_RET_KEYS = (
+    "obs_mags_bursty_ms",
+    "obs_mags_smooth_ms",
+    "obs_mags_q",
+    "weights_bursty_ms",
+    "weights_smooth_ms",
+    "weights_q",
+)
+LCPhot = namedtuple("LCPhot", _LCPHOT_RET_KEYS)
+LCPHOT_EMPTY = DiffstarPopQuantities._make([None] * len(_DPKEYS))
 
 
 @jjit
@@ -128,8 +146,13 @@ def multiband_lc_phot_kern(
     dustpop_scatter_params,
     ssp_err_pop_params,
 ):
+    n_met = ssp_data.ssp_lgmet.size
+    n_age = ssp_data.ssp_lg_age_gyr.size
+    n_gals = logmp0.size
+
+    ran_key, sfh_key = jran.split(ran_key, 2)
     diffstar_galpop = diffstarpop_lc_cen_wrapper(
-        diffstarpop_params, ran_key, mah_params, logmp0, t_table, t_obs
+        diffstarpop_params, sfh_key, mah_params, logmp0, t_table, t_obs
     )
 
     smooth_age_weights_ms = calc_age_weights_from_sfh_table_vmap(
@@ -146,7 +169,34 @@ def multiband_lc_phot_kern(
         ssp_data.ssp_lg_age_gyr,
         smooth_age_weights_ms,
     )
-    age_weights_ms, burst_params = _calc_bursty_age_weights_vmap(*_args)
+    bursty_age_weights_ms, burst_params = _calc_bursty_age_weights_vmap(*_args)
+
+    p_burst_ms = freqburst_mono.get_freqburst_from_freqburst_params(
+        diffburstpop_params.freqburst_params,
+        diffstar_galpop.logsm_obs_ms,
+        diffstar_galpop.logssfr_obs_ms,
+    )
+
+    lgmet_med_ms = umzr.mzr_model(diffstar_galpop.logsm_obs_ms, t_obs, *mzr_params)
+    lgmet_med_q = umzr.mzr_model(diffstar_galpop.logsm_obs_q, t_obs, *mzr_params)
+
+    lgmet_weights_ms = _calc_lgmet_weights_galpop(
+        lgmet_med_ms, lgmet_scatter, ssp_data.ssp_lgmet
+    )
+    lgmet_weights_q = _calc_lgmet_weights_galpop(
+        lgmet_med_q, lgmet_scatter, ssp_data.ssp_lgmet
+    )
+
+    _w_age_q = smooth_age_weights_q.reshape((n_gals, 1, n_age))
+    _w_lgmet_q = lgmet_weights_q.reshape((n_gals, n_met, 1))
+    ssp_weights_q = _w_lgmet_q * _w_age_q
+
+    _w_age_ms = smooth_age_weights_ms.reshape((n_gals, 1, n_age))
+    _w_lgmet_ms = lgmet_weights_ms.reshape((n_gals, n_met, 1))
+    ssp_weights_smooth_ms = _w_lgmet_ms * _w_age_ms
+
+    _w_age_bursty_ms = bursty_age_weights_ms.reshape((n_gals, 1, n_age))
+    ssp_weights_bursty_ms = _w_lgmet_ms * _w_age_bursty_ms
 
     photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
         z_obs, z_phot_table, precomputed_ssp_mag_table
@@ -156,26 +206,32 @@ def multiband_lc_phot_kern(
     wave_eff_galpop = interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
     # Delta mags
-    frac_ssp_err = get_frac_ssp_err_vmap(
+    frac_ssp_err_q = get_frac_ssp_err_vmap(
         ssp_err_pop_params,
         z_obs,
-        logsm_obs,
+        diffstar_galpop.logsm_obs_q,
+        wave_eff_galpop,
+        ssp_err_model.LAMBDA_REST,
+    )
+    frac_ssp_err_ms = get_frac_ssp_err_vmap(
+        ssp_err_pop_params,
+        z_obs,
+        diffstar_galpop.logsm_obs_ms,
         wave_eff_galpop,
         ssp_err_model.LAMBDA_REST,
     )
 
-    n_gals = z_obs.size
     ran_key, dust_key = jran.split(ran_key, 2)
     av_key, delta_key, funo_key = jran.split(dust_key, 3)
     uran_av = jran.uniform(av_key, shape=(n_gals,))
     uran_delta = jran.uniform(delta_key, shape=(n_gals,))
     uran_funo = jran.uniform(funo_key, shape=(n_gals,))
 
-    ftrans_args = (
+    ftrans_args_q = (
         dustpop_params,
         wave_eff_galpop,
-        logsm_obs,
-        logssfr_obs,
+        diffstar_galpop.logsm_obs_q,
+        diffstar_galpop.logssfr_obs_q,
         z_obs,
         ssp_data.ssp_lg_age_gyr,
         uran_av,
@@ -183,18 +239,60 @@ def multiband_lc_phot_kern(
         uran_funo,
         dustpop_scatter_params,
     )
-    _res = calc_dust_ftrans_vmap(*ftrans_args)
-    ftrans_nonoise, ftrans, dust_params, noisy_dust_params = _res
+    _res = calc_dust_ftrans_vmap(*ftrans_args_q)
+    ftrans_q = _res[1]
 
-    n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
+    ftrans_args_ms = (
+        dustpop_params,
+        wave_eff_galpop,
+        diffstar_galpop.logsm_obs_ms,
+        diffstar_galpop.logssfr_obs_ms,
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        dustpop_scatter_params,
+    )
+    _res = calc_dust_ftrans_vmap(*ftrans_args_ms)
+    ftrans_ms = _res[1]
 
-    _w = ssp_weights.reshape((n_gals, 1, n_met, n_age))
-    _sm = 10 ** logmp_obs.reshape((n_gals, 1))
-    _ferr_ssp = frac_ssp_err.reshape((n_gals, n_bands, 1, 1))
-    _ftrans = ftrans.reshape((n_gals, n_bands, 1, n_age))
+    _mstar_ms = 10 ** diffstar_galpop.logsm_obs_ms.reshape((n_gals, 1))
+    _mstar_q = 10 ** diffstar_galpop.logsm_obs_q.reshape((n_gals, 1))
 
-    integrand = _w * ssp_photflux_table * _ftrans * _ferr_ssp
-    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * _sm
-    obs_mags = -2.5 * jnp.log10(photflux_galpop)
+    _w_smooth_ms = ssp_weights_smooth_ms.reshape((n_gals, 1, n_met, n_age))
+    _w_bursty_ms = ssp_weights_bursty_ms.reshape((n_gals, 1, n_met, n_age))
+    _w_q = ssp_weights_q.reshape((n_gals, 1, n_met, n_age))
 
-    return obs_mags
+    _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
+    _ferr_ssp_q = frac_ssp_err_q.reshape((n_gals, n_bands, 1, 1))
+
+    _ftrans_ms = ftrans_ms.reshape((n_gals, n_bands, 1, n_age))
+    _ftrans_q = ftrans_q.reshape((n_gals, n_bands, 1, n_age))
+
+    integrand_q = ssp_photflux_table * _w_q * _ftrans_q * _ferr_ssp_q
+    photflux_galpop_q = jnp.sum(integrand_q, axis=(2, 3)) * _mstar_q
+    obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q)
+
+    integrand_smooth_ms = ssp_photflux_table * _w_smooth_ms * _ftrans_ms * _ferr_ssp_ms
+    photflux_galpop_smooth_ms = jnp.sum(integrand_smooth_ms, axis=(2, 3)) * _mstar_ms
+    obs_mags_smooth_ms = -2.5 * jnp.log10(photflux_galpop_smooth_ms)
+
+    integrand_bursty_ms = ssp_photflux_table * _w_bursty_ms * _ftrans_ms * _ferr_ssp_ms
+    photflux_galpop_bursty_ms = jnp.sum(integrand_bursty_ms, axis=(2, 3)) * _mstar_ms
+    obs_mags_bursty_ms = -2.5 * jnp.log10(photflux_galpop_bursty_ms)
+
+    weights_q = diffstar_galpop.frac_q
+    weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - p_burst_ms)
+    weights_bursty_ms = (1 - diffstar_galpop.frac_q) * p_burst_ms
+
+    lc_phot = LCPHOT_EMPTY._replace(
+        obs_mags_bursty_ms=obs_mags_bursty_ms,
+        obs_mags_smooth_ms=obs_mags_smooth_ms,
+        obs_mags_q=obs_mags_q,
+        weights_bursty_ms=weights_bursty_ms,
+        weights_smooth_ms=weights_smooth_ms,
+        weights_q=weights_q,
+    )
+
+    return lc_phot
