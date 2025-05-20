@@ -14,6 +14,7 @@ from jax import vmap
 
 from ..burstpop import diffqburstpop_mono, freqburst_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
+from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
 
@@ -76,7 +77,16 @@ _LCPHOT_RET_KEYS = (
     "weights_q",
 )
 LCPhot = namedtuple("LCPhot", _LCPHOT_RET_KEYS)
-LCPHOT_EMPTY = DiffstarPopQuantities._make([None] * len(_DPKEYS))
+LCPHOT_EMPTY = LCPhot._make([None] * len(LCPhot._fields))
+
+
+def get_wave_eff_table(z_phot_table, tcurves):
+    collector = []
+    for z_obs in z_phot_table:
+        wave_eff = get_wave_eff_from_tcurves(tcurves, z_obs)
+        collector.append(wave_eff)
+    wave_eff_table = jnp.array(collector)
+    return wave_eff_table
 
 
 @jjit
@@ -101,24 +111,25 @@ def diffstarpop_lc_cen_wrapper(
         ran_key,
         t_table,
     )
-    dgp = mc_diffstar_sfh_galpop(*args)
+    _res = mc_diffstar_sfh_galpop(*args)
+    diffstar_params_ms, diffstar_params_q, sfh_ms, sfh_q, frac_q, mc_is_q = _res
 
-    logsmh_table_ms = jnp.log10(cumulative_mstar_formed_galpop(t_table, dgp.sfh_ms))
+    logsmh_table_ms = jnp.log10(cumulative_mstar_formed_galpop(t_table, sfh_ms))
     logsm_obs_ms = interp_vmap(t_obs, t_table, logsmh_table_ms)
-    logsfr_obs_ms = interp_vmap(t_obs, t_table, jnp.log10(dgp.sfh_ms))
+    logsfr_obs_ms = interp_vmap(t_obs, t_table, jnp.log10(sfh_ms))
     logssfr_obs_ms = logsfr_obs_ms - logsm_obs_ms
 
-    logsmh_table_q = jnp.log10(cumulative_mstar_formed_galpop(t_table, dgp.sfh_q))
+    logsmh_table_q = jnp.log10(cumulative_mstar_formed_galpop(t_table, sfh_q))
     logsm_obs_q = interp_vmap(t_obs, t_table, logsmh_table_q)
-    logsfr_obs_q = interp_vmap(t_obs, t_table, jnp.log10(dgp.sfh_q))
+    logsfr_obs_q = interp_vmap(t_obs, t_table, jnp.log10(sfh_q))
     logssfr_obs_q = logsfr_obs_q - logsm_obs_q
 
     diffstar_galpop = DPQ_EMPTY._replace(
-        frac_q=dgp.frac_q,
-        sfh_ms=dgp.sfh_ms,
+        frac_q=frac_q,
+        sfh_ms=sfh_ms,
         logsm_obs_ms=logsm_obs_ms,
         logssfr_obs_ms=logssfr_obs_ms,
-        sfh_q=dgp.sfh_q,
+        sfh_q=sfh_q,
         logsm_obs_q=logsm_obs_q,
         logssfr_obs_q=logssfr_obs_q,
     )
@@ -146,8 +157,7 @@ def multiband_lc_phot_kern(
     dustpop_scatter_params,
     ssp_err_pop_params,
 ):
-    n_met = ssp_data.ssp_lgmet.size
-    n_age = ssp_data.ssp_lg_age_gyr.size
+    n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
     n_gals = logmp0.size
 
     ran_key, sfh_key = jran.split(ran_key, 2)
