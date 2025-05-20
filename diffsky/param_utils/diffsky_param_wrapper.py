@@ -5,12 +5,9 @@ from dsps.metallicity import umzr
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from .dustpop import tw_dustpop_mono_noise as twdp
-from .ssp_err_model import ssp_err_model
-
-
-def get_unbounded_spspop_params_tw_dust():
-    raise NotImplementedError()
+from ..dustpop import tw_dustpop_mono_noise as twdp
+from ..ssp_err_model import ssp_err_model
+from . import spspop_param_utils as spspu
 
 
 @jjit
@@ -55,14 +52,14 @@ def get_flat_param_names():
     )
 
     burstpop_pnames_flat = (
-        *DEFAULT_SPSPOP_PARAMS.burstpop_params.freqburst_params._fields,
-        *DEFAULT_SPSPOP_PARAMS.burstpop_params.fburstpop_params._fields,
-        *DEFAULT_SPSPOP_PARAMS.burstpop_params.tburstpop_params._fields,
+        *spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.freqburst_params._fields,
+        *spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.fburstpop_params._fields,
+        *spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.tburstpop_params._fields,
     )
     dustpop_pnames_flat = (
-        *DEFAULT_SPSPOP_PARAMS.dustpop_params.avpop_params._fields,
-        *DEFAULT_SPSPOP_PARAMS.dustpop_params.deltapop_params._fields,
-        *DEFAULT_SPSPOP_PARAMS.dustpop_params.funopop_params._fields,
+        *spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.avpop_params._fields,
+        *spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.deltapop_params._fields,
+        *spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.funopop_params._fields,
     )
     spspop_pnames_flat = (*burstpop_pnames_flat, *dustpop_pnames_flat)
 
@@ -70,7 +67,7 @@ def get_flat_param_names():
         *diffstarpop_pnames_flat,
         *umzr.DEFAULT_MZR_PARAMS._fields,
         *spspop_pnames_flat,
-        *umzr.DEFAULT_DUSTPOP_SCATTER_PARAMS._fields,
+        *twdp.DEFAULT_DUSTPOP_SCATTER_PARAMS._fields,
         *ssp_err_model.DEFAULT_SSPERR_PARAMS._fields,
     )
     return all_pnames_flat
@@ -120,8 +117,8 @@ def get_u_param_collection_from_param_collection(
     ssp_err_pop_params,
 ):
     diffstarpop_u_params = get_unbounded_diffstarpop_params(diffstarpop_params)
-    mzr_u_params = get_unbounded_mzr_params(mzr_params)
-    spspop_u_params = get_unbounded_spspop_params_tw_dust(spspop_params)
+    mzr_u_params = umzr.get_unbounded_mzr_params(mzr_params)
+    spspop_u_params = spspu.get_unbounded_spspop_params_tw_dust(spspop_params)
     dustpop_scatter_u_params = twdp.get_unbounded_dustpop_scatter_params(
         dustpop_scatter_params
     )
