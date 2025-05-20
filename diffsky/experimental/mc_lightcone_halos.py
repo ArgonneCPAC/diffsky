@@ -949,7 +949,7 @@ def mc_lightcone_obs_mags_cens(
 
     n_gals, n_bands, n_met, n_age = cenpop["ssp_photflux_table"].shape
     w = cenpop["ssp_weights"].reshape((n_gals, 1, n_met, n_age))
-    sm = 10 ** cenpop["logmp_obs"].reshape((n_gals, 1))
+    sm = 10 ** cenpop["logsm_obs"].reshape((n_gals, 1))
 
     integrand = w * cenpop["ssp_photflux_table"]
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
