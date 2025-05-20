@@ -1,46 +1,44 @@
-"""
-"""
+""" """
 
 from collections import namedtuple
 
-from diffsky.burstpop.diffqburstpop_mono import DiffburstPopParams, DiffburstPopUParams
-from diffsky.burstpop.fburstpop_mono import (
+from jax import config
+from jax import jit as jjit
+
+from ..burstpop.diffqburstpop_mono import DiffburstPopParams, DiffburstPopUParams
+from ..burstpop.fburstpop_mono import (
     DEFAULT_FBURSTPOP_PARAMS,
     ZEROBURST_FBURSTPOP_PARAMS,
     get_bounded_fburstpop_params,
     get_unbounded_fburstpop_params,
 )
-from diffsky.burstpop.freqburst_mono import (
+from ..burstpop.freqburst_mono import (
     DEFAULT_FREQBURST_PARAMS,
     ZEROBURST_FREQBURST_PARAMS,
     get_bounded_freqburst_params,
     get_unbounded_freqburst_params,
 )
-from diffsky.burstpop.tburstpop import (
+from ..burstpop.tburstpop import (
     DEFAULT_TBURSTPOP_PARAMS,
     get_bounded_tburstpop_params,
     get_unbounded_tburstpop_params,
 )
-from diffsky.dustpop.avpop_mono import (
+from ..dustpop.avpop_mono import (
     DEFAULT_AVPOP_PARAMS,
     get_bounded_avpop_params,
     get_unbounded_avpop_params,
 )
-from diffsky.dustpop.deltapop import (
+from ..dustpop.deltapop import (
     DEFAULT_DELTAPOP_PARAMS,
     get_bounded_deltapop_params,
     get_unbounded_deltapop_params,
 )
-from diffsky.dustpop.funopop_ssfr import (
+from ..dustpop.funopop_ssfr import (
     DEFAULT_FUNOPOP_PARAMS,
     get_bounded_funopop_params,
     get_unbounded_funopop_params,
 )
-
-from diffsky.dustpop.tw_dustpop_new import DustPopParams, DustPopUParams
-
-from jax import jit as jjit
-from jax import config
+from ..dustpop.tw_dustpop_new import DustPopParams, DustPopUParams
 
 config.update("jax_enable_x64", True)
 
