@@ -13,7 +13,7 @@ from jax import random as jran
 from jax import vmap
 
 from ..burstpop import diffqburstpop_mono, freqburst_mono
-from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
+from ..dustpop import tw_dustpop_mono_noise
 from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
