@@ -54,7 +54,6 @@ def test_multiband_lc_phot_kern():
     wave_eff_table = lc_phot_kern.get_wave_eff_table(z_phot_table, tcurves)
 
     mzr_params = umzr.DEFAULT_MZR_PARAMS
-    lgmet_scatter = umzr.MZR_SCATTER
     diffburstpop_params = diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS
 
     dustpop_params = tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS
@@ -74,7 +73,6 @@ def test_multiband_lc_phot_kern():
         wave_eff_table,
         DEFAULT_DIFFSTARPOP_PARAMS,
         mzr_params,
-        lgmet_scatter,
         diffburstpop_params,
         dustpop_params,
         dustpop_scatter_params,
