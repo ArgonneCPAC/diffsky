@@ -10,6 +10,34 @@ from ..ssp_err_model import ssp_err_model
 from . import spspop_param_utils as spspu
 
 
+def get_flat_param_names():
+    diffstarpop_pnames_flat = (
+        *DEFAULT_DIFFSTARPOP_PARAMS.sfh_pdf_cens_params._fields,
+        *DEFAULT_DIFFSTARPOP_PARAMS.satquench_params._fields,
+    )
+
+    burstpop_pnames_flat = (
+        *spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.freqburst_params._fields,
+        *spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.fburstpop_params._fields,
+        *spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.tburstpop_params._fields,
+    )
+    dustpop_pnames_flat = (
+        *spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.avpop_params._fields,
+        *spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.deltapop_params._fields,
+        *spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.funopop_params._fields,
+    )
+    spspop_pnames_flat = (*burstpop_pnames_flat, *dustpop_pnames_flat)
+
+    all_pnames_flat = (
+        *diffstarpop_pnames_flat,
+        *umzr.DEFAULT_MZR_PARAMS._fields,
+        *spspop_pnames_flat,
+        *twdp.DEFAULT_DUSTPOP_SCATTER_PARAMS._fields,
+        *ssp_err_model.DEFAULT_SSPERR_PARAMS._fields,
+    )
+    return all_pnames_flat
+
+
 @jjit
 def unroll_param_collection_into_flat_array(
     diffstarpop_params,
@@ -43,34 +71,6 @@ def unroll_param_collection_into_flat_array(
         *ssp_err_pop_params,
     )
     return jnp.array(all_params_flat)
-
-
-def get_flat_param_names():
-    diffstarpop_pnames_flat = (
-        *DEFAULT_DIFFSTARPOP_PARAMS.sfh_pdf_cens_params._fields,
-        *DEFAULT_DIFFSTARPOP_PARAMS.satquench_params._fields,
-    )
-
-    burstpop_pnames_flat = (
-        *spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.freqburst_params._fields,
-        *spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.fburstpop_params._fields,
-        *spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.tburstpop_params._fields,
-    )
-    dustpop_pnames_flat = (
-        *spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.avpop_params._fields,
-        *spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.deltapop_params._fields,
-        *spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.funopop_params._fields,
-    )
-    spspop_pnames_flat = (*burstpop_pnames_flat, *dustpop_pnames_flat)
-
-    all_pnames_flat = (
-        *diffstarpop_pnames_flat,
-        *umzr.DEFAULT_MZR_PARAMS._fields,
-        *spspop_pnames_flat,
-        *twdp.DEFAULT_DUSTPOP_SCATTER_PARAMS._fields,
-        *ssp_err_model.DEFAULT_SSPERR_PARAMS._fields,
-    )
-    return all_pnames_flat
 
 
 @jjit
@@ -132,8 +132,3 @@ def get_u_param_collection_from_param_collection(
         ssp_err_pop_u_params,
     )
     return u_param_collection
-
-
-@jjit
-def get_param_tuple_from_u_param_array():
-    pass
