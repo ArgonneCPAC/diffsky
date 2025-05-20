@@ -4,14 +4,29 @@ from collections import namedtuple
 
 from diffstar.utils import cumulative_mstar_formed_galpop
 from diffstarpop import mc_diffstar_sfh_galpop
+from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
+from ..burstpop import diffqburstpop_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
+
+_B = (None, 0, 0, None, 0)
+_calc_bursty_age_weights_vmap = jjit(
+    vmap(
+        diffqburstpop_mono.calc_bursty_age_weights_from_diffburstpop_params, in_axes=_B
+    )
+)
+
+
+_AGEPOP = (None, 0, None, 0)
+calc_age_weights_from_sfh_table_vmap = jjit(
+    vmap(calc_age_weights_from_sfh_table, in_axes=_AGEPOP)
+)
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 _B = (None, None, 1)
@@ -116,6 +131,23 @@ def multiband_lc_phot_kern(
     diffstar_galpop = diffstarpop_lc_cen_wrapper(
         diffstarpop_params, ran_key, mah_params, logmp0, t_table, t_obs
     )
+
+    smooth_age_weights_ms = calc_age_weights_from_sfh_table_vmap(
+        t_table, diffstar_galpop.sfh_ms, ssp_data.ssp_lg_age_gyr, t_obs
+    )
+    smooth_age_weights_q = calc_age_weights_from_sfh_table_vmap(
+        t_table, diffstar_galpop.sfh_q, ssp_data.ssp_lg_age_gyr, t_obs
+    )
+
+    _args = (
+        diffburstpop_params,
+        diffstar_galpop.logsm_obs_ms,
+        diffstar_galpop.logssfr_obs_ms,
+        ssp_data.ssp_lg_age_gyr,
+        smooth_age_weights_ms,
+    )
+    age_weights_ms, burst_params = _calc_bursty_age_weights_vmap(*_args)
+
     photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
         z_obs, z_phot_table, precomputed_ssp_mag_table
     )
