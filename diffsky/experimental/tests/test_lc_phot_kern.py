@@ -12,9 +12,9 @@ from dsps.data_loaders.defaults import TransmissionCurve
 from dsps.metallicity import umzr
 from jax import random as jran
 
-from ...burstpop import diffqburstpop_mono
-from ...dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
+from ...dustpop import tw_dustpop_mono_noise
 from ...param_utils import diffsky_param_wrapper as dpw
+from ...param_utils import spspop_param_utils as spspu
 from ...ssp_err_model import ssp_err_model
 from .. import lc_phot_kern
 from .. import mc_lightcone_halos as mclh
@@ -57,9 +57,8 @@ def test_multiband_lc_phot_kern():
     wave_eff_table = lc_phot_kern.get_wave_eff_table(z_phot_table, tcurves)
 
     mzr_params = umzr.DEFAULT_MZR_PARAMS
-    diffburstpop_params = diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS
 
-    dustpop_params = tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS
+    spspop_params = spspu.DEFAULT_SPSPOP_PARAMS
     dustpop_scatter_params = tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS
     ssp_err_pop_params = ssp_err_model.DEFAULT_SSPERR_PARAMS
 
@@ -76,8 +75,7 @@ def test_multiband_lc_phot_kern():
         wave_eff_table,
         DEFAULT_DIFFSTARPOP_PARAMS,
         mzr_params,
-        diffburstpop_params,
-        dustpop_params,
+        spspop_params,
         dustpop_scatter_params,
         ssp_err_pop_params,
     )
@@ -131,3 +129,5 @@ def test_multiband_lc_phot_kern_u_param_arr():
     lc_phot = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
         u_param_arr, ran_key, lc_data
     )
+    for x in lc_phot:
+        assert np.all(np.isfinite(x))

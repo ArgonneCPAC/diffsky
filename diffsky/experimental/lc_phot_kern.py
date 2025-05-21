@@ -158,8 +158,7 @@ def multiband_lc_phot_kern(
     wave_eff_table,
     diffstarpop_params,
     mzr_params,
-    diffburstpop_params,
-    dustpop_params,
+    spspop_params,
     dustpop_scatter_params,
     ssp_err_pop_params,
 ):
@@ -179,7 +178,7 @@ def multiband_lc_phot_kern(
     )
 
     _args = (
-        diffburstpop_params,
+        spspop_params.burstpop_params,
         diffstar_galpop.logsm_obs_ms,
         diffstar_galpop.logssfr_obs_ms,
         ssp_data.ssp_lg_age_gyr,
@@ -188,7 +187,7 @@ def multiband_lc_phot_kern(
     bursty_age_weights_ms, burst_params = _calc_bursty_age_weights_vmap(*_args)
 
     p_burst_ms = freqburst_mono.get_freqburst_from_freqburst_params(
-        diffburstpop_params.freqburst_params,
+        spspop_params.burstpop_params.freqburst_params,
         diffstar_galpop.logsm_obs_ms,
         diffstar_galpop.logssfr_obs_ms,
     )
@@ -244,7 +243,7 @@ def multiband_lc_phot_kern(
     uran_funo = jran.uniform(funo_key, shape=(n_gals,))
 
     ftrans_args_q = (
-        dustpop_params,
+        spspop_params.dustpop_params,
         wave_eff_galpop,
         diffstar_galpop.logsm_obs_q,
         diffstar_galpop.logssfr_obs_q,
@@ -259,7 +258,7 @@ def multiband_lc_phot_kern(
     ftrans_q = _res[1]
 
     ftrans_args_ms = (
-        dustpop_params,
+        spspop_params.dustpop_params,
         wave_eff_galpop,
         diffstar_galpop.logsm_obs_ms,
         diffstar_galpop.logssfr_obs_ms,
