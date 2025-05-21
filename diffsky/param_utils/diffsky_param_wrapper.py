@@ -5,6 +5,7 @@ from collections import namedtuple
 from diffstarpop import (
     DEFAULT_DIFFSTARPOP_PARAMS,
     DEFAULT_DIFFSTARPOP_U_PARAMS,
+    get_bounded_diffstarpop_params,
     get_unbounded_diffstarpop_params,
 )
 from dsps.metallicity import umzr
@@ -149,6 +150,32 @@ def get_u_param_collection_from_param_collection(
 
 
 @jjit
+def get_param_collection_from_u_param_collection(
+    diffstarpop_u_params,
+    mzr_u_params,
+    spspop_u_params,
+    dustpop_scatter_u_params,
+    ssp_err_pop_u_params,
+):
+    diffstarpop_params = get_bounded_diffstarpop_params(diffstarpop_u_params)
+    mzr_params = umzr.get_bounded_mzr_params(mzr_u_params)
+    spspop_params = spspu.get_bounded_spspop_params_tw_dust(spspop_u_params)
+    dustpop_scatter_params = twdp.get_bounded_dustpop_scatter_params(
+        dustpop_scatter_u_params
+    )
+    ssp_err_pop_params = ssp_err_model.get_bounded_ssperr_params(ssp_err_pop_u_params)
+
+    param_collection = (
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        dustpop_scatter_params,
+        ssp_err_pop_params,
+    )
+    return param_collection
+
+
+@jjit
 def get_u_param_collection_from_u_param_array(u_param_arr):
     u_params = UParamsFlat(*u_param_arr)
 
@@ -256,7 +283,6 @@ def get_u_param_collection_from_u_param_array(u_param_arr):
     u_param_collection = (
         diffstarpop_u_params,
         u_mzr_params,
-        freqburst_u_params,
         spspop_u_params,
         dustpop_scatter_u_params,
         ssp_err_pop_u_params,
