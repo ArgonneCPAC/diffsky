@@ -81,3 +81,32 @@ def test_multiband_lc_phot_kern():
     lc_phot = lc_phot_kern.multiband_lc_phot_kern(*args)
     for arr in lc_phot:
         assert np.all(np.isfinite(arr))
+
+
+def test_generate_lc_data():
+    ran_key = jran.key(0)
+    lgmp_min = 12.0
+    z_min, z_max = 0.1, 0.5
+    sky_area_degsq = 1.0
+
+    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
+
+    _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
+    wave, u, g, r, i, z, y = _res
+
+    tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+
+    n_z_phot_table = 15
+    z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+
+    lc_data = lc_phot_kern.generate_lc_data(
+        ran_key,
+        lgmp_min,
+        z_min,
+        z_max,
+        sky_area_degsq,
+        ssp_data,
+        DEFAULT_COSMOLOGY,
+        tcurves,
+        z_phot_table,
+    )

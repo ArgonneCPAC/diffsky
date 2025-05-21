@@ -1,6 +1,12 @@
 """ """
 
-from diffstarpop import DEFAULT_DIFFSTARPOP_PARAMS, get_unbounded_diffstarpop_params
+from collections import namedtuple
+
+from diffstarpop import (
+    DEFAULT_DIFFSTARPOP_PARAMS,
+    DEFAULT_DIFFSTARPOP_U_PARAMS,
+    get_unbounded_diffstarpop_params,
+)
 from dsps.metallicity import umzr
 from jax import jit as jjit
 from jax import numpy as jnp
@@ -8,6 +14,14 @@ from jax import numpy as jnp
 from ..dustpop import tw_dustpop_mono_noise as twdp
 from ..ssp_err_model import ssp_err_model
 from . import spspop_param_utils as spspu
+
+DEFAULT_PARAM_COLLECTION = (
+    DEFAULT_DIFFSTARPOP_PARAMS,
+    umzr.DEFAULT_MZR_PARAMS,
+    spspu.DEFAULT_SPSPOP_PARAMS,
+    twdp.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    ssp_err_model.DEFAULT_SSPERR_PARAMS,
+)
 
 
 def get_flat_param_names():
@@ -82,19 +96,19 @@ def unroll_u_param_collection_into_flat_array(
     ssp_err_pop_u_params,
 ):
     diffstarpop_u_params_flat = (
-        *diffstarpop_u_params.sfh_pdf_cens_params,
-        *diffstarpop_u_params.satquench_params,
+        *diffstarpop_u_params.u_sfh_pdf_cens_params,
+        *diffstarpop_u_params.u_satquench_params,
     )
 
     burstpop_params_flat = (
-        *spspop_u_params.burstpop_params.freqburst_params,
-        *spspop_u_params.burstpop_params.fburstpop_params,
-        *spspop_u_params.burstpop_params.tburstpop_params,
+        *spspop_u_params.u_burstpop_params.freqburst_u_params,
+        *spspop_u_params.u_burstpop_params.fburstpop_u_params,
+        *spspop_u_params.u_burstpop_params.tburstpop_u_params,
     )
     dustpop_params_flat = (
-        *spspop_u_params.dustpop_params.avpop_params,
-        *spspop_u_params.dustpop_params.deltapop_params,
-        *spspop_u_params.dustpop_params.funopop_params,
+        *spspop_u_params.u_dustpop_params.avpop_u_params,
+        *spspop_u_params.u_dustpop_params.deltapop_u_params,
+        *spspop_u_params.u_dustpop_params.funopop_u_params,
     )
     spspop_u_params_flat = (*burstpop_params_flat, *dustpop_params_flat)
 
@@ -132,3 +146,125 @@ def get_u_param_collection_from_param_collection(
         ssp_err_pop_u_params,
     )
     return u_param_collection
+
+
+@jjit
+def get_u_param_collection_from_u_param_array(u_param_arr):
+    u_params = UParamsFlat(*u_param_arr)
+
+    u_sfh_pdf_cens_params = [
+        getattr(u_params, name)
+        for name in DEFAULT_DIFFSTARPOP_U_PARAMS.u_sfh_pdf_cens_params._fields
+    ]
+    u_satquench_params = [
+        getattr(u_params, name)
+        for name in DEFAULT_DIFFSTARPOP_U_PARAMS.u_satquench_params._fields
+    ]
+    diffstarpop_u_params = DEFAULT_DIFFSTARPOP_U_PARAMS._make(
+        (u_sfh_pdf_cens_params, u_satquench_params)
+    )
+
+    u_mzr_params = [
+        getattr(u_params, name) for name in umzr.DEFAULT_MZR_U_PARAMS._fields
+    ]
+
+    freqburst_u_params = [
+        getattr(u_params, name)
+        for name in spspu.DEFAULT_SPSPOP_U_PARAMS.u_burstpop_params.freqburst_u_params._fields
+    ]
+    freqburst_u_params = (
+        spspu.DEFAULT_SPSPOP_U_PARAMS.u_burstpop_params.freqburst_u_params._make(
+            freqburst_u_params
+        )
+    )
+    fburstpop_u_params = [
+        getattr(u_params, name)
+        for name in spspu.DEFAULT_SPSPOP_U_PARAMS.u_burstpop_params.fburstpop_u_params._fields
+    ]
+    fburstpop_u_params = (
+        spspu.DEFAULT_SPSPOP_U_PARAMS.u_burstpop_params.fburstpop_u_params._make(
+            fburstpop_u_params
+        )
+    )
+    tburstpop_u_params = [
+        getattr(u_params, name)
+        for name in spspu.DEFAULT_SPSPOP_U_PARAMS.u_burstpop_params.tburstpop_u_params._fields
+    ]
+    tburstpop_u_params = (
+        spspu.DEFAULT_SPSPOP_U_PARAMS.u_burstpop_params.tburstpop_u_params._make(
+            tburstpop_u_params
+        )
+    )
+    u_burstpop_params = (freqburst_u_params, fburstpop_u_params, tburstpop_u_params)
+    u_burstpop_params = spspu.DEFAULT_SPSPOP_U_PARAMS.u_burstpop_params._make(
+        u_burstpop_params
+    )
+    avpop_u_params = [
+        getattr(u_params, name)
+        for name in spspu.DEFAULT_SPSPOP_U_PARAMS.u_dustpop_params.avpop_u_params._fields
+    ]
+    avpop_u_params = (
+        spspu.DEFAULT_SPSPOP_U_PARAMS.u_dustpop_params.avpop_u_params._make(
+            avpop_u_params
+        )
+    )
+
+    deltapop_u_params = [
+        getattr(u_params, name)
+        for name in spspu.DEFAULT_SPSPOP_U_PARAMS.u_dustpop_params.deltapop_u_params._fields
+    ]
+    deltapop_u_params = (
+        spspu.DEFAULT_SPSPOP_U_PARAMS.u_dustpop_params.deltapop_u_params._make(
+            deltapop_u_params
+        )
+    )
+
+    funopop_u_params = [
+        getattr(u_params, name)
+        for name in spspu.DEFAULT_SPSPOP_U_PARAMS.u_dustpop_params.funopop_u_params._fields
+    ]
+    funopop_u_params = (
+        spspu.DEFAULT_SPSPOP_U_PARAMS.u_dustpop_params.funopop_u_params._make(
+            funopop_u_params
+        )
+    )
+
+    u_dustpop_params = (avpop_u_params, deltapop_u_params, funopop_u_params)
+    u_dustpop_params = spspu.DEFAULT_SPSPOP_U_PARAMS.u_dustpop_params._make(
+        u_dustpop_params
+    )
+    spspop_u_params = spspu.DEFAULT_SPSPOP_U_PARAMS._make(
+        (u_burstpop_params, u_dustpop_params)
+    )
+
+    dustpop_scatter_u_params = [
+        getattr(u_params, name)
+        for name in twdp.DEFAULT_DUSTPOP_SCATTER_U_PARAMS._fields
+    ]
+    dustpop_scatter_u_params = twdp.DEFAULT_DUSTPOP_SCATTER_U_PARAMS._make(
+        dustpop_scatter_u_params
+    )
+
+    ssp_err_pop_u_params = [
+        getattr(u_params, name)
+        for name in ssp_err_model.DEFAULT_SSPERR_U_PARAMS._fields
+    ]
+    ssp_err_pop_u_params = ssp_err_model.DEFAULT_SSPERR_U_PARAMS._make(
+        ssp_err_pop_u_params
+    )
+
+    u_param_collection = (
+        diffstarpop_u_params,
+        u_mzr_params,
+        freqburst_u_params,
+        spspop_u_params,
+        dustpop_scatter_u_params,
+        ssp_err_pop_u_params,
+    )
+    return u_param_collection
+
+
+PNAMES_FLAT = get_flat_param_names()
+ParamsFlat = namedtuple("ParamsFlat", PNAMES_FLAT)
+U_PNAMES_FLAT = ["u_" + name for name in PNAMES_FLAT]
+UParamsFlat = namedtuple("UParamsFlat", U_PNAMES_FLAT)

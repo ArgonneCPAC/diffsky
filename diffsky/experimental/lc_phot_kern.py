@@ -4,6 +4,8 @@ from collections import namedtuple
 
 from diffstar.utils import cumulative_mstar_formed_galpop
 from diffstarpop import mc_diffstar_sfh_galpop
+from dsps.constants import T_TABLE_MIN
+from dsps.cosmology import flat_wcdm
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
@@ -14,8 +16,10 @@ from jax import vmap
 
 from ..burstpop import diffqburstpop_mono, freqburst_mono
 from ..dustpop import tw_dustpop_mono_noise
+from ..param_utils import diffsky_param_wrapper as dpw
 from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
+from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
 
 _M = (0, None, None)
@@ -80,6 +84,7 @@ LCPhot = namedtuple("LCPhot", _LCPHOT_RET_KEYS)
 LCPHOT_EMPTY = LCPhot._make([None] * len(LCPhot._fields))
 
 LGMET_SCATTER = 0.2
+N_SFH_TABLE = 100
 
 
 def get_wave_eff_table(z_phot_table, tcurves):
@@ -307,3 +312,60 @@ def multiband_lc_phot_kern(
     )
 
     return lc_phot
+
+
+@jjit
+def multiband_lc_phot_kern_u_param_arr(u_param_arr, ran_key, lc_data):
+    param_collection = dpw.get_param_collection_from_u_param_array(u_param_arr)
+    lc_phot = multiband_lc_phot_kern(ran_key, *lc_data, *param_collection)
+    return lc_phot
+
+
+def generate_lc_data(
+    ran_key,
+    lgmp_min,
+    z_min,
+    z_max,
+    sky_area_degsq,
+    ssp_data,
+    cosmo_params,
+    tcurves,
+    z_phot_table,
+):
+    mclh_args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
+    lc_halopop = mclh.mc_lightcone_host_halo_diffmah(*mclh_args)
+
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+
+    precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    lc_data = LCData(
+        lc_halopop["z_obs"],
+        lc_halopop["t_obs"],
+        lc_halopop["mah_params"],
+        lc_halopop["logmp0"],
+        t_table,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+    )
+    return lc_data
+
+
+_LCDKEYS = (
+    "z_obs",
+    "t_obs",
+    "mah_params",
+    "logmp0",
+    "t_table",
+    "ssp_data",
+    "precomputed_ssp_mag_table",
+    "z_phot_table",
+    "wave_eff_table",
+)
+LCData = namedtuple("LCData", _LCDKEYS)
