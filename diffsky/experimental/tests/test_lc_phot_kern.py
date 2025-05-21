@@ -1,7 +1,5 @@
 """ """
 
-# flake8: noqa
-
 import numpy as np
 from diffstar.defaults import T_TABLE_MIN
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
@@ -116,6 +114,9 @@ def _generate_lc_data():
 
 def test_generate_lc_data():
     lc_data = _generate_lc_data()
+    assert np.all(np.isfinite(lc_data.logmp0))
+    for x in lc_data.mah_params:
+        assert np.all(np.isfinite(x))
 
 
 def test_multiband_lc_phot_kern_u_param_arr():
