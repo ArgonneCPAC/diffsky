@@ -122,6 +122,13 @@ def test_generate_lc_data():
 def test_multiband_lc_phot_kern_u_param_arr():
     ran_key = jran.key(0)
     lc_data = _generate_lc_data()
+
+    n_gals = lc_data.logmp0.size
+    n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
+    assert lc_data.z_phot_table.shape == (n_z_table,)
+    assert lc_data.ssp_data.ssp_lgmet.shape == (n_met,)
+    assert lc_data.ssp_data.ssp_lg_age_gyr.shape == (n_age,)
+
     u_param_collection = dpw.get_u_param_collection_from_param_collection(
         *dpw.DEFAULT_PARAM_COLLECTION
     )
@@ -132,3 +139,20 @@ def test_multiband_lc_phot_kern_u_param_arr():
     )
     for x in lc_phot:
         assert np.all(np.isfinite(x))
+
+    assert lc_phot.obs_mags_bursty_ms.shape == (n_gals, n_bands)
+
+    assert np.all(lc_phot.weights_bursty_ms >= 0)
+    assert np.all(lc_phot.weights_bursty_ms <= 1)
+    assert np.any(lc_phot.weights_bursty_ms > 0)
+    assert np.any(lc_phot.weights_bursty_ms < 1)
+
+    assert np.all(lc_phot.weights_smooth_ms >= 0)
+    assert np.all(lc_phot.weights_smooth_ms <= 1)
+    assert np.any(lc_phot.weights_smooth_ms > 0)
+    assert np.any(lc_phot.weights_smooth_ms < 1)
+
+    assert np.all(lc_phot.weights_q >= 0)
+    assert np.all(lc_phot.weights_q <= 1)
+    assert np.any(lc_phot.weights_q > 0)
+    assert np.any(lc_phot.weights_q < 1)
