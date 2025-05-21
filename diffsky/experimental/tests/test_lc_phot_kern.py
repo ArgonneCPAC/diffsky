@@ -1,5 +1,7 @@
 """ """
 
+# flake8: noqa
+
 import numpy as np
 from diffstar.defaults import T_TABLE_MIN
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
@@ -12,6 +14,7 @@ from jax import random as jran
 
 from ...burstpop import diffqburstpop_mono
 from ...dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
+from ...param_utils import diffsky_param_wrapper as dpw
 from ...ssp_err_model import ssp_err_model
 from .. import lc_phot_kern
 from .. import mc_lightcone_halos as mclh
@@ -83,7 +86,7 @@ def test_multiband_lc_phot_kern():
         assert np.all(np.isfinite(arr))
 
 
-def test_generate_lc_data():
+def _generate_lc_data():
     ran_key = jran.key(0)
     lgmp_min = 12.0
     z_min, z_max = 0.1, 0.5
@@ -109,4 +112,22 @@ def test_generate_lc_data():
         DEFAULT_COSMOLOGY,
         tcurves,
         z_phot_table,
+    )
+    return lc_data
+
+
+def test_generate_lc_data():
+    lc_data = _generate_lc_data()
+
+
+def test_multiband_lc_phot_kern_u_param_arr():
+    ran_key = jran.key(0)
+    lc_data = _generate_lc_data()
+    u_param_collection = dpw.get_u_param_collection_from_param_collection(
+        *dpw.DEFAULT_PARAM_COLLECTION
+    )
+    u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
+
+    lc_phot = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
+        u_param_arr, ran_key, lc_data
     )

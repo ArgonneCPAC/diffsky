@@ -316,7 +316,10 @@ def multiband_lc_phot_kern(
 
 @jjit
 def multiband_lc_phot_kern_u_param_arr(u_param_arr, ran_key, lc_data):
-    param_collection = dpw.get_param_collection_from_u_param_array(u_param_arr)
+    u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
+    param_collection = dpw.get_param_collection_from_u_param_collection(
+        *u_param_collection
+    )
     lc_phot = multiband_lc_phot_kern(ran_key, *lc_data, *param_collection)
     return lc_phot
 
