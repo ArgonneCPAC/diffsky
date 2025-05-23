@@ -4,6 +4,7 @@ Starting with a simulated snapshot or lightcone with only host halos,
 generate_subhalopop can be used to add subhalos with synthetic values of Mpeak.
 
 """
+
 import numpy as np
 from jax import jit as jjit
 from jax import numpy as jnp
@@ -33,9 +34,9 @@ def mc_generate_subhalopop_singlehalo(
 
 @jjit
 def generate_subhalopop_kern(
-    uran, lgmhost, lgmp_cutoff, ccshmf_params=DEFAULT_CCSHMF_PARAMS
+    uran, lgmhost, lgmp_min, ccshmf_params=DEFAULT_CCSHMF_PARAMS
 ):
-    lgmu_cutoff = get_lgmu_cutoff(lgmhost, lgmp_cutoff, 1)
+    lgmu_cutoff = get_lgmu_cutoff(lgmhost, lgmp_min, 1)
     lgmu_table = U_TABLE * lgmu_cutoff
     cdf_counts = 10 ** predict_ccshmf(ccshmf_params, lgmhost, lgmu_table)
     cdf_counts = cdf_counts - cdf_counts[0]
@@ -51,7 +52,7 @@ generate_subhalopop_vmap = jjit(vmap(generate_subhalopop_kern, in_axes=_A))
 
 
 def generate_subhalopop(
-    ran_key, lgmhost_arr, lgmp_cutoff, ccshmf_params=DEFAULT_CCSHMF_PARAMS
+    ran_key, lgmhost_arr, lgmp_min, ccshmf_params=DEFAULT_CCSHMF_PARAMS
 ):
     """Generate a population of subhalos with synthetic values of Mpeak
 
@@ -62,7 +63,7 @@ def generate_subhalopop(
     lgmhost_arr : ndarray of shape (nhosts, )
         Base-10 log of host halo mass
 
-    lgmp_cutoff : float
+    lgmp_min : float
         Base-10 log of the smallest Mpeak value of the synthetic subhalos
 
     cshmf_params : namedtuple, optional
@@ -82,7 +83,7 @@ def generate_subhalopop(
         Thus all values satisfy 0 <= host_halo_indx < nhosts
 
     """
-    mean_counts = _compute_mean_subhalo_counts(lgmhost_arr, lgmp_cutoff)
+    mean_counts = _compute_mean_subhalo_counts(lgmhost_arr, lgmp_min)
     uran_key, counts_key = jran.split(ran_key, 2)
     subhalo_counts_per_halo = jran.poisson(counts_key, mean_counts)
     ntot = jnp.sum(subhalo_counts_per_halo)
@@ -90,15 +91,13 @@ def generate_subhalopop(
     lgmhost_pop = np.repeat(lgmhost_arr, subhalo_counts_per_halo)
     halo_ids = np.arange(lgmhost_arr.size).astype(int)
     host_halo_indx = np.repeat(halo_ids, subhalo_counts_per_halo)
-    mc_lg_mu = generate_subhalopop_vmap(
-        urandoms, lgmhost_pop, lgmp_cutoff, ccshmf_params
-    )
+    mc_lg_mu = generate_subhalopop_vmap(urandoms, lgmhost_pop, lgmp_min, ccshmf_params)
     return mc_lg_mu, lgmhost_pop, host_halo_indx
 
 
 def _compute_mean_subhalo_counts(
-    lgmhost, lgmp_cutoff, ccshmf_params=DEFAULT_CCSHMF_PARAMS
+    lgmhost, lgmp_min, ccshmf_params=DEFAULT_CCSHMF_PARAMS
 ):
-    lgmu_cutoff = get_lgmu_cutoff(lgmhost, lgmp_cutoff, 1)
+    lgmu_cutoff = get_lgmu_cutoff(lgmhost, lgmp_min, 1)
     mean_counts = 10 ** predict_ccshmf(ccshmf_params, lgmhost, lgmu_cutoff)
     return mean_counts
