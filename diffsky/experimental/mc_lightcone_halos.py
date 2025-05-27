@@ -288,6 +288,10 @@ def mc_lightcone_host_halo_diffmah(
         dsps.cosmology.flat_wcdm cosmology
         cosmo_params = (Om0, w0, wa, h)
 
+    logmp_cutoff : float, optional
+        Minimum halo mass for which DiffmahPop is used to generate MAHs.
+        For logmp < logmp_cutoff, P(θ_MAH | logmp) = P(θ_MAH | logmp_cutoff)
+
     Returns
     -------
     cenpop : dict
