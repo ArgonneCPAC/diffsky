@@ -268,6 +268,7 @@ def mc_lightcone_host_halo_diffmah(
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     n_hmf_grid=N_HMF_GRID,
+    logmp_cutoff=0.0,
 ):
     """Generate halo MAHs for host halos sampled from a lightcone
 
@@ -320,15 +321,19 @@ def mc_lightcone_host_halo_diffmah(
     t_0 = flat_wcdm.age_at_z0(*cosmo_params)
     lgt0 = jnp.log10(t_0)
 
+    logmp_obs_mf_clipped = np.clip(logmp_obs_mf, logmp_cutoff, np.inf)
+    delta_logmh_clip = logmp_obs_mf_clipped - logmp_obs_mf
+
     tarr = np.array((10**lgt0,))
     args = (diffmahpop_params, tarr, logmp_obs_mf, t_obs, mah_key, lgt0)
-    halopop = mc_cenpop(*args)  # mah_params, dmhdt, log_mah
-    logmp0_halopop = halopop.log_mah[:, 0]
+    mah_params = mc_cenpop(*args)[0]  # mah_params, dmhdt, log_mah
+    mah_params = mah_params._replace(logm0=mah_params.logm0 - delta_logmh_clip)
 
-    logmp_obs = _log_mah_kern(halopop.mah_params, t_obs, lgt0)
+    logmp0_halopop = _log_mah_kern(mah_params, 10**lgt0, lgt0)
+    logmp_obs = _log_mah_kern(mah_params, t_obs, lgt0)
 
     fields = ("z_obs", "t_obs", "logmp_obs", "mah_params", "logmp0")
-    values = (z_obs, t_obs, logmp_obs, halopop.mah_params, logmp0_halopop)
+    values = (z_obs, t_obs, logmp_obs, mah_params, logmp0_halopop)
     cenpop_out = dict()
     for key, value in zip(fields, values):
         cenpop_out[key] = value
