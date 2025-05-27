@@ -306,7 +306,7 @@ def mc_lightcone_host_halo_diffmah(
     """
 
     lc_hmf_key, mah_key = jran.split(ran_key, 2)
-    z_halopop, logmp_halopop = mc_lightcone_host_halo_mass_function(
+    z_obs, logmp_obs_mf = mc_lightcone_host_halo_mass_function(
         lc_hmf_key,
         lgmp_min,
         z_min,
@@ -316,25 +316,19 @@ def mc_lightcone_host_halo_diffmah(
         hmf_params=hmf_params,
         n_hmf_grid=n_hmf_grid,
     )
-    t_obs_halopop = flat_wcdm.age_at_z(z_halopop, *cosmo_params)
+    t_obs = flat_wcdm.age_at_z(z_obs, *cosmo_params)
     t_0 = flat_wcdm.age_at_z0(*cosmo_params)
     lgt0 = jnp.log10(t_0)
 
     tarr = np.array((10**lgt0,))
-    args = (diffmahpop_params, tarr, logmp_halopop, t_obs_halopop, mah_key, lgt0)
+    args = (diffmahpop_params, tarr, logmp_obs_mf, t_obs, mah_key, lgt0)
     halopop = mc_cenpop(*args)  # mah_params, dmhdt, log_mah
     logmp0_halopop = halopop.log_mah[:, 0]
 
-    logmp_obs_halopop = _log_mah_kern(halopop.mah_params, t_obs_halopop, lgt0)
+    logmp_obs = _log_mah_kern(halopop.mah_params, t_obs, lgt0)
 
     fields = ("z_obs", "t_obs", "logmp_obs", "mah_params", "logmp0")
-    values = (
-        z_halopop,
-        t_obs_halopop,
-        logmp_obs_halopop,
-        halopop.mah_params,
-        logmp0_halopop,
-    )
+    values = (z_obs, t_obs, logmp_obs, halopop.mah_params, logmp0_halopop)
     cenpop_out = dict()
     for key, value in zip(fields, values):
         cenpop_out[key] = value
