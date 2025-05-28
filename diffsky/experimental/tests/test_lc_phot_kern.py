@@ -10,7 +10,7 @@ from dsps.data_loaders.defaults import TransmissionCurve
 from dsps.metallicity import umzr
 from jax import random as jran
 
-from ...dustpop import tw_dustpop_mono_noise
+from ..scatter import DEFAULT_SCATTER_PARAMS
 from ...param_utils import diffsky_param_wrapper as dpw
 from ...param_utils import spspop_param_utils as spspu
 from ...ssp_err_model import ssp_err_model
@@ -57,7 +57,7 @@ def test_multiband_lc_phot_kern():
     mzr_params = umzr.DEFAULT_MZR_PARAMS
 
     spspop_params = spspu.DEFAULT_SPSPOP_PARAMS
-    dustpop_scatter_params = tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS
+    scatter_params = DEFAULT_SCATTER_PARAMS
     ssp_err_pop_params = ssp_err_model.DEFAULT_SSPERR_PARAMS
 
     args = (
@@ -74,7 +74,7 @@ def test_multiband_lc_phot_kern():
         DEFAULT_DIFFSTARPOP_PARAMS,
         mzr_params,
         spspop_params,
-        dustpop_scatter_params,
+        scatter_params,
         ssp_err_pop_params,
     )
     lc_phot = lc_phot_kern.multiband_lc_phot_kern(*args)

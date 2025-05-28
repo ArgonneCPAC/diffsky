@@ -159,7 +159,7 @@ def multiband_lc_phot_kern(
     diffstarpop_params,
     mzr_params,
     spspop_params,
-    dustpop_scatter_params,
+    scatter_params,
     ssp_err_pop_params,
 ):
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
@@ -252,7 +252,7 @@ def multiband_lc_phot_kern(
         uran_av,
         uran_delta,
         uran_funo,
-        dustpop_scatter_params,
+        scatter_params,
     )
     _res = calc_dust_ftrans_vmap(*ftrans_args_q)
     ftrans_q = _res[1]
@@ -267,7 +267,7 @@ def multiband_lc_phot_kern(
         uran_av,
         uran_delta,
         uran_funo,
-        dustpop_scatter_params,
+        scatter_params,
     )
     _res = calc_dust_ftrans_vmap(*ftrans_args_ms)
     ftrans_ms = _res[1]

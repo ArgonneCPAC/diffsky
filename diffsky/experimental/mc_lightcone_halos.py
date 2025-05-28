@@ -26,6 +26,7 @@ from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psp
+from .scatter import DEFAULT_SCATTER_PARAMS
 
 config.update("jax_enable_x64", True)
 
@@ -804,7 +805,7 @@ def mc_lightcone_obs_mags_cens(
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
     dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
-    dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    scatter_params=DEFAULT_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_model.DEFAULT_SSPERR_PARAMS,
     n_hmf_grid=N_HMF_GRID,
     n_sfh_table=N_SFH_TABLE,
@@ -941,7 +942,7 @@ def mc_lightcone_obs_mags_cens(
         uran_av,
         uran_delta,
         uran_funo,
-        dustpop_scatter_params,
+        scatter_params,
     )
     _res = calc_dust_ftrans_vmap(*ftrans_args)
     ftrans_nonoise, ftrans, dust_params, noisy_dust_params = _res
