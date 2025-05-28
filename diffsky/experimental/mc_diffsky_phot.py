@@ -15,6 +15,7 @@ from ..burstpop import diffqburstpop_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..phot_utils import get_wave_eff_from_tcurves, load_interpolated_lsst_curves
 from ..ssp_err_model import ssp_err_model
+from .scatter import DEFAULT_SCATTER_PARAMS
 from . import precompute_ssp_phot as psp
 
 # gal_t_table, gal_sfr_table, ssp_lg_age_gyr, t_obs, sfr_min
@@ -50,7 +51,7 @@ def mc_diffsky_galpop_lsst_phot(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
-    dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    scatter_params=DEFAULT_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_model.DEFAULT_SSPERR_PARAMS,
     n_t=mcd.N_T,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
@@ -77,7 +78,7 @@ def mc_diffsky_galpop_lsst_phot(
         mzr_params=mzr_params,
         lgmet_scatter=lgmet_scatter,
         diffburstpop_params=diffburstpop_params,
-        dustpop_scatter_params=dustpop_scatter_params,
+        scatter_params=scatter_params,
         ssp_err_pop_params=ssp_err_pop_params,
         drn_ssp_data=drn_ssp_data,
         return_internal_quantities=return_internal_quantities,
@@ -96,7 +97,7 @@ def mc_diffsky_cenpop_lsst_phot(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
-    dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    scatter_params=DEFAULT_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_model.DEFAULT_SSPERR_PARAMS,
     n_t=mcd.N_T,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
@@ -122,7 +123,7 @@ def mc_diffsky_cenpop_lsst_phot(
         mzr_params=mzr_params,
         lgmet_scatter=lgmet_scatter,
         diffburstpop_params=diffburstpop_params,
-        dustpop_scatter_params=dustpop_scatter_params,
+        scatter_params=scatter_params,
         ssp_err_pop_params=ssp_err_pop_params,
         drn_ssp_data=drn_ssp_data,
         return_internal_quantities=return_internal_quantities,
@@ -140,7 +141,7 @@ def predict_lsst_phot_from_diffstar(
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
-    dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    scatter_params=DEFAULT_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_model.DEFAULT_SSPERR_PARAMS,
     drn_ssp_data=mcd.DSPS_DATA_DRN,
     return_internal_quantities=False,
@@ -294,7 +295,7 @@ def predict_lsst_phot_from_diffstar(
         uran_av,
         uran_delta,
         uran_funo,
-        dustpop_scatter_params,
+        scatter_params,
     )
     nonoise_ftrans_rest, noisy_ftrans_rest, dust_params_rest, noisy_dust_params_rest = (
         _res
@@ -310,7 +311,7 @@ def predict_lsst_phot_from_diffstar(
         uran_av,
         uran_delta,
         uran_funo,
-        dustpop_scatter_params,
+        scatter_params,
     )
     nonoise_ftrans_obs, noisy_ftrans_obs, dust_params_obs, noisy_dust_params_obs = _res
     for param, pname in zip(dust_params_obs, dust_params_obs._fields):
