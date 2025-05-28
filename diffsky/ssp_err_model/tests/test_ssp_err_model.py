@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from jax import random as jran
+
 from ..ssp_err_model import (
     DEFAULT_SSPERR_PARAMS,
     DEFAULT_SSPERR_PDICT,
@@ -12,6 +14,7 @@ from ..ssp_err_model import (
     delta_mag_from_lambda_rest,
     get_bounded_ssperr_params,
     get_unbounded_ssperr_params,
+    add_delta_mag_to_photometry,
 )
 
 TOL = 1e-2
@@ -117,3 +120,37 @@ def test_delta_mag_from_lambda_rest():
 
     assert np.all(~np.isnan(delta_mag))
     assert delta_mag.shape == (n_gals,)
+
+
+def test_add_delta_mag_to_photometry():
+
+    n_gals = 2_000
+    logsmarr = np.linspace(8, 12, n_gals)
+    mags = np.linspace(18, 24, n_gals)
+
+    wavelength = 5800.0
+
+    z_obs = 0.4
+
+    ran_key = jran.PRNGKey(0)
+
+    q_key, ms_key = jran.split(ran_key, 2)
+
+    res = add_delta_mag_to_photometry(
+        DEFAULT_SSPERR_PARAMS,
+        z_obs,
+        logsmarr,
+        logsmarr,
+        wavelength,
+        q_key,
+        ms_key,
+        mags,
+        mags,
+        mags,
+        mags
+    )
+
+    (new_mags_q_smooth, new_mags_q_bursty, new_mags_ms_smooth, new_mags_ms_bursty) = res
+
+    assert np.all(~np.isnan(new_mags_q_smooth))
+    assert new_mags_q_smooth.shape == (n_gals,)
