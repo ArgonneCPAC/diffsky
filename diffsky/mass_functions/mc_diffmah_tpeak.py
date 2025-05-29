@@ -226,7 +226,6 @@ def mc_host_halos(
         hosts_logmh_at_z = mc_host_halos_singlez(host_key1, lgmp_min, z_obs, volume_com)
 
     hosts_logmh_at_z_clipped = np.clip(hosts_logmh_at_z, logmp_cutoff, np.inf)
-    delta_logmh_clip = hosts_logmh_at_z_clipped - hosts_logmh_at_z
 
     t_obs = _age_at_z_kern(z_obs, *cosmo_params)
     t_0 = age_at_z0(*cosmo_params)
@@ -240,6 +239,9 @@ def mc_host_halos(
     mah_params = mc_cenpop(
         diffmahpop_params, tarr, hosts_logmh_at_z_clipped, t_obs + _ZH, host_key2, lgt0
     )[0]
+    lgmp_t_obs_orig = _log_mah_kern(mah_params, t_obs, lgt0)
+    delta_logmh_clip = lgmp_t_obs_orig - hosts_logmh_at_z
+
     mah_params = mah_params._replace(logm0=mah_params.logm0 - delta_logmh_clip)
 
     host_mah_params = mah_params
