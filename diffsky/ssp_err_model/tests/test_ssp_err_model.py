@@ -16,6 +16,7 @@ from ..ssp_err_model import (
     get_unbounded_ssperr_params,
     add_delta_mag_to_photometry,
     noisy_delta_mag,
+    compute_delta_scatter,
 )
 
 TOL = 1e-2
@@ -123,15 +124,42 @@ def test_delta_mag_from_lambda_rest():
     assert delta_mag.shape == (n_gals,)
 
 
+def test_compute_delta_scatter():
+
+    ran_key = jran.PRNGKey(0)
+
+    n_gals = 2_000
+    logsmarr = np.linspace(8, 12, n_gals)
+    n_filters = 4
+
+    z_obs = 0.4
+
+    wavelength = np.array((3800.0, 4800.0, 5800.0, 6200.0))
+
+    wave_eff_rest = np.array([3000.0, 4000.0, 5000.0, 5500.0, 6000.0, 6500.0])
+
+    delta_mag = delta_mag_from_lambda_rest(
+        DEFAULT_SSPERR_PARAMS, z_obs, logsmarr, wavelength, wave_eff_rest
+    )
+
+    delta_scatter = compute_delta_scatter(ran_key, delta_mag)
+
+    assert np.all(~np.isnan(delta_scatter))
+    assert delta_scatter.shape == (n_gals, n_filters)
+
+
 def test_noisy_delta_mag():
 
     n_gals = 2_000
     logsmarr = np.linspace(8, 12, n_gals)
 
-    wavelength = 5800.0
-    wave_eff_rest = np.array([3000.0, 4000.0, 5000.0, 5500.0, 6000.0, 6500.0])
+    n_filters = 4
 
     z_obs = 0.4
+
+    wavelength = np.array((3800.0, 4800.0, 5800.0, 6200.0))
+
+    wave_eff_rest = np.array([3000.0, 4000.0, 5000.0, 5500.0, 6000.0, 6500.0])
 
     ran_key = jran.PRNGKey(0)
 
@@ -140,7 +168,7 @@ def test_noisy_delta_mag():
     )
 
     assert np.all(~np.isnan(noisy_dmag))
-    assert noisy_dmag.shape == (n_gals,)
+    assert noisy_dmag.shape == (n_gals, n_filters)
 
 
 def test_add_delta_mag_to_photometry():

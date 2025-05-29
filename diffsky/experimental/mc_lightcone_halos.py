@@ -961,6 +961,9 @@ def mc_lightcone_obs_mags_cens(
     w = cenpop["ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     sm = 10 ** cenpop["logsm_obs"].reshape((n_gals, 1))
 
+    ran_key, ssp_key = jran.split(ran_key, 2)
+    delta_scatter = ssp_err_model.compute_delta_scatter(ssp_key, frac_ssp_err)
+
     integrand = w * cenpop["ssp_photflux_table"]
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
     cenpop["obs_mags_nodust_noerr"] = -2.5 * np.log10(photflux_galpop)
@@ -968,7 +971,7 @@ def mc_lightcone_obs_mags_cens(
     _ferr_ssp = cenpop["frac_ssp_err"].reshape((n_gals, n_bands, 1, 1))
     integrand = w * cenpop["ssp_photflux_table"] * _ferr_ssp
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
-    cenpop["obs_mags_nodust"] = -2.5 * np.log10(photflux_galpop)
+    cenpop["obs_mags_nodust"] = -2.5 * np.log10(photflux_galpop) + delta_scatter
 
     _ftrans = ftrans.reshape((n_gals, n_bands, 1, n_age))
     integrand = w * cenpop["ssp_photflux_table"] * _ftrans
@@ -977,7 +980,7 @@ def mc_lightcone_obs_mags_cens(
 
     integrand = w * cenpop["ssp_photflux_table"] * _ftrans * _ferr_ssp
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
-    cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
+    cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop) + delta_scatter
 
     w_noburst = cenpop["smooth_ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     integrand = w_noburst * cenpop["ssp_photflux_table"]
@@ -990,7 +993,7 @@ def mc_lightcone_obs_mags_cens(
 
     integrand = w_noburst * cenpop["ssp_photflux_table"] * _ftrans * _ferr_ssp
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
-    cenpop["obs_mags_noburst"] = -2.5 * np.log10(photflux_galpop)
+    cenpop["obs_mags_noburst"] = -2.5 * np.log10(photflux_galpop) + delta_scatter
 
     if return_internal_quantities:
         w_ms = cenpop["ssp_weights_ms"].reshape((n_gals, 1, n_met, n_age))

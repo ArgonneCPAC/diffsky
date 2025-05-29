@@ -505,6 +505,14 @@ def delta_mag_from_lambda_rest(ssperr_params, z_obs, logsm, wave_obs, wave_eff_r
 
 
 @jjit
+def compute_delta_scatter(ran_key, delta_mag):
+
+    delta_scatter = jran.normal(ran_key, delta_mag.shape) * SSP_SCATTER
+
+    return delta_scatter
+
+
+@jjit
 def noisy_delta_mag(
     ssperr_params,
     z_obs,
@@ -522,7 +530,9 @@ def noisy_delta_mag(
         wave_eff_rest
     )
 
-    noisy_delta_mag = (jran.normal(ran_key, delta_mag.shape) * SSP_SCATTER) + delta_mag
+    delta_scatter = compute_delta_scatter(ran_key, delta_mag)
+
+    noisy_delta_mag = delta_scatter + delta_mag
 
     return noisy_delta_mag
 
