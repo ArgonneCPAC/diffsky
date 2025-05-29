@@ -369,21 +369,25 @@ def predict_lsst_phot_from_diffstar(
     diffsky_data["obs_ugrizy_smooth_dust"] = obs_mag_smooth_dust
     diffsky_data["obs_ugrizy_bursty_dust"] = obs_mag_bursty_dust
 
+    ssp_ran_key, ran_key = jran.split(ran_key, 2)
+
     # Delta mags
-    delta_mag_obs = ssp_err_model.delta_mag_from_lambda_rest(
+    delta_mag_obs = ssp_err_model.noisy_delta_mag(
         ssp_err_pop_params,
         z_obs,
         diffsky_data["logsm_obs"],
         obs_wave_eff_ugrizy_aa,
         ssp_err_model.LAMBDA_REST,
+        ssp_ran_key,
     )
 
-    delta_mag_rest = ssp_err_model.delta_mag_from_lambda_rest(
+    delta_mag_rest = ssp_err_model.noisy_delta_mag(
         ssp_err_pop_params,
         z_obs,
         diffsky_data["logsm_obs"],
         rest_wave_eff_ugrizy_aa,
         ssp_err_model.LAMBDA_REST,
+        ssp_ran_key,
     )
 
     diffsky_data["rest_ugrizy_smooth_nodust_ssperrs"] = (

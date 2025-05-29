@@ -505,12 +505,36 @@ def delta_mag_from_lambda_rest(ssperr_params, z_obs, logsm, wave_obs, wave_eff_r
 
 
 @jjit
+def noisy_delta_mag(
+    ssperr_params,
+    z_obs,
+    logsm,
+    wave_eff_aa_obs,
+    wave_eff_rest,
+    ran_key,
+):
+
+    delta_mag = delta_mag_from_lambda_rest(
+        ssperr_params,
+        z_obs,
+        logsm,
+        wave_eff_aa_obs,
+        wave_eff_rest
+    )
+
+    noisy_delta_mag = (jran.normal(ran_key, delta_mag.shape) * SSP_SCATTER) + delta_mag
+
+    return noisy_delta_mag
+
+
+@jjit
 def add_delta_mag_to_photometry(
     ssperr_params,
     z_obs,
     logsm_q,
     logsm_ms,
     wave_eff_aa_obs,
+    wave_eff_rest,
     q_key,
     ms_key,
     mags_q_smooth,
@@ -519,24 +543,23 @@ def add_delta_mag_to_photometry(
     mags_ms_bursty
 ):
 
-    delta_mag_q = delta_mag_from_lambda_rest(
+    noisy_delta_mag_q = noisy_delta_mag(
         ssperr_params,
         z_obs,
         logsm_q,
         wave_eff_aa_obs,
-        LAMBDA_REST,
+        wave_eff_rest,
+        q_key
     )
 
-    delta_mag_ms = delta_mag_from_lambda_rest(
+    noisy_delta_mag_ms = noisy_delta_mag(
         ssperr_params,
         z_obs,
         logsm_ms,
         wave_eff_aa_obs,
-        LAMBDA_REST,
+        wave_eff_rest,
+        ms_key
     )
-
-    noisy_delta_mag_q = (jran.normal(q_key, delta_mag_q.shape) * SSP_SCATTER) + delta_mag_q
-    noisy_delta_mag_ms = (jran.normal(ms_key, delta_mag_ms.shape) * SSP_SCATTER) + delta_mag_ms
 
     new_mags_q_smooth = mags_q_smooth + noisy_delta_mag_q
     new_mags_q_bursty = mags_q_bursty + noisy_delta_mag_q
