@@ -18,7 +18,6 @@ from ..experimental.scatter import (
     get_unbounded_scatter_params,
     get_bounded_scatter_params,
 )
-from ..dustpop import tw_dustpop_mono_noise as twdp
 from ..ssp_err_model import ssp_err_model
 from . import spspop_param_utils as spspu
 
