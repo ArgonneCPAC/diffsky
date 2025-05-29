@@ -126,9 +126,12 @@ def test_add_delta_mag_to_photometry():
 
     n_gals = 2_000
     logsmarr = np.linspace(8, 12, n_gals)
-    mags = np.linspace(18, 24, n_gals)
+    n_filters = 4
+    m = np.linspace(18, 24, n_filters)
+    M = np.tile(m, n_gals)
+    mags = M.reshape(n_gals, n_filters)
 
-    wavelength = 5800.0
+    wavelength = np.array((3800.0, 4800.0, 5800.0, 6200.0))
 
     z_obs = 0.4
 
@@ -153,4 +156,4 @@ def test_add_delta_mag_to_photometry():
     (new_mags_q_smooth, new_mags_q_bursty, new_mags_ms_smooth, new_mags_ms_bursty) = res
 
     assert np.all(~np.isnan(new_mags_q_smooth))
-    assert new_mags_q_smooth.shape == (n_gals,)
+    assert new_mags_q_smooth.shape == (n_gals, n_filters)
