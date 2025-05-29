@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from collections import namedtuple
 
@@ -214,6 +213,7 @@ def mc_host_halos(
     hosts_logmh_at_z=None,
     cosmo_params=DEFAULT_COSMOLOGY,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    logmp_cutoff=0.0,
 ):
     """Monte Carlo realization of a subhalo catalog at a single redshift"""
     host_key1, host_key2 = jran.split(ran_key, 2)
@@ -225,6 +225,8 @@ def mc_host_halos(
 
         hosts_logmh_at_z = mc_host_halos_singlez(host_key1, lgmp_min, z_obs, volume_com)
 
+    hosts_logmh_at_z_clipped = np.clip(hosts_logmh_at_z, logmp_cutoff, np.inf)
+
     t_obs = _age_at_z_kern(z_obs, *cosmo_params)
     t_0 = age_at_z0(*cosmo_params)
     lgt0 = np.log10(t_0)
@@ -234,9 +236,15 @@ def mc_host_halos(
     _ZH = np.zeros(n_cens)
 
     tarr = np.zeros(1) + 10**lgt0
-    mah_params = mc_cenpop(
-        diffmahpop_params, tarr, hosts_logmh_at_z, t_obs + _ZH, host_key2, lgt0
+    mah_params_uncorrected = mc_cenpop(
+        diffmahpop_params, tarr, hosts_logmh_at_z_clipped, t_obs + _ZH, host_key2, lgt0
     )[0]
+    lgmp_t_obs_orig = _log_mah_kern(mah_params_uncorrected, t_obs, lgt0)
+    delta_logmh_clip = lgmp_t_obs_orig - hosts_logmh_at_z
+
+    mah_params = mah_params_uncorrected._replace(
+        logm0=mah_params_uncorrected.logm0 - delta_logmh_clip
+    )
 
     host_mah_params = mah_params
     lgmhost_pen_inf = np.copy(hosts_logmh_at_z)
