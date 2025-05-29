@@ -10,11 +10,11 @@ from jax import vmap
 
 
 DEFAULT_SCATTER_PDICT = OrderedDict(
-    delta_scatter=5.0,
-    av_scatter=5.0,
-    fburst_scatter=5.0,
-    lgmet_scatter=5.0,
-    funo_scatter=5.0,
+    delta_scatter=4.98,
+    av_scatter=1.63,
+    fburst_scatter=4.98,
+    lgmet_scatter=5.72,
+    funo_scatter=4.97,
 )
 
 K_BOUNDS = (0.0, 10.0)
