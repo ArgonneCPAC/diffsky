@@ -363,6 +363,7 @@ def mc_lightcone_diffstar_cens(
     n_hmf_grid=N_HMF_GRID,
     n_sfh_table=N_SFH_TABLE,
     return_internal_quantities=False,
+    logmp_cutoff=0.0,
 ):
     """
     Generate halo MAH and galaxy SFH for host halos sampled from a lightcone
@@ -427,6 +428,7 @@ def mc_lightcone_diffstar_cens(
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
         n_hmf_grid=n_hmf_grid,
+        logmp_cutoff=logmp_cutoff,
     )
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
