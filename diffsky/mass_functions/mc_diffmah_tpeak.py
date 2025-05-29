@@ -236,13 +236,15 @@ def mc_host_halos(
     _ZH = np.zeros(n_cens)
 
     tarr = np.zeros(1) + 10**lgt0
-    mah_params = mc_cenpop(
+    mah_params_uncorrected = mc_cenpop(
         diffmahpop_params, tarr, hosts_logmh_at_z_clipped, t_obs + _ZH, host_key2, lgt0
     )[0]
-    lgmp_t_obs_orig = _log_mah_kern(mah_params, t_obs, lgt0)
+    lgmp_t_obs_orig = _log_mah_kern(mah_params_uncorrected, t_obs, lgt0)
     delta_logmh_clip = lgmp_t_obs_orig - hosts_logmh_at_z
 
-    mah_params = mah_params._replace(logm0=mah_params.logm0 - delta_logmh_clip)
+    mah_params = mah_params_uncorrected._replace(
+        logm0=mah_params_uncorrected.logm0 - delta_logmh_clip
+    )
 
     host_mah_params = mah_params
     lgmhost_pen_inf = np.copy(hosts_logmh_at_z)

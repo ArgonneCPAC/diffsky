@@ -329,17 +329,19 @@ def mc_lightcone_host_halo_diffmah(
 
     tarr = np.array((10**lgt0,))
     args = (diffmahpop_params, tarr, logmp_obs_mf_clipped, t_obs, mah_key, lgt0)
-    mah_params = mc_cenpop(*args)[0]  # mah_params, dmhdt, log_mah
+    mah_params_uncorrected = mc_cenpop(*args)[0]  # mah_params, dmhdt, log_mah
 
-    logmp_obs_orig = _log_mah_kern(mah_params, t_obs, lgt0)
+    logmp_obs_orig = _log_mah_kern(mah_params_uncorrected, t_obs, lgt0)
     delta_logmh_clip = logmp_obs_orig - logmp_obs_mf
-    mah_params = mah_params._replace(logm0=mah_params.logm0 - delta_logmh_clip)
+    mah_params = mah_params_uncorrected._replace(
+        logm0=mah_params_uncorrected.logm0 - delta_logmh_clip
+    )
 
-    logmp0_halopop = _log_mah_kern(mah_params, 10**lgt0, lgt0)
+    logmp0 = _log_mah_kern(mah_params, 10**lgt0, lgt0)
     logmp_obs = _log_mah_kern(mah_params, t_obs, lgt0)
 
-    fields = ("z_obs", "t_obs", "logmp_obs", "mah_params", "logmp0", "logmp_obs_mf")
-    values = (z_obs, t_obs, logmp_obs, mah_params, logmp0_halopop, logmp_obs_mf)
+    fields = ("z_obs", "t_obs", "logmp_obs", "mah_params", "logmp0")
+    values = (z_obs, t_obs, logmp_obs, mah_params, logmp0)
     cenpop_out = dict()
     for key, value in zip(fields, values):
         cenpop_out[key] = value
