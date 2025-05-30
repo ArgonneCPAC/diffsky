@@ -26,6 +26,7 @@ from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psp
+from .scatter import DEFAULT_SCATTER_PARAMS
 
 config.update("jax_enable_x64", True)
 
@@ -362,6 +363,7 @@ def mc_lightcone_diffstar_cens(
     n_hmf_grid=N_HMF_GRID,
     n_sfh_table=N_SFH_TABLE,
     return_internal_quantities=False,
+    logmp_cutoff=0.0,
 ):
     """
     Generate halo MAH and galaxy SFH for host halos sampled from a lightcone
@@ -426,6 +428,7 @@ def mc_lightcone_diffstar_cens(
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
         n_hmf_grid=n_hmf_grid,
+        logmp_cutoff=logmp_cutoff,
     )
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
@@ -804,7 +807,7 @@ def mc_lightcone_obs_mags_cens(
     lgmet_scatter=umzr.MZR_SCATTER,
     diffburstpop_params=diffqburstpop_mono.DEFAULT_DIFFBURSTPOP_PARAMS,
     dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
-    dustpop_scatter_params=tw_dustpop_mono_noise.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    scatter_params=DEFAULT_SCATTER_PARAMS,
     ssp_err_pop_params=ssp_err_model.DEFAULT_SSPERR_PARAMS,
     n_hmf_grid=N_HMF_GRID,
     n_sfh_table=N_SFH_TABLE,
@@ -941,7 +944,7 @@ def mc_lightcone_obs_mags_cens(
         uran_av,
         uran_delta,
         uran_funo,
-        dustpop_scatter_params,
+        scatter_params,
     )
     _res = calc_dust_ftrans_vmap(*ftrans_args)
     ftrans_nonoise, ftrans, dust_params, noisy_dust_params = _res
@@ -958,6 +961,9 @@ def mc_lightcone_obs_mags_cens(
     w = cenpop["ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     sm = 10 ** cenpop["logsm_obs"].reshape((n_gals, 1))
 
+    ran_key, ssp_key = jran.split(ran_key, 2)
+    delta_scatter = ssp_err_model.compute_delta_scatter(ssp_key, frac_ssp_err)
+
     integrand = w * cenpop["ssp_photflux_table"]
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
     cenpop["obs_mags_nodust_noerr"] = -2.5 * np.log10(photflux_galpop)
@@ -965,7 +971,7 @@ def mc_lightcone_obs_mags_cens(
     _ferr_ssp = cenpop["frac_ssp_err"].reshape((n_gals, n_bands, 1, 1))
     integrand = w * cenpop["ssp_photflux_table"] * _ferr_ssp
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
-    cenpop["obs_mags_nodust"] = -2.5 * np.log10(photflux_galpop)
+    cenpop["obs_mags_nodust"] = -2.5 * np.log10(photflux_galpop) + delta_scatter
 
     _ftrans = ftrans.reshape((n_gals, n_bands, 1, n_age))
     integrand = w * cenpop["ssp_photflux_table"] * _ftrans
@@ -974,7 +980,7 @@ def mc_lightcone_obs_mags_cens(
 
     integrand = w * cenpop["ssp_photflux_table"] * _ftrans * _ferr_ssp
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
-    cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop)
+    cenpop["obs_mags"] = -2.5 * np.log10(photflux_galpop) + delta_scatter
 
     w_noburst = cenpop["smooth_ssp_weights"].reshape((n_gals, 1, n_met, n_age))
     integrand = w_noburst * cenpop["ssp_photflux_table"]
@@ -987,7 +993,7 @@ def mc_lightcone_obs_mags_cens(
 
     integrand = w_noburst * cenpop["ssp_photflux_table"] * _ftrans * _ferr_ssp
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * sm
-    cenpop["obs_mags_noburst"] = -2.5 * np.log10(photflux_galpop)
+    cenpop["obs_mags_noburst"] = -2.5 * np.log10(photflux_galpop) + delta_scatter
 
     if return_internal_quantities:
         w_ms = cenpop["ssp_weights_ms"].reshape((n_gals, 1, n_met, n_age))

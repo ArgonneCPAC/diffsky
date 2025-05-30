@@ -6,6 +6,7 @@ from dsps.utils import _tw_sigmoid
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
+from jax import random as jran
 
 from ..utils import _inverse_sigmoid, _sigmoid, _tw_interp_kern
 
@@ -14,6 +15,8 @@ K_LOGSM = 5.0
 LAMBDA_REST = jnp.array([1500.0, 2500.0, 3831.0, 4777.0, 6289.0, 7684.0])
 
 Z_CONTROL = jnp.array([0.0, 0.5, 1.1])
+
+SSP_SCATTER = 0.05
 
 ZERO_SSPERR_PDICT = dict(
     z0p0_dr_logsm0=10.0,
@@ -499,3 +502,79 @@ def delta_mag_from_lambda_rest(ssperr_params, z_obs, logsm, wave_obs, wave_eff_r
     delta_mag_z_obs = delta_mag_from_F_sps_err(F_sps_err_z_obs)
 
     return delta_mag_z_obs
+
+
+@jjit
+def compute_delta_scatter(ran_key, delta_mag):
+
+    delta_scatter = jran.normal(ran_key, delta_mag.shape) * SSP_SCATTER
+
+    return delta_scatter
+
+
+@jjit
+def noisy_delta_mag(
+    ssperr_params,
+    z_obs,
+    logsm,
+    wave_eff_aa_obs,
+    wave_eff_rest,
+    ran_key,
+):
+
+    delta_mag = delta_mag_from_lambda_rest(
+        ssperr_params,
+        z_obs,
+        logsm,
+        wave_eff_aa_obs,
+        wave_eff_rest
+    )
+
+    delta_scatter = compute_delta_scatter(ran_key, delta_mag)
+
+    noisy_delta_mag = delta_scatter + delta_mag
+
+    return noisy_delta_mag
+
+
+@jjit
+def add_delta_mag_to_photometry(
+    ssperr_params,
+    z_obs,
+    logsm_q,
+    logsm_ms,
+    wave_eff_aa_obs,
+    wave_eff_rest,
+    q_key,
+    ms_key,
+    mags_q_smooth,
+    mags_q_bursty,
+    mags_ms_smooth,
+    mags_ms_bursty
+):
+
+    noisy_delta_mag_q = noisy_delta_mag(
+        ssperr_params,
+        z_obs,
+        logsm_q,
+        wave_eff_aa_obs,
+        wave_eff_rest,
+        q_key
+    )
+
+    noisy_delta_mag_ms = noisy_delta_mag(
+        ssperr_params,
+        z_obs,
+        logsm_ms,
+        wave_eff_aa_obs,
+        wave_eff_rest,
+        ms_key
+    )
+
+    new_mags_q_smooth = mags_q_smooth + noisy_delta_mag_q
+    new_mags_q_bursty = mags_q_bursty + noisy_delta_mag_q
+
+    new_mags_ms_smooth = mags_ms_smooth + noisy_delta_mag_ms
+    new_mags_ms_bursty = mags_ms_bursty + noisy_delta_mag_ms
+
+    return new_mags_q_smooth, new_mags_q_bursty, new_mags_ms_smooth, new_mags_ms_bursty

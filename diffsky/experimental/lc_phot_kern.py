@@ -159,7 +159,7 @@ def multiband_lc_phot_kern(
     diffstarpop_params,
     mzr_params,
     spspop_params,
-    dustpop_scatter_params,
+    scatter_params,
     ssp_err_pop_params,
 ):
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
@@ -252,7 +252,7 @@ def multiband_lc_phot_kern(
         uran_av,
         uran_delta,
         uran_funo,
-        dustpop_scatter_params,
+        scatter_params,
     )
     _res = calc_dust_ftrans_vmap(*ftrans_args_q)
     ftrans_q = _res[1]
@@ -267,7 +267,7 @@ def multiband_lc_phot_kern(
         uran_av,
         uran_delta,
         uran_funo,
-        dustpop_scatter_params,
+        scatter_params,
     )
     _res = calc_dust_ftrans_vmap(*ftrans_args_ms)
     ftrans_ms = _res[1]
@@ -282,20 +282,24 @@ def multiband_lc_phot_kern(
     _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
     _ferr_ssp_q = frac_ssp_err_q.reshape((n_gals, n_bands, 1, 1))
 
+    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
+    delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_err_q)
+    delta_scatter_ms = ssp_err_model.compute_delta_scatter(ssp_ms_key, frac_ssp_err_ms)
+
     _ftrans_ms = ftrans_ms.reshape((n_gals, n_bands, 1, n_age))
     _ftrans_q = ftrans_q.reshape((n_gals, n_bands, 1, n_age))
 
     integrand_q = ssp_photflux_table * _w_q * _ftrans_q * _ferr_ssp_q
     photflux_galpop_q = jnp.sum(integrand_q, axis=(2, 3)) * _mstar_q
-    obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q)
+    obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q) + delta_scatter_q
 
     integrand_smooth_ms = ssp_photflux_table * _w_smooth_ms * _ftrans_ms * _ferr_ssp_ms
     photflux_galpop_smooth_ms = jnp.sum(integrand_smooth_ms, axis=(2, 3)) * _mstar_ms
-    obs_mags_smooth_ms = -2.5 * jnp.log10(photflux_galpop_smooth_ms)
+    obs_mags_smooth_ms = -2.5 * jnp.log10(photflux_galpop_smooth_ms) + delta_scatter_ms
 
     integrand_bursty_ms = ssp_photflux_table * _w_bursty_ms * _ftrans_ms * _ferr_ssp_ms
     photflux_galpop_bursty_ms = jnp.sum(integrand_bursty_ms, axis=(2, 3)) * _mstar_ms
-    obs_mags_bursty_ms = -2.5 * jnp.log10(photflux_galpop_bursty_ms)
+    obs_mags_bursty_ms = -2.5 * jnp.log10(photflux_galpop_bursty_ms) + delta_scatter_ms
 
     weights_q = diffstar_galpop.frac_q
     weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - p_burst_ms)

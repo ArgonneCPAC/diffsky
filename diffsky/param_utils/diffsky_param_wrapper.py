@@ -12,7 +12,12 @@ from dsps.metallicity import umzr
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from ..dustpop import tw_dustpop_mono_noise as twdp
+from ..experimental.scatter import (
+    DEFAULT_SCATTER_PARAMS,
+    DEFAULT_SCATTER_U_PARAMS,
+    get_unbounded_scatter_params,
+    get_bounded_scatter_params,
+)
 from ..ssp_err_model import ssp_err_model
 from . import spspop_param_utils as spspu
 
@@ -20,7 +25,7 @@ DEFAULT_PARAM_COLLECTION = (
     DEFAULT_DIFFSTARPOP_PARAMS,
     umzr.DEFAULT_MZR_PARAMS,
     spspu.DEFAULT_SPSPOP_PARAMS,
-    twdp.DEFAULT_DUSTPOP_SCATTER_PARAMS,
+    DEFAULT_SCATTER_PARAMS,
     ssp_err_model.DEFAULT_SSPERR_PARAMS,
 )
 
@@ -47,7 +52,7 @@ def get_flat_param_names():
         *diffstarpop_pnames_flat,
         *umzr.DEFAULT_MZR_PARAMS._fields,
         *spspop_pnames_flat,
-        *twdp.DEFAULT_DUSTPOP_SCATTER_PARAMS._fields,
+        *DEFAULT_SCATTER_PARAMS._fields,
         *ssp_err_model.DEFAULT_SSPERR_PARAMS._fields,
     )
     return all_pnames_flat
@@ -58,7 +63,7 @@ def unroll_param_collection_into_flat_array(
     diffstarpop_params,
     mzr_params,
     spspop_params,
-    dustpop_scatter_params,
+    scatter_params,
     ssp_err_pop_params,
 ):
     diffstarpop_params_flat = (
@@ -82,7 +87,7 @@ def unroll_param_collection_into_flat_array(
         *diffstarpop_params_flat,
         *mzr_params,
         *spspop_params_flat,
-        *dustpop_scatter_params,
+        *scatter_params,
         *ssp_err_pop_params,
     )
     return jnp.array(all_params_flat)
@@ -93,7 +98,7 @@ def unroll_u_param_collection_into_flat_array(
     diffstarpop_u_params,
     mzr_u_params,
     spspop_u_params,
-    dustpop_scatter_u_params,
+    scatter_u_params,
     ssp_err_pop_u_params,
 ):
     diffstarpop_u_params_flat = (
@@ -117,7 +122,7 @@ def unroll_u_param_collection_into_flat_array(
         *diffstarpop_u_params_flat,
         *mzr_u_params,
         *spspop_u_params_flat,
-        *dustpop_scatter_u_params,
+        *scatter_u_params,
         *ssp_err_pop_u_params,
     )
     return jnp.array(all_u_params_flat)
@@ -128,14 +133,14 @@ def get_u_param_collection_from_param_collection(
     diffstarpop_params,
     mzr_params,
     spspop_params,
-    dustpop_scatter_params,
+    scatter_params,
     ssp_err_pop_params,
 ):
     diffstarpop_u_params = get_unbounded_diffstarpop_params(diffstarpop_params)
     mzr_u_params = umzr.get_unbounded_mzr_params(mzr_params)
     spspop_u_params = spspu.get_unbounded_spspop_params_tw_dust(spspop_params)
-    dustpop_scatter_u_params = twdp.get_unbounded_dustpop_scatter_params(
-        dustpop_scatter_params
+    scatter_u_params = get_unbounded_scatter_params(
+        scatter_params
     )
     ssp_err_pop_u_params = ssp_err_model.get_unbounded_ssperr_params(ssp_err_pop_params)
 
@@ -143,7 +148,7 @@ def get_u_param_collection_from_param_collection(
         diffstarpop_u_params,
         mzr_u_params,
         spspop_u_params,
-        dustpop_scatter_u_params,
+        scatter_u_params,
         ssp_err_pop_u_params,
     )
     return u_param_collection
@@ -154,14 +159,14 @@ def get_param_collection_from_u_param_collection(
     diffstarpop_u_params,
     mzr_u_params,
     spspop_u_params,
-    dustpop_scatter_u_params,
+    scatter_u_params,
     ssp_err_pop_u_params,
 ):
     diffstarpop_params = get_bounded_diffstarpop_params(diffstarpop_u_params)
     mzr_params = umzr.get_bounded_mzr_params(mzr_u_params)
     spspop_params = spspu.get_bounded_spspop_params_tw_dust(spspop_u_params)
-    dustpop_scatter_params = twdp.get_bounded_dustpop_scatter_params(
-        dustpop_scatter_u_params
+    scatter_params = get_bounded_scatter_params(
+        scatter_u_params
     )
     ssp_err_pop_params = ssp_err_model.get_bounded_ssperr_params(ssp_err_pop_u_params)
 
@@ -169,7 +174,7 @@ def get_param_collection_from_u_param_collection(
         diffstarpop_params,
         mzr_params,
         spspop_params,
-        dustpop_scatter_params,
+        scatter_params,
         ssp_err_pop_params,
     )
     return param_collection
@@ -272,12 +277,12 @@ def get_u_param_collection_from_u_param_array(u_param_arr):
         (u_burstpop_params, u_dustpop_params)
     )
 
-    dustpop_scatter_u_params = [
+    scatter_u_params = [
         getattr(u_params, name)
-        for name in twdp.DEFAULT_DUSTPOP_SCATTER_U_PARAMS._fields
+        for name in DEFAULT_SCATTER_U_PARAMS._fields
     ]
-    dustpop_scatter_u_params = twdp.DEFAULT_DUSTPOP_SCATTER_U_PARAMS._make(
-        dustpop_scatter_u_params
+    scatter_u_params = DEFAULT_SCATTER_U_PARAMS._make(
+        scatter_u_params
     )
 
     ssp_err_pop_u_params = [
@@ -292,7 +297,7 @@ def get_u_param_collection_from_u_param_array(u_param_arr):
         diffstarpop_u_params,
         u_mzr_params,
         spspop_u_params,
-        dustpop_scatter_u_params,
+        scatter_u_params,
         ssp_err_pop_u_params,
     )
     return u_param_collection
