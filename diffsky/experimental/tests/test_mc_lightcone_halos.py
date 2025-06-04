@@ -7,6 +7,7 @@ from dsps.data_loaders.defaults import TransmissionCurve
 from jax import random as jran
 
 from ...mass_functions import mc_hosts
+from ...mass_functions.fitting_utils.calibrations import hacc_core_shmf_params as hcshmf
 from .. import mc_lightcone_halos as mclh
 
 
@@ -171,6 +172,35 @@ def test_mc_lightcone_host_halo_diffmah():
         args = (test_key, lgmp_min, z_min, z_max, sky_area_degsq)
 
         cenpop = mclh.mc_lightcone_host_halo_diffmah(*args)
+        n_gals = cenpop["z_obs"].size
+        assert cenpop["logmp_obs"].size == cenpop["logmp0"].size == n_gals
+        assert np.all(np.isfinite(cenpop["z_obs"]))
+
+        assert np.all(cenpop["z_obs"] >= z_min)
+        assert np.all(cenpop["z_obs"] <= z_max)
+
+        # Some halos with logmp_obs<lgmp_min is ok,
+        # but too many indicates an issue with DiffmahPop replicating logmp_obs
+        assert np.mean(cenpop["logmp_obs"] < lgmp_min) < 0.2, f"z_min={z_min:.2f}"
+
+
+def test_mc_lightcone_host_halo_diffmah_alt_mf_params():
+    """Enforce mc_lightcone_host_halo_diffmah returns reasonable results when passed
+    alternative halo mass function parameters"""
+    ran_key = jran.key(0)
+    lgmp_min = 12.0
+    sky_area_degsq = 1.0
+
+    n_tests = 5
+    z_max_arr = np.linspace(0.2, 2.5, n_tests)
+    for z_max in z_max_arr:
+        test_key, ran_key = jran.split(ran_key, 2)
+        z_min = z_max - 0.05
+        args = (test_key, lgmp_min, z_min, z_max, sky_area_degsq)
+
+        cenpop = mclh.mc_lightcone_host_halo_diffmah(
+            *args, hmf_params=hcshmf.HMF_PARAMS
+        )
         n_gals = cenpop["z_obs"].size
         assert cenpop["logmp_obs"].size == cenpop["logmp0"].size == n_gals
         assert np.all(np.isfinite(cenpop["z_obs"]))
