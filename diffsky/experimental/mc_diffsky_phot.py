@@ -1,5 +1,6 @@
 """ """
 
+import jax
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.metallicity import umzr
@@ -15,8 +16,10 @@ from ..burstpop import diffqburstpop_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..phot_utils import get_wave_eff_from_tcurves, load_interpolated_lsst_curves
 from ..ssp_err_model import ssp_err_model
-from .scatter import DEFAULT_SCATTER_PARAMS
 from . import precompute_ssp_phot as psp
+from .scatter import DEFAULT_SCATTER_PARAMS
+
+jax.config.update("jax_enable_x64", True)
 
 # gal_t_table, gal_sfr_table, ssp_lg_age_gyr, t_obs, sfr_min
 _A = (None, 0, None, None, None)
