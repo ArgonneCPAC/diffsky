@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 """Functions related to calibrating the merging model."""
 
 from jax import config

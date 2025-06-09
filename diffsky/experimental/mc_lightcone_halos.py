@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 """Functions to generate Monte Carlo realizations of galaxies on a lightcone"""
 
 from jax import config
