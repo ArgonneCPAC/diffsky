@@ -1,8 +1,13 @@
+# flake8: noqa: E402
 """ """
+
+from jax import config
+
+config.update("jax_enable_x64", True)
+
 
 from collections import namedtuple
 
-import jax
 from diffstar.utils import cumulative_mstar_formed_galpop
 from diffstarpop import mc_diffstar_sfh_galpop
 from dsps.constants import T_TABLE_MIN
@@ -22,8 +27,6 @@ from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
 from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
-
-jax.config.update("jax_enable_x64", True)
 
 _M = (0, None, None)
 _calc_lgmet_weights_galpop = jjit(

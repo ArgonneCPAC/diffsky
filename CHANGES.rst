@@ -1,3 +1,8 @@
+0.2.1 (unreleased)
+-------------------
+- Improve accuracy of young-star contribution stellar age PDF (https://github.com/ArgonneCPAC/diffsky/pull/151)
+
+
 0.2.0 (2025-03-24)
 -------------------
 - Update population-level photometry models of dust and burstiness

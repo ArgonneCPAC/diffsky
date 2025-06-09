@@ -1,13 +1,15 @@
+# flake8: noqa: E402
 """ """
 
-import jax
+from jax import config
+
+config.update("jax_enable_x64", True)
+
 from dsps.cosmology import age_at_z
 from dsps.sed import calc_ssp_weights_sfh_table_lognormal_mdf
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
-
-jax.config.update("jax_enable_x64", True)
 
 _a = (None, 0, 0, None, None, None, 0)
 calc_ssp_weights_sfh_table_lognormal_mdf_vmap = jjit(

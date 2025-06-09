@@ -1,6 +1,10 @@
+# flake8: noqa: E402
 """ """
 
-import jax
+from jax import config
+
+config.update("jax_enable_x64", True)
+
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.metallicity import umzr
@@ -18,8 +22,6 @@ from ..phot_utils import get_wave_eff_from_tcurves, load_interpolated_lsst_curve
 from ..ssp_err_model import ssp_err_model
 from . import precompute_ssp_phot as psp
 from .scatter import DEFAULT_SCATTER_PARAMS
-
-jax.config.update("jax_enable_x64", True)
 
 # gal_t_table, gal_sfr_table, ssp_lg_age_gyr, t_obs, sfr_min
 _A = (None, 0, None, None, None)
