@@ -2,17 +2,16 @@
 probability and applying the merging model.
 """
 
-from collections import OrderedDict, namedtuple
-
 from jax import config
-from jax import jit as jjit
-from jax import numpy as jnp
-from jax import random, vmap
-
-from dsps.utils import _inverse_sigmoid, _sigmoid
 
 config.update("jax_enable_x64", True)
 
+from collections import OrderedDict, namedtuple
+
+from dsps.utils import _inverse_sigmoid, _sigmoid
+from jax import jit as jjit
+from jax import numpy as jnp
+from jax import random, vmap
 
 DEFAULT_MERGE_PDICT = OrderedDict(
     t_delay_min=12.018,  # 2.563,
@@ -129,7 +128,7 @@ def p_infall(t_interest, k_infall, t_infall, t_delay, p_max):
     """
     t_start = t_infall + t_delay
     s = _sigmoid(t_interest, t_start, k_infall, -0.999999, p_max)
-    ss = jnp.sqrt(s * s) * _sigmoid(s, 0.05, 20., 0.0, 1.0)
+    ss = jnp.sqrt(s * s) * _sigmoid(s, 0.05, 20.0, 0.0, 1.0)
     return ss
 
 
@@ -178,11 +177,7 @@ def get_p_merge_from_merging_params(
 
     # There is a period of rapid merging where things reach p_max more quickly
     k_infall = _sigmoid(
-        t_infall,
-        t_crit,
-        merging_params.k_k,
-        merging_params.k_min,
-        merging_params.k_max
+        t_infall, t_crit, merging_params.k_k, merging_params.k_min, merging_params.k_max
     )
 
     # Galaxies in larger hosts experience a longer delay time
@@ -211,12 +206,7 @@ def get_p_merge_from_merging_u_params(
 ):
     merging_params = get_bounded_merge_params(merging_u_params)
     p_merge = get_p_merge_from_merging_params(
-        merging_params,
-        log_mpeak_infall,
-        log_mhost_infall,
-        t_interest,
-        t_infall,
-        upids
+        merging_params, log_mpeak_infall, log_mhost_infall, t_interest, t_infall, upids
     )
 
     return p_merge

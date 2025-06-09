@@ -1,5 +1,9 @@
 """Functions to generate Monte Carlo realizations of galaxies on a lightcone"""
 
+from jax import config
+
+config.update("jax_enable_x64", True)
+
 import numpy as np
 from diffmah.diffmah_kernels import _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
@@ -13,7 +17,7 @@ from dsps.cosmology import flat_wcdm
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
-from jax import config, grad
+from jax import grad
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -27,8 +31,6 @@ from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psp
 from .scatter import DEFAULT_SCATTER_PARAMS
-
-config.update("jax_enable_x64", True)
 
 N_HMF_GRID = 2_000
 N_SFH_TABLE = 100

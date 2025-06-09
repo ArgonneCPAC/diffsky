@@ -1,21 +1,20 @@
-"""Functions related to calibrating the merging model.
-"""
+"""Functions related to calibrating the merging model."""
 
+from jax import config
+
+config.update("jax_enable_x64", True)
+
+from dsps.utils import _tw_cuml_kern
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
-from jax import config
-
-from dsps.utils import _tw_cuml_kern
 
 from .merging_model import merge_model_with_preprocessing
-
-config.update("jax_enable_x64", True)
 
 
 @jjit
 def triweighted_histogram(X, sigma, lobins, bin_width):
-    """ Triweighted histogram
+    """Triweighted histogram
 
     Parameters
     ----------
@@ -46,7 +45,7 @@ def triweighted_histogram(X, sigma, lobins, bin_width):
 
 @jjit
 def weighted_tw_histogram(X, sigma, y, lobins, bin_width):
-    """ Triweighted histogram
+    """Triweighted histogram
 
     Parameters
     ----------
@@ -128,14 +127,7 @@ mapped_histogram = vmap(scalar_smf, in_axes=(None, 0, None, None, None, None))
 
 # Conditional stellar mass function
 def csmf_sats_cens_all(
-    all_sm_no_zero,
-    host_lgmp,
-    upid,
-    a,
-    lobins,
-    sigma,
-    bin_width,
-    comoving_volume
+    all_sm_no_zero, host_lgmp, upid, a, lobins, sigma, bin_width, comoving_volume
 ):
     """Conditional stellar mass function
 
@@ -244,15 +236,7 @@ def condition(host_lgmp):
 
 
 # Conditional stellar mass function
-def csmf(
-    all_sm_no_zero,
-    host_lgmp,
-    a,
-    lobins,
-    sigma,
-    bin_width,
-    comoving_volume
-):
+def csmf(all_sm_no_zero, host_lgmp, a, lobins, sigma, bin_width, comoving_volume):
 
     low = [12, 13, 14]
     high = [13, 14, 18]
@@ -261,7 +245,12 @@ def csmf(
     for i in range(3):
         smf_all = mapped_histogram(
             jnp.log10(all_sm_no_zero[(host_lgmp > low[i]) & (host_lgmp < high[i])]),
-            lobins, a, sigma, bin_width, comoving_volume)
+            lobins,
+            a,
+            sigma,
+            bin_width,
+            comoving_volume,
+        )
         smf.append(smf_all)
 
     return smf
@@ -288,7 +277,7 @@ def model_histogram(
     sigma,
     bin_width,
     comoving_volume,
-    lobins
+    lobins,
 ):
 
     SFR = merge_model_with_preprocessing(
@@ -304,15 +293,19 @@ def model_histogram(
         sfr,
         penultimate_dump,
         ultimate_dump,
-        MC)
+        MC,
+    )
 
     M = jnp.cumsum(SFR * dT, axis=1)
 
     M_interest = M[:, i_interest]
 
-    hist = scalar_smf(
-        jnp.log10(M_interest), lobins, a_interest,
-        sigma, bin_width, comoving_volume) + 1e-10
+    hist = (
+        scalar_smf(
+            jnp.log10(M_interest), lobins, a_interest, sigma, bin_width, comoving_volume
+        )
+        + 1e-10
+    )
 
     return hist
 
@@ -339,7 +332,7 @@ def conditional_model_histogram(
     bin_width,
     comoving_volume,
     lobins,
-    keep
+    keep,
 ):
 
     SFR = merge_model_with_preprocessing(
@@ -355,7 +348,8 @@ def conditional_model_histogram(
         sfr,
         penultimate_dump,
         ultimate_dump,
-        MC)
+        MC,
+    )
 
     M = jnp.cumsum(SFR * dT, axis=1)
 
@@ -363,9 +357,12 @@ def conditional_model_histogram(
 
     M_keep = M_interest[keep] + 1e-10
 
-    hist = scalar_smf(
-        jnp.log10(M_keep), lobins, a_interest,
-        sigma, bin_width, comoving_volume) + 1e-10
+    hist = (
+        scalar_smf(
+            jnp.log10(M_keep), lobins, a_interest, sigma, bin_width, comoving_volume
+        )
+        + 1e-10
+    )
 
     return hist
 
@@ -373,8 +370,29 @@ def conditional_model_histogram(
 mapped_model_csmf = vmap(
     conditional_model_histogram,
     in_axes=(
-        None, None, None, None, None, None, None, None, None, None,
-        None, None, None, None, None, None, None, None, None, 0, None))
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        0,
+        None,
+    ),
+)
 
 
 @jjit
@@ -393,7 +411,7 @@ def model_mass(
     ultimate_dump,
     MC,
     dT,
-    i_interest
+    i_interest,
 ):
 
     SFR = merge_model_with_preprocessing(
@@ -409,7 +427,8 @@ def model_mass(
         sfr,
         penultimate_dump,
         ultimate_dump,
-        MC)
+        MC,
+    )
 
     M = jnp.cumsum(SFR * dT, axis=1)
 
@@ -436,7 +455,7 @@ def sat_frac(
     dT,
     i_interest,
     bins,
-    bin_width
+    bin_width,
 ):
 
     stellar_mass = model_mass(
@@ -454,7 +473,8 @@ def sat_frac(
         ultimate_dump,
         MC,
         dT,
-        i_interest)
+        i_interest,
+    )
 
     logsm = jnp.log10(stellar_mass)
     sats_logsm = jnp.where(upids != -1, logsm, 0)

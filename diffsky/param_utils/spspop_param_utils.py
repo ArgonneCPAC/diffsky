@@ -1,8 +1,11 @@
 """ """
 
+from jax import config
+
+config.update("jax_enable_x64", True)
+
 from collections import namedtuple
 
-from jax import config
 from jax import jit as jjit
 
 from ..burstpop.diffqburstpop_mono import DiffburstPopParams, DiffburstPopUParams
@@ -39,9 +42,6 @@ from ..dustpop.funopop_ssfr import (
     get_unbounded_funopop_params,
 )
 from ..dustpop.tw_dustpop_new import DustPopParams, DustPopUParams
-
-config.update("jax_enable_x64", True)
-
 
 DEFAULT_DIFFBURSTPOP_PARAMS = DiffburstPopParams(
     DEFAULT_FREQBURST_PARAMS, DEFAULT_FBURSTPOP_PARAMS, DEFAULT_TBURSTPOP_PARAMS
