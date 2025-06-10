@@ -66,34 +66,31 @@ def collect_lc_diffsky_data(fn_list):
 
     lc_data["z_obs"] = 1 / lc_data["scale_factor"] - 1
 
+    assert lc_data["z_obs"].shape[0] == diffsky_data["logm0"].shape[0]
+
     return lc_data, diffsky_data
 
 
 def get_imputed_mah_params(ran_key, diffsky_data, lc_data, lgt0):
     msk_has_diffmah_fit = get_diffmah_has_fit_mask(diffsky_data)
     msk_nofit = ~msk_has_diffmah_fit
-    diffsky_data["has_diffmah_fit"] = msk_has_diffmah_fit
 
     t_obs_nofit = lc_data["t_obs"][msk_nofit]
     lgmp_obs_nofit = np.log10(diffsky_data["mp0"][msk_nofit])
     is_central = np.ones(msk_nofit.sum()).astype(int)
 
     fake_mah_params = generate_fake_mah_params(
-        ran_key,
-        t_obs_nofit,
-        lgmp_obs_nofit,
-        is_central,
-        lgt0,
+        ran_key, t_obs_nofit, lgmp_obs_nofit, is_central, lgt0
     )
 
+    mah_params = []
     for pname in DEFAULT_MAH_PARAMS._fields:
-        diffsky_data[pname][msk_nofit] = getattr(fake_mah_params, pname)
+        arr = np.copy(diffsky_data[pname])
+        arr[msk_nofit] = getattr(fake_mah_params, pname)
+        mah_params.append(arr)
+    mah_params = DEFAULT_MAH_PARAMS._make(mah_params)
 
-    mah_params = DEFAULT_MAH_PARAMS._make(
-        [diffsky_data[pname] for pname in DEFAULT_MAH_PARAMS._fields]
-    )
-
-    return mah_params
+    return mah_params, msk_has_diffmah_fit
 
 
 def get_diffmah_has_fit_mask(diffsky_data, npts_mah_min=hacc_defaults.N_MIN_MAH_PTS):
