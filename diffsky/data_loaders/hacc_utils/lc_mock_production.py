@@ -32,8 +32,8 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["logssfr_obs"] = diffsky_data["logssfr_obs"]
 
         hdf_out["z_obs"] = lc_data["z_obs"]
-        hdf_out["theta"] = lc_data["theta"]
-        hdf_out["phi"] = lc_data["phi"]
+        hdf_out["ra"] = lc_data["phi"]
+        hdf_out["dec"] = np.pi / 2.0 - lc_data["theta"]
         hdf_out["snapnum"] = lc_data["snapnum"]
 
 
