@@ -43,16 +43,19 @@ def get_diffsky_info_from_hacc_sim(sim_name):
     return diffsky_info
 
 
-def collect_lc_diffsky_data(fn_list):
+def collect_lc_diffsky_data(fn_list, drn_lc_data=None):
+    drn_diffsky_data = os.path.dirname(fn_list[0])
+    if drn_lc_data is None:
+        drn_lc_data = drn_diffsky_data
+
     diffsky_data_collector = []
     lc_data_collector = []
     for fn in fn_list:
-        drn = os.path.dirname(fn)
         lc_diffsky_data = load_flat_hdf5(fn)
         diffsky_data_collector.append(lc_diffsky_data)
 
         bn_lc = os.path.basename(fn).replace(".diffsky_data.hdf5", ".hdf5")
-        fn_lc = os.path.join(drn, bn_lc)
+        fn_lc = os.path.join(drn_lc_data, bn_lc)
         lc_data = load_flat_hdf5(fn_lc)
         lc_data_collector.append(lc_data)
 
