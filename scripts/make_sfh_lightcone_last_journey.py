@@ -9,6 +9,7 @@ import numpy as np
 from jax import random as jran
 from mpi4py import MPI
 
+from diffsky.data_loaders import mpi_utils
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
@@ -54,7 +55,11 @@ if __name__ == "__main__":
     )
 
     comm = MPI.COMM_WORLD
-    rank, nranks = comm.Get_rank(), comm.Get_size()
+    rankinfo, sorted_infolist = mpi_utils.get_mpi_rank_info(comm)
+    rank, intra_node_id, node_number = rankinfo
+    nranks_tot = comm.Get_size()
+    n_nodes_tot = len(set([x[2] for x in sorted_infolist]))
+    nranks_per_node = len(set([x[1] for x in sorted_infolist]))
 
     args = parser.parse_args()
     machine = args.machine
@@ -81,9 +86,10 @@ if __name__ == "__main__":
     sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(SIM_NAME)
 
     lc_patch_list = np.atleast_1d(np.loadtxt(lc_patch_list_cfg).astype(int))
+    lc_patch_list_for_node = np.array_split(lc_patch_list, n_nodes_tot)[node_number]
 
     start_script = time()
-    for lc_patch in lc_patch_list:
+    for lc_patch in lc_patch_list_for_node:
         ran_key, patch_key, shuffle_key = jran.split(ran_key, 3)
 
         lc_patch_info_list = sorted(
@@ -96,11 +102,12 @@ if __name__ == "__main__":
             for patch_info in lc_patch_info_list
         ]
 
-        print(f"\n{len(fn_list_lc_patch)} timestep files for lc_patch = {lc_patch}")
+        if rank == 0:
+            print(f"\n{len(fn_list_lc_patch)} timestep files for lc_patch = {lc_patch}")
 
         indx_all = np.arange(len(lc_patch_info_list)).astype(int)
         indx_all = jran.permutation(shuffle_key, indx_all)
-        indx_rank = np.array_split(indx_all, nranks)[rank]
+        indx_rank = np.array_split(indx_all, nranks_per_node)[intra_node_id]
 
         start = time()
         for indx in indx_rank:
@@ -122,7 +129,8 @@ if __name__ == "__main__":
 
         end = time()
         runtime = (end - start) / 60.0
-        print(f"Runtime to product lc_patch {lc_patch} = {runtime:.1f} minutes\n")
+        if rank == 0:
+            print(f"Runtime to product lc_patch {lc_patch} = {runtime:.1f} minutes\n")
 
     end_script = time()
     n_patches = len(lc_patch_list)
