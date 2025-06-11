@@ -78,6 +78,7 @@ if __name__ == "__main__":
 
     lc_patch_list = np.atleast_1d(np.loadtxt(lc_patch_list_cfg).astype(int))
 
+    start_script = time()
     for lc_patch in lc_patch_list:
         ran_key, patch_key = jran.split(ran_key, 2)
 
@@ -90,7 +91,7 @@ if __name__ == "__main__":
             os.path.join(indir_lc_diffsky, LC_CF_BNPAT.format(*patch_info))
             for patch_info in lc_patch_info_list
         ]
-        print(f"{len(fn_list_lc_patch)} timestep files for lc_patch = {lc_patch}")
+        print(f"\n{len(fn_list_lc_patch)} timestep files for lc_patch = {lc_patch}")
 
         start = time()
         for i, fn_lc_diffsky in enumerate(fn_list_lc_patch):
@@ -113,4 +114,9 @@ if __name__ == "__main__":
 
         end = time()
         runtime = (end - start) / 60.0
-        print(f"Runtime to product lc_patch {lc_patch} = {runtime:.1f} minutes")
+        print(f"Runtime to product lc_patch {lc_patch} = {runtime:.1f} minutes\n")
+
+    end_script = time()
+    n_patches = len(lc_patch_list)
+    runtime = end_script - start_script
+    msg = f"Total runtime for {n_patches} patches = {runtime:.1f} minutes"
