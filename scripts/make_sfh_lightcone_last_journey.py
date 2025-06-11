@@ -106,14 +106,18 @@ if __name__ == "__main__":
             for patch_info in lc_patch_info_list
         ]
 
-        if intra_node_id == 0:
-            print(f"\n{len(fn_list_lc_patch)} timestep files for lc_patch = {lc_patch}")
-
         indx_all_steps = np.arange(len(lc_patch_info_list)).astype(int)
         indx_all_steps = jran.permutation(shuffle_key, indx_all_steps)
         indx_steps_for_rank = np.array_split(indx_all_steps, nranks_per_node)[
             intra_node_id
         ]
+
+        if intra_node_id == 0:
+            n_steps_for_patch = len(fn_list_lc_patch)
+            n_steps_for_rank = len(indx_steps_for_rank)
+            print(
+                f"\nrank={rank} working on {indx_steps_for_rank} timesteps for lc_patch = {lc_patch}"
+            )
 
         start = time()
         for indx_step in indx_steps_for_rank:
