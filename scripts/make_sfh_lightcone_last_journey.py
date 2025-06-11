@@ -81,8 +81,10 @@ if __name__ == "__main__":
     for lc_patch in lc_patch_list:
         ran_key, patch_key = jran.split(ran_key, 2)
 
-        lc_patch_info_list = hlu.get_lc_patches_in_zrange(
-            SIM_NAME, lc_xdict, z_min, z_max, patch_list=[lc_patch]
+        lc_patch_info_list = sorted(
+            hlu.get_lc_patches_in_zrange(
+                SIM_NAME, lc_xdict, z_min, z_max, patch_list=[lc_patch]
+            )
         )
         fn_list_lc_patch = [
             os.path.join(indir_lc_diffsky, LC_CF_BNPAT.format(*patch_info))
