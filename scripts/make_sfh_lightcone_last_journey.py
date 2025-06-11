@@ -5,6 +5,7 @@ import os
 import pickle
 from time import time
 
+import numpy as np
 from jax import random as jran
 
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
@@ -35,7 +36,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "machine", help="Machine name where script is run", choices=["lcrc", "poboy"]
     )
-    parser.add_argument("lc_patch", help="Output directory", type=int)
+    parser.add_argument(
+        "lc_patch_list_cfg", help="fname to ASCII with list of sky patches"
+    )
     parser.add_argument("z_min", help="Minimum redshift", type=float)
     parser.add_argument("z_max", help="Maximum redshift", type=float)
 
@@ -51,7 +54,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     machine = args.machine
-    lc_patch = args.lc_patch
+    lc_patch_list_cfg = args.lc_patch_list_cfg
     z_min = args.z_min
     z_max = args.z_max
     drn_out = args.drn_out
@@ -73,32 +76,40 @@ if __name__ == "__main__":
 
     sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(SIM_NAME)
 
-    lc_patch_info_list = hlu.get_lc_patches_in_zrange(
-        SIM_NAME, lc_xdict, z_min, z_max, patch_list=[lc_patch]
-    )
-    fn_list = [
-        os.path.join(indir_lc_diffsky, LC_CF_BNPAT.format(*patch_info))
-        for patch_info in lc_patch_info_list
-    ]
-    print(f"Number of files = {len(fn_list)}")
+    lc_patch_list = np.atleast_1d(np.loadtxt(lc_patch_list_cfg).astype(int))
 
-    start = time()
-    for i, fn_lc_diffsky in enumerate(fn_list):
-        print(f"...working on file {i}/{len(fn_list)} for patch {lc_patch}")
+    for lc_patch in lc_patch_list:
+        ran_key, patch_key = jran.split(ran_key, 2)
 
-        lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
-            fn_lc_diffsky, indir_lc_data
+        lc_patch_info_list = hlu.get_lc_patches_in_zrange(
+            SIM_NAME, lc_xdict, z_min, z_max, patch_list=[lc_patch]
         )
+        fn_list_lc_patch = [
+            os.path.join(indir_lc_diffsky, LC_CF_BNPAT.format(*patch_info))
+            for patch_info in lc_patch_info_list
+        ]
+        print(f"{len(fn_list_lc_patch)} timestep files for lc_patch = {lc_patch}")
 
-        lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
-            sim_info, lc_data, diffsky_data, ran_key
-        )
+        start = time()
+        for i, fn_lc_diffsky in enumerate(fn_list_lc_patch):
+            print(
+                f"...working on file {i}/{len(fn_list_lc_patch)} for patch {lc_patch}"
+            )
 
-        bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
-        bn_out = bn_lc_diffsky.replace("diffsky_data", "diffsky_gals")
-        fn_out = os.path.join(drn_out, bn_out)
-        lcmp.write_lc_sfh_mock_to_disk(fn_out, lc_data, diffsky_data)
+            lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
+                fn_lc_diffsky, indir_lc_data
+            )
 
-    end = time()
-    runtime = (end - start) / 60.0
-    print(f"Runtime to product lc_patch {lc_patch} = {runtime:.1f} minutes")
+            patch_key, fn_key = jran.split(patch_key, 2)
+            lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
+                sim_info, lc_data, diffsky_data, fn_key
+            )
+
+            bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
+            bn_out = bn_lc_diffsky.replace("diffsky_data", "diffsky_gals")
+            fn_out = os.path.join(drn_out, bn_out)
+            lcmp.write_lc_sfh_mock_to_disk(fn_out, lc_data, diffsky_data)
+
+        end = time()
+        runtime = (end - start) / 60.0
+        print(f"Runtime to product lc_patch {lc_patch} = {runtime:.1f} minutes")
