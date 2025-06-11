@@ -6,6 +6,9 @@ Untitled*.ipynb
 *.npy
 *.png
 
+scripts/*.cfg
+scripts/*.cfg~
+
 .DS_Store
 
 # Byte-compiled / optimized / DLL files
