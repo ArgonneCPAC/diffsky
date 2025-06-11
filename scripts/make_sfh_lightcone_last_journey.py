@@ -1,4 +1,4 @@
-"""Script to make an SFH mock with DiffstarPop"""
+"""Script to make an SFH mock using DiffstarPop to populate a Last Journey lightcone"""
 
 import argparse
 import os
@@ -7,6 +7,7 @@ from time import time
 
 import numpy as np
 from jax import random as jran
+from mpi4py import MPI
 
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
@@ -52,6 +53,9 @@ if __name__ == "__main__":
         "-bnpat_out", help="Basename pattern of output file", default=BNPAT_OUT
     )
 
+    comm = MPI.COMM_WORLD
+    rank, nranks = comm.Get_rank(), comm.Get_size()
+
     args = parser.parse_args()
     machine = args.machine
     lc_patch_list_cfg = args.lc_patch_list_cfg
@@ -91,12 +95,15 @@ if __name__ == "__main__":
             os.path.join(indir_lc_diffsky, LC_CF_BNPAT.format(*patch_info))
             for patch_info in lc_patch_info_list
         ]
+
         print(f"\n{len(fn_list_lc_patch)} timestep files for lc_patch = {lc_patch}")
 
+        indx_all = np.arange(len(lc_patch_info_list)).astype(int)
+        indx_rank = np.array_split(indx_all, nranks)[rank]
+
         start = time()
-        for i, fn_lc_diffsky in enumerate(fn_list_lc_patch):
-            stepnum = lc_patch_info_list[i][0]
-            print(f"({i}/{len(fn_list_lc_patch)}): step={stepnum}, patch={lc_patch}")
+        for indx in indx_rank:
+            fn_lc_diffsky = fn_list_lc_patch[indx]
 
             lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
                 fn_lc_diffsky, indir_lc_data
