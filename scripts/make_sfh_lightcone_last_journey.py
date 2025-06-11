@@ -7,7 +7,8 @@ from time import time
 
 from jax import random as jran
 
-from diffsky.data_loaders.hacc_utils import lc_mock_production, load_lc_cf
+from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
+from diffsky.data_loaders.hacc_utils import load_lc_cf
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -59,22 +60,25 @@ if __name__ == "__main__":
 
     sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(SIM_NAME)
 
-    fn_list = glob(os.path.join(indir_lc_diffsky, LC_CF_BNPAT.format(lc_patch)))
+    fn_list = glob(os.path.join(indir_lc_diffsky, LC_CF_BNPAT.format(lc_patch)))[:5]
     print(f"Number of files = {len(fn_list)}")
 
     start = time()
+    for i, fn_lc_diffsky in enumerate(fn_list):
+        print(f"...working on file {i}/{len(fn_list)} for patch {lc_patch}")
 
-    lc_data, diffsky_data = load_lc_cf.collect_lc_diffsky_data(
-        fn_list, drn_lc_data=indir_lc_data
-    )
+        lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
+            fn_lc_diffsky, indir_lc_data
+        )
 
-    lc_data, diffsky_data = lc_mock_production.add_sfh_quantities_to_mock(
-        sim_info, lc_data, diffsky_data, ran_key
-    )
+        lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
+            sim_info, lc_data, diffsky_data, ran_key
+        )
 
-    bn_out = bnpat_out.format(SIM_NAME, lc_patch)
-    fn_out = os.path.join(drn_out, bn_out)
-    lc_mock_production.write_lc_sfh_mock_to_disk(fn_out, lc_data, diffsky_data)
+        bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
+        bn_out = bn_lc_diffsky.replace("diffsky_data", "diffsky_gals")
+        fn_out = os.path.join(drn_out, bn_out)
+        lcmp.write_lc_sfh_mock_to_disk(fn_out, lc_data, diffsky_data)
 
     end = time()
     runtime = (end - start) / 60.0
