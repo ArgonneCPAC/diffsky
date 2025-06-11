@@ -87,9 +87,13 @@ if __name__ == "__main__":
 
     lc_patch_list = np.atleast_1d(np.loadtxt(lc_patch_list_cfg).astype(int))
     lc_patch_list_for_node = np.array_split(lc_patch_list, n_nodes_tot)[node_number]
+    if intra_node_id == 0:
+        print(f"For rank = {rank}, lc_patch_list_for_node={lc_patch_list_for_node}")
 
     start_script = time()
     for lc_patch in lc_patch_list_for_node:
+        comm.Barrier()
+
         ran_key, patch_key, shuffle_key = jran.split(ran_key, 3)
 
         lc_patch_info_list = sorted(
@@ -102,16 +106,18 @@ if __name__ == "__main__":
             for patch_info in lc_patch_info_list
         ]
 
-        if rank == 0:
+        if intra_node_id == 0:
             print(f"\n{len(fn_list_lc_patch)} timestep files for lc_patch = {lc_patch}")
 
-        indx_all = np.arange(len(lc_patch_info_list)).astype(int)
-        indx_all = jran.permutation(shuffle_key, indx_all)
-        indx_rank = np.array_split(indx_all, nranks_per_node)[intra_node_id]
+        indx_all_steps = np.arange(len(lc_patch_info_list)).astype(int)
+        indx_all_steps = jran.permutation(shuffle_key, indx_all_steps)
+        indx_steps_for_rank = np.array_split(indx_all_steps, nranks_per_node)[
+            intra_node_id
+        ]
 
         start = time()
-        for indx in indx_rank:
-            fn_lc_diffsky = fn_list_lc_patch[indx]
+        for indx_step in indx_steps_for_rank:
+            fn_lc_diffsky = fn_list_lc_patch[indx_step]
 
             lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
                 fn_lc_diffsky, indir_lc_data
@@ -129,10 +135,14 @@ if __name__ == "__main__":
 
         end = time()
         runtime = (end - start) / 60.0
-        if rank == 0:
-            print(f"Runtime to product lc_patch {lc_patch} = {runtime:.1f} minutes\n")
+        if intra_node_id == 0:
+            print(
+                f"Runtime for lc_patch={lc_patch} with node {node_number} = {runtime:.1f} minutes\n"
+            )
 
     end_script = time()
     n_patches = len(lc_patch_list)
     runtime = end_script - start_script
     msg = f"Total runtime for {n_patches} patches = {runtime:.1f} minutes"
+    if rank == 0:
+        print(msg)
