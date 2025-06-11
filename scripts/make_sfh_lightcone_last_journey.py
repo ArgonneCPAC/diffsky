@@ -2,12 +2,13 @@
 
 import argparse
 import os
-from glob import glob
+import pickle
 from time import time
 
 from jax import random as jran
 
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
+from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
@@ -21,7 +22,9 @@ DRN_LC_CF_XDATA_LCRC = os.path.join(DRN_LJ_CROSSX_OUT_LCRC, "LC_CF_XDATA")
 DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
 DRN_LC_CF_XDATA_POBOY = os.path.join(DRN_LJ_CROSSX_OUT_POBOY, "LC_CF_XDATA")
 
-LC_CF_BNPAT = "lc_cores-*.{}.diffsky_data.hdf5"
+LC_XDICT_BNAME = "lc_xdict.pickle"
+
+LC_CF_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 SIM_NAME = "LastJourney"
 BNPAT_OUT = "diffsky_{0}.{1}.hdf5"
 
@@ -32,7 +35,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "machine", help="Machine name where script is run", choices=["lcrc", "poboy"]
     )
-    parser.add_argument("lc_patch", help="Output directory")
+    parser.add_argument("lc_patch", help="Output directory", type=int)
+    parser.add_argument("z_min", help="Minimum redshift", type=float)
+    parser.add_argument("z_max", help="Maximum redshift", type=float)
+
     parser.add_argument("drn_out", help="Output directory")
     parser.add_argument(
         "-indir_lc_data",
@@ -46,21 +52,34 @@ if __name__ == "__main__":
     args = parser.parse_args()
     machine = args.machine
     lc_patch = args.lc_patch
+    z_min = args.z_min
+    z_max = args.z_max
     drn_out = args.drn_out
     bnpat_out = args.bnpat_out
 
     if machine == "poboy":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_POBOY
         indir_lc_data = DRN_LJ_CROSSX_OUT_POBOY
+        fn_lc_xdict = os.path.join(DRN_LC_CF_XDATA_POBOY, LC_XDICT_BNAME)
     elif machine == "lcrc":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
+        fn_lc_xdict = os.path.join(DRN_LC_CF_XDATA_LCRC, LC_XDICT_BNAME)
+
+    with open(fn_lc_xdict, "rb") as handle:
+        lc_xdict = pickle.load(handle)
 
     ran_key = jran.key(0)
 
     sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(SIM_NAME)
 
-    fn_list = glob(os.path.join(indir_lc_diffsky, LC_CF_BNPAT.format(lc_patch)))[:5]
+    lc_patch_info_list = hlu.get_lc_patches_in_zrange(
+        SIM_NAME, lc_xdict, z_min, z_max, patch_list=[lc_patch]
+    )
+    fn_list = [
+        os.path.join(indir_lc_diffsky, LC_CF_BNPAT.format(*patch_info))
+        for patch_info in lc_patch_info_list
+    ]
     print(f"Number of files = {len(fn_list)}")
 
     start = time()
