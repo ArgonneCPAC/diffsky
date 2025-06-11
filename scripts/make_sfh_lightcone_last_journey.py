@@ -92,9 +92,8 @@ if __name__ == "__main__":
 
         start = time()
         for i, fn_lc_diffsky in enumerate(fn_list_lc_patch):
-            print(
-                f"...working on file {i}/{len(fn_list_lc_patch)} for patch {lc_patch}"
-            )
+            stepnum = lc_patch_info_list[i][0]
+            print(f"({i}/{len(fn_list_lc_patch)}): step={stepnum}, patch={lc_patch}")
 
             lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
                 fn_lc_diffsky, indir_lc_data
