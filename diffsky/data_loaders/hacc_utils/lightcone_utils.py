@@ -45,6 +45,8 @@ LC_SUBVOL_DRNPAT = "subvols_*"
 LC_PATCH_DIFFSKY_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_PATCH_BNPAT = "lc_cores-{0}.{1}.hdf5"
 
+BNPAT_LC_CFG = "lc_patch_list_{0}_to_{1}.cfg"
+
 
 @jjit
 def _jnp_take_kern(arr, indx):
@@ -358,3 +360,11 @@ def _check_serial_vs_parallel(drn1, drn2):
         print("Every pair of matching files is identical")
     else:
         print(f"The following files have discrepancies:{discrepant_file_list}")
+
+
+def make_cfg_file(i, j, drn=""):
+    fn = os.path.join(drn, BNPAT_LC_CFG.format(i, j))
+    with open(fn, "w") as fout:
+        for patch_num in range(i, j + 1):
+            fout.write(f"{patch_num}\n")
+    return fn
