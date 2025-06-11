@@ -12,6 +12,9 @@ from dsps.cosmology import flat_wcdm
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
 from . import load_lc_cf
 
+LC_CF_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
+LC_MOCK_BNPAT = LC_CF_BNPAT.replace("diffsky_data", "diffsky_gals")
+
 
 def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
     with h5py.File(fnout, "w") as hdf_out:
