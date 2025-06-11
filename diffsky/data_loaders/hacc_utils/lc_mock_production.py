@@ -95,3 +95,10 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     diffsky_data["logssfr_obs"] = logssfr_obs
 
     return lc_data, diffsky_data
+
+
+def get_patch_info_from_mock_basename(bn):
+    stepnum, patchnum = bn[: bn.find(".diffsky_gals")].split("-")[1].split(".")
+    stepnum = int(stepnum)
+    patchnum = int(patchnum)
+    return stepnum, patchnum
