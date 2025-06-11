@@ -5,8 +5,9 @@ import os
 from glob import glob
 from time import time
 
-from diffsky.data_loaders.hacc_utils import lc_mock_production, load_lc_cf
 from jax import random as jran
+
+from diffsky.data_loaders.hacc_utils import lc_mock_production, load_lc_cf
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -27,34 +28,51 @@ BNPAT_OUT = "diffsky_{0}.{1}.hdf5"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("indir_lc_cf", help="Output directory")
+    parser.add_argument(
+        "machine", help="Machine name where script is run", choices=["lcrc", "poboy"]
+    )
     parser.add_argument("lc_patch", help="Output directory")
     parser.add_argument("drn_out", help="Output directory")
-    parser.add_argument("-bnpat_out", help="Basename pattern of output file")
+    parser.add_argument(
+        "-indir_lc_data",
+        help="Input drn storing lc_cores-*.*.hdf5",
+        default=DRN_LJ_LC_LCRC,
+    )
+    parser.add_argument(
+        "-bnpat_out", help="Basename pattern of output file", default=BNPAT_OUT
+    )
 
     args = parser.parse_args()
-    indir_lc_cf = args.indir_lc_cf
+    machine = args.machine
     lc_patch = args.lc_patch
     drn_out = args.drn_out
+    bnpat_out = args.bnpat_out
+
+    if machine == "poboy":
+        indir_lc_diffsky = DRN_LJ_CROSSX_OUT_POBOY
+        indir_lc_data = DRN_LJ_CROSSX_OUT_POBOY
+    elif machine == "lcrc":
+        indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
+        indir_lc_data = DRN_LJ_LC_LCRC
 
     ran_key = jran.key(0)
 
     sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(SIM_NAME)
 
-    fn_list = glob(os.path.join(indir_lc_cf, LC_CF_BNPAT.format(lc_patch)))
+    fn_list = glob(os.path.join(indir_lc_diffsky, LC_CF_BNPAT.format(lc_patch)))
     print(f"Number of files = {len(fn_list)}")
 
     start = time()
 
     lc_data, diffsky_data = load_lc_cf.collect_lc_diffsky_data(
-        fn_list, drn_lc_data=DRN_LJ_LC_LCRC
+        fn_list, drn_lc_data=indir_lc_data
     )
 
     lc_data, diffsky_data = lc_mock_production.add_sfh_quantities_to_mock(
         sim_info, lc_data, diffsky_data, ran_key
     )
 
-    bn_out = BNPAT_OUT.format(SIM_NAME, lc_patch)
+    bn_out = bnpat_out.format(SIM_NAME, lc_patch)
     fn_out = os.path.join(drn_out, bn_out)
     lc_mock_production.write_lc_sfh_mock_to_disk(fn_out, lc_data, diffsky_data)
 
