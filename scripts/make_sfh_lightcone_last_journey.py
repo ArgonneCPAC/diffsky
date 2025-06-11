@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     start_script = time()
     for lc_patch in lc_patch_list:
-        ran_key, patch_key = jran.split(ran_key, 2)
+        ran_key, patch_key, shuffle_key = jran.split(ran_key, 3)
 
         lc_patch_info_list = sorted(
             hlu.get_lc_patches_in_zrange(
@@ -99,6 +99,7 @@ if __name__ == "__main__":
         print(f"\n{len(fn_list_lc_patch)} timestep files for lc_patch = {lc_patch}")
 
         indx_all = np.arange(len(lc_patch_info_list)).astype(int)
+        indx_all = jran.permutation(shuffle_key, indx_all)
         indx_rank = np.array_split(indx_all, nranks)[rank]
 
         start = time()
