@@ -1,6 +1,7 @@
 """Script to make an SFH mock using DiffstarPop to populate a Last Journey lightcone"""
 
 import argparse
+import gc
 import os
 import pickle
 from time import time
@@ -137,6 +138,10 @@ if __name__ == "__main__":
             bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
             fn_out = os.path.join(drn_out, bn_out)
             lcmp.write_lc_sfh_mock_to_disk(fn_out, lc_data, diffsky_data)
+
+            del lc_data
+            del diffsky_data
+            gc.collect()
 
         end = time()
         runtime = (end - start) / 60.0
