@@ -26,6 +26,7 @@ def get_loss_data(drn, halotype):
 
     halotype : string
         Should be either `hosthalos` or `subhalos`
+
     """
     assert halotype in ("hosthalos", "subhalos"), f"Unrecognized halotype={halotype}"
 

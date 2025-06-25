@@ -3,6 +3,8 @@
 The target data were all centrals in the DR1 UniverseMachine data release,
 created by the measure_smdpl_hmf_script.py script and the sfr_catalog_*.bin files
 
+These calibrated parameters pertain to halo mass in units of Msun (not Msun/h)
+
 """
 
 from collections import OrderedDict, namedtuple
