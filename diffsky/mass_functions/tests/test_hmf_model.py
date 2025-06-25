@@ -1,16 +1,17 @@
-"""
-"""
+""" """
 
 import os
-from glob import glob
 
 import numpy as np
 
+from ..fitting_utils import fit_hmf_model
+from ..hmf_calibrations.smdpl_hmf_fitting_helpers import get_loss_data
 from ..hmf_model import DEFAULT_HMF_PARAMS, predict_cuml_hmf
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
-TESTING_DATA_DRN = os.path.join(_THIS_DRNAME, "testing_data")
-BNPAT = "smdpl_hmf_cuml_redshift_{0:.2f}.txt"
+TESTING_DATA_DRN = os.path.join(
+    _THIS_DRNAME, "hmf_calibrations", "tests", "testing_data"
+)
 
 
 def infer_redshift_from_bname(bn):
@@ -61,14 +62,7 @@ def test_predict_hmf_returns_finite_valued_expected_shape():
 def test_predict_hmf_accurately_approximates_simulation_data():
     """This test loads some pretabulated HMF data computed from SMPDL
     and compares the simulation results to the predict_hmf function"""
-    fname_list = glob(os.path.join(TESTING_DATA_DRN, "smdpl_hmf_*.txt"))
 
-    for fn in fname_list:
-        arr = np.loadtxt(fn)
-        lgmp_target, hmf_target = arr[:, 0], arr[:, 1]
-        bn = os.path.basename(fn)
-        redshift = infer_redshift_from_bname(bn)
-
-        hmf_pred = predict_cuml_hmf(DEFAULT_HMF_PARAMS, lgmp_target, redshift)
-
-        assert _mse(hmf_pred, hmf_target) < 0.01
+    loss_data = get_loss_data(TESTING_DATA_DRN, "hosthalos")
+    loss = fit_hmf_model._loss_func_multi_z(DEFAULT_HMF_PARAMS, loss_data)
+    assert loss < 0.01
