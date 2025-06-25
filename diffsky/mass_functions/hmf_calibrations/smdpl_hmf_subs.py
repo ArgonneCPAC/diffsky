@@ -1,4 +1,9 @@
-"""Calibration of the HMF for host halos in the SMDPL simulation"""
+"""Calibration of the HMF for subhalos in the SMDPL simulation.
+
+The target data were all subhalos in the DR1 UniverseMachine data release,
+created by the measure_smdpl_hmf_script.py script and the sfr_catalog_*.bin files
+
+"""
 
 from ..hmf_model import DEFAULT_HMF_PARAMS
 
