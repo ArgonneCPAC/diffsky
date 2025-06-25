@@ -1,4 +1,4 @@
-""""""
+"""Helper functions used by fit_smdpl_hmf_script.py"""
 
 import os
 from glob import glob
