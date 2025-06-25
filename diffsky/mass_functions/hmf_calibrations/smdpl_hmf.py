@@ -1,4 +1,4 @@
-"""Calibration of the HMF for SMDPL simulation"""
+"""Calibration of the HMF for host halos in the SMDPL simulation"""
 
 from ..hmf_model import DEFAULT_HMF_PARAMS
 

@@ -11,6 +11,7 @@ from glob import glob
 import numpy as np
 
 from diffsky.mass_functions.fitting_utils import fit_hmf_model
+from diffsky.mass_functions.fitting_utils.diagnostics import hmf_fit_diagnostics
 
 VOL_SMDPL = 400.0**3
 
@@ -58,3 +59,23 @@ if __name__ == "__main__":
 
     _res = fit_hmf_model.hmf_fitter(loss_data_collector)
     p_best, loss, loss_hist, params_hist, fit_terminates = _res
+
+    hmf_fit_diagnostics.make_hmf_fit_plot(loss_data_collector, p_best)
+
+    print("\n...Printing best-fit values...\n\n")
+
+    for pname, pval in zip(p_best.ytp_params._fields, p_best.ytp_params):
+        print(f"{pname}={pval:.3f},")
+    print("\n")
+
+    for pname, pval in zip(p_best.x0_params._fields, p_best.x0_params):
+        print(f"{pname}={pval:.3f},")
+    print("\n")
+
+    for pname, pval in zip(p_best.lo_params._fields, p_best.lo_params):
+        print(f"{pname}={pval:.3f},")
+    print("\n")
+
+    for pname, pval in zip(p_best.hi_params._fields, p_best.hi_params):
+        print(f"{pname}={pval:.3f},")
+    print("\n")
