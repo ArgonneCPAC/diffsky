@@ -29,25 +29,28 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("drn", help="Path to the SMDPL_HISTOGRAMS directory")
+    parser.add_argument(
+        "halotype", help="hosthalos or subhalos", choices=["hosthalos", "subhalos"]
+    )
     args = parser.parse_args()
     drn = args.drn
+    halotype = args.halotype
 
-    fn_list_subs = sorted(glob(os.path.join(drn, "*subhalos.lgcuml_density*.npy")))
-    bn_list_subs = [os.path.basename(fn) for fn in fn_list_subs]
-    fn_list_hosts = sorted(glob(os.path.join(drn, "*hosthalos.lgcuml_density*.npy")))
-    bn_list_hosts = [os.path.basename(fn) for fn in fn_list_hosts]
+    if halotype == "subhalos":
+        fn_list = sorted(glob(os.path.join(drn, "*subhalos.lgcuml_density*.npy")))
+        bn_list = [os.path.basename(fn) for fn in fn_list]
+        fn_list_lgmp = [s.replace("lgcuml_density", "logmp_bins") for s in fn_list]
+    elif halotype == "hosthalos":
+        fn_list = sorted(glob(os.path.join(drn, "*hosthalos.lgcuml_density*.npy")))
+        bn_list = [os.path.basename(fn) for fn in fn_list]
+        fn_list_lgmp = [s.replace("lgcuml_density", "logmp_bins") for s in fn_list]
+    else:
+        raise ValueError(f"Unrecognized argument for halotype={halotype}")
 
-    fn_list_subs_lgmp = [
-        s.replace("lgcuml_density", "logmp_bins") for s in fn_list_subs
-    ]
-    fn_list_hosts_lgmp = [
-        s.replace("lgcuml_density", "logmp_bins") for s in fn_list_hosts
-    ]
-
-    z_list = np.array([get_z_from_bn(bname) for bname in bn_list_hosts])
+    z_list = np.array([get_z_from_bn(bname) for bname in bn_list])
 
     loss_data_collector = []
-    for iz, (fn, fn_lgmp) in enumerate(zip(fn_list_hosts, fn_list_hosts_lgmp)):
+    for iz, (fn, fn_lgmp) in enumerate(zip(fn_list, fn_list_lgmp)):
         lgcuml_density = np.load(fn)
         lgmp_bins = np.load(fn_lgmp)
         loss_data_iz = (z_list[iz], lgmp_bins, lgcuml_density)
