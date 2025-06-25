@@ -1,18 +1,16 @@
-"""
-"""
+""" """
 
 import numpy as np
 from jax import random as jran
 
-from ...hmf_model import (
-    DEFAULT_HMF_PARAMS,
+from ...hmf_calibrations.smdpl_hmf import (
     Hi_Params,
     HMF_Params,
     Lo_Params,
     X0_Params,
     Ytp_Params,
-    predict_cuml_hmf,
 )
+from ...hmf_model import DEFAULT_HMF_PARAMS, predict_cuml_hmf
 from ..fit_hmf_model import _loss_func_multi_z, hmf_fitter
 
 

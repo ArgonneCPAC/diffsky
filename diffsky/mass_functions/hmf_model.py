@@ -5,48 +5,17 @@ the peak historical mass of the main progenitor halo.
 
 """
 
-from collections import OrderedDict, namedtuple
-
 from jax import grad
 from jax import jit as jjit
 from jax import vmap
 
+from .hmf_calibrations import DEFAULT_HMF_PARAMS, HMF_Params  # noqa
 from .kernels.hmf_kernels import lg_hmf_kern
 from .utils import _sig_slope, _sigmoid
 
 YTP_XTP = 3.0
 X0_XTP = 3.0
 HI_XTP = 3.0
-
-DEFAULT_YTP_PDICT = OrderedDict(
-    ytp_ytp=-5.27, ytp_x0=1.15, ytp_k=0.59, ytp_ylo=-0.24, ytp_yhi=-1.44
-)
-DEFAULT_X0_PDICT = OrderedDict(
-    x0_ytp=12.95, x0_x0=1.41, x0_k=2.31, x0_ylo=-0.75, x0_yhi=-0.52
-)
-DEFAULT_LO_PDICT = OrderedDict(lo_x0=3.54, lo_k=0.69, lo_ylo=-0.77, lo_yhi=-2.61)
-DEFAULT_HI_PDICT = OrderedDict(
-    hi_ytp=-4.00, hi_x0=4.20, hi_k=1.29, hi_ylo=-0.51, hi_yhi=-0.20
-)
-
-Ytp_Params = namedtuple("Ytp_Params", DEFAULT_YTP_PDICT.keys())
-X0_Params = namedtuple("X0_Params", DEFAULT_X0_PDICT.keys())
-Lo_Params = namedtuple("Lo_Params", DEFAULT_LO_PDICT.keys())
-Hi_Params = namedtuple("HI_Params", DEFAULT_HI_PDICT.keys())
-
-DEFAULT_YTP_PARAMS = Ytp_Params(**DEFAULT_YTP_PDICT)
-DEFAULT_X0_PARAMS = X0_Params(**DEFAULT_X0_PDICT)
-DEFAULT_LO_PARAMS = Lo_Params(**DEFAULT_LO_PDICT)
-DEFAULT_HI_PARAMS = Hi_Params(**DEFAULT_HI_PDICT)
-
-DEFAULT_HMF_PDICT = OrderedDict(
-    ytp_params=DEFAULT_YTP_PARAMS,
-    x0_params=DEFAULT_X0_PARAMS,
-    lo_params=DEFAULT_LO_PARAMS,
-    hi_params=DEFAULT_HI_PARAMS,
-)
-HMF_Params = namedtuple("HMF_Params", DEFAULT_HMF_PDICT.keys())
-DEFAULT_HMF_PARAMS = HMF_Params(**DEFAULT_HMF_PDICT)
 
 
 @jjit
@@ -60,7 +29,7 @@ def predict_cuml_hmf(params, logmp, redshift):
         Use DEFAULT_HMF_PARAMS for SMDPL-calibrated behavior.
 
     logmp : array, shape (n_halos, )
-        Base-10 log of halo mass in units of Msun/h
+        Base-10 log of halo mass in units of Msun (not Msun/h)
 
     redshift : float
 
@@ -69,6 +38,8 @@ def predict_cuml_hmf(params, logmp, redshift):
     lg_cuml_hmf : array, shape (n_halos, )
         Base-10 log of cumulative comoving number density n(>logmp)
         in units of comoving (h/Mpc)**3
+
+        Note that number density uses h=1, but halo mass is defined in Msun
 
     """
     hmf_params = _get_singlez_cuml_hmf_params(params, redshift)
