@@ -29,7 +29,7 @@ def predict_cuml_hmf(params, logmp, redshift):
         Use DEFAULT_HMF_PARAMS for SMDPL-calibrated behavior.
 
     logmp : array, shape (n_halos, )
-        Base-10 log of halo mass in units of Msun/h
+        Base-10 log of halo mass in units of Msun (not Msun/h)
 
     redshift : float
 
@@ -38,6 +38,8 @@ def predict_cuml_hmf(params, logmp, redshift):
     lg_cuml_hmf : array, shape (n_halos, )
         Base-10 log of cumulative comoving number density n(>logmp)
         in units of comoving (h/Mpc)**3
+
+        Note that number density uses h=1, but halo mass is defined in Msun
 
     """
     hmf_params = _get_singlez_cuml_hmf_params(params, redshift)
