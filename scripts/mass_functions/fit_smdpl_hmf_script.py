@@ -46,8 +46,6 @@ if __name__ == "__main__":
 
     z_list = np.array([get_z_from_bn(bname) for bname in bn_list_hosts])
 
-    lgmp_bins = np.load(os.path.join(drn, "lgmp_bins.npy"))
-
     loss_data_collector = []
     for iz, (fn, fn_lgmp) in enumerate(zip(fn_list_hosts, fn_list_hosts_lgmp)):
         lgcuml_density = np.load(fn)
