@@ -37,10 +37,10 @@ def _loss_func_multi_z(params, loss_data):
 _loss_and_grad_func = value_and_grad(_loss_func_multi_z, argnums=0)
 
 
-def hmf_fitter(loss_data, n_steps=200, step_size=0.01, n_warmup=1):
+def hmf_fitter(loss_data, n_steps=200, step_size=0.01, n_warmup=1, p_init=P_INIT):
     _res = jax_adam_wrapper(
         _loss_and_grad_func,
-        P_INIT,
+        p_init,
         loss_data,
         n_steps,
         step_size=step_size,
