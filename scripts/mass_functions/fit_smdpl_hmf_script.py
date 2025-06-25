@@ -28,6 +28,9 @@ if __name__ == "__main__":
     _res = fit_hmf_model.hmf_fitter(loss_data_collector)
     p_best, loss, loss_hist, params_hist, fit_terminates = _res
 
+    loss_best = fit_hmf_model._loss_func_multi_z(p_best, loss_data_collector)
+    assert loss_best < 0.03, f"Poor HMF model fit: loss={loss_best:.4f}"
+
     hmf_fit_diagnostics.make_hmf_fit_plot(loss_data_collector, p_best)
 
     print("\n...Printing best-fit values...\n\n")
