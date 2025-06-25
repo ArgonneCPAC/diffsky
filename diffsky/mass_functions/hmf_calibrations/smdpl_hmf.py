@@ -5,42 +5,35 @@ created by the measure_smdpl_hmf_script.py script and the sfr_catalog_*.bin file
 
 """
 
-from ..hmf_model import DEFAULT_HMF_PARAMS
+from collections import OrderedDict, namedtuple
 
-ytp_params = DEFAULT_HMF_PARAMS.ytp_params._replace(
-    ytp_ytp=-4.824,
-    ytp_x0=1.235,
-    ytp_k=0.579,
-    ytp_ylo=-0.191,
-    ytp_yhi=-1.300,
+DEFAULT_YTP_PDICT = OrderedDict(
+    ytp_ytp=-4.824, ytp_x0=1.235, ytp_k=0.579, ytp_ylo=-0.191, ytp_yhi=-1.300
+)
+DEFAULT_X0_PDICT = OrderedDict(
+    x0_ytp=13.048, x0_x0=1.462, x0_k=2.220, x0_ylo=-0.810, x0_yhi=-0.556
+)
+DEFAULT_LO_PDICT = OrderedDict(lo_x0=3.638, lo_k=0.688, lo_ylo=-0.790, lo_yhi=-2.459)
+DEFAULT_HI_PDICT = OrderedDict(
+    hi_ytp=-3.733, hi_x0=4.079, hi_k=1.629, hi_ylo=-0.410, hi_yhi=-0.841
 )
 
-x0_params = DEFAULT_HMF_PARAMS.x0_params._replace(
-    x0_ytp=13.048,
-    x0_x0=1.462,
-    x0_k=2.220,
-    x0_ylo=-0.810,
-    x0_yhi=-0.556,
-)
+Ytp_Params = namedtuple("Ytp_Params", DEFAULT_YTP_PDICT.keys())
+X0_Params = namedtuple("X0_Params", DEFAULT_X0_PDICT.keys())
+Lo_Params = namedtuple("Lo_Params", DEFAULT_LO_PDICT.keys())
+Hi_Params = namedtuple("HI_Params", DEFAULT_HI_PDICT.keys())
 
-lo_params = DEFAULT_HMF_PARAMS.lo_params._replace(
-    lo_x0=3.638,
-    lo_k=0.688,
-    lo_ylo=-0.790,
-    lo_yhi=-2.459,
-)
+DEFAULT_YTP_PARAMS = Ytp_Params(**DEFAULT_YTP_PDICT)
+DEFAULT_X0_PARAMS = X0_Params(**DEFAULT_X0_PDICT)
+DEFAULT_LO_PARAMS = Lo_Params(**DEFAULT_LO_PDICT)
+DEFAULT_HI_PARAMS = Hi_Params(**DEFAULT_HI_PDICT)
 
-hi_params = DEFAULT_HMF_PARAMS.hi_params._replace(
-    hi_ytp=-3.733,
-    hi_x0=4.079,
-    hi_k=1.629,
-    hi_ylo=-0.410,
-    hi_yhi=-0.841,
+DEFAULT_HMF_PDICT = OrderedDict(
+    ytp_params=DEFAULT_YTP_PARAMS,
+    x0_params=DEFAULT_X0_PARAMS,
+    lo_params=DEFAULT_LO_PARAMS,
+    hi_params=DEFAULT_HI_PARAMS,
 )
+HMF_Params = namedtuple("HMF_Params", DEFAULT_HMF_PDICT.keys())
 
-HMF_PARAMS = DEFAULT_HMF_PARAMS._replace(
-    ytp_params=ytp_params,
-    x0_params=x0_params,
-    lo_params=lo_params,
-    hi_params=hi_params,
-)
+HMF_PARAMS = HMF_Params(**DEFAULT_HMF_PDICT)
