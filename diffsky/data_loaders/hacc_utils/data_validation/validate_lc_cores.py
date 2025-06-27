@@ -2,17 +2,8 @@
 
 import os
 
-import numpy as np
-
 from .. import lightcone_utils as lcu
 from .. import load_flat_hdf5
-
-try:
-    from haccytrees import Simulation as HACCSim
-
-    HAS_HACCYTREES = True
-except ImportError:
-    HAS_HACCYTREES = False
 
 BNPAT_LC_CORES = "lc_cores-{0}.{1}.hdf5"
 
