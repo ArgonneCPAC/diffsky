@@ -2,6 +2,8 @@
 
 import os
 
+import numpy as np
+
 from .. import lightcone_utils as lcu
 from .. import load_flat_hdf5
 
@@ -28,4 +30,22 @@ def check_zrange(fn_lc_cores, sim_name, tol=0.0002, lc_cores=None):
     if a_max_data > a_max_expected + tol:
         msg.append(f"a_max_data={a_max_data} > a_max_expected={a_max_expected}\n")
 
+    return msg
+
+
+def check_core_tag_uniqueness(fn_lc_cores, sim_name, tol=0.0002, lc_cores=None):
+    msg = []
+    if lc_cores is None:
+        lc_cores = load_flat_hdf5(fn_lc_cores)
+        u_core_tags, counts = np.unique(lc_cores["core_tag"], return_counts=True)
+        if u_core_tags.size < lc_cores["core_tag"].size:
+            example_repeated_core_tag = u_core_tags[counts > 1][0]
+            s = f"repeated core tag = {example_repeated_core_tag}"
+            msg.append(s)
+            n_distinct_repeats = np.sum(counts > 1)
+            max_repetitions = counts.max()
+            s = f"Number of distinct repeats = {n_distinct_repeats}"
+            msg.append(s)
+            s = f"Max num repetitions = {max_repetitions}"
+            msg.append(s)
     return msg
