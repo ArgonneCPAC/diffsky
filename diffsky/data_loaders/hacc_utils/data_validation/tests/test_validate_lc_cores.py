@@ -1,8 +1,8 @@
 """"""
 
 import os
+from glob import glob
 
-import numpy as np
 import pytest
 
 from .. import validate_lc_cores as vlcc
@@ -27,13 +27,10 @@ POBOY_MSG = "This test only runs on poboy machine with haccytrees installed"
 
 
 @pytest.mark.skipif(not CAN_RUN_LJ_DATA_TESTS, reason=POBOY_MSG)
-def test_check_zrange_passes_for_example_last_journey_sky_patch():
-
-    stepnum = 373
-    lc_patch = 0
-
-    bn_lc_cores = os.path.join(vlcc.BNPAT_LC_CORES.format(stepnum, lc_patch))
-    fn_lc_cores = os.path.join(DRN_LC_CORES_POBOY, bn_lc_cores)
-    msg = vlcc.check_zrange(fn_lc_cores, "LastJourney")
-
-    assert len(msg) == 0
+def test_check_zrange_passes_for_all_last_journey_data_on_poboy():
+    """"""
+    bnpat = vlcc.BNPAT_LC_CORES.format("*", "*")
+    fn_list = glob(os.path.join(DRN_LC_CORES_POBOY, bnpat))
+    for fn_lc_cores in fn_list:
+        msg = vlcc.check_zrange(fn_lc_cores, "LastJourney")
+        assert len(msg) == 0

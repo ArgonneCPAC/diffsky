@@ -16,7 +16,7 @@ except ImportError:
 BNPAT_LC_CORES = "lc_cores-{0}.{1}.hdf5"
 
 
-def check_zrange(fn_lc_cores, sim_name, tol=0.002, lc_cores=None):
+def check_zrange(fn_lc_cores, sim_name, tol=0.0002, lc_cores=None):
     """Redshift range of the data should be bounded by the expected range"""
     sim = HACCSim.simulations[sim_name]
     steps = np.array(sim.cosmotools_steps)
