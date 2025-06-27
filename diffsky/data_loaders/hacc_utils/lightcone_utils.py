@@ -47,6 +47,13 @@ LC_PATCH_BNPAT = "lc_cores-{0}.{1}.hdf5"
 
 BNPAT_LC_CFG = "lc_patch_list_{0}_to_{1}.cfg"
 
+try:
+    from haccytrees import Simulation as HACCSim
+
+    HAS_HACCYTREES = True
+except ImportError:
+    HAS_HACCYTREES = False
+
 
 @jjit
 def _jnp_take_kern(arr, indx):
@@ -368,3 +375,16 @@ def make_cfg_file(i, j, drn=""):
         for patch_num in range(i, j + 1):
             fout.write(f"{patch_num}\n")
     return fn
+
+
+def get_a_range_of_lc_cores_file(bname_lc_cores, sim_name):
+    """Get range of scale factor spanned by data in bname_lc_cores"""
+    sim = HACCSim.simulations[sim_name]
+    steps = np.array(sim.cosmotools_steps)
+    aarr = sim.step2a(steps)
+
+    stepnum, lc_patch = [int(s) for s in bname_lc_cores.split("-")[1].split(".")[:-1]]
+    indx_step = np.searchsorted(steps, stepnum)
+    a_min_expected, a_max_expected = aarr[indx_step], aarr[indx_step + 1]
+
+    return a_min_expected, a_max_expected
