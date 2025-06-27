@@ -34,14 +34,14 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["logsm_obs"] = diffsky_data["logsm_obs"]
         hdf_out["logssfr_obs"] = diffsky_data["logssfr_obs"]
 
-        hdf_out["z_obs"] = lc_data["z_obs"]
+        hdf_out["z_true"] = lc_data["z_true"]
         hdf_out["ra"] = lc_data["phi"]
         hdf_out["dec"] = np.pi / 2.0 - lc_data["theta"]
         hdf_out["snapnum"] = lc_data["snapnum"]
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
-    lc_data["t_obs"] = flat_wcdm.age_at_z(lc_data["z_obs"], *sim_info.cosmo_params)
+    lc_data["t_obs"] = flat_wcdm.age_at_z(lc_data["z_true"], *sim_info.cosmo_params)
 
     mah_params, msk_has_diffmah_fit = load_lc_cf.get_imputed_mah_params(
         ran_key, diffsky_data, lc_data, sim_info.lgt0
