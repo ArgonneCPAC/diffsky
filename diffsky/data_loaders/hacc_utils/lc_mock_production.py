@@ -110,7 +110,7 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
 
 def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5.0):
 
-    pos = np.array(lc_data["x"], lc_data["y"], lc_data["z"]).T
+    pos = np.array((lc_data["x"], lc_data["y"], lc_data["z"])).T
     host_pos = [lc_data[key][lc_data["top_host_idx"]] for key in ("x", "y", "z")]
     host_pos = np.array(host_pos).T
     host_logmp_obs = diffsky_data["logmp_obs"][lc_data["top_host_idx"]]
