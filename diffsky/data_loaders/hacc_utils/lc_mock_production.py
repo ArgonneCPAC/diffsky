@@ -46,7 +46,7 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         for key in lc_data_keys_out:
             hdf_out[key] = lc_data[key]
 
-        diffsky_data_keys_out = ("host_x", "host_y", "host_z", "logmp_obs_host")
+        diffsky_data_keys_out = ("x_host", "y_host", "z_host", "logmp_obs_host")
         for key in diffsky_data_keys_out:
             hdf_out[key] = diffsky_data[key]
 
