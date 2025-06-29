@@ -7,10 +7,11 @@ import pickle
 from time import time
 
 import numpy as np
+from jax import random as jran
+
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
-from jax import random as jran
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -110,9 +111,14 @@ if __name__ == "__main__":
                 fn_lc_diffsky, indir_lc_data
             )
 
-            patch_key, fn_key = jran.split(patch_key, 2)
+            patch_key, sfh_key = jran.split(patch_key, 2)
             lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
-                sim_info, lc_data, diffsky_data, fn_key
+                sim_info, lc_data, diffsky_data, sfh_key
+            )
+
+            patch_key, nfw_key = jran.split(patch_key, 2)
+            lc_data, diffsky_data = lcmp.reposition_satellites(
+                sim_info, lc_data, diffsky_data, nfw_key
             )
 
             bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
