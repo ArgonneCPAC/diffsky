@@ -1,5 +1,9 @@
 """ """
 
+import jax
+
+jax.config.update("jax_enable_x64", True)
+
 import h5py
 import numpy as np
 from diffmah import DEFAULT_MAH_PARAMS, logmh_at_t_obs
@@ -42,7 +46,7 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["dec"] = np.pi / 2.0 - lc_data["theta"]
         hdf_out["snapnum"] = lc_data["snapnum"]
 
-        lc_data_keys_out = ("core_tag", "x", "y", "z", "top_host_idx")
+        lc_data_keys_out = ("core_tag", "x", "y", "z", "top_host_idx", "central")
         for key in lc_data_keys_out:
             hdf_out[key] = lc_data[key]
 
