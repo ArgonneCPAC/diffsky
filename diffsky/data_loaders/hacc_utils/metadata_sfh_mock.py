@@ -81,7 +81,7 @@ def append_metadata(fnout, sim_name):
         cosmo_group.attrs["Om0"] = sim_info.sim.cosmo.Omega_m
         cosmo_group.attrs["w0"] = sim_info.sim.cosmo.w0
         cosmo_group.attrs["wa"] = sim_info.sim.cosmo.wa
-        cosmo_group.attrs["h"] = sim_info.sim.cosmo.n
+        cosmo_group.attrs["h"] = sim_info.sim.cosmo.h
         cosmo_group.attrs["Ob0"] = sim_info.sim.cosmo.Omega_b
         cosmo_group.attrs["sigma8"] = sim_info.sim.cosmo.s8
         cosmo_group.attrs["ns"] = sim_info.sim.cosmo.ns
