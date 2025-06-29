@@ -1,4 +1,5 @@
-""" """
+# flake8: noqa: E402
+"""Kernels used to produce the SFH mock lightcone"""
 
 import jax
 
