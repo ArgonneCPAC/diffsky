@@ -42,7 +42,7 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["dec"] = np.pi / 2.0 - lc_data["theta"]
         hdf_out["snapnum"] = lc_data["snapnum"]
 
-        lc_data_keys_out = ("x", "y", "z", "top_host_idx")
+        lc_data_keys_out = ("core_tag", "x", "y", "z", "top_host_idx")
         for key in lc_data_keys_out:
             hdf_out[key] = lc_data[key]
 
