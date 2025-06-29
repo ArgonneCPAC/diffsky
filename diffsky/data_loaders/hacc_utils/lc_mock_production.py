@@ -134,7 +134,7 @@ def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5
     host_centric_pos = nfwcs.mc_ellipsoidal_positions(*args)
 
     new_pos = host_centric_pos + host_pos
-    msk_cen = np.reshape(lc_data["central"] == 1, (n_cores, 3))
+    msk_cen = np.reshape(lc_data["central"] == 1, (n_cores, 1))
     new_pos = np.where(msk_cen, pos, new_pos)
     lc_data["x_nfw"] = new_pos[:, 0]
     lc_data["y_nfw"] = new_pos[:, 1]
