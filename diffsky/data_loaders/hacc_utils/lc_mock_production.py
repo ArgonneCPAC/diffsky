@@ -8,7 +8,10 @@ from diffstarpop import mc_diffstar_sfh_galpop
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
+from jax import random as jran
 
+from ...fake_sats import halo_boundary_functions as hbf
+from ...fake_sats import nfw_config_space as nfwcs
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
 from . import load_lc_cf
 
@@ -38,6 +41,14 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["ra"] = lc_data["phi"]
         hdf_out["dec"] = np.pi / 2.0 - lc_data["theta"]
         hdf_out["snapnum"] = lc_data["snapnum"]
+
+        lc_data_keys_out = ("x", "y", "z", "top_host_idx")
+        for key in lc_data_keys_out:
+            hdf_out[key] = lc_data[key]
+
+        diffsky_data_keys_out = ("host_x", "host_y", "host_z", "logmp_obs_host")
+        for key in diffsky_data_keys_out:
+            hdf_out[key] = diffsky_data[key]
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
@@ -93,6 +104,41 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     logsm_obs, logssfr_obs = get_logsm_logssfr_at_t_obs(lc_data["t_obs"], t_table, sfh)
     diffsky_data["logsm_obs"] = logsm_obs
     diffsky_data["logssfr_obs"] = logssfr_obs
+
+    return lc_data, diffsky_data
+
+
+def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5.0):
+
+    pos = np.array(lc_data["x"], lc_data["y"], lc_data["z"]).T
+    host_pos = [lc_data[key][lc_data["top_host_idx"]] for key in ("x", "y", "z")]
+    host_pos = np.array(host_pos).T
+    host_logmp_obs = diffsky_data["logmp_obs"][lc_data["top_host_idx"]]
+
+    diffsky_data["logmp_obs_host"] = host_logmp_obs
+    diffsky_data["x_host"] = host_pos[:, 0]
+    diffsky_data["y_host"] = host_pos[:, 1]
+    diffsky_data["z_host"] = host_pos[:, 2]
+
+    args = (10**host_logmp_obs, sim_info.cosmo_params, lc_data["z_true"], "200m")
+    host_radius_mpc = hbf.halo_mass_to_halo_radius(*args) / 1000.0
+
+    n_cores = host_logmp_obs.shape[0]
+    axis_key, nfw_key = jran.split(ran_key, 2)
+    major_axes = jran.uniform(axis_key, minval=-1, maxval=1, shape=(n_cores, 3))
+    b_to_a = np.ones(n_cores)
+    c_to_a = np.ones(n_cores)
+    conc = np.zeros(n_cores) + fixed_conc
+
+    args = (nfw_key, host_radius_mpc, conc, major_axes, b_to_a, c_to_a)
+    host_centric_pos = nfwcs.mc_ellipsoidal_positions(*args)
+
+    new_pos = host_centric_pos + host_pos
+    msk_cen = np.reshape(lc_data["central"] == 1, (n_cores, 3))
+    new_pos = np.where(msk_cen, pos, new_pos)
+    lc_data["x_nfw"] = new_pos[:, 0]
+    lc_data["y_nfw"] = new_pos[:, 1]
+    lc_data["z_nfw"] = new_pos[:, 2]
 
     return lc_data, diffsky_data
 
