@@ -11,7 +11,9 @@ from jax import random as jran
 
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
-from diffsky.data_loaders.hacc_utils import load_lc_cf, metadata_sfh_mock
+from diffsky.data_loaders.hacc_utils import load_lc_cf
+from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
+from diffsky.data_loaders.hacc_utils import metadata_sfh_mock
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -48,6 +50,18 @@ if __name__ == "__main__":
     )
     parser.add_argument("-itest", help="Short test run?", type=int, default=0)
     parser.add_argument("-sim_name", help="Simulation name", default=SIM_NAME)
+    parser.add_argument(
+        "-synthetic_cores",
+        help="Use synthetic cores instead of simulated cores",
+        default=0,
+        type=int,
+    )
+    parser.add_argument(
+        "-lgmp_min", help="Low-mass cutoff for synthetic cores", type=float, default=-1
+    )
+    parser.add_argument(
+        "-lgmp_max", help="High-mass cutoff for synthetic cores", type=float, default=-1
+    )
 
     args = parser.parse_args()
     machine = args.machine
@@ -58,6 +72,22 @@ if __name__ == "__main__":
     drn_out = args.drn_out
     itest = args.itest
     sim_name = args.sim_name
+    synthetic_cores = args.synthetic_cores
+    lgmp_min = args.lgmp_min
+    lgmp_max = args.lgmp_max
+
+    if synthetic_cores == 1:
+        drn_out = os.path.join(drn_out, "synthetic_cores")
+
+        try:
+            assert lgmp_min != -1
+            assert lgmp_max != -1
+        except AssertionError:
+            msg = f"When argument synthetic_cores={synthetic_cores} "
+            msg += "must specify lgmp_min and lgmp_max"
+            raise ValueError(msg)
+
+    os.makedirs(drn_out, exist_ok=True)
 
     if machine == "poboy":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_POBOY
@@ -109,9 +139,17 @@ if __name__ == "__main__":
             print(f"Working on={os.path.basename(fn_lc_diffsky)}")
             print(f"stepnum={stepnum}")
 
-            lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
-                fn_lc_diffsky, indir_lc_data
-            )
+            if synthetic_cores == 0:
+                lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
+                    fn_lc_diffsky, indir_lc_data
+                )
+            else:
+                bn_in = os.path.basename(fn_lc_diffsky)
+                bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
+                fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
+                lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(
+                    fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
+                )
 
             patch_key, sfh_key = jran.split(patch_key, 2)
             lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(

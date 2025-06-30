@@ -93,20 +93,25 @@ def get_imputed_mah_params(ran_key, diffsky_data, lc_data, lgt0):
     msk_has_diffmah_fit = get_diffmah_has_fit_mask(diffsky_data)
     msk_nofit = ~msk_has_diffmah_fit
 
-    t_obs_nofit = lc_data["t_obs"][msk_nofit]
-    lgmp_obs_nofit = np.log10(diffsky_data["mp0"][msk_nofit])
-    is_central = np.ones(msk_nofit.sum()).astype(int)
+    num_nofit = msk_nofit.sum()
+    if num_nofit == 0:
+        mah_params = [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+        mah_params = DEFAULT_MAH_PARAMS._make(mah_params)
+    else:
+        t_obs_nofit = lc_data["t_obs"][msk_nofit]
+        lgmp_obs_nofit = np.log10(diffsky_data["mp0"][msk_nofit])
+        is_central = np.ones(msk_nofit.sum()).astype(int)
 
-    fake_mah_params = generate_fake_mah_params(
-        ran_key, t_obs_nofit, lgmp_obs_nofit, is_central, lgt0
-    )
+        fake_mah_params = generate_fake_mah_params(
+            ran_key, t_obs_nofit, lgmp_obs_nofit, is_central, lgt0
+        )
 
-    mah_params = []
-    for pname in DEFAULT_MAH_PARAMS._fields:
-        arr = np.copy(diffsky_data[pname])
-        arr[msk_nofit] = getattr(fake_mah_params, pname)
-        mah_params.append(arr)
-    mah_params = DEFAULT_MAH_PARAMS._make(mah_params)
+        mah_params = []
+        for pname in DEFAULT_MAH_PARAMS._fields:
+            arr = np.copy(diffsky_data[pname])
+            arr[msk_nofit] = getattr(fake_mah_params, pname)
+            mah_params.append(arr)
+        mah_params = DEFAULT_MAH_PARAMS._make(mah_params)
 
     return mah_params, msk_has_diffmah_fit
 
