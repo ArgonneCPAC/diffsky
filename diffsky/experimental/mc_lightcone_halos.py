@@ -273,6 +273,7 @@ def mc_lightcone_host_halo_diffmah(
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     n_hmf_grid=N_HMF_GRID,
     logmp_cutoff=0.0,
+    lgmp_max=mc_hosts.LGMH_MAX,
 ):
     """Generate halo MAHs for host halos sampled from a lightcone
 
@@ -324,6 +325,7 @@ def mc_lightcone_host_halo_diffmah(
         cosmo_params=cosmo_params,
         hmf_params=hmf_params,
         n_hmf_grid=n_hmf_grid,
+        lgmp_max=lgmp_max,
     )
     t_obs = flat_wcdm.age_at_z(z_obs, *cosmo_params)
     t_0 = flat_wcdm.age_at_z0(*cosmo_params)

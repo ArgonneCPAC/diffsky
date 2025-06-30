@@ -11,7 +11,7 @@ from jax import random as jran
 
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
-from diffsky.data_loaders.hacc_utils import load_lc_cf
+from diffsky.data_loaders.hacc_utils import load_lc_cf, metadata_sfh_mock
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -47,6 +47,7 @@ if __name__ == "__main__":
         default=DRN_LJ_LC_LCRC,
     )
     parser.add_argument("-itest", help="Short test run?", type=int, default=0)
+    parser.add_argument("-sim_name", help="Simulation name", default=SIM_NAME)
 
     args = parser.parse_args()
     machine = args.machine
@@ -56,6 +57,7 @@ if __name__ == "__main__":
     iend = args.iend
     drn_out = args.drn_out
     itest = args.itest
+    sim_name = args.sim_name
 
     if machine == "poboy":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_POBOY
@@ -71,7 +73,7 @@ if __name__ == "__main__":
 
     ran_key = jran.key(0)
 
-    sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(SIM_NAME)
+    sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
 
     if itest == 1:
         lc_patch_list = [0, 1]
@@ -86,7 +88,7 @@ if __name__ == "__main__":
 
         lc_patch_info_list = sorted(
             hlu.get_lc_patches_in_zrange(
-                SIM_NAME, lc_xdict, z_min, z_max, patch_list=[lc_patch]
+                sim_name, lc_xdict, z_min, z_max, patch_list=[lc_patch]
             )
         )
         fn_list_lc_patch = [
@@ -124,6 +126,7 @@ if __name__ == "__main__":
             bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
             fn_out = os.path.join(drn_out, bn_out)
             lcmp.write_lc_sfh_mock_to_disk(fn_out, lc_data, diffsky_data)
+            metadata_sfh_mock.append_metadata(fn_out, sim_name)
 
             del lc_data
             del diffsky_data

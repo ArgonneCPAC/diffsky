@@ -27,33 +27,40 @@ LC_MOCK_BNPAT = LC_CF_BNPAT.replace("diffsky_data", "diffsky_gals")
 def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
     with h5py.File(fnout, "w") as hdf_out:
 
+        hdf_out.require_group("data")
+
         # Write diffmah params
         for key in DEFAULT_MAH_PARAMS._fields:
-            hdf_out[key] = diffsky_data[key]
-        hdf_out["has_diffmah_fit"] = diffsky_data["has_diffmah_fit"]
-        hdf_out["logmp0"] = diffsky_data["logmp0"]
-        hdf_out["logmp_obs"] = diffsky_data["logmp_obs"]
+            key_out = "data/" + key
+            hdf_out[key_out] = diffsky_data[key]
+        hdf_out["data/has_diffmah_fit"] = diffsky_data["has_diffmah_fit"]
+        hdf_out["data/logmp0"] = diffsky_data["logmp0"]
+        hdf_out["data/logmp_obs"] = diffsky_data["logmp_obs"]
 
         # Write diffstar params
         for key in DEFAULT_DIFFSTAR_PARAMS.ms_params._fields:
-            hdf_out[key] = diffsky_data[key]
+            key_out = "data/" + key
+            hdf_out[key_out] = diffsky_data[key]
         for key in DEFAULT_DIFFSTAR_PARAMS.q_params._fields:
-            hdf_out[key] = diffsky_data[key]
-        hdf_out["logsm_obs"] = diffsky_data["logsm_obs"]
-        hdf_out["logssfr_obs"] = diffsky_data["logssfr_obs"]
+            key_out = "data/" + key
+            hdf_out[key_out] = diffsky_data[key]
+        hdf_out["data/logsm_obs"] = diffsky_data["logsm_obs"]
+        hdf_out["data/logssfr_obs"] = diffsky_data["logssfr_obs"]
 
-        hdf_out["z_true"] = lc_data["z_true"]
-        hdf_out["ra"] = lc_data["phi"]
-        hdf_out["dec"] = np.pi / 2.0 - lc_data["theta"]
-        hdf_out["snapnum"] = lc_data["snapnum"]
+        hdf_out["data/z_true"] = lc_data["z_true"]
+        hdf_out["data/ra"] = lc_data["phi"]
+        hdf_out["data/dec"] = np.pi / 2.0 - lc_data["theta"]
+        hdf_out["data/snapnum"] = lc_data["snapnum"]
 
         lc_data_keys_out = ("core_tag", "x", "y", "z", "top_host_idx", "central")
         for key in lc_data_keys_out:
-            hdf_out[key] = lc_data[key]
+            key_out = "data/" + key
+            hdf_out[key_out] = lc_data[key]
 
         diffsky_data_keys_out = ("x_host", "y_host", "z_host", "logmp_obs_host")
         for key in diffsky_data_keys_out:
-            hdf_out[key] = diffsky_data[key]
+            key_out = "data/" + key
+            hdf_out[key_out] = diffsky_data[key]
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
