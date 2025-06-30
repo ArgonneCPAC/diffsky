@@ -1,6 +1,9 @@
-0.2.1 (unreleased)
+0.2.1 (2025-06-30)
 -------------------
+- Incorporate synthetic lightcone into mock production pipeline (https://github.com/ArgonneCPAC/diffsky/pull/165)
+- Add pipeline to generate lightcone mocks (https://github.com/ArgonneCPAC/diffsky/pull/154)
 - Improve accuracy of young-star contribution stellar age PDF (https://github.com/ArgonneCPAC/diffsky/pull/151)
+- Implement synthetic lightcones to extend resolution limits (https://github.com/ArgonneCPAC/diffsky/pull/143)
 
 
 0.2.0 (2025-03-24)
