@@ -16,7 +16,7 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
 
     drn_lc_cores = os.path.dirname(fn_lc_cores)
     bname_lc_cores = os.path.basename(fn_lc_cores)
-    stepnum, lc_patch = hlu.get_stepnum_and_skypatch_from_lc_bname(bname_lc_cores)
+    snapnum, lc_patch = hlu.get_stepnum_and_skypatch_from_lc_bname(bname_lc_cores)
 
     _res = hlu.read_lc_ra_dec_patch_decomposition(
         os.path.join(drn_lc_cores, "lc_cores-decomposition.txt")
@@ -66,7 +66,7 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
 
     diffsky_data["theta"] = ZZ - 1.0
     diffsky_data["phi"] = ZZ - 1.0
-    diffsky_data["stepnum"] = ZZ.astype(int) + stepnum
+    diffsky_data["snapnum"] = ZZ.astype(int) + snapnum
 
     lc_data = diffsky_data
     return lc_data, diffsky_data
