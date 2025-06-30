@@ -1,12 +1,11 @@
-"""
-"""
+""" """
 
 import os
 
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffstar.defaults import T_TABLE_MIN
 from diffstar.utils import cumulative_mstar_formed_galpop
-from diffstarpop import mc_diffstarpop_tpeak_sepms_satfrac as mcdsp
+from diffstarpop import mc_diffstar_sfh_galpop
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
@@ -105,7 +104,7 @@ def mc_diffstar_galpop(
         t_table,
     )
 
-    _res = mcdsp.mc_diffstar_sfh_galpop(*args)
+    _res = mc_diffstar_sfh_galpop(*args)
     sfh_ms, sfh_q, frac_q, mc_is_q = _res[2:]
     sfh_table = jnp.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     smh_table = cumulative_mstar_formed_galpop(t_table, sfh_table)
@@ -218,7 +217,7 @@ def mc_diffstar_cenpop(
         t_table,
     )
 
-    _res = mcdsp.mc_diffstar_sfh_galpop(*args)
+    _res = mc_diffstar_sfh_galpop(*args)
     sfh_ms, sfh_q, frac_q, mc_is_q = _res[2:]
     sfh_table = jnp.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     smh_table = cumulative_mstar_formed_galpop(t_table, sfh_table)
