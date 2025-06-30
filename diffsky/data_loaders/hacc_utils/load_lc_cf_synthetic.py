@@ -64,5 +64,8 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
     diffsky_data["loss"] = ZZ + 1e-5
     diffsky_data["central"] = ZZ.astype(int) + 1
 
+    diffsky_data["theta"] = ZZ - 1.0
+    diffsky_data["phi"] = ZZ - 1.0
+
     lc_data = diffsky_data
     return lc_data, diffsky_data
