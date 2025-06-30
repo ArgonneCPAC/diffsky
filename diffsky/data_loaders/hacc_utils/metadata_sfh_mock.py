@@ -61,14 +61,15 @@ Contact: ahearin@anl.gov for questions.
 
 def append_metadata(fnout, sim_name):
     with h5py.File(fnout, "r+") as hdf_out:
-        hdf_out.attrs["creation_date"] = str(datetime.now())
+        hdf_out.require_group("metadata")
+        hdf_out.attrs["metadata/creation_date"] = str(datetime.now())
 
-        hdf_out.attrs["header"] = HEADER_COMMENT
+        hdf_out.attrs["metadata/header"] = HEADER_COMMENT
 
         sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
 
         # Nbody simulation info
-        nbody_group = hdf_out.require_group("nbody_info")
+        nbody_group = hdf_out.require_group("metadata/nbody_info")
         nbody_group.attrs["sim_name"] = sim_name
         nbody_group.attrs["n_particles"] = sim_info.sim.np**3
         nbody_group.attrs["Lbox"] = sim_info.sim.rl / sim_info.cosmo_params.h
@@ -77,7 +78,7 @@ def append_metadata(fnout, sim_name):
         nbody_group.attrs["particle_mass"] = mp
 
         # Cosmology info
-        cosmo_group = hdf_out.require_group("cosmology")
+        cosmo_group = hdf_out.require_group("metadata/cosmology")
         cosmo_group.attrs["Om0"] = sim_info.sim.cosmo.Omega_m
         cosmo_group.attrs["w0"] = sim_info.sim.cosmo.w0
         cosmo_group.attrs["wa"] = sim_info.sim.cosmo.wa
@@ -87,18 +88,19 @@ def append_metadata(fnout, sim_name):
         cosmo_group.attrs["ns"] = sim_info.sim.cosmo.ns
 
         # Software version info
-        version_info_group = hdf_out.require_group("version_info")
+        version_info_group = hdf_out.require_group("metadata/version_info")
         version_info = get_dependency_versions()
         for libname, version in version_info.items():
             version_info_group.attrs[libname] = version
 
         # Column metadata
         for key, val in column_metadata.items():
-            assert key in hdf_out.keys(), f"{key} is missing from {fnout}"
+            key_out = "data/" + key
+            assert key_out in hdf_out.keys(), f"{key_out} is missing from {fnout}"
 
             units, comment = val
-            hdf_out[key].attrs["units"] = units
-            hdf_out[key].attrs["comment"] = comment
+            hdf_out[key_out].attrs["units"] = units
+            hdf_out[key_out].attrs["comment"] = comment
 
 
 def get_dependency_versions():
