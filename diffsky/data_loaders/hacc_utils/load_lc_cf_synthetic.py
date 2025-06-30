@@ -9,9 +9,7 @@ from ...experimental import mc_lightcone_halos as mclh
 from . import lightcone_utils as hlu
 
 
-def load_lc_diffsky_patch_synthetic_data(
-    fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
-):
+def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max):
     drn_lc_cores = os.path.dirname(fn_lc_cores)
     bname_lc_cores = os.path.basename(fn_lc_cores)
     lc_patch = int(bname_lc_cores.split("-")[1].split(".")[:-1][1])
