@@ -57,11 +57,12 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
     for key in ("x", "y", "z", "x_host", "y_host", "z_host", "ra", "dec"):
         diffsky_data[key] = np.zeros(len(diffsky_data["z_true"])) - 1.0
 
+    ZZ = np.zeros(len(diffsky_data["z_true"]))
     diffsky_data["core_tag"] = -np.ones(len(diffsky_data["z_true"])).astype(int)
-    diffsky_data["has_diffmah_fit"] = 1
-    diffsky_data["n_points_per_fit"] = 10_000
-    diffsky_data["loss"] = 1e-5
-    diffsky_data["central"] = 1
+    diffsky_data["has_diffmah_fit"] = ZZ.astype(int) + 1
+    diffsky_data["n_points_per_fit"] = ZZ.astype(int) + 10_000
+    diffsky_data["loss"] = ZZ + 1e-5
+    diffsky_data["central"] = ZZ.astype(int) + 1
 
     lc_data = diffsky_data
     return lc_data, diffsky_data
