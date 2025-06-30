@@ -107,6 +107,7 @@ def get_dependency_versions():
     version_info = dict()
     import diffmah  # noqa
     import diffstar  # noqa
+    import diffstarpop  # noqa
     import dsps  # noqa
     import jax  # noqa
     import numpy  # noqa
@@ -116,6 +117,7 @@ def get_dependency_versions():
     version_info["diffmah"] = str(diffmah.__version__)
     version_info["diffsky"] = str(diffsky.__version__)
     version_info["diffstar"] = str(diffstar.__version__)
+    version_info["diffstarpop"] = str(diffstarpop.__version__)
     version_info["dsps"] = str(dsps.__version__)
     version_info["jax"] = str(jax.__version__)
     version_info["numpy"] = str(numpy.__version__)
