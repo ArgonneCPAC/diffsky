@@ -47,9 +47,6 @@ jobs:
             matplotlib \
             astropy \
             python-build
-          pip uninstall dsps --yes
-          pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
-          pip install --no-deps git+https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/ArgonneCPAC/diffstarpop.git@main
           python -m pip install --no-build-isolation --no-deps -e .
 
       - name: test
