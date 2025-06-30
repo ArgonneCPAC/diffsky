@@ -84,3 +84,21 @@ def check_top_host_tag_has_match(fn_lc_cores, lc_cores=None):
             msg.append(s)
 
     return msg
+
+
+def check_top_host_idx_tag_agreement(fn_lc_cores, lc_cores=None):
+    """top_host_tag should always be consistent with top_host_idx"""
+    if lc_cores is None:
+        lc_cores = load_flat_hdf5(fn_lc_cores)
+
+    msg = []
+    top_host_tag2 = lc_cores["core_tag"][lc_cores["top_host_idx"]]
+    if not np.allclose(lc_cores["top_host_tag"], top_host_tag2):
+        msk = top_host_tag2 != lc_cores["top_host_idx"]
+        example_core_tag = lc_cores["core_tag"][msk][0]
+        example_top_host_tag = lc_cores["top_host_tag"][msk][0]
+        s = f"core_tag = {example_core_tag} has top_host_tag={example_top_host_tag} "
+        s += "which disagrees with the value inferred from the `top_host_idx` column"
+        msg.append(s)
+
+    return msg
