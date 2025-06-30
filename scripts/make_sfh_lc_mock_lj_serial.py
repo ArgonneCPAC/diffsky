@@ -77,7 +77,7 @@ if __name__ == "__main__":
     lgmp_max = args.lgmp_max
 
     if synthetic_cores == 1:
-        drn_out = os.path.join(drn_out, "synthetic_gals")
+        drn_out = os.path.join(drn_out, "synthetic_cores")
 
         try:
             assert lgmp_min != -1

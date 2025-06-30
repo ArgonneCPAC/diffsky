@@ -7,9 +7,13 @@ from diffmah import logmh_at_t_obs
 
 from ...experimental import mc_lightcone_halos as mclh
 from . import lightcone_utils as hlu
+from . import load_lc_cf as llcf
 
 
 def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max):
+
+    sim_info = llcf.get_diffsky_info_from_hacc_sim(sim_name)
+
     drn_lc_cores = os.path.dirname(fn_lc_cores)
     bname_lc_cores = os.path.basename(fn_lc_cores)
     lc_patch = int(bname_lc_cores.split("-")[1].split(".")[:-1][1])
@@ -42,7 +46,7 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
         diffsky_data[key] = getattr(diffsky_data["mah_params"], key)
 
     diffsky_data["logmp_obs"] = logmh_at_t_obs(
-        diffsky_data["mah_params"], diffsky_data["t_obs"], 1.14
+        diffsky_data["mah_params"], diffsky_data["t_obs"], sim_info.lgt0
     )
     diffsky_data["logmp_obs_host"] = diffsky_data["logmp_obs"][
         diffsky_data["top_host_idx"]
@@ -54,7 +58,9 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
         diffsky_data[key] = np.zeros(len(diffsky_data["z_true"])) - 1.0
 
     diffsky_data["core_tag"] = -np.ones(len(diffsky_data["z_true"])).astype(int)
-    diffsky_data["has_diffmah_fit"] = 0
+    diffsky_data["has_diffmah_fit"] = 1
+    diffsky_data["n_points_per_fit"] = 10_000
+    diffsky_data["loss"] = 1e-5
     diffsky_data["central"] = 1
 
     lc_data = diffsky_data
