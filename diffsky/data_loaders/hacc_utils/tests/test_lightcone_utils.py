@@ -3,9 +3,18 @@
 import os
 
 import numpy as np
+from dsps.cosmology import flat_wcdm
 from jax import random as jran
 
 from .. import lightcone_utils as hlu
+
+try:
+    from haccytrees import Simulation as HACCSim
+
+    HAS_HACCYTREES = True
+except ImportError:
+    HAS_HACCYTREES = False
+
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 DRN_TESTING_DATA = os.path.join(_THIS_DRNAME, "testing_data")
@@ -111,3 +120,23 @@ def test_theta_phi_range():
 
         assert np.all(phi > 0)
         assert np.all(phi < 2 * np.pi)
+
+
+def test_compute_redshift_agrees_with_haccytrees():
+    """Small dataset taken from LastJourney/lc_cores-266.0.hdf5"""
+    # haccytrees coords are in mpc/h
+    x = np.loadtxt(os.path.join(DRN_TESTING_DATA, "x_haccytrees_tdata.txt"))
+    y = np.loadtxt(os.path.join(DRN_TESTING_DATA, "y_haccytrees_tdata.txt"))
+    z = np.loadtxt(os.path.join(DRN_TESTING_DATA, "z_haccytrees_tdata.txt"))
+
+    redshift = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "redshift_haccytrees_tdata.txt")
+    )
+
+    sim = HACCSim.simulations["LastJourney"]
+    cosmo_params = flat_wcdm.CosmoParams(
+        *(sim.cosmo.Omega_m, sim.cosmo.w0, sim.cosmo.wa, sim.cosmo.h)
+    )
+    redshift_recomputed = hlu.get_redshift_from_xyz(x, y, z, cosmo_params)
+
+    assert np.allclose(redshift, redshift_recomputed, atol=0.001)
