@@ -218,10 +218,11 @@ def mc_lightcone_host_halo_mass_function(
 
     # Compute the effective volume of each halo according to its redshift
     vol_galpop_mpc = jnp.interp(z_halopop, z_grid, vol_shell_grid_mpc)
+    vol_galpop_mpch = vol_galpop_mpc * (cosmo_params.h**3)
 
     # Draw a halo mass from the HMF at the particular redshift of each halo
     logmp_halopop = mc_logmp_vmap(
-        uran_m, hmf_params, lgmp_min, z_halopop, vol_galpop_mpc, lgmp_max
+        uran_m, hmf_params, lgmp_min, z_halopop, vol_galpop_mpch, lgmp_max
     )
 
     return z_halopop, logmp_halopop
