@@ -9,6 +9,7 @@ import h5py
 import numpy as np
 from diffmah.defaults import DEFAULT_MAH_PARAMS
 from jax import jit as jjit
+from jax import numpy as jnp
 from jax import vmap
 
 from .. import load_flat_hdf5
@@ -67,6 +68,54 @@ _jnp_take_vmap = jjit(vmap(_jnp_take_kern, in_axes=(0, 0)))
 def jnp_take_matrix(matrix, indxarr):
     """Retrieve entries indxarr from the second column of the input matrix"""
     return _jnp_take_vmap(matrix, indxarr)
+
+
+@jjit
+def get_theta_phi(x, y, z):
+    """Compute lightcone angles from simulation xyz coords
+
+    Parameters
+    ----------
+    x,y,z : array, shape (n, )
+
+    Returns
+    -------
+    theta : array, shape (n, )
+
+    phi : array, shape (n, )
+
+    """
+    r = jnp.sqrt(jnp.sum([s**2 for s in (x, y, z)], axis=0))
+    theta = jnp.arccos(z / r)
+    phi = jnp.arctan2(y, x) + jnp.pi
+    return theta, phi
+
+
+@jjit
+def get_ra_dec(x, y, z):
+    """Compute ra, dec in degrees from simulation xyz coords
+
+    Parameters
+    ----------
+    x,y,z : array, shape (n, )
+
+    Returns
+    -------
+    ra : array, shape (n, )
+
+    dec : array, shape (n, )
+
+    """
+    theta, phi = get_theta_phi(x, y, z)
+    ra, dec = _get_lon_lat_from_theta_phi(theta, phi)
+    return ra, dec
+
+
+@jjit
+def _get_lon_lat_from_theta_phi(theta, phi):
+    lon = jnp.degrees(phi)
+    lat = 90.0 - jnp.degrees(theta)
+    return lon, lat
 
 
 def read_lc_ra_dec_patch_decomposition(fn):
