@@ -3,6 +3,7 @@
 import os
 
 import numpy as np
+from jax import random as jran
 
 from .. import lightcone_utils as hlu
 
@@ -48,3 +49,65 @@ def test_calculate_solid_angle():
     solid_angle, fsky = hlu.calculate_solid_angle(ra_min, ra_max, dec_min, dec_max)
     assert np.allclose(fsky, 0.5)
     assert np.allclose(fsky * hlu.SQDEG_OF_SPHERE, solid_angle, rtol=1e-3)
+
+
+def test_compute_theta_phi_agrees_with_haccytrees():
+    """Small dataset taken from LastJourney/lc_cores-266.0.hdf5"""
+    x_haccytrees_tdata = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "x_haccytrees_tdata.txt")
+    )
+    y_haccytrees_tdata = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "y_haccytrees_tdata.txt")
+    )
+    z_haccytrees_tdata = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "z_haccytrees_tdata.txt")
+    )
+
+    theta_haccytrees_tdata = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "theta_haccytrees_tdata.txt")
+    )
+    phi_haccytrees_tdata = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "phi_haccytrees_tdata.txt")
+    )
+    # Sanity check range on tdata
+    assert np.all(theta_haccytrees_tdata > 0)
+    assert np.all(theta_haccytrees_tdata < np.pi)
+    assert np.all(phi_haccytrees_tdata > 0)
+    assert np.all(phi_haccytrees_tdata < 2 * np.pi)
+
+    theta_recomputed, phi_recomputed = hlu.get_theta_phi(
+        x_haccytrees_tdata, y_haccytrees_tdata, z_haccytrees_tdata
+    )
+
+    assert np.allclose(theta_recomputed, theta_haccytrees_tdata, rtol=1e-3)
+    assert np.allclose(phi_recomputed, phi_haccytrees_tdata, rtol=1e-3)
+
+
+def test_ra_dec_range():
+    ran_key = jran.key(0)
+    n_tests = 10
+    n = 5_000
+    for __ in range(n_tests):
+        ran_key, test_key = jran.split(ran_key, 2)
+        pos = jran.uniform(test_key, minval=-100, maxval=100, shape=(n, 3))
+        ra, dec = hlu.get_ra_dec(pos[:, 0], pos[:, 1], pos[:, 2])
+        assert np.all(ra > 0)
+        assert np.all(ra < 360.0)
+
+        assert np.all(dec > -90.0)
+        assert np.all(dec < 90.0)
+
+
+def test_theta_phi_range():
+    ran_key = jran.key(0)
+    n_tests = 10
+    n = 5_000
+    for __ in range(n_tests):
+        ran_key, test_key = jran.split(ran_key, 2)
+        pos = jran.uniform(test_key, minval=-100, maxval=100, shape=(n, 3))
+        theta, phi = hlu.get_theta_phi(pos[:, 0], pos[:, 1], pos[:, 2])
+        assert np.all(theta > 0)
+        assert np.all(theta < np.pi)
+
+        assert np.all(phi > 0)
+        assert np.all(phi < 2 * np.pi)

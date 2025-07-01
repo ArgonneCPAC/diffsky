@@ -81,11 +81,16 @@ def get_theta_phi(x, y, z):
     Returns
     -------
     theta : array, shape (n, )
+        colatitude in radians
+        0 < θ < π
 
     phi : array, shape (n, )
+        longitude in radians
+        0 < φ < 2π
 
     """
-    r = jnp.sqrt(jnp.sum([s**2 for s in (x, y, z)], axis=0))
+    rsq = x * x + y * y + z * z
+    r = jnp.sqrt(rsq)
     theta = jnp.arccos(z / r)
     phi = jnp.arctan2(y, x) + jnp.pi
     return theta, phi
@@ -102,8 +107,10 @@ def get_ra_dec(x, y, z):
     Returns
     -------
     ra : array, shape (n, )
+        0 < ra < 360
 
     dec : array, shape (n, )
+        -90 < dec < 90
 
     """
     theta, phi = get_theta_phi(x, y, z)
