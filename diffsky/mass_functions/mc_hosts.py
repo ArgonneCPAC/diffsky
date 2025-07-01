@@ -20,13 +20,11 @@ def _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com_mpch):
 
 
 @jjit
-def _get_hmf_cdf_interp_tables(
-    hmf_params, lgmp_min, redshift, volume_com, lgmp_max=LGMH_MAX
-):
+def _get_hmf_cdf_interp_tables(hmf_params, lgmp_min, redshift, lgmp_max=LGMH_MAX):
     dlgmp = lgmp_max - lgmp_min
     lgmp_table = U_TABLE * dlgmp + lgmp_min
 
-    cdf_table = volume_com * 10 ** predict_cuml_hmf(hmf_params, lgmp_table, redshift)
+    cdf_table = 10 ** predict_cuml_hmf(hmf_params, lgmp_table, redshift)
     cdf_table = cdf_table - cdf_table[0]
     cdf_table = cdf_table / cdf_table[-1]
 
@@ -35,10 +33,10 @@ def _get_hmf_cdf_interp_tables(
 
 @jjit
 def _mc_host_halos_singlez_kern(
-    uran, hmf_params, lgmp_min, redshift, volume_com, lgmp_max=LGMH_MAX
+    uran, hmf_params, lgmp_min, redshift, lgmp_max=LGMH_MAX
 ):
     lgmp_table, cdf_table = _get_hmf_cdf_interp_tables(
-        hmf_params, lgmp_min, redshift, volume_com, lgmp_max=lgmp_max
+        hmf_params, lgmp_min, redshift, lgmp_max=lgmp_max
     )
     mc_lg_mp = jnp.interp(uran, cdf_table, lgmp_table)
     return mc_lg_mp
@@ -87,6 +85,6 @@ def mc_host_halos_singlez(
     nhalos = jran.poisson(counts_key, mean_nhalos)
     uran = jran.uniform(u_key, minval=0, maxval=1, shape=(nhalos,))
     lgmp_halopop = _mc_host_halos_singlez_kern(
-        uran, hmf_params, lgmp_min, redshift, volume_com_mpch, lgmp_max=lgmp_max
+        uran, hmf_params, lgmp_min, redshift, lgmp_max=lgmp_max
     )
     return np.array(lgmp_halopop)

@@ -52,7 +52,7 @@ _B = (None, None, 1)
 interp_vmap2 = jjit(vmap(jnp.interp, in_axes=_B, out_axes=1))
 
 
-_G = (0, None, None, 0, 0, None)
+_G = (0, None, None, 0, None)
 mc_logmp_vmap = jjit(vmap(mc_hosts._mc_host_halos_singlez_kern, in_axes=_G))
 
 _LCA = (None, 0, None, None)
@@ -216,14 +216,8 @@ def mc_lightcone_host_halo_mass_function(
     # Randoms used in inverse transformation sampling halo mass
     uran_m = jran.uniform(m_key, minval=0, maxval=1, shape=(nhalos_tot,))
 
-    # Compute the effective volume of each halo according to its redshift
-    vol_galpop_mpc = jnp.interp(z_halopop, z_grid, vol_shell_grid_mpc)
-    vol_galpop_mpch = vol_galpop_mpc * (cosmo_params.h**3)
-
     # Draw a halo mass from the HMF at the particular redshift of each halo
-    logmp_halopop = mc_logmp_vmap(
-        uran_m, hmf_params, lgmp_min, z_halopop, vol_galpop_mpch, lgmp_max
-    )
+    logmp_halopop = mc_logmp_vmap(uran_m, hmf_params, lgmp_min, z_halopop, lgmp_max)
 
     return z_halopop, logmp_halopop
 
