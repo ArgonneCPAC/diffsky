@@ -79,7 +79,12 @@ def plot_diffstarpop_insitu_smhm(
 
     red_line = mlines.Line2D([], [], ls="-", c=MRED, label=r"$z=2$")
     blue_line = mlines.Line2D([], [], ls="-", c=MBLUE, label=r"$z=0$")
-    ax.legend(handles=[red_line, blue_line], loc="upper left")
+    leg1 = ax.legend(handles=[red_line, blue_line], loc="upper left")
+    ax.add_artist(leg1)
+
+    dashed_line = mlines.Line2D([], [], ls="-", c="gray", label=r"model 1")
+    solid_line = mlines.Line2D([], [], ls="--", c="gray", label=r"model 2")
+    ax.legend(handles=[dashed_line, solid_line], loc="lower right")
 
     fig.savefig(
         fname, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
