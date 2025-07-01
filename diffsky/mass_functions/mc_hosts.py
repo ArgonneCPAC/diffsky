@@ -13,20 +13,18 @@ LGMH_MAX = 17.0
 
 
 @jjit
-def _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com):
-    nhalos_per_mpc3 = 10 ** predict_cuml_hmf(hmf_params, lgmp_min, redshift)
-    nhalos_tot = nhalos_per_mpc3 * volume_com
+def _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com_mpch):
+    nhalos_per_mpch3 = 10 ** predict_cuml_hmf(hmf_params, lgmp_min, redshift)
+    nhalos_tot = nhalos_per_mpch3 * volume_com_mpch
     return nhalos_tot
 
 
 @jjit
-def _get_hmf_cdf_interp_tables(
-    hmf_params, lgmp_min, redshift, volume_com, lgmp_max=LGMH_MAX
-):
+def _get_hmf_cdf_interp_tables(hmf_params, lgmp_min, redshift, lgmp_max=LGMH_MAX):
     dlgmp = lgmp_max - lgmp_min
     lgmp_table = U_TABLE * dlgmp + lgmp_min
 
-    cdf_table = volume_com * 10 ** predict_cuml_hmf(hmf_params, lgmp_table, redshift)
+    cdf_table = 10 ** predict_cuml_hmf(hmf_params, lgmp_table, redshift)
     cdf_table = cdf_table - cdf_table[0]
     cdf_table = cdf_table / cdf_table[-1]
 
@@ -35,10 +33,10 @@ def _get_hmf_cdf_interp_tables(
 
 @jjit
 def _mc_host_halos_singlez_kern(
-    uran, hmf_params, lgmp_min, redshift, volume_com, lgmp_max=LGMH_MAX
+    uran, hmf_params, lgmp_min, redshift, lgmp_max=LGMH_MAX
 ):
     lgmp_table, cdf_table = _get_hmf_cdf_interp_tables(
-        hmf_params, lgmp_min, redshift, volume_com, lgmp_max=lgmp_max
+        hmf_params, lgmp_min, redshift, lgmp_max=lgmp_max
     )
     mc_lg_mp = jnp.interp(uran, cdf_table, lgmp_table)
     return mc_lg_mp
@@ -48,7 +46,7 @@ def mc_host_halos_singlez(
     ran_key,
     lgmp_min,
     redshift,
-    volume_com,
+    volume_com_mpch,
     hmf_params=DEFAULT_HMF_PARAMS,
     lgmp_max=LGMH_MAX,
 ):
@@ -66,7 +64,7 @@ def mc_host_halos_singlez(
     redshift : float
         Redshift of the halo population
 
-    volume_com : float
+    volume_com_mpch : float
         Comoving volume of the generated population in units of (Mpc/h)**3
 
         Larger values of volume_com produce more halos in the returned sample
@@ -78,13 +76,15 @@ def mc_host_halos_singlez(
 
     """
     counts_key, u_key = jran.split(ran_key, 2)
-    mean_nhalos = _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com)
-    mean_nhalos_lgmax = _compute_nhalos_tot(hmf_params, lgmp_max, redshift, volume_com)
+    mean_nhalos = _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com_mpch)
+    mean_nhalos_lgmax = _compute_nhalos_tot(
+        hmf_params, lgmp_max, redshift, volume_com_mpch
+    )
     mean_nhalos = mean_nhalos - mean_nhalos_lgmax
 
     nhalos = jran.poisson(counts_key, mean_nhalos)
     uran = jran.uniform(u_key, minval=0, maxval=1, shape=(nhalos,))
     lgmp_halopop = _mc_host_halos_singlez_kern(
-        uran, hmf_params, lgmp_min, redshift, volume_com, lgmp_max=lgmp_max
+        uran, hmf_params, lgmp_min, redshift, lgmp_max=lgmp_max
     )
     return np.array(lgmp_halopop)
