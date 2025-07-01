@@ -3,6 +3,7 @@
 import os
 
 import numpy as np
+import pytest
 from dsps.cosmology import flat_wcdm
 from jax import random as jran
 
@@ -14,6 +15,7 @@ try:
     HAS_HACCYTREES = True
 except ImportError:
     HAS_HACCYTREES = False
+NO_HACC_MSG = "Must have haccytrees installed to run this test"
 
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
@@ -122,6 +124,7 @@ def test_theta_phi_range():
         assert np.all(phi < 2 * np.pi)
 
 
+@pytest.mark.skipif(not HAS_HACCYTREES, reason=NO_HACC_MSG)
 def test_compute_redshift_agrees_with_haccytrees():
     """Small dataset taken from LastJourney/lc_cores-266.0.hdf5"""
     # haccytrees coords are in mpc/h
@@ -139,4 +142,5 @@ def test_compute_redshift_agrees_with_haccytrees():
     )
     redshift_recomputed = hlu.get_redshift_from_xyz(x, y, z, cosmo_params)
 
+    assert np.allclose(redshift, redshift_recomputed, atol=0.001)
     assert np.allclose(redshift, redshift_recomputed, atol=0.001)
