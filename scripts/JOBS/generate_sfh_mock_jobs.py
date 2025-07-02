@@ -27,10 +27,10 @@ if __name__ == "__main__":
     parser.add_argument("-iend", help="Filename of patch list", default=-1, type=int)
 
     parser.add_argument(
-        "-conda_env", help="conda environment to activate", default="improv311"
+        "-drn_submit_script", help="Directory to write scripts", default=""
     )
     parser.add_argument(
-        "-drn_submit_script", help="Directory to write scripts", default=""
+        "-conda_env", help="conda environment to activate", default="improv311"
     )
 
     args = parser.parse_args()
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     drn_submit_script = args.drn_submit_script
 
     if drn_submit_script == "":
-        drn_out = os.path.dirname(os.path.abspath(__file__))
+        drn_submit_script = os.path.dirname(os.path.abspath(__file__))
 
     if fn_patch_list == "":
         patch_list = np.arange(istart, iend).astype(int)
@@ -74,6 +74,8 @@ if __name__ == "__main__":
         "# Load software",
         "source ~/.bash_profile",
         f"conda activate {conda_env}",
+        "",
+        f"cd {drn_submit_script}",
         "",
     )
 
