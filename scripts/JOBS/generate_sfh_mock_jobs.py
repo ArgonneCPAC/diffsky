@@ -30,6 +30,11 @@ if __name__ == "__main__":
         "-drn_submit_script", help="Directory to write scripts", default=""
     )
     parser.add_argument(
+        "-bn_submit_script",
+        help="Basename of job submission script",
+        default="run_sfh_mock_production.sh",
+    )
+    parser.add_argument(
         "-conda_env", help="conda environment to activate", default="improv311"
     )
 
@@ -45,6 +50,7 @@ if __name__ == "__main__":
     script_name = args.script_name
     drn_mock_out = args.drn_mock_out
     drn_submit_script = args.drn_submit_script
+    bn_submit_script = args.bn_submit_script
 
     if drn_submit_script == "":
         drn_submit_script = os.path.dirname(os.path.abspath(__file__))
@@ -82,10 +88,9 @@ if __name__ == "__main__":
     line_pat = "python {0} lcrc {1:.3f} {2:.3f} {3} {4} {5}"
 
     bn_patch_list = os.path.basename(fn_patch_list)
-    bnout_script = "run_sfh_mock_production.sh"
-    fnout_script = os.path.join(drn_submit_script, bnout_script)
+    fn_submit_script = os.path.join(drn_submit_script, bn_submit_script)
 
-    with open(fnout_script, "w") as fout:
+    with open(fn_submit_script, "w") as fout:
         for line_out in header_lines:
             fout.write(line_out + "\n")
 
