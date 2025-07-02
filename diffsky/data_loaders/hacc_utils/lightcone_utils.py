@@ -8,7 +8,9 @@ from glob import glob
 import h5py
 import numpy as np
 from diffmah.defaults import DEFAULT_MAH_PARAMS
+from dsps.cosmology import flat_wcdm
 from jax import jit as jjit
+from jax import numpy as jnp
 from jax import vmap
 
 from .. import load_flat_hdf5
@@ -67,6 +69,89 @@ _jnp_take_vmap = jjit(vmap(_jnp_take_kern, in_axes=(0, 0)))
 def jnp_take_matrix(matrix, indxarr):
     """Retrieve entries indxarr from the second column of the input matrix"""
     return _jnp_take_vmap(matrix, indxarr)
+
+
+@jjit
+def get_theta_phi(x, y, z):
+    """Compute lightcone angles from simulation xyz coords
+
+    Parameters
+    ----------
+    x,y,z : array, shape (n, )
+       Cartesian coords in any units
+
+    Returns
+    -------
+    theta : array, shape (n, )
+        colatitude in radians
+        0 < θ < π
+
+    phi : array, shape (n, )
+        longitude in radians
+        0 < φ < 2π
+
+    """
+    rsq = x * x + y * y + z * z
+    r = jnp.sqrt(rsq)
+    theta = jnp.arccos(z / r)
+    phi = jnp.arctan2(y, x) + jnp.pi
+    return theta, phi
+
+
+@jjit
+def get_ra_dec(x, y, z):
+    """Compute ra, dec in degrees from simulation xyz coords
+
+    Parameters
+    ----------
+    x,y,z : array, shape (n, )
+       Cartesian coords in any units
+
+    Returns
+    -------
+    ra : array, shape (n, )
+        0 < ra < 360
+
+    dec : array, shape (n, )
+        -90 < dec < 90
+
+    """
+    theta, phi = get_theta_phi(x, y, z)
+    ra, dec = _get_lon_lat_from_theta_phi(theta, phi)
+    return ra, dec
+
+
+@jjit
+def _get_lon_lat_from_theta_phi(theta, phi):
+    lon = jnp.degrees(phi)
+    lat = 90.0 - jnp.degrees(theta)
+    return lon, lat
+
+
+@jjit
+def get_redshift_from_xyz(x_mpch, y_mpch, z_mpch, cosmo_params):
+    """Compute redshift from simulation xyz coords
+
+    Parameters
+    ----------
+    x,y,z : array, shape (n, )
+       Cartesian coords in Mpc/h
+
+    Returns
+    -------
+    redshift : array, shape (n, )
+
+    """
+    d_mpch = jnp.sqrt(x_mpch**2 + y_mpch**2 + z_mpch**2)
+    d_mpc = d_mpch / cosmo_params.h
+
+    z_table = jnp.linspace(0, 20, 1_000)
+    d_table = flat_wcdm.comoving_distance(
+        z_table, cosmo_params.Om0, cosmo_params.w0, cosmo_params.wa, cosmo_params.h
+    )
+    redshift = jnp.interp(d_mpc, d_table, z_table)
+
+    return redshift
 
 
 def read_lc_ra_dec_patch_decomposition(fn):
@@ -387,4 +472,5 @@ def get_a_range_of_lc_cores_file(bname_lc_cores, sim_name):
     indx_step = np.searchsorted(steps, stepnum)
     a_min_expected, a_max_expected = aarr[indx_step], aarr[indx_step + 1]
 
+    return a_min_expected, a_max_expected
     return a_min_expected, a_max_expected
