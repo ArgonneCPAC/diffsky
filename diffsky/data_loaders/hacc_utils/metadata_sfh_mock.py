@@ -50,11 +50,25 @@ column_metadata["x_host"] = ("Mpc", "Cartesian coord of host halo lightcone posi
 column_metadata["y_host"] = ("Mpc", "Cartesian coord of host halo lightcone position")
 column_metadata["z_host"] = ("Mpc", "Cartesian coord of host halo lightcone position")
 
+column_metadata["x_nfw"] = ("Mpc", "Cartesian coord with NFW-repositioned satellites")
+column_metadata["y_nfw"] = ("Mpc", "Cartesian coord with NFW-repositioned satellites")
+column_metadata["z_nfw"] = ("Mpc", "Cartesian coord with NFW-repositioned satellites")
+
 column_metadata["z_true"] = ("None", "True redshift")
+column_metadata["ra_nfw"] = (
+    "degrees",
+    "Longitude in degrees. Based on NFW-repositioned satellites.",
+)
+column_metadata["dec_nfw"] = (
+    "degrees",
+    "Latitude in degrees. Based on NFW-repositioned satellites.",
+)
 
 
 HEADER_COMMENT = """
 This file contains diffsky galaxy data.
+Each file stores mock galaxies in a thin redshift shell of a small patch of sky.
+Each column of data includes metadata with units and comments about the column.
 Contact: ahearin@anl.gov for questions.
 """
 
@@ -98,9 +112,9 @@ def append_metadata(fnout, sim_name):
             key_out = "data/" + key
             assert key_out in hdf_out.keys(), f"{key_out} is missing from {fnout}"
 
-            units, comment = val
-            hdf_out[key_out].attrs["units"] = units
-            hdf_out[key_out].attrs["comment"] = comment
+            unit, description = val
+            hdf_out[key_out].attrs["unit"] = unit
+            hdf_out[key_out].attrs["description"] = description
 
 
 def get_dependency_versions():

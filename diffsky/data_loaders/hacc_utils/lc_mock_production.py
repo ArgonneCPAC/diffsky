@@ -18,6 +18,7 @@ from jax import random as jran
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
+from . import lightcone_utils as hlu
 from . import load_lc_cf
 
 LC_CF_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
@@ -52,7 +53,16 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["data/dec"] = np.pi / 2.0 - lc_data["theta"]
         hdf_out["data/snapnum"] = lc_data["snapnum"]
 
-        lc_data_keys_out = ("core_tag", "x", "y", "z", "top_host_idx", "central")
+        lc_data_keys_out = (
+            "core_tag",
+            "x",
+            "y",
+            "z",
+            "top_host_idx",
+            "central",
+            "ra_nfw",
+            "dec_nfw",
+        )
         for key in lc_data_keys_out:
             key_out = "data/" + key
             hdf_out[key_out] = lc_data[key]
@@ -151,6 +161,10 @@ def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5
     lc_data["x_nfw"] = new_pos[:, 0]
     lc_data["y_nfw"] = new_pos[:, 1]
     lc_data["z_nfw"] = new_pos[:, 2]
+
+    ra, dec = hlu.get_ra_dec(lc_data["x_nfw"], lc_data["y_nfw"], lc_data["z_nfw"])
+    lc_data["ra_nfw"] = ra
+    lc_data["dec_nfw"] = dec
 
     return lc_data, diffsky_data
 
