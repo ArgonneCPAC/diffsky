@@ -37,6 +37,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "-conda_env", help="conda environment to activate", default="improv311"
     )
+    parser.add_argument(
+        "-synthetic_cores",
+        help="Use synthetic cores instead of simulated cores",
+        default=0,
+        type=int,
+    )
 
     args = parser.parse_args()
     account = args.account
@@ -51,6 +57,7 @@ if __name__ == "__main__":
     drn_mock_out = args.drn_mock_out
     drn_submit_script = args.drn_submit_script
     bn_submit_script = args.bn_submit_script
+    synthetic_cores = args.synthetic_cores
 
     if drn_submit_script == "":
         drn_submit_script = os.path.dirname(os.path.abspath(__file__))
@@ -85,7 +92,9 @@ if __name__ == "__main__":
         "",
     )
 
-    line_pat = "python {0} lcrc {1:.3f} {2:.3f} {3} {4} {5}"
+    line_pat = "python {0} lcrc {1:.3f} {2:.3f} {3} {4} {5} "
+    if synthetic_cores == 1:
+        line_pat += "-synthetic_cores 1"
 
     bn_patch_list = os.path.basename(fn_patch_list)
     fn_submit_script = os.path.join(drn_submit_script, bn_submit_script)
