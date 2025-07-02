@@ -87,3 +87,13 @@ def test_check_top_host_idx_tag_agreement():
         if len(msg) > 0:
             bn = os.path.basename(fn_lc_cores)
             raise ValueError(f"{bn} has mismatching top_host_idx")
+
+
+@pytest.mark.skipif(not CAN_RUN_LJ_DATA_TESTS, reason=POBOY_MSG)
+def test_check_host_pos_is_near_galaxy_pos():
+    """"""
+    bnpat = vlcc.BNPAT_LC_CORES.format("*", "*")
+    fn_list = glob(os.path.join(DRN_LC_CORES_POBOY, bnpat))
+    for fn_lc_cores in fn_list:
+        msg = vlcc.check_host_pos_is_near_galaxy_pos(fn_lc_cores)
+        assert len(msg) == 0, msg

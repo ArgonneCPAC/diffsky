@@ -102,3 +102,38 @@ def check_top_host_idx_tag_agreement(fn_lc_cores, lc_cores=None):
         msg.append(s)
 
     return msg
+
+
+def check_host_pos_is_near_galaxy_pos(fn_lc_cores, lc_cores=None):
+    """host position should be reasonably close to galaxy position"""
+    if lc_cores is None:
+        lc_cores = load_flat_hdf5(fn_lc_cores)
+
+    bn = os.path.basename(fn_lc_cores)
+
+    host_x = lc_cores["x"][lc_cores["top_host_idx"]]
+    host_y = lc_cores["y"][lc_cores["top_host_idx"]]
+    host_z = lc_cores["z"][lc_cores["top_host_idx"]]
+    dx = lc_cores["x"] - host_x
+    dy = lc_cores["y"] - host_y
+    dz = lc_cores["z"] - host_z
+    host_dist = np.sqrt(dx**2 + dy**2 + dz**2)
+
+    msg = []
+    n_very_far = np.sum(host_dist > 5)
+    if n_very_far > 10:
+        s = f"{n_very_far} galaxies in {bn} with "
+        s += "unexpectedly large xyz distance from top_host_idx"
+        msg.append(s)
+
+    msk_cen = lc_cores["central"]
+    mean_sat_dist = np.abs(np.mean(host_dist[~msk_cen]))
+    std_sat_dist = np.std(host_dist[~msk_cen])
+    if mean_sat_dist > 1:
+        s = f"<dist_sat>={mean_sat_dist:.2f} Mpc/h is unexpectedly large"
+        msg.append(s)
+    if std_sat_dist > 0.5:
+        s = f"std(dist_sat)={std_sat_dist:.2f} Mpc/h is unexpectedly large"
+        msg.append(s)
+
+    return msg
