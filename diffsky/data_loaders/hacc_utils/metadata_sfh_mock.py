@@ -9,8 +9,8 @@ from . import load_lc_cf
 column_metadata = dict()
 column_metadata["central"] = ("None", "0 for satellite, 1 for central")
 column_metadata["core_tag"] = ("None", "ID of the simulated core")
-column_metadata["ra"] = ("None", "right ascension")
-column_metadata["dec"] = ("None", "declination")
+column_metadata["ra"] = ("degrees", "right ascension")
+column_metadata["dec"] = ("degrees", "declination")
 
 column_metadata["early_index"] = ("None", "Diffmah parameter for halo mass assembly")
 column_metadata["late_index"] = ("None", "Diffmah parameter for halo mass assembly")
