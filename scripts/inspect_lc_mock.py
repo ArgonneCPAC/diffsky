@@ -48,3 +48,9 @@ if __name__ == "__main__":
         print("\nSome failures in the following lightcone patches:\n")
         for failing_bn in failure_collector:
             print(f"{failing_bn}")
+
+        fn_out = os.path.join(drn_report, "report_summary.txt")
+        with open(fn_out, "w") as fout:
+            for failing_bn in failure_collector:
+                fn_lc_mock = os.path.join(drn_mock, failing_bn)
+                fout.write(fn_lc_mock + "\n")
