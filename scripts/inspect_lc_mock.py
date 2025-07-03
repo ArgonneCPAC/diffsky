@@ -26,16 +26,19 @@ if __name__ == "__main__":
     all_good = True
     failure_collector = []
     for fn_lc_mock in fn_lc_mock_list:
+        bn_lc_mock = os.path.basename(fn_lc_mock)
+
         try:
             report = vlcm.get_lc_mock_data_report(fn_lc_mock)
         except OSError:
-            report = ["Unable to generate report"]
+            report = dict()
+            report["has_report"] = ["Unable to generate report"]
+            failure_collector.append(bn_lc_mock)
 
         all_good = len(report) == 0
         if not all_good:
             vlcm.write_lc_mock_report_to_disk(report, fn_lc_mock, drn_report)
 
-            bn_lc_mock = os.path.basename(fn_lc_mock)
             print(f"{bn_lc_mock} fails readiness test")
             failure_collector.append(bn_lc_mock)
 
