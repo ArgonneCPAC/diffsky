@@ -107,4 +107,3 @@ def check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=None):
         msg.append(s)
 
     return msg
-    return msg
