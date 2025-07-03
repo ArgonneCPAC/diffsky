@@ -32,15 +32,16 @@ if __name__ == "__main__":
             report = vlcm.get_lc_mock_data_report(fn_lc_mock)
         except OSError:
             report = dict()
-            report["report_exists"] = ["Unable to generate report"]
+            report["report_does_not_exist"] = ["Unable to generate report"]
             print(f"Unable to generate report for {bn_lc_mock}")
 
         all_good = len(report) == 0
         if not all_good:
             vlcm.write_lc_mock_report_to_disk(report, fn_lc_mock, drn_report)
-
-            print(f"{bn_lc_mock} fails readiness test")
             failure_collector.append(bn_lc_mock)
+
+            if "report_does_not_exist" not in report.keys():
+                print(f"{bn_lc_mock} fails readiness test")
 
     if len(failure_collector) == 0:
         print("Every lc_mock data file passes all tests")
