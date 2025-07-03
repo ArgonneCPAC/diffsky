@@ -51,9 +51,9 @@ def load_lc_diffsky_patch_data(fn_lc_diffsky, indir_lc_data):
     fn_lc = os.path.join(indir_lc_data, bn_lc)
     lc_data = load_flat_hdf5(fn_lc)
 
-    lc_data["z_true"] = 1 / lc_data["scale_factor"] - 1
+    lc_data["redshift_true"] = 1 / lc_data["scale_factor"] - 1
 
-    assert lc_data["z_true"].shape[0] == diffsky_data["logm0"].shape[0]
+    assert lc_data["redshift_true"].shape[0] == diffsky_data["logm0"].shape[0]
 
     return lc_data, diffsky_data
 
@@ -82,9 +82,9 @@ def collect_lc_diffsky_data(fn_list, drn_lc_data=None):
     for key in lc_data_collector[0].keys():
         lc_data[key] = np.concatenate([x[key] for x in lc_data_collector])
 
-    lc_data["z_true"] = 1 / lc_data["scale_factor"] - 1
+    lc_data["redshift_true"] = 1 / lc_data["scale_factor"] - 1
 
-    assert lc_data["z_true"].shape[0] == diffsky_data["logm0"].shape[0]
+    assert lc_data["redshift_true"].shape[0] == diffsky_data["logm0"].shape[0]
 
     return lc_data, diffsky_data
 
