@@ -54,7 +54,7 @@ column_metadata["x_nfw"] = ("Mpc", "Cartesian coord with NFW-repositioned satell
 column_metadata["y_nfw"] = ("Mpc", "Cartesian coord with NFW-repositioned satellites")
 column_metadata["z_nfw"] = ("Mpc", "Cartesian coord with NFW-repositioned satellites")
 
-column_metadata["z_true"] = ("None", "True redshift")
+column_metadata["redshift_true"] = ("None", "True redshift")
 column_metadata["ra_nfw"] = (
     "degrees",
     "Longitude in degrees. Based on NFW-repositioned satellites.",

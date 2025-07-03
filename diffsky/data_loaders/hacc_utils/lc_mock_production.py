@@ -48,7 +48,7 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["data/logsm_obs"] = diffsky_data["logsm_obs"]
         hdf_out["data/logssfr_obs"] = diffsky_data["logssfr_obs"]
 
-        hdf_out["data/z_true"] = lc_data["z_true"]
+        hdf_out["data/redshift_true"] = lc_data["redshift_true"]
         hdf_out["data/ra"] = lc_data["phi"]
         hdf_out["data/dec"] = np.pi / 2.0 - lc_data["theta"]
         hdf_out["data/snapnum"] = lc_data["snapnum"]
@@ -77,7 +77,7 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
-    lc_data["t_obs"] = flat_wcdm.age_at_z(lc_data["z_true"], *sim_info.cosmo_params)
+    lc_data["t_obs"] = flat_wcdm.age_at_z(lc_data["redshift_true"], *sim_info.cosmo_params)
 
     mah_params, msk_has_diffmah_fit = load_lc_cf.get_imputed_mah_params(
         ran_key, diffsky_data, lc_data, sim_info.lgt0
@@ -145,7 +145,7 @@ def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5
     diffsky_data["y_host"] = host_pos[:, 1]
     diffsky_data["z_host"] = host_pos[:, 2]
 
-    args = (10**host_logmp_obs, sim_info.cosmo_params, lc_data["z_true"], "200m")
+    args = (10**host_logmp_obs, sim_info.cosmo_params, lc_data["redshift_true"], "200m")
     host_radius_mpc = hbf.halo_mass_to_halo_radius(*args) / 1000.0
 
     n_cores = host_logmp_obs.shape[0]
