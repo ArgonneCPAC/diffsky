@@ -32,8 +32,8 @@ if __name__ == "__main__":
             report = vlcm.get_lc_mock_data_report(fn_lc_mock)
         except OSError:
             report = dict()
-            report["has_report"] = ["Unable to generate report"]
-            failure_collector.append(bn_lc_mock)
+            report["report_exists"] = ["Unable to generate report"]
+            print(f"Unable to generate report for {bn_lc_mock}")
 
         all_good = len(report) == 0
         if not all_good:
