@@ -51,14 +51,15 @@ if __name__ == "__main__":
         for failing_bn in failure_collector:
             print(f"{failing_bn}")
 
-    fn_out = os.path.join(drn_report, "fn_list_no_report.txt")
-    with open(fn_out, "w") as fout:
-        for no_report_bn in no_report_collector:
-            fn_lc_mock = os.path.join(drn_mock, no_report_bn)
-            fout.write(fn_lc_mock + "\n")
+        fn_out = os.path.join(drn_report, "fn_list_fails_readiness.txt")
+        with open(fn_out, "w") as fout:
+            for failed_bn in failure_collector:
+                fn_lc_mock = os.path.join(drn_mock, failed_bn)
+                fout.write(fn_lc_mock + "\n")
 
-    fn_out = os.path.join(drn_report, "fn_list_fails_readiness.txt")
-    with open(fn_out, "w") as fout:
-        for failed_bn in failure_collector:
-            fn_lc_mock = os.path.join(drn_mock, failed_bn)
-            fout.write(fn_lc_mock + "\n")
+    if len(no_report_collector) > 0:
+        fn_out = os.path.join(drn_report, "fn_list_no_report.txt")
+        with open(fn_out, "w") as fout:
+            for no_report_bn in no_report_collector:
+                fn_lc_mock = os.path.join(drn_mock, no_report_bn)
+                fout.write(fn_lc_mock + "\n")
