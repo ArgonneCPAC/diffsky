@@ -38,6 +38,6 @@ if __name__ == "__main__":
     if len(failure_collector) == 0:
         print("Every lc_mock data file passes all tests")
     else:
-        print("Some failures in the following lightcone patches:\n")
+        print("\nSome failures in the following lightcone patches:\n")
         for failing_bn in failure_collector:
             print(f"{failing_bn}")

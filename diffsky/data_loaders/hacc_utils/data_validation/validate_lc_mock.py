@@ -2,6 +2,7 @@
 
 import os
 
+import h5py
 import numpy as np
 
 from .. import load_flat_hdf5
@@ -22,6 +23,10 @@ def get_lc_mock_data_report(fn_lc_mock):
     msg = check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["nfw_host_distance"] = msg
+
+    msg = check_all_data_columns_have_metadata(fn_lc_mock)
+    if len(msg) > 0:
+        report["column_metadata"] = msg
 
     return report
 
@@ -50,6 +55,22 @@ def check_all_columns_are_finite(fn_lc_mock, data=None):
             s = f"Column {key} in {bn} has either NaN or inf"
             msg.append(s)
 
+    return msg
+
+
+def check_all_data_columns_have_metadata(fn_lc_mock):
+
+    msg = []
+    with h5py.File(fn_lc_mock, "r") as hdf:
+        for key in hdf["data"].keys():
+            try:
+                unit = hdf["data/" + key].attrs["unit"]
+                assert len(unit) > 0
+                description = hdf["data/" + key].attrs["description"]
+                assert len(description) > 0
+            except (KeyError, AssertionError):
+                s = f"{key} is missing metadata"
+                msg.append(s)
     return msg
 
 
@@ -85,4 +106,5 @@ def check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=None):
         s = f"std(dist_sat)={std_sat_dist:.2f} Mpc/h is unexpectedly large"
         msg.append(s)
 
+    return msg
     return msg
