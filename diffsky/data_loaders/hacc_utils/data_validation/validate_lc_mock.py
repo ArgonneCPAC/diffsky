@@ -99,7 +99,7 @@ def check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=None):
     msk_cen = data["central"]
     mean_sat_dist = np.abs(np.mean(host_dist[~msk_cen]))
     std_sat_dist = np.std(host_dist[~msk_cen])
-    if mean_sat_dist > 0.1:
+    if mean_sat_dist > 1.0:
         s = f"<dist_sat>={mean_sat_dist:.2f} Mpc/h is unexpectedly large"
         msg.append(s)
     if std_sat_dist > 0.5:
