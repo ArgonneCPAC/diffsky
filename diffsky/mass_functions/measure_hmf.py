@@ -1,4 +1,5 @@
 """Module provides convenience functions used to measure the HMF in SMDPL"""
+
 import numpy as np
 
 SMDPL_VOL = 400.0**3
@@ -20,3 +21,9 @@ def measure_smdpl_lg_cuml_hmf(logmp_data, logmp_bins=None, nhalos_min=10):
     logmp_bins = logmp_bins[msk_nonzero]
     lgcounts_target = np.log10(cuml_density[msk_nonzero])
     return logmp_bins, lgcounts_target
+
+
+def measure_cuml_hmf_target_data_counts(logmp_data, logmp_bins):
+    counts = [np.sum(logmp_data >= logmp) for logmp in logmp_bins]
+    counts = np.array(counts).astype(int)
+    return counts
