@@ -84,6 +84,7 @@ if __name__ == "__main__":
     start = time()
     chunk_counter = 0
     for subvol in range(istart, iend):
+        print(f"...Beginning to loop over chunks of subvolume {subvol}")
 
         for chunknum in chunks:
             ran_key, chunk_key = jran.split(ran_key, 2)
@@ -117,3 +118,4 @@ if __name__ == "__main__":
     end = time()
     runtime = end - start
     msg = f"Runtime for {chunk_counter} total chunks = {runtime:.1f} seconds"
+    print(msg)
