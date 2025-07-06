@@ -1,6 +1,7 @@
 """ """
 
 import argparse
+import gc
 import os
 from time import time
 
@@ -130,8 +131,11 @@ if __name__ == "__main__":
             np.save(fn_out, chunk_data_all)
 
             chunk_counter += 1
+            del diffsky_data
+            gc.collect()
 
     end = time()
     runtime = end - start
     msg = f"Runtime for {chunk_counter} total chunks = {runtime:.1f} seconds"
+    print(msg)
     print(msg)
