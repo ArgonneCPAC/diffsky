@@ -72,7 +72,6 @@ if __name__ == "__main__":
 
     if itest == 1:
         chunks = [0, 1]
-        nchunks = 100
         z_table = np.array((0.0, 1.0))
         istart, iend = 0, 1
     else:
