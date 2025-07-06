@@ -145,4 +145,3 @@ if __name__ == "__main__":
     runtime = end - start
     msg = f"Runtime for {chunk_counter} total chunks = {runtime:.1f} seconds"
     print(msg)
-    print(msg)
