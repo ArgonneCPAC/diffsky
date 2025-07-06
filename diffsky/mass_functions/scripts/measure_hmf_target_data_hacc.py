@@ -88,7 +88,8 @@ if __name__ == "__main__":
         for chunknum in chunks:
             ran_key, chunk_key = jran.split(ran_key, 2)
 
-            collector = []
+            collector_cens = []
+            collector_all = []
             for iz in IZ_OBS:
                 z_target = sim_info.z_sim[iz]
                 args = (
@@ -103,15 +104,31 @@ if __name__ == "__main__":
                 )
 
                 diffsky_data = lhc.load_diffsky_data(*args)
-                counts = measure_cuml_hmf_target_data_counts(
-                    diffsky_data["subcat"].logmp_t_obs, LOGMP_BINS
-                )
-                collector.append(counts)
 
-            chunk_data = np.array(collector).T
-            bname_chunk = BNPAT_CHUNK.format(subvol, chunknum)
+                msk_cens = diffsky_data["subcat"].upids == -1
+
+                logmp_data = diffsky_data["subcat"].logmp_t_obs
+                counts_all = measure_cuml_hmf_target_data_counts(logmp_data, LOGMP_BINS)
+                collector_all.append(counts_all)
+
+                logmp_data = diffsky_data["subcat"].logmp_t_obs[msk_cens]
+                counts_cens = measure_cuml_hmf_target_data_counts(
+                    logmp_data, LOGMP_BINS
+                )
+                collector_cens.append(counts_cens)
+
+            # centrals
+            chunk_data_cens = np.array(collector_cens).T
+            bname_chunk = BNPAT_CHUNK.format(subvol, chunknum) + "_cens"
             fn_out = os.path.join(drn_scratch, bname_chunk)
-            np.save(fn_out, chunk_data)
+            np.save(fn_out, chunk_data_cens)
+
+            # all
+            chunk_data_all = np.array(collector_all).T
+            bname_chunk = BNPAT_CHUNK.format(subvol, chunknum) + "_all"
+            fn_out = os.path.join(drn_scratch, bname_chunk)
+            np.save(fn_out, chunk_data_all)
+
             chunk_counter += 1
 
     end = time()
