@@ -21,6 +21,7 @@ DRN_SCRATCH_LCRC = "/lcrc/globalscratch/ahearin/"
 DRN_SCRATCH_POBOY = "/Users/aphearin/work/DATA/random_data/0706"
 
 BNPAT_CHUNK = "cuml_hmf_counts_subvol_{0}_chunk_{1}"
+DEFAULT_NCHUNKS = 10
 
 Z_TABLE = np.array((0.0, 0.25, 0.5, 1.0, 2.0, 3.0, 5.0))
 LOGMP_BINS = np.linspace(11, 15.1, 30)
@@ -42,7 +43,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("-itest", help="Short test run?", type=int, default=0)
     parser.add_argument(
-        "-nchunks", help="Number of chunks per subvol", type=int, default=10
+        "-nchunks",
+        help="Number of chunks per subvol",
+        type=int,
+        default=DEFAULT_NCHUNKS,
     )
 
     args = parser.parse_args()
