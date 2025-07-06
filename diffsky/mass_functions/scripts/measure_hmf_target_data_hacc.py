@@ -2,6 +2,7 @@
 
 import argparse
 import os
+from time import time
 
 import numpy as np
 from jax import random as jran
@@ -80,6 +81,8 @@ if __name__ == "__main__":
 
     IZ_OBS = [np.argmin(np.abs(sim_info.z_sim - z)) for z in z_table]
 
+    start = time()
+    chunk_counter = 0
     for subvol in range(istart, iend):
 
         for chunknum in chunks:
@@ -109,3 +112,8 @@ if __name__ == "__main__":
             bname_chunk = BNPAT_CHUNK.format(subvol, chunknum)
             fn_out = os.path.join(drn_scratch, bname_chunk)
             np.save(fn_out, chunk_data)
+            chunk_counter += 1
+
+    end = time()
+    runtime = end - start
+    msg = f"Runtime for {chunk_counter} total chunks = {runtime:.1f} seconds"
