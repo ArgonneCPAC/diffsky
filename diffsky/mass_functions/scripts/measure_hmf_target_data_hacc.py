@@ -81,6 +81,9 @@ if __name__ == "__main__":
 
     IZ_OBS = [np.argmin(np.abs(sim_info.z_sim - z)) for z in z_table]
 
+    fn_out = os.path.join(drn_scratch, "logmp_bins")
+    np.save(fn_out, LOGMP_BINS)
+
     start = time()
     chunk_counter = 0
     for subvol in range(istart, iend):
