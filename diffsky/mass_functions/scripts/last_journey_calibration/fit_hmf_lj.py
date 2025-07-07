@@ -100,15 +100,15 @@ if __name__ == "__main__":
     )
 
     print("\nPrinting best-fit parameters:\n")
-    for pname, pval in zip(p_best.ytp_params._fields, p_best.ytp_params):
-        print(f"{pname}={pval:.2f},")
-    print("\n")
-    for pname, pval in zip(p_best.x0_params._fields, p_best.x0_params):
-        print(f"{pname}={pval:.2f},")
-    print("\n")
-    for pname, pval in zip(p_best.lo_params._fields, p_best.lo_params):
-        print(f"{pname}={pval:.2f},")
-    print("\n")
-    for pname, pval in zip(p_best.hi_params._fields, p_best.hi_params):
-        print(f"{pname}={pval:.2f},")
-    print("\n")
+
+    fnout = f"best_fit_params_{fit_type}.txt"
+    with open(fnout, "w") as fout:
+
+        for pname, pval in zip(p_best.ytp_params._fields, p_best.ytp_params):
+            fout.write(f"{pname}={pval:.2f},\n")
+        for pname, pval in zip(p_best.x0_params._fields, p_best.x0_params):
+            fout.write(f"{pname}={pval:.2f},\n")
+        for pname, pval in zip(p_best.lo_params._fields, p_best.lo_params):
+            fout.write(f"{pname}={pval:.2f},\n")
+        for pname, pval in zip(p_best.hi_params._fields, p_best.hi_params):
+            fout.write(f"{pname}={pval:.2f},\n")
