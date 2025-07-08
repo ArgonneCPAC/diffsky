@@ -1,4 +1,15 @@
-""" """
+"""This script optimizes the hmf_model.py parameters according to Last Journey.
+
+The script writes the HMF target data to the following drn:
+diffsky/mass_functions/hmf_calibrations/tests/testing_data
+Take care: there is existing data in this drn that may be overwritten by this script
+
+The best-fitting parameters are written to the following ASCII file:
+lj_hmf_params.txt
+This ASCII file is programmatically read by hmf_param_reader.py,
+and so running this script updates the last journey hmf_model parameters
+
+"""
 
 import argparse
 import os
@@ -20,11 +31,28 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("drn_target_data", help="Location of target data")
+    parser.add_argument(
+        "drn_testing_data",
+        help="Location to store collated target data for downstream unit testing",
+    )
     parser.add_argument("fit_type", help="Halo population", choices=["cens", "all"])
+    parser.add_argument(
+        "fname_params_out", help="Output fname of best-fitting parameters"
+    )
+    parser.add_argument(
+        "-nchunks",
+        help="Number of chunks per subvolume. Take care that this is consistent with "
+        "the settings used to produce the target data with measure_hmf_target_data_hacc.py",
+        type=int,
+        default=DEFAULT_NCHUNKS,
+    )
 
     args = parser.parse_args()
     drn_target_data = args.drn_target_data
+    drn_testing_data = args.drn_testing_data
     fit_type = args.fit_type
+    fname_params_out = args.fname_params_out
+    nchunks = args.nchunks
 
     Z_TABLE = np.load(os.path.join(drn_target_data, "redshift_bins.npy"))
     LOGMP_BINS = np.load(os.path.join(drn_target_data, "logmp_bins.npy"))
@@ -44,10 +72,20 @@ if __name__ == "__main__":
     Lbox_mpc = sim_info.sim.rl / sim_info.cosmo_params.h  # Mpc
     Vbox_mpc = Lbox_mpc**3
 
-    vol_chunk = Vbox_mpc / NUM_SUBVOLS_LJ / DEFAULT_NCHUNKS
+    vol_chunk = Vbox_mpc / NUM_SUBVOLS_LJ / nchunks
     vol_target_data = vol_chunk * n_chunkdata_tot
 
     cuml_density_target_data = cuml_counts / vol_target_data
+
+    # save target data to testing_data
+    fn_lj_hmf_redshift_bins = os.path.join(drn_testing_data, "lj_hmf_redshift_bins.txt")
+    np.savetxt(fn_lj_hmf_redshift_bins, Z_TABLE)
+
+    fn_lj_hmf_logmp_bins = os.path.join(drn_testing_data, "lj_hmf_logmp_bins.txt")
+    np.savetxt(fn_lj_hmf_logmp_bins, LOGMP_BINS)
+
+    fn_lj_hmf_cuml_density = os.path.join(drn_testing_data, "lj_hmf_cuml_density.txt")
+    np.savetxt(fn_lj_hmf_cuml_density, cuml_density_target_data)
 
     loss_data_collector = []
     for iz in range(len(Z_TABLE)):
@@ -65,7 +103,9 @@ if __name__ == "__main__":
         loss_data_collector, n_warmup=0, n_steps=n_steps, step_size=0.05
     )
     p_best, loss, loss_hist, params_hist, fit_terminates = _res
-    print(f"Best-fit log10(loss) = {np.log10(loss):.2f}")
+    print(f"Best-fit log10(loss) = {np.log10(loss):.2f}\n")
+
+    print("Writing optimizer diagnostic plots to disk")
 
     # Plot loss curve
     fig, ax = plt.subplots(1, 1)
@@ -99,16 +139,14 @@ if __name__ == "__main__":
         dpi=200,
     )
 
-    print("\nPrinting best-fit parameters:\n")
-
-    fnout = f"best_fit_params_{fit_type}.txt"
-    with open(fnout, "w") as fout:
+    print(f"\nWriting best-fit parameters to {fname_params_out}\n")
+    with open(fname_params_out, "w") as fout:
 
         for pname, pval in zip(p_best.ytp_params._fields, p_best.ytp_params):
-            fout.write(f"{pname}={pval:.2f},\n")
+            fout.write(f"{pname}={pval:.2f}\n")
         for pname, pval in zip(p_best.x0_params._fields, p_best.x0_params):
-            fout.write(f"{pname}={pval:.2f},\n")
+            fout.write(f"{pname}={pval:.2f}\n")
         for pname, pval in zip(p_best.lo_params._fields, p_best.lo_params):
-            fout.write(f"{pname}={pval:.2f},\n")
+            fout.write(f"{pname}={pval:.2f}\n")
         for pname, pval in zip(p_best.hi_params._fields, p_best.hi_params):
-            fout.write(f"{pname}={pval:.2f},\n")
+            fout.write(f"{pname}={pval:.2f}\n")
