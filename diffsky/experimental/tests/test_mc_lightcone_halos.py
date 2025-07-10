@@ -147,9 +147,10 @@ def test_get_weighted_lightcone_grid_host_halo_diffmah():
         lgmp_grid = np.linspace(lgmp_min, 15, n_m)
         z_grid = np.linspace(z_min, z_max, n_z)
 
-        cenpop, nhalo_weights = mclh.get_weighted_lightcone_grid_host_halo_diffmah(
+        cenpop = mclh.get_weighted_lightcone_grid_host_halo_diffmah(
             ran_key, lgmp_grid, z_grid, sky_area_degsq
         )
+        assert "nhalos" in cenpop.keys()
 
 
 def test_mc_lightcone_host_halo_diffmah():

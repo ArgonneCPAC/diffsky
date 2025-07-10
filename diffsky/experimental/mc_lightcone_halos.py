@@ -383,8 +383,8 @@ def get_weighted_lightcone_grid_host_halo_diffmah(
         logmp0 : narray, shape (n_z*n_m, )
             Halo mass at z=0
 
-    nhalo_weighted_lc_grid : array, shape (n_z*n_m, )
-        Counts of each halo
+        nhalos : array, shape (n_z*n_m, )
+            Number of halos of this mass and redshift
 
     """
     nhalo_weighted_lc_grid = get_nhalo_weighted_lc_grid(
@@ -422,8 +422,9 @@ def get_weighted_lightcone_grid_host_halo_diffmah(
     cenpop_out = dict()
     for key, value in zip(fields, values):
         cenpop_out[key] = value
+    cenpop_out["nhalos"] = nhalo_weights
 
-    return cenpop_out, nhalo_weights
+    return cenpop_out
 
 
 def mc_lightcone_diffstar_cens(
