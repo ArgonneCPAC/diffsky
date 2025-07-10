@@ -11,69 +11,6 @@ from ...mass_functions.fitting_utils.calibrations import hacc_core_shmf_params a
 from .. import mc_lightcone_halos as mclh
 
 
-def test_mc_lightcone_extension():
-    ran_key = jran.key(0)
-    z_min, z_max = 0.45, 0.5
-    sky_area_degsq = 10.0
-
-    n_halos_tot = int(1e5)
-    lgmp_max = 12.0
-    args = (
-        ran_key,
-        n_halos_tot,
-        lgmp_max,
-        z_min,
-        z_max,
-        sky_area_degsq,
-    )
-    z_obs, lgm_obs = mclh.mc_lightcone_extension(*args)
-    assert lgm_obs.size == n_halos_tot
-
-    n_halos_tot2 = int(1e4)
-    args2 = (
-        ran_key,
-        n_halos_tot2,
-        lgmp_max,
-        z_min,
-        z_max,
-        sky_area_degsq,
-    )
-    z_obs2, lgm_obs2 = mclh.mc_lightcone_extension(*args2)
-    assert lgm_obs2.size == n_halos_tot2
-
-    assert lgm_obs.min() < lgm_obs2.min()
-
-
-def test_calculate_lgmp_min_extension_for_nhalos():
-    ran_key = jran.key(0)
-    z_min, z_max = 0.45, 0.5
-    sky_area_degsq = 10.0
-
-    n_tests = 10
-    for __ in range(n_tests):
-        ran_key, lc1_key, lc2_key, lgmp_min_key = jran.split(ran_key, 4)
-
-        lgmp_min_test = jran.uniform(lgmp_min_key, minval=11, maxval=12.5, shape=())
-        args = (lc1_key, lgmp_min_test, z_min, z_max, sky_area_degsq)
-        redshifts_galpop, logmp_halopop = mclh.mc_lightcone_host_halo_mass_function(
-            *args
-        )
-
-        n_halos_extra = logmp_halopop.size  # double the size of the halopop
-        lgmp_max = lgmp_min_test
-        args = (n_halos_extra, lgmp_max, z_min, z_max, sky_area_degsq)
-        lgmp_min_extension = mclh._calculate_lgmp_min_extension_for_nhalos(*args)
-
-        args = (lc2_key, lgmp_min_extension, z_min, z_max, sky_area_degsq)
-        redshifts_galpop2, logmp_halopop2 = mclh.mc_lightcone_host_halo_mass_function(
-            *args, lgmp_max=lgmp_min_test
-        )
-        sigma = np.sqrt(n_halos_extra)  # σ = std of a Poisson distribution
-        delta_n = logmp_halopop2.size - n_halos_extra
-        delta_n_z_score = delta_n / sigma
-        assert np.abs(delta_n_z_score) < 3  # MC counts within 3σ
-
-
 def test_mc_lightcone_host_halo_mass_function():
     """Enforce mc_lightcone_host_halo_mass_function produces consistent halo mass functions as
     the diffsky.mass_functions.mc_hosts function evaluated at the median redshift
