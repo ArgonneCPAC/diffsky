@@ -26,7 +26,7 @@ from jax import vmap
 
 from ..burstpop import diffqburstpop_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
-from ..mass_functions import mc_hosts
+from ..mass_functions import hmf_model, mc_hosts
 from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
@@ -176,6 +176,67 @@ def mc_lightcone_host_halo_mass_function(
     logmp_halopop = mc_logmp_vmap(uran_m, hmf_params, lgmp_min, z_halopop, lgmp_max)
 
     return z_halopop, logmp_halopop
+
+
+@jjit
+def pdf_weighted_lgmp_grid_singlez(hmf_params, lgmp_grid, redshift):
+    weights_grid = hmf_model.predict_differential_hmf(hmf_params, lgmp_grid, redshift)
+    weights_grid = weights_grid / weights_grid.sum()
+    return weights_grid
+
+
+_A = (None, None, 0)
+pdf_weighted_lgmp_grid_vmap = jjit(vmap(pdf_weighted_lgmp_grid_singlez, in_axes=_A))
+
+
+@jjit
+def nhalo_weighted_lc_grid(
+    lgmp_grid,
+    z_grid,
+    sky_area_degsq,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    cosmo_params=flat_wcdm.PLANCK15,
+):
+    """Compute the number of halos on the input grid of halo mass and redshift
+
+    Parameters
+    ----------
+    lgmp_grid : array, shape (n_m, )
+
+    z_grid : array, shape (n_z, )
+
+    sky_area_degsq : float
+        Sky area in units of deg^2
+
+    cosmo_params : namedtuple
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    Returns
+    -------
+    nhalo_weighted_lc_grid : array, shape (n_z, n_m)
+
+    """
+    # Compute the comoving volume of a thin shell at each grid point
+    fsky = sky_area_degsq / FULL_SKY_AREA
+    vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
+    vol_shell_grid_mpch = vol_shell_grid_mpc * (cosmo_params.h**3)
+
+    # At each grid point, compute <Nhalos> for the shell volume
+    mean_nhalos_lgmp_min = mc_hosts._compute_nhalos_tot(
+        hmf_params, lgmp_grid[0], z_grid, vol_shell_grid_mpch
+    )
+    mean_nhalos_lgmp_max = mc_hosts._compute_nhalos_tot(
+        hmf_params, lgmp_grid[-1], z_grid, vol_shell_grid_mpch
+    )
+    mean_nhalos_z_grid = mean_nhalos_lgmp_min - mean_nhalos_lgmp_max
+
+    lgmp_weights = pdf_weighted_lgmp_grid_vmap(hmf_params, lgmp_grid, z_grid)
+
+    n_z = z_grid.size
+    nhalo_weighted_lc_grid = mean_nhalos_z_grid.reshape((n_z, 1)) * lgmp_weights
+
+    return nhalo_weighted_lc_grid
 
 
 def mc_lightcone_host_halo_diffmah(
