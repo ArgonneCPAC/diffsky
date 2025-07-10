@@ -108,10 +108,10 @@ def predict_differential_hmf(params, logmp, redshift):
 
     Returns
     -------
-    lg_hmf : array, shape (n_halos, )
-        Base-10 log of differential comoving number density dn(logmp)/dlogmp
+    hmf : array, shape (n_halos, )
+        Differential comoving number density dn(logmp)/dlogmp
         in units of comoving (h/Mpc)**3 / dex
 
     """
-    lg_hmf = _predict_differential_hmf(params, logmp, redshift)
-    return lg_hmf
+    hmf = _predict_differential_hmf(params, logmp, redshift)
+    return hmf
