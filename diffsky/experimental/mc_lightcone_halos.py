@@ -190,7 +190,7 @@ pdf_weighted_lgmp_grid_vmap = jjit(vmap(pdf_weighted_lgmp_grid_singlez, in_axes=
 
 
 @jjit
-def nhalo_weighted_lc_grid(
+def get_nhalo_weighted_lc_grid(
     lgmp_grid,
     z_grid,
     sky_area_degsq,
@@ -330,6 +330,100 @@ def mc_lightcone_host_halo_diffmah(
         cenpop_out[key] = value
 
     return cenpop_out
+
+
+def get_weighted_lightcone_grid_host_halo_diffmah(
+    ran_key,
+    lgmp_grid,
+    z_grid,
+    sky_area_degsq,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    logmp_cutoff=0.0,
+):
+    """Compute the number of halos on the input grid of halo mass and redshift
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lgmp_grid : array, shape (n_m, )
+
+    z_grid : array, shape (n_z, )
+
+    sky_area_degsq : float
+        Sky area in units of deg^2
+
+    cosmo_params : namedtuple
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    cosmo_params : namedtuple
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    logmp_cutoff : float, optional
+        Minimum halo mass for which DiffmahPop is used to generate MAHs.
+        For logmp < logmp_cutoff, P(θ_MAH | logmp) = P(θ_MAH | logmp_cutoff)
+
+    Returns
+    -------
+    cenpop : dict
+
+        z_obs : narray, shape (n_z*n_m, )
+            Lightcone redshift
+
+        logmp_obs : narray, shape (n_z*n_m, )
+            Halo mass at the lightcone redshift
+
+        mah_params : namedtuple of diffmah params
+            Each tuple entry is an ndarray with shape (n_z*n_m, )
+
+        logmp0 : narray, shape (n_z*n_m, )
+            Halo mass at z=0
+
+    nhalo_weighted_lc_grid : array, shape (n_z*n_m, )
+        Counts of each halo
+
+    """
+    nhalo_weighted_lc_grid = get_nhalo_weighted_lc_grid(
+        lgmp_grid,
+        z_grid,
+        sky_area_degsq,
+        hmf_params=hmf_params,
+        cosmo_params=cosmo_params,
+    )
+    nhalo_weights = nhalo_weighted_lc_grid.flatten()
+    z_obs = np.repeat(z_grid, lgmp_grid.size)
+    logmp_obs_mf = np.tile(lgmp_grid, z_grid.size)
+
+    t_obs = flat_wcdm.age_at_z(z_obs, *cosmo_params)
+    t_0 = flat_wcdm.age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t_0)
+
+    logmp_obs_mf_clipped = np.clip(logmp_obs_mf, logmp_cutoff, np.inf)
+
+    tarr = np.array((10**lgt0,))
+    args = (diffmahpop_params, tarr, logmp_obs_mf_clipped, t_obs, ran_key, lgt0)
+    mah_params_uncorrected = mc_cenpop(*args)[0]  # mah_params, dmhdt, log_mah
+
+    logmp_obs_orig = _log_mah_kern(mah_params_uncorrected, t_obs, lgt0)
+    delta_logmh_clip = logmp_obs_orig - logmp_obs_mf
+    mah_params = mah_params_uncorrected._replace(
+        logm0=mah_params_uncorrected.logm0 - delta_logmh_clip
+    )
+
+    logmp0 = _log_mah_kern(mah_params, 10**lgt0, lgt0)
+    logmp_obs = _log_mah_kern(mah_params, t_obs, lgt0)
+
+    fields = ("z_obs", "t_obs", "logmp_obs", "mah_params", "logmp0")
+    values = (z_obs, t_obs, logmp_obs, mah_params, logmp0)
+    cenpop_out = dict()
+    for key, value in zip(fields, values):
+        cenpop_out[key] = value
+
+    return cenpop_out, nhalo_weights
 
 
 def mc_lightcone_diffstar_cens(

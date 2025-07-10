@@ -114,7 +114,7 @@ def test_nhalo_weighted_lc_grid():
         lgmp_grid = np.linspace(lgmp_min, 15, n_m)
         z_grid = np.linspace(z_min, z_max, n_z)
 
-        nhalo_weighted_lc_grid = mclh.nhalo_weighted_lc_grid(
+        nhalo_weighted_lc_grid = mclh.get_nhalo_weighted_lc_grid(
             lgmp_grid,
             z_grid,
             sky_area_degsq,
@@ -127,6 +127,29 @@ def test_nhalo_weighted_lc_grid():
         z_halopop, logmp_halopop = mclh.mc_lightcone_host_halo_mass_function(*args)
 
         assert np.allclose(logmp_halopop.size, nhalo_weighted_lc_grid.sum(), rtol=0.1)
+
+
+def test_get_weighted_lightcone_grid_host_halo_diffmah():
+    ran_key = jran.key(0)
+    n_tests = 10
+
+    sky_area_degsq = 15.0
+
+    for itest in range(n_tests):
+        ran_key, test_key = jran.split(ran_key, 2)
+
+        lgm_key, z_key, lc_key = jran.split(test_key, 3)
+        lgmp_min = jran.uniform(lgm_key, minval=11, maxval=12, shape=())
+        z_min = jran.uniform(z_key, minval=0.1, maxval=1.0, shape=())
+        z_max = z_min + 1
+
+        n_z, n_m = 150, 250
+        lgmp_grid = np.linspace(lgmp_min, 15, n_m)
+        z_grid = np.linspace(z_min, z_max, n_z)
+
+        cenpop, nhalo_weights = mclh.get_weighted_lightcone_grid_host_halo_diffmah(
+            ran_key, lgmp_grid, z_grid, sky_area_degsq
+        )
 
 
 def test_mc_lightcone_host_halo_diffmah():
