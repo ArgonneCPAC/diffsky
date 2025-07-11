@@ -18,5 +18,5 @@ conda activate improv311
 cd /home/ahearin/work/random/0711
 rsync /home/ahearin/work/repositories/python/diffsky/diffsky/mass_functions/scripts/discovery_lcdm_calibration/measure_hmf_target_data_hacc.py ./
 
-python measure_hmf_target_data_hacc.py lcrc -iend 1
+python measure_hmf_target_data_hacc.py lcrc -istart 1 -iend 2
 
