@@ -2,7 +2,8 @@
 
 import numpy as np
 
-SMDPL_VOL = 400.0**3
+SMDPL_H = 0.6777
+SMDPL_VOL = (400.0 / SMDPL_H) ** 3
 SMDPL_LGMP = np.log10(9.8e7)
 NPTCL_CUT = 300
 SMDPL_LGMP_CUT = np.log10(NPTCL_CUT) + SMDPL_LGMP
