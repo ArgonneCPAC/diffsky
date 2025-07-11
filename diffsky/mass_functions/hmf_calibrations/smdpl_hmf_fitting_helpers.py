@@ -5,6 +5,8 @@ from glob import glob
 
 import numpy as np
 
+SMDPL_H = 0.67777
+
 
 def get_scale_from_bn(bn):
     a = float(".".join(bn.split("_")[2].split(".")[:2]))
@@ -38,7 +40,7 @@ def get_loss_data(drn, halotype):
 
     loss_data_collector = []
     for iz, (fn, fn_lgmp) in enumerate(zip(fn_list, fn_list_lgmp)):
-        lgcuml_density = np.load(fn)
+        lgcuml_density = np.load(fn) + 3 * np.log10(SMDPL_H)
         lgmp_bins = np.load(fn_lgmp)
         loss_data_iz = (z_list[iz], lgmp_bins, lgcuml_density)
         loss_data_collector.append(loss_data_iz)

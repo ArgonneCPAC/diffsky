@@ -37,9 +37,10 @@ def predict_cuml_hmf(params, logmp, redshift):
     -------
     lg_cuml_hmf : array, shape (n_halos, )
         Base-10 log of cumulative comoving number density n(>logmp)
-        in units of comoving (h/Mpc)**3
+        in units of comoving (1/Mpc)**3
 
-        Note that number density uses h=1, but halo mass is defined in Msun
+        Note that both number density and halo mass are defined in
+        physical units (not h=1 units)
 
     """
     hmf_params = _get_singlez_cuml_hmf_params(params, redshift)
@@ -102,7 +103,7 @@ def predict_differential_hmf(params, logmp, redshift):
         Use DEFAULT_HMF_PARAMS for SMDPL-calibrated behavior.
 
     logmp : array, shape (n_halos, )
-        Base-10 log of halo mass in units of Msun/h
+        Base-10 log of halo mass in units of Msun
 
     redshift : float
 
@@ -110,7 +111,10 @@ def predict_differential_hmf(params, logmp, redshift):
     -------
     hmf : array, shape (n_halos, )
         Differential comoving number density dn(logmp)/dlogmp
-        in units of comoving (h/Mpc)**3 / dex
+        in units of comoving (1/Mpc)**3 / dex
+
+        Note that both number density and halo mass are defined in
+        physical units (not h=1 units)
 
     """
     hmf = _predict_differential_hmf(params, logmp, redshift)

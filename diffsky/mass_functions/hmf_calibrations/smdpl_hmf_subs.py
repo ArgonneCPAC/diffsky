@@ -9,8 +9,16 @@ These calibrated parameters pertain to halo mass in units of Msun (not Msun/h)
 
 from collections import OrderedDict, namedtuple
 
+import numpy as np
+
+SMDPL_H = 0.67777
+
 DEFAULT_YTP_PDICT = OrderedDict(
-    ytp_ytp=-4.813, ytp_x0=1.201, ytp_k=0.518, ytp_ylo=-0.203, ytp_yhi=-1.334
+    ytp_ytp=-4.813 + 3 * np.log10(SMDPL_H),
+    ytp_x0=1.201,
+    ytp_k=0.518,
+    ytp_ylo=-0.203,
+    ytp_yhi=-1.334,
 )
 DEFAULT_X0_PDICT = OrderedDict(
     x0_ytp=13.048, x0_x0=1.458, x0_k=1.409, x0_ylo=-0.872, x0_yhi=-0.570

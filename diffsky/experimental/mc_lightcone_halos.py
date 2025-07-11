@@ -114,7 +114,7 @@ def mc_lightcone_host_halo_mass_function(
     ran_key : jax.random.key
 
     lgmp_min : float
-        Minimum halo mass
+        Minimum halo mass in units of Msun (not Msun/h)
 
     z_min, z_max : float
 
@@ -134,6 +134,10 @@ def mc_lightcone_host_halo_mass_function(
         Halo masses derived by Monte Carlo sampling the halo mass function
         at the appropriate redshift for each point
 
+    Notes
+    -----
+    All mass quantities quoted in Msun (not Msun/h)
+
     """
 
     # Three randoms: one for Nhalos, one for halo mass, one for redshift
@@ -145,14 +149,13 @@ def mc_lightcone_host_halo_mass_function(
     # Compute the comoving volume of a thin shell at each grid point
     fsky = sky_area_degsq / FULL_SKY_AREA
     vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
-    vol_shell_grid_mpch = vol_shell_grid_mpc * (cosmo_params.h**3)
 
     # At each grid point, compute <Nhalos> for the shell volume
     mean_nhalos_grid = mc_hosts._compute_nhalos_tot(
-        hmf_params, lgmp_min, z_grid, vol_shell_grid_mpch
+        hmf_params, lgmp_min, z_grid, vol_shell_grid_mpc
     )
     mean_nhalos_lgmp_max = mc_hosts._compute_nhalos_tot(
-        hmf_params, lgmp_max, z_grid, vol_shell_grid_mpch
+        hmf_params, lgmp_max, z_grid, vol_shell_grid_mpc
     )
     mean_nhalos_grid = mean_nhalos_grid - mean_nhalos_lgmp_max
 
@@ -202,6 +205,7 @@ def get_nhalo_weighted_lc_grid(
     Parameters
     ----------
     lgmp_grid : array, shape (n_m, )
+        Base-10 log halo mass in units of Msun (not Msun/h)
 
     z_grid : array, shape (n_z, )
 
@@ -216,18 +220,21 @@ def get_nhalo_weighted_lc_grid(
     -------
     nhalo_weighted_lc_grid : array, shape (n_z, n_m)
 
+    Notes
+    -----
+    All mass quantities quoted in Msun (not Msun/h)
+
     """
     # Compute the comoving volume of a thin shell at each grid point
     fsky = sky_area_degsq / FULL_SKY_AREA
     vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
-    vol_shell_grid_mpch = vol_shell_grid_mpc * (cosmo_params.h**3)
 
     # At each grid point, compute <Nhalos> for the shell volume
     mean_nhalos_lgmp_min = mc_hosts._compute_nhalos_tot(
-        hmf_params, lgmp_grid[0], z_grid, vol_shell_grid_mpch
+        hmf_params, lgmp_grid[0], z_grid, vol_shell_grid_mpc
     )
     mean_nhalos_lgmp_max = mc_hosts._compute_nhalos_tot(
-        hmf_params, lgmp_grid[-1], z_grid, vol_shell_grid_mpch
+        hmf_params, lgmp_grid[-1], z_grid, vol_shell_grid_mpc
     )
     mean_nhalos_z_grid = mean_nhalos_lgmp_min - mean_nhalos_lgmp_max
 
@@ -259,7 +266,7 @@ def mc_lightcone_host_halo_diffmah(
     ran_key : jax.random.key
 
     lgmp_min : float
-        Minimum halo mass
+        Minimum halo mass in units of Msun (not Msun/h)
 
     z_min, z_max : float
 
@@ -288,7 +295,11 @@ def mc_lightcone_host_halo_diffmah(
             Each tuple entry is an ndarray with shape (n_halos, )
 
         logmp0 : narray, shape (n_halos, )
-            Halo mass at z=0
+            Base-10 log of halo mass in units of Msun at z=0
+
+    Notes
+    -----
+    All mass quantities quoted in Msun (not Msun/h)
 
     """
 
@@ -349,8 +360,10 @@ def get_weighted_lightcone_grid_host_halo_diffmah(
     ran_key : jax.random.key
 
     lgmp_grid : array, shape (n_m, )
+        Grid of Base-10 log of halo mass in units of Msun (not Msun/h)
 
     z_grid : array, shape (n_z, )
+        Grid of redshift
 
     sky_area_degsq : float
         Sky area in units of deg^2
@@ -375,16 +388,20 @@ def get_weighted_lightcone_grid_host_halo_diffmah(
             Lightcone redshift
 
         logmp_obs : narray, shape (n_z*n_m, )
-            Halo mass at the lightcone redshift
+            Base-10 log of halo mass in units of Msun at the lightcone redshift
 
         mah_params : namedtuple of diffmah params
             Each tuple entry is an ndarray with shape (n_z*n_m, )
 
         logmp0 : narray, shape (n_z*n_m, )
-            Halo mass at z=0
+            Base-10 log of halo mass in units of Msun at z=0
 
         nhalos : array, shape (n_z*n_m, )
             Number of halos of this mass and redshift
+
+    Notes
+    -----
+    All mass quantities quoted in Msun (not Msun/h)
 
     """
     nhalo_weighted_lc_grid = get_nhalo_weighted_lc_grid(
@@ -450,7 +467,7 @@ def mc_lightcone_diffstar_cens(
     ran_key : jax.random.key
 
     lgmp_min : float
-        Minimum halo mass
+        Base-10 log of minimum halo mass in units of Msun (not Msun/h)
 
     z_min, z_max : float
 
@@ -475,7 +492,7 @@ def mc_lightcone_diffstar_cens(
             Each tuple entry is an ndarray with shape (n_halos, )
 
         logmp0 : narray, shape (n_halos, )
-            log10 of halo mass at z=0
+            Base-10 log of halo mass in units of Msun at z=0
 
         logsm_obs : narray, shape (n_halos, )
             log10(Mstar) at the time of observation
@@ -493,6 +510,10 @@ def mc_lightcone_diffstar_cens(
 
         diffstarpop_data : dict
             ancillary diffstarpop data such as frac_q
+
+    Notes
+    -----
+    All mass quantities quoted in Msun (not Msun/h)
 
     """
     cenpop = mc_lightcone_host_halo_diffmah(
@@ -643,7 +664,7 @@ def mc_lightcone_diffstar_stellar_ages_cens(
     ran_key : jax.random.key
 
     lgmp_min : float
-        Minimum halo mass
+       Base-10 log of minimum halo mass in units of Msun (not Msun/h)
 
     z_min, z_max : float
 
@@ -668,7 +689,7 @@ def mc_lightcone_diffstar_stellar_ages_cens(
             Each tuple entry is an ndarray with shape (n_halos, )
 
         logmp0 : narray, shape (n_halos, )
-            log10 of halo mass at z=0
+            Base-10 log of halo mass in units of Msun at z=0
 
         logsm_obs : narray, shape (n_halos, )
             log10(Mstar) at the time of observation
@@ -692,6 +713,10 @@ def mc_lightcone_diffstar_stellar_ages_cens(
 
         ssp_lg_age_gyr : ndarray, shape (n_ages, )
             log10 stellar age grid in Gyr
+
+    Notes
+    -----
+    All mass quantities quoted in Msun (not Msun/h)
 
     """
     cenpop = mc_lightcone_diffstar_cens(
@@ -898,7 +923,7 @@ def mc_lightcone_obs_mags_cens(
     ran_key : jax.random.key
 
     lgmp_min : float
-        Minimum halo mass
+        Minimum halo mass in units of Msun (not Msun/h)
 
     z_min, z_max : float
 
@@ -930,7 +955,7 @@ def mc_lightcone_obs_mags_cens(
             Each tuple entry is an ndarray with shape (n_halos, )
 
         logmp0 : narray, shape (n_halos, )
-            log10 of halo mass at z=0
+            Base-10 log of halo mass in units of Msun at z=0
 
         logsm_obs : narray, shape (n_halos, )
             log10(Mstar) at the time of observation
@@ -957,6 +982,10 @@ def mc_lightcone_obs_mags_cens(
 
         obs_mags : ndarray, shape (n_bands, n_gals)
             Apparent magnitude of each galaxy in each band
+
+    Notes
+    -----
+    All mass quantities quoted in Msun (not Msun/h)
 
     """
     ran_key, cenpop_key = jran.split(ran_key, 2)

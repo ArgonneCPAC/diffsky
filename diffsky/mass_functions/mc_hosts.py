@@ -13,9 +13,9 @@ LGMH_MAX = 17.0
 
 
 @jjit
-def _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com_mpch):
-    nhalos_per_mpch3 = 10 ** predict_cuml_hmf(hmf_params, lgmp_min, redshift)
-    nhalos_tot = nhalos_per_mpch3 * volume_com_mpch
+def _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com_mpc):
+    nhalos_per_mpc3 = 10 ** predict_cuml_hmf(hmf_params, lgmp_min, redshift)
+    nhalos_tot = nhalos_per_mpc3 * volume_com_mpc
     return nhalos_tot
 
 
@@ -46,7 +46,7 @@ def mc_host_halos_singlez(
     ran_key,
     lgmp_min,
     redshift,
-    volume_com_mpch,
+    volume_com_mpc,
     hmf_params=DEFAULT_HMF_PARAMS,
     lgmp_max=LGMH_MAX,
 ):
@@ -58,14 +58,15 @@ def mc_host_halos_singlez(
 
     lgmp_min : float
         Base-10 log of the halo mass competeness limit of the generated population
+        Halo mass is in units of Msun (not Msun/h)
 
         Smaller values of lgmp_min produce more halos in the returned sample
 
     redshift : float
         Redshift of the halo population
 
-    volume_com_mpch : float
-        Comoving volume of the generated population in units of (Mpc/h)**3
+    volume_com_mpc : float
+        Comoving volume of the generated population in units of Mpc^3
 
         Larger values of volume_com produce more halos in the returned sample
 
@@ -74,11 +75,16 @@ def mc_host_halos_singlez(
     lgmp_halopop : ndarray, shape (n_halos, )
         Base-10 log of the halo mass of the generated population
 
+    Notes
+    -----
+    Note that both number density and halo mass are defined in
+    physical units (not h=1 units)
+
     """
     counts_key, u_key = jran.split(ran_key, 2)
-    mean_nhalos = _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com_mpch)
+    mean_nhalos = _compute_nhalos_tot(hmf_params, lgmp_min, redshift, volume_com_mpc)
     mean_nhalos_lgmax = _compute_nhalos_tot(
-        hmf_params, lgmp_max, redshift, volume_com_mpch
+        hmf_params, lgmp_max, redshift, volume_com_mpc
     )
     mean_nhalos = mean_nhalos - mean_nhalos_lgmax
 
