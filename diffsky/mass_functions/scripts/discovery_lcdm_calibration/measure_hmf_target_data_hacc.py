@@ -17,9 +17,7 @@ NUM_SUBVOLS_DISCOVERY = 96
 DEFAULT_NCHUNKS = 10
 
 # default directories
-DRN_DISC_LCDM_LCRC = (
-    "/lcrc/group/cosmodata/simulations/DESI_W0WA/LCDM/coreforest/forest/"
-)
+DRN_DISC_LCDM_LCRC = "/lcrc/group/cosmodata/simulations/DESI_W0WA/LCDM"
 DRN_DISC_LCDM_CORES_LCRC = os.path.join(DRN_DISC_LCDM_LCRC, "coreforest", "forest")
 DRN_DISC_LCDM_DIFFMAH_LCRC = (
     "/lcrc/project/halotools/DESI_W0WA/diffmah_fits/unchunked/LCDM/"
