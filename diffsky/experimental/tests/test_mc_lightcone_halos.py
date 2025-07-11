@@ -11,69 +11,6 @@ from ...mass_functions.fitting_utils.calibrations import hacc_core_shmf_params a
 from .. import mc_lightcone_halos as mclh
 
 
-def test_mc_lightcone_extension():
-    ran_key = jran.key(0)
-    z_min, z_max = 0.45, 0.5
-    sky_area_degsq = 10.0
-
-    n_halos_tot = int(1e5)
-    lgmp_max = 12.0
-    args = (
-        ran_key,
-        n_halos_tot,
-        lgmp_max,
-        z_min,
-        z_max,
-        sky_area_degsq,
-    )
-    z_obs, lgm_obs = mclh.mc_lightcone_extension(*args)
-    assert lgm_obs.size == n_halos_tot
-
-    n_halos_tot2 = int(1e4)
-    args2 = (
-        ran_key,
-        n_halos_tot2,
-        lgmp_max,
-        z_min,
-        z_max,
-        sky_area_degsq,
-    )
-    z_obs2, lgm_obs2 = mclh.mc_lightcone_extension(*args2)
-    assert lgm_obs2.size == n_halos_tot2
-
-    assert lgm_obs.min() < lgm_obs2.min()
-
-
-def test_calculate_lgmp_min_extension_for_nhalos():
-    ran_key = jran.key(0)
-    z_min, z_max = 0.45, 0.5
-    sky_area_degsq = 10.0
-
-    n_tests = 10
-    for __ in range(n_tests):
-        ran_key, lc1_key, lc2_key, lgmp_min_key = jran.split(ran_key, 4)
-
-        lgmp_min_test = jran.uniform(lgmp_min_key, minval=11, maxval=12.5, shape=())
-        args = (lc1_key, lgmp_min_test, z_min, z_max, sky_area_degsq)
-        redshifts_galpop, logmp_halopop = mclh.mc_lightcone_host_halo_mass_function(
-            *args
-        )
-
-        n_halos_extra = logmp_halopop.size  # double the size of the halopop
-        lgmp_max = lgmp_min_test
-        args = (n_halos_extra, lgmp_max, z_min, z_max, sky_area_degsq)
-        lgmp_min_extension = mclh._calculate_lgmp_min_extension_for_nhalos(*args)
-
-        args = (lc2_key, lgmp_min_extension, z_min, z_max, sky_area_degsq)
-        redshifts_galpop2, logmp_halopop2 = mclh.mc_lightcone_host_halo_mass_function(
-            *args, lgmp_max=lgmp_min_test
-        )
-        sigma = np.sqrt(n_halos_extra)  # σ = std of a Poisson distribution
-        delta_n = logmp_halopop2.size - n_halos_extra
-        delta_n_z_score = delta_n / sigma
-        assert np.abs(delta_n_z_score) < 3  # MC counts within 3σ
-
-
 def test_mc_lightcone_host_halo_mass_function():
     """Enforce mc_lightcone_host_halo_mass_function produces consistent halo mass functions as
     the diffsky.mass_functions.mc_hosts function evaluated at the median redshift
@@ -156,6 +93,64 @@ def test_mc_lightcone_host_halo_mass_function_lgmp_max_feature():
         n1 = np.sum(logmp_halopop < lgmp_max_test)
         n2 = logmp_halopop2.size
         assert np.allclose(n1, n2, rtol=0.02)
+
+
+def test_nhalo_weighted_lc_grid():
+    """should get within 10% of Nhalos of a Monte Carlo generated lightcone"""
+    ran_key = jran.key(0)
+    n_tests = 10
+
+    sky_area_degsq = 15.0
+
+    for itest in range(n_tests):
+        ran_key, test_key = jran.split(ran_key, 2)
+
+        lgm_key, z_key, lc_key = jran.split(test_key, 3)
+        lgmp_min = jran.uniform(lgm_key, minval=11, maxval=12, shape=())
+        z_min = jran.uniform(z_key, minval=0.1, maxval=1.0, shape=())
+        z_max = z_min + 1
+
+        n_z, n_m = 150, 250
+        lgmp_grid = np.linspace(lgmp_min, 15, n_m)
+        z_grid = np.linspace(z_min, z_max, n_z)
+
+        nhalo_weighted_lc_grid = mclh.get_nhalo_weighted_lc_grid(
+            lgmp_grid,
+            z_grid,
+            sky_area_degsq,
+            hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+            cosmo_params=flat_wcdm.PLANCK15,
+        )
+        assert nhalo_weighted_lc_grid.shape == (n_z, n_m)
+
+        args = (lc_key, lgmp_min, z_min, z_max, sky_area_degsq)
+        z_halopop, logmp_halopop = mclh.mc_lightcone_host_halo_mass_function(*args)
+
+        assert np.allclose(logmp_halopop.size, nhalo_weighted_lc_grid.sum(), rtol=0.1)
+
+
+def test_get_weighted_lightcone_grid_host_halo_diffmah():
+    ran_key = jran.key(0)
+    n_tests = 10
+
+    sky_area_degsq = 15.0
+
+    for itest in range(n_tests):
+        ran_key, test_key = jran.split(ran_key, 2)
+
+        lgm_key, z_key, lc_key = jran.split(test_key, 3)
+        lgmp_min = jran.uniform(lgm_key, minval=11, maxval=12, shape=())
+        z_min = jran.uniform(z_key, minval=0.1, maxval=1.0, shape=())
+        z_max = z_min + 1
+
+        n_z, n_m = 150, 250
+        lgmp_grid = np.linspace(lgmp_min, 15, n_m)
+        z_grid = np.linspace(z_min, z_max, n_z)
+
+        cenpop = mclh.get_weighted_lightcone_grid_host_halo_diffmah(
+            ran_key, lgmp_grid, z_grid, sky_area_degsq
+        )
+        assert "nhalos" in cenpop.keys()
 
 
 def test_mc_lightcone_host_halo_diffmah():

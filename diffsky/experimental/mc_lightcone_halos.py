@@ -26,7 +26,7 @@ from jax import vmap
 
 from ..burstpop import diffqburstpop_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
-from ..mass_functions import mc_hosts
+from ..mass_functions import hmf_model, mc_hosts
 from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
@@ -93,50 +93,6 @@ def _spherical_shell_comoving_volume(z_grid, cosmo_params):
     # vol_shell_grid = 4π*R*R*dR
     vol_shell_grid = 4 * jnp.pi * r_grid * r_grid * d_r_grid
     return vol_shell_grid
-
-
-@jjit
-def _calculate_lgmp_min_extension_for_nhalos(
-    n_halos,
-    lgmp_max,
-    z_min,
-    z_max,
-    sky_area_degsq,
-    cosmo_params=flat_wcdm.PLANCK15,
-    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
-    n_grid=2_000,
-    n_lgmp_min_grid=250,
-    lgmp_min_guess=5,
-):
-    # Set up a uniform grid in redshift
-    z_grid = jnp.linspace(z_min, z_max, n_grid)
-
-    # Compute the comoving volume of a thin shell at each grid point
-    fsky = sky_area_degsq / FULL_SKY_AREA
-    vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
-    vol_shell_grid_mpch = vol_shell_grid_mpc * (cosmo_params.h**3)
-
-    # At each grid point, compute <Nhalos> for the shell volume
-    mean_nhalos_lgmp_max_z_grid = mc_hosts._compute_nhalos_tot(
-        hmf_params, lgmp_max, z_grid, vol_shell_grid_mpch
-    )
-    _EPS = 0.0001
-    lgmp_min_guess_grid = jnp.linspace(lgmp_min_guess, lgmp_max - _EPS, n_lgmp_min_grid)
-    mean_nhalos_lgmp_min_guess_grid = _compute_nhalos_tot_vmap(
-        hmf_params, lgmp_min_guess_grid, z_grid, vol_shell_grid_mpch
-    )
-    mean_nhalos_lgmp_min_guess_grid = (
-        mean_nhalos_lgmp_min_guess_grid - mean_nhalos_lgmp_max_z_grid.reshape((1, -1))
-    )
-
-    nhalos_tot_lgmp_min_guess_grid = jnp.sum(mean_nhalos_lgmp_min_guess_grid, axis=1)
-
-    lognh_table = jnp.log10(nhalos_tot_lgmp_min_guess_grid)
-    lgmp_min_extension = jnp.interp(
-        jnp.log10(n_halos), lognh_table[::-1], lgmp_min_guess_grid[::-1]
-    )
-
-    return lgmp_min_extension
 
 
 def mc_lightcone_host_halo_mass_function(
@@ -222,39 +178,65 @@ def mc_lightcone_host_halo_mass_function(
     return z_halopop, logmp_halopop
 
 
-def mc_lightcone_extension(
-    ran_key,
-    nhalos_tot,
-    lgmp_max,
-    z_min,
-    z_max,
+@jjit
+def pdf_weighted_lgmp_grid_singlez(hmf_params, lgmp_grid, redshift):
+    weights_grid = hmf_model.predict_differential_hmf(hmf_params, lgmp_grid, redshift)
+    weights_grid = weights_grid / weights_grid.sum()
+    return weights_grid
+
+
+_A = (None, None, 0)
+pdf_weighted_lgmp_grid_vmap = jjit(vmap(pdf_weighted_lgmp_grid_singlez, in_axes=_A))
+
+
+@jjit
+def get_nhalo_weighted_lc_grid(
+    lgmp_grid,
+    z_grid,
     sky_area_degsq,
-    cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
-    lgmp_min_guess=5,
+    cosmo_params=flat_wcdm.PLANCK15,
 ):
-    lgmp_min = _calculate_lgmp_min_extension_for_nhalos(
-        nhalos_tot,
-        lgmp_max,
-        z_min,
-        z_max,
-        sky_area_degsq,
-        cosmo_params=cosmo_params,
-        hmf_params=hmf_params,
-        lgmp_min_guess=lgmp_min_guess,
+    """Compute the number of halos on the input grid of halo mass and redshift
+
+    Parameters
+    ----------
+    lgmp_grid : array, shape (n_m, )
+
+    z_grid : array, shape (n_z, )
+
+    sky_area_degsq : float
+        Sky area in units of deg^2
+
+    cosmo_params : namedtuple
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    Returns
+    -------
+    nhalo_weighted_lc_grid : array, shape (n_z, n_m)
+
+    """
+    # Compute the comoving volume of a thin shell at each grid point
+    fsky = sky_area_degsq / FULL_SKY_AREA
+    vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
+    vol_shell_grid_mpch = vol_shell_grid_mpc * (cosmo_params.h**3)
+
+    # At each grid point, compute <Nhalos> for the shell volume
+    mean_nhalos_lgmp_min = mc_hosts._compute_nhalos_tot(
+        hmf_params, lgmp_grid[0], z_grid, vol_shell_grid_mpch
     )
-    z_halopop, logmp_halopop = mc_lightcone_host_halo_mass_function(
-        ran_key,
-        lgmp_min,
-        z_min,
-        z_max,
-        sky_area_degsq,
-        cosmo_params=cosmo_params,
-        hmf_params=hmf_params,
-        lgmp_max=lgmp_max,
-        nhalos_tot=nhalos_tot,
+    mean_nhalos_lgmp_max = mc_hosts._compute_nhalos_tot(
+        hmf_params, lgmp_grid[-1], z_grid, vol_shell_grid_mpch
     )
-    return z_halopop, logmp_halopop
+    mean_nhalos_z_grid = mean_nhalos_lgmp_min - mean_nhalos_lgmp_max
+
+    lgmp_weights = pdf_weighted_lgmp_grid_vmap(hmf_params, lgmp_grid, z_grid)
+
+    n_z = z_grid.size
+    nhalo_weighted_lc_grid = mean_nhalos_z_grid.reshape((n_z, 1)) * lgmp_weights
+
+    return nhalo_weighted_lc_grid
 
 
 def mc_lightcone_host_halo_diffmah(
@@ -346,6 +328,101 @@ def mc_lightcone_host_halo_diffmah(
     cenpop_out = dict()
     for key, value in zip(fields, values):
         cenpop_out[key] = value
+
+    return cenpop_out
+
+
+def get_weighted_lightcone_grid_host_halo_diffmah(
+    ran_key,
+    lgmp_grid,
+    z_grid,
+    sky_area_degsq,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    logmp_cutoff=0.0,
+):
+    """Compute the number of halos on the input grid of halo mass and redshift
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lgmp_grid : array, shape (n_m, )
+
+    z_grid : array, shape (n_z, )
+
+    sky_area_degsq : float
+        Sky area in units of deg^2
+
+    cosmo_params : namedtuple
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    cosmo_params : namedtuple
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    logmp_cutoff : float, optional
+        Minimum halo mass for which DiffmahPop is used to generate MAHs.
+        For logmp < logmp_cutoff, P(θ_MAH | logmp) = P(θ_MAH | logmp_cutoff)
+
+    Returns
+    -------
+    cenpop : dict
+
+        z_obs : narray, shape (n_z*n_m, )
+            Lightcone redshift
+
+        logmp_obs : narray, shape (n_z*n_m, )
+            Halo mass at the lightcone redshift
+
+        mah_params : namedtuple of diffmah params
+            Each tuple entry is an ndarray with shape (n_z*n_m, )
+
+        logmp0 : narray, shape (n_z*n_m, )
+            Halo mass at z=0
+
+        nhalos : array, shape (n_z*n_m, )
+            Number of halos of this mass and redshift
+
+    """
+    nhalo_weighted_lc_grid = get_nhalo_weighted_lc_grid(
+        lgmp_grid,
+        z_grid,
+        sky_area_degsq,
+        hmf_params=hmf_params,
+        cosmo_params=cosmo_params,
+    )
+    nhalo_weights = nhalo_weighted_lc_grid.flatten()
+    z_obs = np.repeat(z_grid, lgmp_grid.size)
+    logmp_obs_mf = np.tile(lgmp_grid, z_grid.size)
+
+    t_obs = flat_wcdm.age_at_z(z_obs, *cosmo_params)
+    t_0 = flat_wcdm.age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t_0)
+
+    logmp_obs_mf_clipped = np.clip(logmp_obs_mf, logmp_cutoff, np.inf)
+
+    tarr = np.array((10**lgt0,))
+    args = (diffmahpop_params, tarr, logmp_obs_mf_clipped, t_obs, ran_key, lgt0)
+    mah_params_uncorrected = mc_cenpop(*args)[0]  # mah_params, dmhdt, log_mah
+
+    logmp_obs_orig = _log_mah_kern(mah_params_uncorrected, t_obs, lgt0)
+    delta_logmh_clip = logmp_obs_orig - logmp_obs_mf
+    mah_params = mah_params_uncorrected._replace(
+        logm0=mah_params_uncorrected.logm0 - delta_logmh_clip
+    )
+
+    logmp0 = _log_mah_kern(mah_params, 10**lgt0, lgt0)
+    logmp_obs = _log_mah_kern(mah_params, t_obs, lgt0)
+
+    fields = ("z_obs", "t_obs", "logmp_obs", "mah_params", "logmp0")
+    values = (z_obs, t_obs, logmp_obs, mah_params, logmp0)
+    cenpop_out = dict()
+    for key, value in zip(fields, values):
+        cenpop_out[key] = value
+    cenpop_out["nhalos"] = nhalo_weights
 
     return cenpop_out
 
