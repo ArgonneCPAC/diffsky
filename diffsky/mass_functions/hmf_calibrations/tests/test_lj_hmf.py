@@ -22,7 +22,7 @@ def test_lj_hmf_model_loss_is_small():
         os.path.join(DRN_TESTING_DATA, "lj_hmf_logmp_bins.txt")
     )
     lj_hmf_cuml_density = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "lj_hmf_cuml_density.txt")
+        os.path.join(DRN_TESTING_DATA, "lj_hmf_cuml_density_cens.txt")
     )
 
     loss_data_collector = []
@@ -46,7 +46,7 @@ def test_lj_hmf_model_recomputed_loss_is_small():
         os.path.join(DRN_TESTING_DATA, "lj_hmf_logmp_bins.txt")
     )
     lj_hmf_cuml_density = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "lj_hmf_cuml_density.txt")
+        os.path.join(DRN_TESTING_DATA, "lj_hmf_cuml_density_cens.txt")
     )
     for iz, redshift in enumerate(lj_hmf_redshift_bins):
         msk_logmp = lj_hmf_cuml_density[:, iz] > 0

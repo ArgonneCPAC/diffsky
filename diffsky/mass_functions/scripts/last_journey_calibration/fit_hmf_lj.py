@@ -84,7 +84,9 @@ if __name__ == "__main__":
     fn_lj_hmf_logmp_bins = os.path.join(drn_testing_data, "lj_hmf_logmp_bins.txt")
     np.savetxt(fn_lj_hmf_logmp_bins, LOGMP_BINS)
 
-    fn_lj_hmf_cuml_density = os.path.join(drn_testing_data, "lj_hmf_cuml_density.txt")
+    fn_lj_hmf_cuml_density = os.path.join(
+        drn_testing_data, f"lj_hmf_cuml_density_{fit_type}.txt"
+    )
     np.savetxt(fn_lj_hmf_cuml_density, cuml_density_target_data)
 
     loss_data_collector = []
