@@ -14,3 +14,6 @@ from .smdpl_hmf import HMF_Params  # noqa
 LJ_HMF_PARAMS = load_hmf_model_params_from_txt(
     os.path.join(_THIS_DRNAME, "lj_hmf_params.txt")
 )
+DISC_LCDM_HMF_PARAMS = load_hmf_model_params_from_txt(
+    os.path.join(_THIS_DRNAME, "disc_lcdm_hmf_params.txt")
+)
