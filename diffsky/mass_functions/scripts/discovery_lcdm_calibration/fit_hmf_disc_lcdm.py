@@ -90,7 +90,7 @@ if __name__ == "__main__":
     np.savetxt(fn_disc_lcdm_hmf_logmp_bins, LOGMP_BINS)
 
     fn_disc_lcdm_hmf_cuml_density = os.path.join(
-        drn_testing_data, "disc_lcdm_hmf_cuml_density.txt"
+        drn_testing_data, f"disc_lcdm_hmf_cuml_density_{fit_type}.txt"
     )
     np.savetxt(fn_disc_lcdm_hmf_cuml_density, cuml_density_target_data)
 
