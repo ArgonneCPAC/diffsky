@@ -12,7 +12,7 @@ from haccytrees import Simulation as HACCSim
 
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
-DRN_LJ_LC_LCRC = "/lcrc/project/cosmo_ai/mbuehlmann/LastJourney/core-lc-3/output"
+DRN_LJ_LC_LCRC = "/lcrc/project/cosmo_ai/mbuehlmann/LastJourney/core-lc-4/output"
 NUM_SUBVOLS_LJ = 192
 
 
