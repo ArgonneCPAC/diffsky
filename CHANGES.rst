@@ -1,6 +1,6 @@
 0.2.2 (unreleased)
 -------------------
-- Change little h convention of Monte Carlo halo generators (https://github.com/ArgonneCPAC/diffsky/pull/183)
+- Change little h convention of Monte Carlo halo generators (https://github.com/ArgonneCPAC/diffsky/pull/184)
 
 
 0.2.1 (2025-06-30)
