@@ -52,12 +52,14 @@ CF_FIELDS = ["central", "core_tag", "fof_halo_tag", "host_core", DIFFMAH_MASS_CO
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "lc_patch_list_cfg", help="fname to ASCII with list of sky patches"
-    )
     parser.add_argument("z_min", help="Minimum redshift", type=float)
     parser.add_argument("z_max", help="Maximum redshift", type=float)
 
+    parser.add_argument("-istart", help="First lc patch", type=int, default=0)
+    parser.add_argument("-iend", help="Last lc patch", type=int, default=0)
+    parser.add_argument(
+        "-lc_patch_list_cfg", help="fname to ASCII with list of sky patches", default=""
+    )
     parser.add_argument(
         "-machine", help="Machine nickname", choices=["lcrc", "poboy"], default="lcrc"
     )
@@ -76,16 +78,22 @@ if __name__ == "__main__":
     args = parser.parse_args()
     z_min = args.z_min
     z_max = args.z_max
-    lc_patch_list_cfg = args.lc_patch_list_cfg
-
     machine = args.machine
+
+    lc_patch_list_cfg = args.lc_patch_list_cfg
+    istart = args.istart
+    iend = args.iend
+
     itest = args.itest
     nchunks = args.nchunks
     drn_out = args.drn_out
 
     sim = HACCSim.simulations[SIM_NAME]
 
-    lc_patch_list = np.loadtxt(lc_patch_list_cfg).astype(int)
+    if lc_patch_list_cfg == "":
+        lc_patch_list = np.arange(istart, iend).astype(int)
+    else:
+        lc_patch_list = np.loadtxt(lc_patch_list_cfg).astype(int)
 
     if machine == "lcrc":
         drn_lc = DRN_LJ_LC_LCRC
