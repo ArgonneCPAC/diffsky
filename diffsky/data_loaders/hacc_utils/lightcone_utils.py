@@ -316,7 +316,8 @@ def get_diffsky_quantities_for_lc_patch(
 
         # Matchup uber host shapes
         _olap_ult_host_shape_data = [
-            cf_matrices[key][olap_chunk_ult_host_idx] for key in SHAPE_KEYS
+            cf_matrices[key][:, timestep_idx][olap_chunk_ult_host_idx]
+            for key in SHAPE_KEYS
         ]
         for host_key, x in zip(TOP_HOST_SHAPE_KEYS, _olap_ult_host_shape_data):
             lc_patch_data_out[host_key][msk_olap] = x
