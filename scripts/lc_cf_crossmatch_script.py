@@ -51,8 +51,8 @@ CF_FIELDS = ["central", "core_tag", "fof_halo_tag", "host_core", DIFFMAH_MASS_CO
 shapes_1 = [f"infall_fof_halo_eigS1{x}" for x in ("X", "Y", "Z")]
 shapes_2 = [f"infall_fof_halo_eigS2{x}" for x in ("X", "Y", "Z")]
 shapes_3 = [f"infall_fof_halo_eigS3{x}" for x in ("X", "Y", "Z")]
-core_data = ("merged", "vel_disp", "radius", "core_state")
-CF_FIELDS = (*CF_FIELDS, *shapes_1, *shapes_2, *shapes_3, *core_data)
+core_data = ["merged", "vel_disp", "radius", "core_state"]
+CF_FIELDS = [*CF_FIELDS, *shapes_1, *shapes_2, *shapes_3, *core_data]
 
 
 if __name__ == "__main__":

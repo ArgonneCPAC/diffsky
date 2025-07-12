@@ -28,7 +28,7 @@ SECONDARY_HOST_MAH_KEYS = ["sec_host_" + key for key in DEFAULT_MAH_PARAMS._fiel
 shapes_1 = [f"infall_fof_halo_eigS1{x}" for x in ("X", "Y", "Z")]
 shapes_2 = [f"infall_fof_halo_eigS2{x}" for x in ("X", "Y", "Z")]
 shapes_3 = [f"infall_fof_halo_eigS3{x}" for x in ("X", "Y", "Z")]
-SHAPE_KEYS = (*shapes_1, *shapes_2, *shapes_3)
+SHAPE_KEYS = [*shapes_1, *shapes_2, *shapes_3]
 TOP_HOST_SHAPE_KEYS = ["top_host_" + key for key in SHAPE_KEYS]
 
 
