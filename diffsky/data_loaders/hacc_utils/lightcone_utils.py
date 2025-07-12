@@ -25,10 +25,18 @@ SQDEG_OF_SPHERE = SQDEG_PER_STER * 4 * np.pi
 TOP_HOST_MAH_KEYS = ["top_host_" + key for key in DEFAULT_MAH_PARAMS._fields]
 SECONDARY_HOST_MAH_KEYS = ["sec_host_" + key for key in DEFAULT_MAH_PARAMS._fields]
 
+shapes_1 = [f"infall_fof_halo_eigS1{x}" for x in ("X", "Y", "Z")]
+shapes_2 = [f"infall_fof_halo_eigS2{x}" for x in ("X", "Y", "Z")]
+shapes_3 = [f"infall_fof_halo_eigS3{x}" for x in ("X", "Y", "Z")]
+SHAPE_KEYS = (*shapes_1, *shapes_2, *shapes_3)
+TOP_HOST_SHAPE_KEYS = ["top_host_" + key for key in SHAPE_KEYS]
+
+
 LC_PATCH_OUT_KEYS = (
     *DEFAULT_MAH_PARAMS._fields,
     *TOP_HOST_MAH_KEYS,
     *SECONDARY_HOST_MAH_KEYS,
+    *TOP_HOST_SHAPE_KEYS,
     "loss",
     "n_points_per_fit",
     "indx_t_ult_inf",
@@ -300,11 +308,17 @@ def get_diffsky_quantities_for_lc_patch(
 
         # Matchup uber host_mah_params
         mah_keys = DEFAULT_MAH_PARAMS._fields
-        host_mah_keys = TOP_HOST_MAH_KEYS
-        _olap_ult_host_data = [
+        _olap_ult_host_mah_data = [
             cf_diffmah_data[key][olap_chunk_ult_host_idx] for key in mah_keys
         ]
-        for host_key, x in zip(host_mah_keys, _olap_ult_host_data):
+        for host_key, x in zip(TOP_HOST_MAH_KEYS, _olap_ult_host_mah_data):
+            lc_patch_data_out[host_key][msk_olap] = x
+
+        # Matchup uber host shapes
+        _olap_ult_host_shape_data = [
+            cf_matrices[key][olap_chunk_ult_host_idx] for key in SHAPE_KEYS
+        ]
+        for host_key, x in zip(TOP_HOST_SHAPE_KEYS, _olap_ult_host_shape_data):
             lc_patch_data_out[host_key][msk_olap] = x
 
         # Matchup secondary host_mah_params
