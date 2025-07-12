@@ -17,7 +17,7 @@ def test_mc_lightcone_host_halo_mass_function():
 
     """
     lgmp_min = 12.0
-    z_min, z_max = 0.1, 0.5
+    z_min, z_max = 0.4, 0.5
     sky_area_degsq = 10.0
 
     n_tests = 5
@@ -50,10 +50,9 @@ def test_mc_lightcone_host_halo_mass_function():
         )
         fsky = sky_area_degsq / mclh.FULL_SKY_AREA
         vol_com_mpc = fsky * (vol_hi - vol_lo)
-        vol_com_mpch = vol_com_mpc * (cosmo_params.h**3)
 
         lgmp_halopop_zmed = mc_hosts.mc_host_halos_singlez(
-            ran_key, lgmp_min, z_med, vol_com_mpch
+            ran_key, lgmp_min, z_med, vol_com_mpc
         )
 
         n_lightcone, n_snapshot = redshifts_galpop.size, lgmp_halopop_zmed.size

@@ -34,4 +34,4 @@ def test_collect_lc_diffsky_data():
     bn_list = ["lc_cores-131.0.diffsky_data.hdf5", "lc_cores-213.0.diffsky_data.hdf5"]
     fn_list = [os.path.join(DRN_LC_CF_LJ_POBOY, bn) for bn in bn_list]
     lc_data, diffsky_data = load_lc_cf.collect_lc_diffsky_data(fn_list)
-    assert len(lc_data["z_obs"]) == len(diffsky_data["early_index"])
+    assert len(lc_data["redshift_true"]) == len(diffsky_data["early_index"])

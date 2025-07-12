@@ -9,13 +9,12 @@ import numpy as np
 from diffsky.data_loaders.um_binary_loader import dtype as um_dtype
 from diffsky.mass_functions import measure_hmf
 
-DRN_OUT = "/home/ahearin/work/random/0624/SMDPL_HISTOGRAMS"
+DRN_OUT = "/home/ahearin/work/random/0711/SMDPL_HMF_TARGET_DATA"
 
 DRN_LCRC = "/lcrc/project/halotools/UniverseMachine/SMDPL/sfr_catalogs_dr1_bestfit/"
 BNPAT = "sfr_catalog_*.bin"
 Z_TARGETS = np.arange(0.0, 5.0, 0.4)
 
-SMDPL_H = 0.6777
 
 if __name__ == "__main__":
 
@@ -40,7 +39,7 @@ if __name__ == "__main__":
 
         data = np.fromfile(fn, dtype=um_dtype)
         # Mhalo is in units of Msun/h in sfr_catalog_*.bin, so we convert to Msun
-        lgmp = np.log10(data["mp"] / SMDPL_H)
+        lgmp = np.log10(data["mp"] / measure_hmf.SMDPL_H)
 
         # All hosts and subs
         logmp_bins_subs, lgcuml_density_subs = measure_hmf.measure_smdpl_lg_cuml_hmf(

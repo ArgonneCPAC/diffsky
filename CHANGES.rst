@@ -1,3 +1,8 @@
+0.2.2 (unreleased)
+-------------------
+- Change little h convention of Monte Carlo halo generators (https://github.com/ArgonneCPAC/diffsky/pull/184)
+
+
 0.2.1 (2025-06-30)
 -------------------
 - Incorporate synthetic lightcone into mock production pipeline (https://github.com/ArgonneCPAC/diffsky/pull/165)

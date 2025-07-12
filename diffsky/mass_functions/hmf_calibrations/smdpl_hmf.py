@@ -10,14 +10,14 @@ These calibrated parameters pertain to halo mass in units of Msun (not Msun/h)
 from collections import OrderedDict, namedtuple
 
 DEFAULT_YTP_PDICT = OrderedDict(
-    ytp_ytp=-4.824, ytp_x0=1.235, ytp_k=0.579, ytp_ylo=-0.191, ytp_yhi=-1.300
+    ytp_ytp=-5.330, ytp_x0=1.318, ytp_k=0.543, ytp_ylo=-0.171, ytp_yhi=-1.344
 )
 DEFAULT_X0_PDICT = OrderedDict(
-    x0_ytp=13.048, x0_x0=1.462, x0_k=2.220, x0_ylo=-0.810, x0_yhi=-0.556
+    x0_ytp=13.030, x0_x0=1.781, x0_k=1.559, x0_ylo=-0.811, x0_yhi=-0.510
 )
-DEFAULT_LO_PDICT = OrderedDict(lo_x0=3.638, lo_k=0.688, lo_ylo=-0.790, lo_yhi=-2.459)
+DEFAULT_LO_PDICT = OrderedDict(lo_x0=3.620, lo_k=0.693, lo_ylo=-0.792, lo_yhi=-2.442)
 DEFAULT_HI_PDICT = OrderedDict(
-    hi_ytp=-3.733, hi_x0=4.079, hi_k=1.629, hi_ylo=-0.410, hi_yhi=-0.841
+    hi_ytp=-3.727, hi_x0=4.312, hi_k=1.113, hi_ylo=-0.426, hi_yhi=-0.265
 )
 
 Ytp_Params = namedtuple("Ytp_Params", DEFAULT_YTP_PDICT.keys())
