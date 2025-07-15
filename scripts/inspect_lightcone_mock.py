@@ -24,7 +24,7 @@ if __name__ == "__main__":
     fn_list = glob(os.path.join(drn, bnpat))
 
     all_good = True
-    failure_collector = dict()
+    failure_collector = []
     for fn in fn_list:
         report = check_lc_cores_diffsky_data(fn)
         fn_report = fn.replace(".hdf5", ".report.txt")
