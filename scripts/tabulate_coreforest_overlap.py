@@ -8,14 +8,13 @@ from time import time
 
 import h5py
 import numpy as np
-from haccytrees import Simulation as HACCSim
 
+from diffsky.data_loaders.hacc_utils import get_diffsky_info_from_hacc_sim
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
 DRN_LJ_LC_LCRC = (
     "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-4/output"
 )
-NUM_SUBVOLS_LJ = 256
 
 
 if __name__ == "__main__":
@@ -34,12 +33,12 @@ if __name__ == "__main__":
     cf_xdict_outname = os.path.join(outdrn, "cf_xdict.pickle")
     lc_xdict_outname = os.path.join(outdrn, "lc_xdict.pickle")
 
-    sim = HACCSim.simulations["LastJourney"]
+    sim_info = get_diffsky_info_from_hacc_sim("LastJourney")
 
     lc_xdict = dict()
 
     cf_xdict = dict()
-    for key in range(NUM_SUBVOLS_LJ):
+    for key in range(sim_info.num_subvols):
         cf_xdict[int(key)] = []
 
     lc_fnames = glob(os.path.join(indir, "lc_cores-*.hdf5"))

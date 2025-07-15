@@ -21,7 +21,7 @@ try:
 except ImportError:
     HAS_HACCYTREES = False
 
-SIM_INFO_KEYS = ("sim", "cosmo_params", "z_sim", "t_sim", "lgt0", "fb")
+SIM_INFO_KEYS = ("sim", "cosmo_params", "z_sim", "t_sim", "lgt0", "fb", "num_subvols")
 DiffskySimInfo = namedtuple("DiffskySimInfo", SIM_INFO_KEYS)
 
 
@@ -38,7 +38,16 @@ def get_diffsky_info_from_hacc_sim(sim_name):
     lgt0 = np.log10(t0)
     fb = sim.cosmo.Omega_b / sim.cosmo.Omega_m
 
-    diffsky_info = DiffskySimInfo(sim, cosmo_params, z_sim, t_sim, lgt0, fb)
+    if sim_name == "LastJourney":
+        num_subvols = 256
+    elif sim_name in ("DiscoveryLCDM", "DiscoveryW0WA"):
+        num_subvols = 96
+    else:
+        num_subvols = np.nan
+
+    diffsky_info = DiffskySimInfo(
+        sim, cosmo_params, z_sim, t_sim, lgt0, fb, num_subvols
+    )
 
     return diffsky_info
 

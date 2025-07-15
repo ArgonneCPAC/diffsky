@@ -46,7 +46,6 @@ BNPAT_COREFOREST = "m000p.coreforest.{}.hdf5"
 BNPAT_DIFFMAH_FITS = "subvol_{0}_diffmah_fits.hdf5"
 
 NCHUNKS = 20
-NUM_SUBVOLS_LJ_CF = 192
 SIM_NAME = "LastJourney"
 
 CF_FIELDS = ["central", "core_tag", "fof_halo_tag", "host_core", DIFFMAH_MASS_COLNAME]

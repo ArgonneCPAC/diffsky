@@ -9,10 +9,10 @@ import numpy as np
 from diffstarpop import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstarpop.mc_diffstarpop_cen_tpeak import mc_diffstar_sfh_galpop_cen
 from diffstarpop.param_utils import mc_select_diffstar_params
-from haccytrees import Simulation as HACCSim
 from jax import random as jran
 from mpi4py import MPI
 
+from diffsky.data_loaders.hacc_utils import get_diffsky_info_from_hacc_sim
 from diffsky.data_loaders.hacc_utils.hacc_core_utils import (
     get_diffstar_cosmo_quantities,
 )
@@ -34,9 +34,9 @@ DRN_LJ_DMAH_POBOY = "/Users/aphearin/work/DATA/LastJourney/diffmah_fits"
 DRN_LJ_DMAH_LCRC = "/lcrc/project/halotools/LastJourney/diffmah_fits"
 
 BNPAT_CORE_DATA = "m000p.coreforest.{}.hdf5"
+SIM_NAME = "LastJourney"
 
 NCHUNKS = 20
-NUM_SUBVOLS_LJ = 192
 
 
 if __name__ == "__main__":
@@ -50,7 +50,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("-indir_cores", help="Drn of HACC core data", default=None)
     parser.add_argument("-indir_diffmah", help="Drn of diffmah data", default=None)
-    parser.add_argument("-sim_name", help="Simulation name", default="LastJourney")
     parser.add_argument(
         "-machine",
         help="Machine name",
@@ -63,29 +62,23 @@ if __name__ == "__main__":
     )
     parser.add_argument("-test", help="Short test run?", type=bool, default=False)
     parser.add_argument("-istart", help="First subvolume in loop", type=int, default=0)
-    parser.add_argument(
-        "-iend", help="Last subvolume in loop", type=int, default=NUM_SUBVOLS_LJ
-    )
+    parser.add_argument("-iend", help="Last subvolume in loop", type=int, default=-1)
     parser.add_argument("-nchunks", help="Number of chunks", type=int, default=NCHUNKS)
-    parser.add_argument(
-        "-num_subvols_tot", help="Total # subvols", type=int, default=NUM_SUBVOLS_LJ
-    )
 
     args = parser.parse_args()
     redshift = args.redshift
     indir_cores = args.indir_cores
     indir_diffmah = args.indir_diffmah
-    sim_name = args.sim_name
     machine = args.machine
     istart, iend = args.istart, args.iend
 
-    num_subvols_tot = args.num_subvols_tot  # needed for string formatting
     outdir = args.outdir
     outbase = args.outbase
     nchunks = args.nchunks
 
-    sim = HACCSim.simulations[sim_name]
-    zarr_sim = sim.step2z(np.array(sim.cosmotools_steps))
+    sim_info = get_diffsky_info_from_hacc_sim(SIM_NAME)
+
+    zarr_sim = sim_info.sim.step2z(np.array(sim_info.sim.cosmotools_steps))
     iz_obs = np.argmin(np.abs(redshift - zarr_sim))
 
     nchar_chunks = len(str(nchunks))
@@ -109,6 +102,8 @@ if __name__ == "__main__":
         subvolumes = [0]
         chunks = [0, 1]
     else:
+        if iend == -1:
+            iend = sim_info.num_subvols
         subvolumes = np.arange(istart, iend + 1).astype(int)
         chunks = np.arange(nchunks).astype(int)
     subvolumes = sorted(subvolumes)
@@ -130,7 +125,7 @@ if __name__ == "__main__":
             ichunk_start = time()
 
             diffsky_data = load_diffsky_data_per_rank(
-                sim_name,
+                SIM_NAME,
                 isubvol,
                 chunknum,
                 nchunks,
@@ -140,7 +135,7 @@ if __name__ == "__main__":
                 indir_diffmah,
                 comm=MPI.COMM_WORLD,
             )
-            fb, lgt0 = get_diffstar_cosmo_quantities(sim_name)
+            fb, lgt0 = get_diffstar_cosmo_quantities(SIM_NAME)
 
             comm.Barrier()
             args = (

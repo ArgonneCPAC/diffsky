@@ -24,7 +24,6 @@ from diffsky.mass_functions import hmf_model
 from diffsky.mass_functions.fitting_utils import fit_hmf_model
 
 DEFAULT_NCHUNKS = 10
-NUM_SUBVOLS_LJ = 192
 
 
 if __name__ == "__main__":
@@ -72,7 +71,7 @@ if __name__ == "__main__":
     Lbox_mpc = sim_info.sim.rl / sim_info.cosmo_params.h  # Mpc
     Vbox_mpc = Lbox_mpc**3
 
-    vol_chunk = Vbox_mpc / NUM_SUBVOLS_LJ / nchunks
+    vol_chunk = Vbox_mpc / sim_info.num_subvols / nchunks
     vol_target_data = vol_chunk * n_chunkdata_tot
 
     cuml_density_target_data = cuml_counts / vol_target_data
