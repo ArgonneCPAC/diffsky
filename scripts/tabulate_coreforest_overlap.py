@@ -15,7 +15,7 @@ from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 DRN_LJ_LC_LCRC = (
     "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-4/output"
 )
-NUM_SUBVOLS_LJ = 192
+NUM_SUBVOLS_LJ = 256
 
 
 if __name__ == "__main__":
