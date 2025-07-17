@@ -44,6 +44,9 @@ LC_PATCH_OUT_KEYS = (
     "n_cf_match",
     "mp_obs",
     "mp0",
+    "vx",
+    "vy",
+    "vz",
 )
 LC_PATCH_OUT_INT_KEYS = (
     "n_points_per_fit",
@@ -299,6 +302,12 @@ def get_diffsky_quantities_for_lc_patch(
         lc_patch_data_out["indx_t_pen_inf"][msk_olap] = olap_indx_t_pen_inf
 
         lc_patch_data_out["n_cf_match"][msk_olap] += 1
+
+        # Matchup core velocities
+        _keys = ("vx", "vy", "vz")
+        _olap_vel = [cf_matrices[key][olap_chunk_idx][:, timestep_idx] for key in _keys]
+        for key, v in zip(_keys, _olap_vel):
+            lc_patch_data_out[key][msk_olap] = v
 
         # Matchup mah_params
         _keys = (*DEFAULT_MAH_PARAMS._fields, "loss", "n_points_per_fit")
