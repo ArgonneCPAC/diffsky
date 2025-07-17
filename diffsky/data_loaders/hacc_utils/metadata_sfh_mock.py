@@ -42,17 +42,61 @@ column_metadata["logssfr_obs"] = ("1/yr ", "Log10(SFR/Mstar) at time of observat
 
 column_metadata["top_host_idx"] = ("None", "Index of host core")
 
-column_metadata["x"] = ("Mpc", "Cartesian coordinate of lightcone position")
-column_metadata["y"] = ("Mpc", "Cartesian coordinate of lightcone position")
-column_metadata["z"] = ("Mpc", "Cartesian coordinate of lightcone position")
+column_metadata["x"] = ("Mpc/h", "Comoving coordinate of lightcone position")
+column_metadata["y"] = ("Mpc/h", "Comoving coordinate of lightcone position")
+column_metadata["z"] = ("Mpc/h", "Comoving coordinate of lightcone position")
 
-column_metadata["x_host"] = ("Mpc", "Cartesian coord of host halo lightcone position")
-column_metadata["y_host"] = ("Mpc", "Cartesian coord of host halo lightcone position")
-column_metadata["z_host"] = ("Mpc", "Cartesian coord of host halo lightcone position")
+column_metadata["x_host"] = ("Mpc/h", "Comoving coord of host halo lightcone position")
+column_metadata["y_host"] = ("Mpc/h", "Comoving coord of host halo lightcone position")
+column_metadata["z_host"] = ("Mpc/h", "Comoving coord of host halo lightcone position")
 
-column_metadata["x_nfw"] = ("Mpc", "Cartesian coord with NFW-repositioned satellites")
-column_metadata["y_nfw"] = ("Mpc", "Cartesian coord with NFW-repositioned satellites")
-column_metadata["z_nfw"] = ("Mpc", "Cartesian coord with NFW-repositioned satellites")
+column_metadata["x_nfw"] = ("Mpc/h", "Comoving coord with NFW-repositioned satellites")
+column_metadata["y_nfw"] = ("Mpc/h", "Comoving coord with NFW-repositioned satellites")
+column_metadata["z_nfw"] = ("Mpc/h", "Comoving coord with NFW-repositioned satellites")
+
+column_metadata["vx"] = ("km/s", "Comoving peculiar velocity in x-direction")
+column_metadata["vy"] = ("km/s", "Comoving peculiar velocity in y-direction")
+column_metadata["vz"] = ("km/s", "Comoving peculiar velocity in z-direction")
+
+column_metadata["infall_fof_halo_eigS1X"] = (
+    "Mpc/h",
+    "x-component of first eigendirection of halo shape (unreduced intertia tensor)",
+)
+column_metadata["infall_fof_halo_eigS1Y"] = (
+    "Mpc/h",
+    "y-component of first eigendirection of halo shape (unreduced intertia tensor)",
+)
+column_metadata["infall_fof_halo_eigS1Z"] = (
+    "Mpc/h",
+    "z-component of first eigendirection of halo shape (unreduced intertia tensor)",
+)
+
+column_metadata["infall_fof_halo_eigS2X"] = (
+    "Mpc/h",
+    "x-component of second eigendirection of halo shape (unreduced intertia tensor)",
+)
+column_metadata["infall_fof_halo_eigS2Y"] = (
+    "Mpc/h",
+    "y-component of second eigendirection of halo shape (unreduced intertia tensor)",
+)
+column_metadata["infall_fof_halo_eigS2Z"] = (
+    "Mpc/h",
+    "z-component of second eigendirection of halo shape (unreduced intertia tensor)",
+)
+
+column_metadata["infall_fof_halo_eigS3X"] = (
+    "Mpc/h",
+    "x-component of third eigendirection of halo shape (unreduced intertia tensor)",
+)
+column_metadata["infall_fof_halo_eigS3Y"] = (
+    "Mpc/h",
+    "y-component of third eigendirection of halo shape (unreduced intertia tensor)",
+)
+column_metadata["infall_fof_halo_eigS3Z"] = (
+    "Mpc/h",
+    "z-component of third eigendirection of halo shape (unreduced intertia tensor)",
+)
+
 
 column_metadata["redshift_true"] = ("None", "True redshift")
 column_metadata["ra_nfw"] = (
