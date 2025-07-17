@@ -25,6 +25,31 @@ LC_CF_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_MOCK_BNPAT = LC_CF_BNPAT.replace("diffsky_data", "diffsky_gals")
 
 
+LC_DATA_KEYS_OUT = (
+    "core_tag",
+    "x",
+    "y",
+    "z",
+    "x_nfw",
+    "y_nfw",
+    "z_nfw",
+    "top_host_idx",
+    "central",
+    "ra_nfw",
+    "dec_nfw",
+)
+
+DIFFSKY_DATA_KEYS_OUT = (
+    "x_host",
+    "y_host",
+    "z_host",
+    "vx",
+    "vy",
+    "vz",
+    "logmp_obs_host",
+)
+
+
 def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
     with h5py.File(fnout, "w") as hdf_out:
 
@@ -53,33 +78,11 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["data/dec"] = np.pi / 2.0 - lc_data["theta"]
         hdf_out["data/snapnum"] = lc_data["snapnum"]
 
-        lc_data_keys_out = (
-            "core_tag",
-            "x",
-            "y",
-            "z",
-            "x_nfw",
-            "y_nfw",
-            "z_nfw",
-            "top_host_idx",
-            "central",
-            "ra_nfw",
-            "dec_nfw",
-        )
-        for key in lc_data_keys_out:
+        for key in LC_DATA_KEYS_OUT:
             key_out = "data/" + key
             hdf_out[key_out] = lc_data[key]
 
-        diffsky_data_keys_out = (
-            "x_host",
-            "y_host",
-            "z_host",
-            "vx",
-            "vy",
-            "vz",
-            "logmp_obs_host",
-        )
-        for key in diffsky_data_keys_out:
+        for key in DIFFSKY_DATA_KEYS_OUT:
             key_out = "data/" + key
             hdf_out[key_out] = diffsky_data[key]
 
