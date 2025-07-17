@@ -77,7 +77,9 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
-    lc_data["t_obs"] = flat_wcdm.age_at_z(lc_data["redshift_true"], *sim_info.cosmo_params)
+    lc_data["t_obs"] = flat_wcdm.age_at_z(
+        lc_data["redshift_true"], *sim_info.cosmo_params
+    )
 
     mah_params, msk_has_diffmah_fit = load_lc_cf.get_imputed_mah_params(
         ran_key, diffsky_data, lc_data, sim_info.lgt0
