@@ -24,6 +24,10 @@ from . import load_lc_cf
 LC_CF_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_MOCK_BNPAT = LC_CF_BNPAT.replace("diffsky_data", "diffsky_gals")
 
+shapes_1 = [f"infall_fof_halo_eigS1{x}" for x in ("X", "Y", "Z")]
+shapes_2 = [f"infall_fof_halo_eigS2{x}" for x in ("X", "Y", "Z")]
+shapes_3 = [f"infall_fof_halo_eigS3{x}" for x in ("X", "Y", "Z")]
+SHAPE_KEYS = (*shapes_1, *shapes_2, *shapes_3)
 
 LC_DATA_KEYS_OUT = (
     "core_tag",
@@ -47,6 +51,7 @@ DIFFSKY_DATA_KEYS_OUT = (
     "vy",
     "vz",
     "logmp_obs_host",
+    *SHAPE_KEYS,
 )
 
 
