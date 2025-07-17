@@ -12,7 +12,6 @@ from diffsky.data_loaders.hacc_utils import get_diffsky_info_from_hacc_sim
 from diffsky.data_loaders.hacc_utils import load_hacc_cores as lhc
 from diffsky.mass_functions.measure_hmf import measure_cuml_hmf_target_data_counts
 
-NUM_SUBVOLS_LJ = 192
 DRN_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney"
 DRN_LJ_CORES_POBOY = os.path.join(DRN_LJ_POBOY, "coretrees")
 DRN_LJ_DIFFMAH_POBOY = os.path.join(DRN_LJ_POBOY, "diffmah_fits")
@@ -38,9 +37,7 @@ if __name__ == "__main__":
         default="",
     )
     parser.add_argument("-istart", help="First subvolume", type=int, default=0)
-    parser.add_argument(
-        "-iend", help="Last subvolume", type=int, default=NUM_SUBVOLS_LJ
-    )
+    parser.add_argument("-iend", help="Last subvolume", type=int, default=-1)
     parser.add_argument("-itest", help="Short test run?", type=int, default=0)
     parser.add_argument(
         "-nchunks",
@@ -82,6 +79,8 @@ if __name__ == "__main__":
     else:
         chunks = list(range(0, nchunks))
         z_table = Z_TABLE
+        if iend == -1:
+            iend = sim_info.num_subvols
 
     IZ_OBS = [np.argmin(np.abs(sim_info.z_sim - z)) for z in z_table]
 

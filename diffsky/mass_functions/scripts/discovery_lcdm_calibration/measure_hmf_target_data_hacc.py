@@ -13,7 +13,6 @@ from diffsky.data_loaders.hacc_utils import load_hacc_cores as lhc
 from diffsky.mass_functions.measure_hmf import measure_cuml_hmf_target_data_counts
 
 # Number of subvolumes provided by haccytrees for this simulation
-NUM_SUBVOLS_DISCOVERY = 96
 DEFAULT_NCHUNKS = 10
 
 # default directories
@@ -48,9 +47,7 @@ if __name__ == "__main__":
         default="",
     )
     parser.add_argument("-istart", help="First subvolume", type=int, default=0)
-    parser.add_argument(
-        "-iend", help="Last subvolume", type=int, default=NUM_SUBVOLS_DISCOVERY
-    )
+    parser.add_argument("-iend", help="Last subvolume", type=int, default=-1)
     parser.add_argument("-itest", help="Short test run?", type=int, default=0)
     parser.add_argument(
         "-nchunks",
@@ -90,6 +87,8 @@ if __name__ == "__main__":
         z_table = np.array((0.0, 1.0))
         istart, iend = 89, 90
     else:
+        if iend == -1:
+            iend = sim_info.num_subvols
         chunks = list(range(0, nchunks))
         z_table = Z_TABLE
 

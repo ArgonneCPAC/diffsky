@@ -27,7 +27,9 @@ from diffsky.data_loaders.hacc_utils.lightcone_utils import (
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 
-DRN_LJ_LC_LCRC = "/lcrc/project/cosmo_ai/mbuehlmann/LastJourney/core-lc-3/output"
+DRN_LJ_LC_LCRC = (
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-4/output"
+)
 DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc_cores"
 
 DRN_LJ_DIFFMAH_LCRC = "/lcrc/project/halotools/LastJourney/diffmah_fits"
@@ -44,20 +46,27 @@ BNPAT_COREFOREST = "m000p.coreforest.{}.hdf5"
 BNPAT_DIFFMAH_FITS = "subvol_{0}_diffmah_fits.hdf5"
 
 NCHUNKS = 20
-NUM_SUBVOLS_LJ_CF = 192
 SIM_NAME = "LastJourney"
 
 CF_FIELDS = ["central", "core_tag", "fof_halo_tag", "host_core", DIFFMAH_MASS_COLNAME]
+shapes_1 = [f"infall_fof_halo_eigS1{x}" for x in ("X", "Y", "Z")]
+shapes_2 = [f"infall_fof_halo_eigS2{x}" for x in ("X", "Y", "Z")]
+shapes_3 = [f"infall_fof_halo_eigS3{x}" for x in ("X", "Y", "Z")]
+core_data = ["merged", "vel_disp", "radius"]
+CF_FIELDS = [*CF_FIELDS, *shapes_1, *shapes_2, *shapes_3, *core_data]
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "lc_patch_list_cfg", help="fname to ASCII with list of sky patches"
-    )
     parser.add_argument("z_min", help="Minimum redshift", type=float)
     parser.add_argument("z_max", help="Maximum redshift", type=float)
 
+    parser.add_argument("-istart", help="First lc patch", type=int, default=0)
+    parser.add_argument("-iend", help="Last lc patch", type=int, default=0)
+    parser.add_argument(
+        "-lc_patch_list_cfg", help="fname to ASCII with list of sky patches", default=""
+    )
     parser.add_argument(
         "-machine", help="Machine nickname", choices=["lcrc", "poboy"], default="lcrc"
     )
@@ -76,16 +85,22 @@ if __name__ == "__main__":
     args = parser.parse_args()
     z_min = args.z_min
     z_max = args.z_max
-    lc_patch_list_cfg = args.lc_patch_list_cfg
-
     machine = args.machine
+
+    lc_patch_list_cfg = args.lc_patch_list_cfg
+    istart = args.istart
+    iend = args.iend
+
     itest = args.itest
     nchunks = args.nchunks
     drn_out = args.drn_out
 
     sim = HACCSim.simulations[SIM_NAME]
 
-    lc_patch_list = np.loadtxt(lc_patch_list_cfg).astype(int)
+    if lc_patch_list_cfg == "":
+        lc_patch_list = np.arange(istart, iend).astype(int)
+    else:
+        lc_patch_list = np.loadtxt(lc_patch_list_cfg).astype(int)
 
     if machine == "lcrc":
         drn_lc = DRN_LJ_LC_LCRC
