@@ -24,6 +24,37 @@ from . import load_lc_cf
 LC_CF_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_MOCK_BNPAT = LC_CF_BNPAT.replace("diffsky_data", "diffsky_gals")
 
+shapes_1 = [f"infall_fof_halo_eigS1{x}" for x in ("X", "Y", "Z")]
+shapes_2 = [f"infall_fof_halo_eigS2{x}" for x in ("X", "Y", "Z")]
+shapes_3 = [f"infall_fof_halo_eigS3{x}" for x in ("X", "Y", "Z")]
+SHAPE_KEYS = (*shapes_1, *shapes_2, *shapes_3)
+TOP_HOST_SHAPE_KEYS = ["top_host_" + key for key in SHAPE_KEYS]
+
+LC_DATA_KEYS_OUT = (
+    "core_tag",
+    "x",
+    "y",
+    "z",
+    "x_nfw",
+    "y_nfw",
+    "z_nfw",
+    "top_host_idx",
+    "central",
+    "ra_nfw",
+    "dec_nfw",
+)
+
+DIFFSKY_DATA_KEYS_OUT = (
+    "x_host",
+    "y_host",
+    "z_host",
+    "vx",
+    "vy",
+    "vz",
+    "logmp_obs_host",
+    *TOP_HOST_SHAPE_KEYS,
+)
+
 
 def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
     with h5py.File(fnout, "w") as hdf_out:
@@ -53,31 +84,19 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["data/dec"] = np.pi / 2.0 - lc_data["theta"]
         hdf_out["data/snapnum"] = lc_data["snapnum"]
 
-        lc_data_keys_out = (
-            "core_tag",
-            "x",
-            "y",
-            "z",
-            "x_nfw",
-            "y_nfw",
-            "z_nfw",
-            "top_host_idx",
-            "central",
-            "ra_nfw",
-            "dec_nfw",
-        )
-        for key in lc_data_keys_out:
+        for key in LC_DATA_KEYS_OUT:
             key_out = "data/" + key
             hdf_out[key_out] = lc_data[key]
 
-        diffsky_data_keys_out = ("x_host", "y_host", "z_host", "logmp_obs_host")
-        for key in diffsky_data_keys_out:
+        for key in DIFFSKY_DATA_KEYS_OUT:
             key_out = "data/" + key
             hdf_out[key_out] = diffsky_data[key]
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
-    lc_data["t_obs"] = flat_wcdm.age_at_z(lc_data["redshift_true"], *sim_info.cosmo_params)
+    lc_data["t_obs"] = flat_wcdm.age_at_z(
+        lc_data["redshift_true"], *sim_info.cosmo_params
+    )
 
     mah_params, msk_has_diffmah_fit = load_lc_cf.get_imputed_mah_params(
         ran_key, diffsky_data, lc_data, sim_info.lgt0
