@@ -58,41 +58,41 @@ column_metadata["vx"] = ("km/s", "Comoving peculiar velocity in x-direction")
 column_metadata["vy"] = ("km/s", "Comoving peculiar velocity in y-direction")
 column_metadata["vz"] = ("km/s", "Comoving peculiar velocity in z-direction")
 
-column_metadata["infall_fof_halo_eigS1X"] = (
+column_metadata["top_host_infall_fof_halo_eigS1X"] = (
     "Mpc/h",
     "x-component of first eigendirection of halo shape (unreduced intertia tensor)",
 )
-column_metadata["infall_fof_halo_eigS1Y"] = (
+column_metadata["top_host_infall_fof_halo_eigS1Y"] = (
     "Mpc/h",
     "y-component of first eigendirection of halo shape (unreduced intertia tensor)",
 )
-column_metadata["infall_fof_halo_eigS1Z"] = (
+column_metadata["top_host_infall_fof_halo_eigS1Z"] = (
     "Mpc/h",
     "z-component of first eigendirection of halo shape (unreduced intertia tensor)",
 )
 
-column_metadata["infall_fof_halo_eigS2X"] = (
+column_metadata["top_host_infall_fof_halo_eigS2X"] = (
     "Mpc/h",
     "x-component of second eigendirection of halo shape (unreduced intertia tensor)",
 )
-column_metadata["infall_fof_halo_eigS2Y"] = (
+column_metadata["top_host_infall_fof_halo_eigS2Y"] = (
     "Mpc/h",
     "y-component of second eigendirection of halo shape (unreduced intertia tensor)",
 )
-column_metadata["infall_fof_halo_eigS2Z"] = (
+column_metadata["top_host_infall_fof_halo_eigS2Z"] = (
     "Mpc/h",
     "z-component of second eigendirection of halo shape (unreduced intertia tensor)",
 )
 
-column_metadata["infall_fof_halo_eigS3X"] = (
+column_metadata["top_host_infall_fof_halo_eigS3X"] = (
     "Mpc/h",
     "x-component of third eigendirection of halo shape (unreduced intertia tensor)",
 )
-column_metadata["infall_fof_halo_eigS3Y"] = (
+column_metadata["top_host_infall_fof_halo_eigS3Y"] = (
     "Mpc/h",
     "y-component of third eigendirection of halo shape (unreduced intertia tensor)",
 )
-column_metadata["infall_fof_halo_eigS3Z"] = (
+column_metadata["top_host_infall_fof_halo_eigS3Z"] = (
     "Mpc/h",
     "z-component of third eigendirection of halo shape (unreduced intertia tensor)",
 )
