@@ -33,11 +33,11 @@ def load_flat_hdf5(fn, istart=0, iend=None, keys=None, dataset=None):
 
         if keys is None:
             if dataset is None:
-                keys_in = list(hdf.keys())
+                keys = list(hdf.keys())
             else:
-                keys_in = [dataset + "/" + key for key in list(hdf[dataset].keys())]
+                keys = [dataset + "/" + key for key in list(hdf[dataset].keys())]
 
-        for key_in in keys_in:
+        for key_in in keys:
             if dataset is None:
                 key_out = key_in
             else:
