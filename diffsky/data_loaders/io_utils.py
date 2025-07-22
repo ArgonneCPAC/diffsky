@@ -31,13 +31,18 @@ def load_flat_hdf5(fn, istart=0, iend=None, keys=None, dataset=None):
     data = dict()
     with h5py.File(fn, "r") as hdf:
 
-        if keys is None:
-            if dataset is None:
-                keys = list(hdf.keys())
+        if dataset is None:
+            if keys is None:
+                keys_in = list(hdf.keys())
             else:
-                keys = [dataset + "/" + key for key in list(hdf[dataset].keys())]
+                keys_in = keys
+        else:
+            if keys is None:
+                keys_in = [dataset + "/" + key for key in list(hdf[dataset].keys())]
+            else:
+                keys_in = [dataset + "/" + key for key in keys]
 
-        for key_in in keys:
+        for key_in in keys_in:
             if dataset is None:
                 key_out = key_in
             else:
