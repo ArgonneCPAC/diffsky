@@ -183,6 +183,9 @@ def read_lc_ra_dec_patch_decomposition(fn):
     patch_decomposition : array shape (n_patches, 5)
         Each row stores (patchnum, theta_low, theta_high, phi_low, phi_high)
 
+        The relationship between {theta, phi} and {ra, dec} is given by the
+        lightcone_utils.get_ra_dec_from_theta_phi function
+
     sky_frac : array shape (n_patches, )
         Size of the sky patch as a fraction of 4π steradians
 
