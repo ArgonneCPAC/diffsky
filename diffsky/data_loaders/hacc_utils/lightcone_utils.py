@@ -166,6 +166,24 @@ def get_redshift_from_xyz(x_mpch, y_mpch, z_mpch, cosmo_params):
 
 
 def read_lc_ra_dec_patch_decomposition(fn):
+    """Read and parse 'lc_cores-decomposition.txt'
+
+    Parameters
+    ----------
+    fname : string
+
+    Returns
+    -------
+    patch_decomposition : array shape (n_patches, 5)
+        Each row stores (patchnum, theta_low, theta_high, phi_low, phi_high)
+
+    sky_frac : array shape (n_patches, )
+        Size of the sky patch as a fraction of 4π steradians
+
+    solid_angles : array shape (n_patches, )
+        Size of the sky patch in deg^2
+
+    """
     collector = []
     with open(fn, "r") as f:
         next(f)
