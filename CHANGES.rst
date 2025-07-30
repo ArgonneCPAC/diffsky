@@ -1,4 +1,9 @@
-0.2.2 (unreleased)
+0.2.3 (2025-07-30)
+-------------------
+- Fix bug in lightcone data loader (https://github.com/ArgonneCPAC/diffsky/pull/195)
+
+
+0.2.2 (2025-07-17)
 -------------------
 - Change little h convention of Monte Carlo halo generators (https://github.com/ArgonneCPAC/diffsky/pull/184)
 
