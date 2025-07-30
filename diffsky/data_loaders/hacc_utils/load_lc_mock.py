@@ -29,7 +29,7 @@ def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list):
 
     data_collector = []
     for fn in fn_collector:
-        lc_diffsky_data = load_flat_hdf5(fn)
+        lc_diffsky_data = load_flat_hdf5(fn, dataset="data")
         data_collector.append(lc_diffsky_data)
 
     diffsky_data = dict()
