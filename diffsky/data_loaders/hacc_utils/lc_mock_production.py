@@ -80,8 +80,9 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["data/logssfr_obs"] = diffsky_data["logssfr_obs"]
 
         hdf_out["data/redshift_true"] = lc_data["redshift_true"]
-        hdf_out["data/ra"] = lc_data["phi"]
-        hdf_out["data/dec"] = np.pi / 2.0 - lc_data["theta"]
+        ra, dec = hlu._get_lon_lat_from_theta_phi(lc_data["theta"], lc_data["phi"])
+        hdf_out["data/ra"] = ra
+        hdf_out["data/dec"] = dec
         hdf_out["data/snapnum"] = lc_data["snapnum"]
 
         for key in LC_DATA_KEYS_OUT:
