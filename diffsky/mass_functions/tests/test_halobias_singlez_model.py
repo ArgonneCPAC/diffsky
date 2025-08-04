@@ -3,7 +3,7 @@
 import numpy as np
 from jax import random as jran
 
-from .. import halobias_model as hbm
+from .. import halobias_singlez_model as hbm
 
 
 def enforce_param_bounds(ytp, s0, s1, s2, s3, s4, s5):

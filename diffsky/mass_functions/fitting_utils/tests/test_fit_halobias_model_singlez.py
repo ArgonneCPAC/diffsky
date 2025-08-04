@@ -3,9 +3,12 @@
 import numpy as np
 from jax import random as jran
 
-from ... import halobias_model as hbm
-from ...halobias_model import HALOBIAS_U_PARAMS, HaloBiasParams
-from ..fit_halobias_model import _loss_func_single_redshift, halobias_singlez_fitter
+from ... import halobias_singlez_model as hbm
+from ...halobias_singlez_model import HALOBIAS_U_PARAMS, HaloBiasParams
+from ..fit_halobias_singlez_model import (
+    _loss_func_single_redshift,
+    halobias_singlez_fitter,
+)
 
 
 def get_random_params(key):

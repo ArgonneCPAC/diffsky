@@ -7,8 +7,8 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import value_and_grad
 
-from .. import halobias_model as hbm
-from ..halobias_model import HALOBIAS_U_PARAMS as U_P_INIT
+from .. import halobias_singlez_model as hbm
+from ..halobias_singlez_model import HALOBIAS_U_PARAMS as U_P_INIT
 from .fitting_helpers import jax_adam_wrapper
 
 
