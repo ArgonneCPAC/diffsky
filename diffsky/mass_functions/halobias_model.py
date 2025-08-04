@@ -9,7 +9,7 @@ from . import halobias_singlez_model as hbsm
 @jjit
 def _get_lgm_at_z_kern(lgm, z, x0, k, lo, hi):
     xtp, ytp = 0.0, 0.0
-    return twu._tw_sig_slope(z, xtp, ytp, x0, k, lo, hi)
+    return lgm + twu._tw_sig_slope(z, xtp, ytp, x0, k, lo, hi)
 
 
 @jjit
