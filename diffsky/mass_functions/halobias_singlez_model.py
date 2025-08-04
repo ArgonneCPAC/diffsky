@@ -135,19 +135,19 @@ def _tw_quintuple_sigmoid_kern(x, ytp, s0, s1, s2, s3, s4, s5):
 
 
 @jjit
-def _tw_quintuple_slope(wave, y_table, x_table=LGM_TABLE):
+def _tw_quintuple_slope(x, y_table, x_table=LGM_TABLE):
     x0, x1, x2, x3, x4, x5 = x_table
     y0, y1, y2, y3, y4, y5 = y_table
 
-    w02 = twu._tw_interp_kern(wave, x0, x1, x2, y0, y1, y2)
-    w24 = twu._tw_interp_kern(wave, x2, x3, x4, y2, y3, y4)
+    w02 = twu._tw_interp_kern(x, x0, x1, x2, y0, y1, y2)
+    w24 = twu._tw_interp_kern(x, x2, x3, x4, y2, y3, y4)
 
     dx13 = (x3 - x1) / 3
-    w04 = twu._tw_sigmoid(wave, x2, dx13, w02, w24)
+    w04 = twu._tw_sigmoid(x, x2, dx13, w02, w24)
 
     dx45 = (x5 - x4) / 3
     x45 = 0.5 * (x4 + x5)
-    w05 = twu._tw_sigmoid(wave, x45, dx45, w04, y5)
+    w05 = twu._tw_sigmoid(x, x45, dx45, w04, y5)
 
     return w05
 
