@@ -6,6 +6,7 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax.nn import softplus
 
+from ..utils import _inverse_sigmoid, _sigmoid
 from ..utils import tw_utils as twu
 
 XTP = 12.0
@@ -17,7 +18,62 @@ HALOBIAS_PDICT = OrderedDict(
 HaloBiasParams = namedtuple("HaloBiasParams", HALOBIAS_PDICT.keys())
 HALOBIAS_PARAMS = HaloBiasParams(**HALOBIAS_PDICT)
 
+_HALOBIAS_UPNAMES = ["u_" + key for key in HALOBIAS_PDICT.keys()]
+HaloBiasUParams = namedtuple("HaloBiasUParams", _HALOBIAS_UPNAMES)
+
+HB_YTP_PBOUNDS = (-2, 2)
+HB_YTP_X0 = 0.5
 BOUNDING_K = 0.1
+
+
+@jjit
+def get_bounded_halobias_params(u_hb_params):
+    ytp = _get_bounded_ytp_params_kern(u_hb_params.u_hb_ytp)
+
+    u_slope_params = (
+        u_hb_params.u_hb_s0,
+        u_hb_params.u_hb_s1,
+        u_hb_params.u_hb_s2,
+        u_hb_params.u_hb_s3,
+        u_hb_params.u_hb_s4,
+        u_hb_params.u_hb_s5,
+    )
+    slope_params = _get_bounded_slope_params_kern(u_slope_params)
+
+    halobias_params = HaloBiasParams(ytp, *slope_params)
+
+    return halobias_params
+
+
+@jjit
+def get_unbounded_halobias_params(hb_params):
+    u_ytp = _get_unbounded_ytp_params_kern(hb_params.hb_ytp)
+
+    slope_params = (
+        hb_params.hb_s0,
+        hb_params.hb_s1,
+        hb_params.hb_s2,
+        hb_params.hb_s3,
+        hb_params.hb_s4,
+        hb_params.hb_s5,
+    )
+    u_slope_params = _get_unbounded_slope_params_kern(slope_params)
+
+    u_halobias_params = HaloBiasUParams(u_ytp, *u_slope_params)
+
+    return u_halobias_params
+
+
+@jjit
+def _get_bounded_ytp_params_kern(u_hb_ytp):
+    hb_ytp = _sigmoid(u_hb_ytp, HB_YTP_X0, BOUNDING_K, *HB_YTP_PBOUNDS)
+    return hb_ytp
+
+
+@jjit
+def _get_unbounded_ytp_params_kern(hb_ytp):
+    u_hb_ytp = _inverse_sigmoid(hb_ytp, HB_YTP_X0, BOUNDING_K, *HB_YTP_PBOUNDS)
+    return u_hb_ytp
 
 
 @jjit
@@ -94,3 +150,6 @@ def _tw_quintuple_slope(wave, y_table, x_table=LGM_TABLE):
     w05 = twu._tw_sigmoid(wave, x45, dx45, w04, y5)
 
     return w05
+
+
+HALOBIAS_U_PARAMS = get_unbounded_halobias_params(HALOBIAS_PARAMS)
