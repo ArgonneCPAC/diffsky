@@ -3,6 +3,8 @@
 from collections import OrderedDict, namedtuple
 
 from jax import jit as jjit
+from jax import numpy as jnp
+from jax.nn import softplus
 
 from ..utils import tw_utils as twu
 
@@ -10,10 +12,48 @@ XTP = 12.0
 LGM_TABLE = (10.5, 13.0, 14.0, 14.5, 15.0, 15.5)
 
 HALOBIAS_PDICT = OrderedDict(
-    hb_ytp=0.5, hb_s0=0.15, hb_s1=0.2, hb_s2=0.3, hb_s3=0.5, hb_s4=0.5, hb_s5=0.6
+    hb_ytp=0.5, hb_s0=0.15, hb_s1=0.2, hb_s2=0.3, hb_s3=0.45, hb_s4=0.5, hb_s5=0.6
 )
 HaloBiasParams = namedtuple("HaloBiasParams", HALOBIAS_PDICT.keys())
 HALOBIAS_PARAMS = HaloBiasParams(**HALOBIAS_PDICT)
+
+BOUNDING_K = 0.1
+
+
+@jjit
+def _get_bounded_slope_params_kern(u_slope_params):
+    u_s0, u_s1, u_s2, u_s3, u_s4, u_s5 = u_slope_params
+
+    s0 = softplus(u_s0)
+    s1 = s0 + softplus(u_s1)
+
+    s2 = s1 + softplus(u_s2)
+    s3 = s2 + softplus(u_s3)
+    s4 = s3 + softplus(u_s4)
+    s5 = s4 + softplus(u_s5)
+
+    slope_params = s0, s1, s2, s3, s4, s5
+    return slope_params
+
+
+@jjit
+def _get_unbounded_slope_params_kern(slope_params):
+    s0, s1, s2, s3, s4, s5 = slope_params
+
+    u_s0 = _inverse_softplus(s0)
+    u_s1 = _inverse_softplus(s1 - s0)
+    u_s2 = _inverse_softplus(s2 - s1)
+    u_s3 = _inverse_softplus(s3 - s2)
+    u_s4 = _inverse_softplus(s4 - s3)
+    u_s5 = _inverse_softplus(s5 - s4)
+
+    u_slope_params = u_s0, u_s1, u_s2, u_s3, u_s4, u_s5
+    return u_slope_params
+
+
+@jjit
+def _inverse_softplus(s):
+    return jnp.log(jnp.exp(s) - 1.0)
 
 
 @jjit
