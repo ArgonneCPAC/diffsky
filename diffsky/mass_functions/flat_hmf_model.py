@@ -5,6 +5,8 @@ the peak historical mass of the main progenitor halo.
 
 """
 
+from collections import OrderedDict, namedtuple
+
 from jax import grad
 from jax import jit as jjit
 from jax import vmap
@@ -16,6 +18,16 @@ from .utils import _sig_slope, _sigmoid
 YTP_XTP = 3.0
 X0_XTP = 3.0
 HI_XTP = 3.0
+
+
+FLAT_HMF_PDICT = OrderedDict()
+FLAT_HMF_PDICT.update(**DEFAULT_HMF_PARAMS.ytp_params._asdict())
+FLAT_HMF_PDICT.update(**DEFAULT_HMF_PARAMS.x0_params._asdict())
+FLAT_HMF_PDICT.update(**DEFAULT_HMF_PARAMS.lo_params._asdict())
+FLAT_HMF_PDICT.update(**DEFAULT_HMF_PARAMS.hi_params._asdict())
+
+FlatHMFParams = namedtuple("FlatHMFParams", FLAT_HMF_PDICT.keys())
+FLAT_HMF_PARAMS = FlatHMFParams(**FLAT_HMF_PDICT)
 
 
 @jjit
@@ -49,10 +61,10 @@ def predict_cuml_hmf(params, logmp, redshift):
 
 @jjit
 def _get_singlez_cuml_hmf_params(params, redshift):
-    ytp = _ytp_vs_redshift(params.ytp_params, redshift)
-    x0 = _x0_vs_redshift(params.x0_params, redshift)
-    lo = _lo_vs_redshift(params.lo_params, redshift)
-    hi = _hi_vs_redshift(params.hi_params, redshift)
+    ytp = _ytp_vs_redshift(params, redshift)
+    x0 = _x0_vs_redshift(params, redshift)
+    lo = _lo_vs_redshift(params, redshift)
+    hi = _hi_vs_redshift(params, redshift)
     hmf_params = HMF_Params(ytp, x0, lo, hi)
     return hmf_params
 
