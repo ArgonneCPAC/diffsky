@@ -15,14 +15,16 @@ def enforce_param_bounds(
     s3,
     s4,
     s5,
-    hb_mz_x0,
-    hb_mz_k,
-    hb_mz_lo,
-    hb_mz_hi,
     hb_ytp_z_x0,
     hb_ytp_z_k,
     hb_ytp_z_lo,
     hb_ytp_z_hi,
+    hb_k_lgm_us,
+    hb_zhi_lgm0,
+    hb_zhi_ylo,
+    hb_zhi_yhi,
+    hb_k_z_us,
+    hb_z0_us,
 ):
     assert ytp > hbszm.HB_YTP_PBOUNDS[0]
     assert ytp < hbszm.HB_YTP_PBOUNDS[1]
@@ -32,10 +34,12 @@ def enforce_param_bounds(
     assert s4 > s3
     assert s5 > s4
 
-    assert hb_mz_k > hbm.K_BOUNDS[0]
-    assert hb_mz_k < hbm.K_BOUNDS[1]
     assert hb_ytp_z_k > hbm.K_BOUNDS[0]
     assert hb_ytp_z_k < hbm.K_BOUNDS[1]
+    assert hb_k_lgm_us > hbm.K_BOUNDS[0]
+    assert hb_k_lgm_us < hbm.K_BOUNDS[1]
+    assert hb_k_z_us > hbm.K_BOUNDS[0]
+    assert hb_k_z_us < hbm.K_BOUNDS[1]
 
 
 def test_tw_quintuple_sigmoid():
@@ -45,7 +49,7 @@ def test_tw_quintuple_sigmoid():
         lgb = hbm.predict_lgbias_kern(hbm.HALOBIAS_PARAMS, lgm, redshift)
         assert np.all(np.isfinite(lgb))
         assert np.all(lgb > -2)
-        assert np.all(lgb < 3)
+        assert np.all(lgb < 3.5)
         assert np.all(np.diff(lgb) > 0)
 
 

@@ -10,7 +10,7 @@ from ..utils import _inverse_sigmoid, _sigmoid
 from ..utils import tw_utils as twu
 
 XTP = 12.0
-LGM_TABLE = (10.5, 13.0, 14.0, 14.5, 15.0, 15.5)
+LGM_TABLE = jnp.array((10.5, 13.0, 14.0, 14.5, 15.0, 15.5))
 
 HALOBIAS_PDICT = OrderedDict(
     hb_ytp=0.5, hb_s0=0.15, hb_s1=0.2, hb_s2=0.3, hb_s3=0.45, hb_s4=0.5, hb_s5=0.6
