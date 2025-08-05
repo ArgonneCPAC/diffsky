@@ -19,12 +19,14 @@ def enforce_param_bounds(
     hb_ytp_z_k,
     hb_ytp_z_lo,
     hb_ytp_z_hi,
+    hb_x0_lgm_us,
     hb_k_lgm_us,
-    hb_zhi_lgm0,
-    hb_zhi_ylo,
-    hb_zhi_yhi,
-    hb_k_z_us,
-    hb_z0_us,
+    hb_ylo_lgm_us_zlo,
+    hb_yhi_lgm_us_zlo,
+    hb_ylo_lgm_us_zhi,
+    hb_yhi_lgm_us_zhi,
+    hb_dus_z_x0,
+    hb_dus_z_k,
 ):
     assert ytp > hbszm.HB_YTP_PBOUNDS[0]
     assert ytp < hbszm.HB_YTP_PBOUNDS[1]
@@ -38,8 +40,8 @@ def enforce_param_bounds(
     assert hb_ytp_z_k < hbm.K_BOUNDS[1]
     assert hb_k_lgm_us > hbm.K_BOUNDS[0]
     assert hb_k_lgm_us < hbm.K_BOUNDS[1]
-    assert hb_k_z_us > hbm.K_BOUNDS[0]
-    assert hb_k_z_us < hbm.K_BOUNDS[1]
+    assert hb_dus_z_k > hbm.K_BOUNDS[0]
+    assert hb_dus_z_k < hbm.K_BOUNDS[1]
 
 
 def test_tw_quintuple_sigmoid():

@@ -9,23 +9,25 @@ from ..utils import tw_utils as twu
 from . import halobias_singlez_model as hbszm
 
 HALOBIAS_PDICT = OrderedDict(
-    hb_ytp=-0.06,
-    hb_s0=0.04,
-    hb_s1=0.10,
-    hb_s2=0.16,
-    hb_s3=0.22,
-    hb_s4=0.26,
-    hb_s5=0.32,
-    hb_ytp_z_x0=-0.31,
-    hb_ytp_z_k=0.93,
-    hb_ytp_z_lo=0.07,
+    hb_ytp=-0.07,
+    hb_s0=0.24,
+    hb_s1=0.31,
+    hb_s2=0.39,
+    hb_s3=0.42,
+    hb_s4=0.44,
+    hb_s5=0.45,
+    hb_ytp_z_x0=-0.63,
+    hb_ytp_z_k=0.92,
+    hb_ytp_z_lo=0.00,
     hb_ytp_z_hi=0.20,
-    hb_k_lgm_us=1.65,
-    hb_zhi_lgm0=13.55,
-    hb_zhi_ylo=1.64,
-    hb_zhi_yhi=-0.94,
-    hb_k_z_us=1.81,
-    hb_z0_us=0.58,
+    hb_x0_lgm_us=13.00,
+    hb_k_lgm_us=1.19,
+    hb_ylo_lgm_us_zlo=0.39,
+    hb_yhi_lgm_us_zlo=-0.16,
+    hb_ylo_lgm_us_zhi=0.03,
+    hb_yhi_lgm_us_zhi=-0.07,
+    hb_dus_z_x0=-0.59,
+    hb_dus_z_k=1.55,
 )
 HaloBiasParams = namedtuple("HaloBiasParams", HALOBIAS_PDICT.keys())
 HALOBIAS_PARAMS = HaloBiasParams(**HALOBIAS_PDICT)
@@ -37,36 +39,7 @@ HB_YTP_PBOUNDS = (-2, 2)
 HB_YTP_X0 = 0.5
 BOUNDING_K = 0.1
 K_BOUNDS = (0.2, 5.0)
-
-
-@jjit
-def get_bounded_halobias_params(u_hb_params):
-    u_hbsz_params = hbszm.HaloBiasUParams._make(
-        [getattr(u_hb_params, x) for x in hbszm.HaloBiasUParams._fields]
-    )
-    hbsz_params = hbszm.get_bounded_halobias_params(u_hbsz_params)
-
-    hb_ytp_z_k = _get_bounded_param_kern(u_hb_params.u_hb_ytp_z_k, *K_BOUNDS)
-    hb_k_lgm_us = _get_bounded_param_kern(u_hb_params.u_hb_k_lgm_us, *K_BOUNDS)
-    hb_k_z_us = _get_bounded_param_kern(u_hb_params.u_hb_k_z_us, *K_BOUNDS)
-
-    params = (
-        *hbsz_params,
-        u_hb_params.u_hb_ytp_z_x0,
-        hb_ytp_z_k,
-        u_hb_params.u_hb_ytp_z_lo,
-        u_hb_params.u_hb_ytp_z_hi,
-        hb_k_lgm_us,
-        u_hb_params.u_hb_zhi_lgm0,
-        u_hb_params.u_hb_zhi_ylo,
-        u_hb_params.u_hb_zhi_yhi,
-        hb_k_z_us,
-        u_hb_params.u_hb_z0_us,
-    )
-
-    params = HaloBiasParams(*params)
-
-    return params
+DUS_LGM_XTP = 10.0
 
 
 @jjit
@@ -78,7 +51,7 @@ def get_unbounded_halobias_params(hb_params):
 
     u_hb_ytp_z_k = _get_unbounded_param_kern(hb_params.hb_ytp_z_k, *K_BOUNDS)
     u_hb_k_lgm_us = _get_unbounded_param_kern(hb_params.hb_k_lgm_us, *K_BOUNDS)
-    u_hb_k_z_us = _get_unbounded_param_kern(hb_params.hb_k_z_us, *K_BOUNDS)
+    u_hb_dus_z_k = _get_unbounded_param_kern(hb_params.hb_dus_z_k, *K_BOUNDS)
 
     u_params = (
         *u_hbsz_params,
@@ -86,15 +59,49 @@ def get_unbounded_halobias_params(hb_params):
         u_hb_ytp_z_k,
         hb_params.hb_ytp_z_lo,
         hb_params.hb_ytp_z_hi,
+        hb_params.hb_x0_lgm_us,
         u_hb_k_lgm_us,
-        hb_params.hb_zhi_lgm0,
-        hb_params.hb_zhi_ylo,
-        hb_params.hb_zhi_yhi,
-        u_hb_k_z_us,
-        hb_params.hb_z0_us,
+        hb_params.hb_ylo_lgm_us_zlo,
+        hb_params.hb_yhi_lgm_us_zlo,
+        hb_params.hb_ylo_lgm_us_zhi,
+        hb_params.hb_yhi_lgm_us_zhi,
+        hb_params.hb_dus_z_x0,
+        u_hb_dus_z_k,
     )
     u_params = HaloBiasUParams(*u_params)
     return u_params
+
+
+@jjit
+def get_bounded_halobias_params(u_hb_params):
+    u_hbsz_params = hbszm.HaloBiasUParams._make(
+        [getattr(u_hb_params, x) for x in hbszm.HaloBiasUParams._fields]
+    )
+    hbsz_params = hbszm.get_bounded_halobias_params(u_hbsz_params)
+
+    hb_ytp_z_k = _get_bounded_param_kern(u_hb_params.u_hb_ytp_z_k, *K_BOUNDS)
+    hb_k_lgm_us = _get_bounded_param_kern(u_hb_params.u_hb_k_lgm_us, *K_BOUNDS)
+    hb_dus_z_k = _get_bounded_param_kern(u_hb_params.u_hb_dus_z_k, *K_BOUNDS)
+
+    params = (
+        *hbsz_params,
+        u_hb_params.u_hb_ytp_z_x0,
+        hb_ytp_z_k,
+        u_hb_params.u_hb_ytp_z_lo,
+        u_hb_params.u_hb_ytp_z_hi,
+        u_hb_params.u_hb_x0_lgm_us,
+        hb_k_lgm_us,
+        u_hb_params.u_hb_ylo_lgm_us_zlo,
+        u_hb_params.u_hb_yhi_lgm_us_zlo,
+        u_hb_params.u_hb_ylo_lgm_us_zhi,
+        u_hb_params.u_hb_yhi_lgm_us_zhi,
+        u_hb_params.u_hb_dus_z_x0,
+        hb_dus_z_k,
+    )
+
+    params = HaloBiasParams(*params)
+
+    return params
 
 
 @jjit
@@ -113,10 +120,26 @@ def _get_unbounded_param_kern(p, lo, hi):
 
 @jjit
 def _delta_u_slope_kern(
-    lgm, z, hb_k_lgm_us, hb_zhi_lgm0, hb_zhi_ylo, hb_zhi_yhi, hb_k_z_us, hb_z0_us
+    lgm,
+    z,
+    hb_x0_lgm_us,
+    hb_k_lgm_us,
+    hb_ylo_lgm_us_zlo,
+    hb_yhi_lgm_us_zlo,
+    hb_ylo_lgm_us_zhi,
+    hb_yhi_lgm_us_zhi,
+    hb_dus_z_x0,
+    hb_dus_z_k,
 ):
-    ds_zhi = _sigmoid(lgm, hb_zhi_lgm0, hb_k_lgm_us, hb_zhi_ylo, hb_zhi_yhi)
-    delta_u_slope = _sigmoid(z, hb_z0_us, hb_k_z_us, 0.0, ds_zhi)
+    dus_z_zlo = _sigmoid(
+        lgm, hb_x0_lgm_us, hb_k_lgm_us, hb_ylo_lgm_us_zlo, hb_yhi_lgm_us_zlo
+    )
+    dus_z_zhi = _sigmoid(
+        lgm, hb_x0_lgm_us, hb_k_lgm_us, hb_ylo_lgm_us_zhi, hb_yhi_lgm_us_zhi
+    )
+    delta_u_slope = twu._tw_sig_slope(
+        z, DUS_LGM_XTP, 0.0, hb_dus_z_x0, hb_dus_z_k, dus_z_zlo, dus_z_zhi
+    )
     return delta_u_slope
 
 
@@ -145,12 +168,14 @@ def _get_hbszm_params_at_hiz(hbm_params, z):
     delta_u_slope = _delta_u_slope_kern(
         hbszm.LGM_TABLE,
         z,
+        hbm_params.hb_x0_lgm_us,
         hbm_params.hb_k_lgm_us,
-        hbm_params.hb_zhi_lgm0,
-        hbm_params.hb_zhi_ylo,
-        hbm_params.hb_zhi_yhi,
-        hbm_params.hb_k_z_us,
-        hbm_params.hb_z0_us,
+        hbm_params.hb_ylo_lgm_us_zlo,
+        hbm_params.hb_yhi_lgm_us_zlo,
+        hbm_params.hb_ylo_lgm_us_zhi,
+        hbm_params.hb_yhi_lgm_us_zhi,
+        hbm_params.hb_dus_z_x0,
+        hbm_params.hb_dus_z_k,
     )
     slope_u_params_at_z = [
         u_s + d_us for (u_s, d_us) in zip(hbszm_u_params[1:], delta_u_slope)
