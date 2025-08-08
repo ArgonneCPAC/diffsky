@@ -168,7 +168,7 @@ def mc_lightcone_host_halo_mass_function(
     weights_grid = mean_nhalos_grid / mean_nhalos_grid.sum()
     cdf_grid = jnp.cumsum(weights_grid)
 
-    # Assign redshift via inverse transformation sampling of the shell volume CDF
+    # Assign redshift via inverse transformation sampling of the halo counts CDF
     uran_z = jran.uniform(z_key, minval=0, maxval=1, shape=(nhalos_tot,))
     z_halopop = jnp.interp(uran_z, cdf_grid, z_grid)
 
