@@ -18,7 +18,6 @@ from dsps.cosmology import flat_wcdm
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
-from jax import grad
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -31,6 +30,7 @@ from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psp
+from .lc_utils import spherical_shell_comoving_volume
 from .scatter import DEFAULT_SCATTER_PARAMS
 
 N_HMF_GRID = 2_000
@@ -58,10 +58,6 @@ mc_logmp_vmap = jjit(vmap(mc_hosts._mc_host_halos_singlez_kern, in_axes=_G))
 _LCA = (None, 0, None, None)
 _compute_nhalos_tot_vmap = jjit(vmap(mc_hosts._compute_nhalos_tot, in_axes=_LCA))
 
-_Z = (0, None, None, None, None)
-dist_com_grad_kern = jjit(
-    vmap(grad(flat_wcdm.comoving_distance_to_z, argnums=0), in_axes=_Z)
-)
 
 # gal_lgmet, gal_lgmet_scatter, ssp_lgmet
 _M = (0, None, None)
@@ -76,23 +72,6 @@ _calc_bursty_age_weights_vmap = jjit(
         diffqburstpop_mono.calc_bursty_age_weights_from_diffburstpop_params, in_axes=_B
     )
 )
-
-
-@jjit
-def _spherical_shell_comoving_volume(z_grid, cosmo_params):
-    """Comoving volume of a spherical shell with width dR"""
-
-    # Compute comoving distance to each grid point
-    r_grid = flat_wcdm.comoving_distance(z_grid, *cosmo_params)
-
-    # Compute dR = (dR/dz)*dz
-    d_r_grid_dz = dist_com_grad_kern(z_grid, *cosmo_params)
-    d_z_grid = z_grid[1] - z_grid[0]
-    d_r_grid = d_r_grid_dz * d_z_grid
-
-    # vol_shell_grid = 4π*R*R*dR
-    vol_shell_grid = 4 * jnp.pi * r_grid * r_grid * d_r_grid
-    return vol_shell_grid
 
 
 def mc_lightcone_host_halo_mass_function(
@@ -148,7 +127,7 @@ def mc_lightcone_host_halo_mass_function(
 
     # Compute the comoving volume of a thin shell at each grid point
     fsky = sky_area_degsq / FULL_SKY_AREA
-    vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
+    vol_shell_grid_mpc = fsky * spherical_shell_comoving_volume(z_grid, cosmo_params)
 
     # At each grid point, compute <Nhalos> for the shell volume
     mean_nhalos_grid = mc_hosts._compute_nhalos_tot(
@@ -227,7 +206,7 @@ def get_nhalo_weighted_lc_grid(
     """
     # Compute the comoving volume of a thin shell at each grid point
     fsky = sky_area_degsq / FULL_SKY_AREA
-    vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
+    vol_shell_grid_mpc = fsky * spherical_shell_comoving_volume(z_grid, cosmo_params)
 
     # At each grid point, compute <Nhalos> for the shell volume
     mean_nhalos_lgmp_min = mc_hosts._compute_nhalos_tot(
