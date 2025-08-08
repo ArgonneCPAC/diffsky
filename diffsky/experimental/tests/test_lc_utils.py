@@ -2,19 +2,13 @@
 
 import numpy as np
 from dsps.cosmology import DEFAULT_COSMOLOGY
-from jax import random as jran
 
 from .. import lc_utils as lcu
 
 
-def test_mc_lightcone_random_redshifts():
-    ran_key = jran.key(0)
-    npts = 1_000
-    z_min, z_max = 0.5, 2.5
-    redshift = lcu.mc_lightcone_random_redshifts(
-        ran_key, npts, z_min, z_max, DEFAULT_COSMOLOGY
-    )
-    assert redshift.shape == (npts,)
-    assert np.all(np.isfinite(redshift))
-    assert np.all(redshift > z_min)
-    assert np.all(redshift < z_max)
+def test_spherical_shell_comoving_volume():
+    z_grid = np.linspace(1, 2, 25)
+    vol_shell_grid = lcu.spherical_shell_comoving_volume(z_grid, DEFAULT_COSMOLOGY)
+    assert vol_shell_grid.shape == z_grid.shape
+    assert np.all(np.isfinite(vol_shell_grid))
+    assert np.all(vol_shell_grid > 0)
