@@ -65,7 +65,7 @@ def _mc_lightcone_random_redshifts_kern(uran, z_min, z_max, cosmo_params, n_z_gr
     z_grid = jnp.linspace(z_min, z_max, n_z_grid)
 
     # Compute the comoving volume of a thin shell at each grid point
-    vol_shell_grid_mpc = _spherical_shell_comoving_volume(z_grid, cosmo_params)
+    vol_shell_grid_mpc = spherical_shell_comoving_volume(z_grid, cosmo_params)
 
     # Compute the CDF of the volume
     weights_grid = vol_shell_grid_mpc / vol_shell_grid_mpc.sum()
@@ -78,7 +78,7 @@ def _mc_lightcone_random_redshifts_kern(uran, z_min, z_max, cosmo_params, n_z_gr
 
 
 @jjit
-def _spherical_shell_comoving_volume(z_grid, cosmo_params):
+def spherical_shell_comoving_volume(z_grid, cosmo_params):
     """Comoving volume of a spherical shell with width dR"""
 
     # Compute comoving distance to each grid point

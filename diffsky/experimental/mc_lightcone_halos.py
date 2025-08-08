@@ -30,7 +30,7 @@ from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psp
-from .lc_utils import _spherical_shell_comoving_volume
+from .lc_utils import spherical_shell_comoving_volume
 from .scatter import DEFAULT_SCATTER_PARAMS
 
 N_HMF_GRID = 2_000
@@ -127,7 +127,7 @@ def mc_lightcone_host_halo_mass_function(
 
     # Compute the comoving volume of a thin shell at each grid point
     fsky = sky_area_degsq / FULL_SKY_AREA
-    vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
+    vol_shell_grid_mpc = fsky * spherical_shell_comoving_volume(z_grid, cosmo_params)
 
     # At each grid point, compute <Nhalos> for the shell volume
     mean_nhalos_grid = mc_hosts._compute_nhalos_tot(
@@ -206,7 +206,7 @@ def get_nhalo_weighted_lc_grid(
     """
     # Compute the comoving volume of a thin shell at each grid point
     fsky = sky_area_degsq / FULL_SKY_AREA
-    vol_shell_grid_mpc = fsky * _spherical_shell_comoving_volume(z_grid, cosmo_params)
+    vol_shell_grid_mpc = fsky * spherical_shell_comoving_volume(z_grid, cosmo_params)
 
     # At each grid point, compute <Nhalos> for the shell volume
     mean_nhalos_lgmp_min = mc_hosts._compute_nhalos_tot(
