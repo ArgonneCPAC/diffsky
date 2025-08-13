@@ -1,6 +1,6 @@
 # flake8: noqa: E402
 """ """
-
+import numpy as np
 from jax import config
 
 config.update("jax_enable_x64", True)
@@ -353,7 +353,7 @@ def multiband_lc_phot_kern_u_param_arr(u_param_arr, ran_key, lc_data):
     param_collection = dpw.get_param_collection_from_u_param_collection(
         *u_param_collection
     )
-    lc_phot = multiband_lc_phot_kern(ran_key, *lc_data, *param_collection)
+    lc_phot = multiband_lc_phot_kern(ran_key, *lc_data[1:], *param_collection)
     return lc_phot
 
 
@@ -378,8 +378,10 @@ def generate_lc_data(
         tcurves, ssp_data, z_phot_table
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+    nhalos = np.ones(len(lc_halopop["z_obs"]))
 
     lc_data = LCData(
+        nhalos,
         lc_halopop["z_obs"],
         lc_halopop["t_obs"],
         lc_halopop["mah_params"],
@@ -393,7 +395,44 @@ def generate_lc_data(
     return lc_data
 
 
+def generate_weighted_grid_lc_data(
+    ran_key,
+    lgmp_grid,
+    z_grid,
+    sky_area_degsq,
+    ssp_data,
+    cosmo_params,
+    tcurves,
+    z_phot_table,
+):
+    args = (ran_key, lgmp_grid, z_grid, sky_area_degsq)
+    lc_grid = mclh.get_weighted_lightcone_grid_host_halo_diffmah(*args)
+
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+
+    precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    lc_data = LCData(
+        lc_grid["nhalos"],
+        lc_grid["z_obs"],
+        lc_grid["t_obs"],
+        lc_grid["mah_params"],
+        lc_grid["logmp0"],
+        t_table,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+    )
+    return lc_data
+
+
 _LCDKEYS = (
+    "nhalos",
     "z_obs",
     "t_obs",
     "mah_params",
