@@ -1,10 +1,7 @@
 import numpy as np
 from diffstar.utils import cumulative_mstar_formed_galpop
 from dsps.constants import SFR_MIN
-from dsps.utils import _jax_get_dt_array
-from jax import jit as jjit
 from jax import random as jran
-from jax import vmap
 import jax.numpy as jnp
 
 from ..disk_bulge_kernels import calc_tform_pop
