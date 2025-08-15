@@ -207,7 +207,7 @@ if __name__ == "__main__":
                     bn_patch_in = LC_PATCH_BNPAT.format(ishell, ipatch)
                     fn_patch_in = os.path.join(drn_lc, bn_patch_in)
                     lc_patch_data = load_flat_hdf5(fn_patch_in)
-                    n_patch = len(lc_patch_data["file_idx"])
+                    n_patch = len(lc_patch_data["coreforest_file_idx"])
 
                     try:
                         lc_patch_data_out = load_lc_patch_data_out(

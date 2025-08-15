@@ -61,7 +61,7 @@ if __name__ == "__main__":
         stepnum, skypatch = hlu.get_stepnum_and_skypatch_from_lc_bname(lc_bn)
 
         with h5py.File(lc_fn, "r") as hdf:
-            file_idx = hdf["file_idx"][...]
+            file_idx = hdf["coreforest_file_idx"][...]
         corefile_indices = np.unique(file_idx).astype(int)
 
         lc_xdict[(stepnum, skypatch)] = corefile_indices
