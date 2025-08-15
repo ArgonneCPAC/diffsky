@@ -302,16 +302,16 @@ def get_diffsky_quantities_for_lc_patch(
 ):
     cf_first_row = cf_matrices["absolute_row_idx"][0]
     cf_last_row = cf_matrices["absolute_row_idx"][-1]
-    msk_olap = lc_patch_data["file_idx"] == cf_file_idx
-    msk_olap &= lc_patch_data["row_idx"] >= cf_first_row
-    msk_olap &= lc_patch_data["row_idx"] <= cf_last_row
+    msk_olap = lc_patch_data["coreforest_file_idx"] == cf_file_idx
+    msk_olap &= lc_patch_data["coreforest_row_idx"] >= cf_first_row
+    msk_olap &= lc_patch_data["coreforest_row_idx"] <= cf_last_row
     mpeak_history = np.maximum.accumulate(cf_matrices[DIFFMAH_MASS_COLNAME], axis=1)
     mp_obs = mpeak_history[:, timestep_idx]
     mp0 = mpeak_history[:, -1]
 
     n_olap = msk_olap.sum()
     if n_olap > 0:
-        olap_chunk_idx = lc_patch_data["row_idx"][msk_olap] - cf_first_row
+        olap_chunk_idx = lc_patch_data["coreforest_row_idx"][msk_olap] - cf_first_row
         olap_chunk_ult_host_idx = cf_matrices["top_host_row"][:, timestep_idx][
             olap_chunk_idx
         ]

@@ -13,7 +13,7 @@ from diffsky.data_loaders.hacc_utils import get_diffsky_info_from_hacc_sim
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
 DRN_LJ_LC_LCRC = (
-    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-4/output"
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-5/output"
 )
 
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
         stepnum, skypatch = hlu.get_stepnum_and_skypatch_from_lc_bname(lc_bn)
 
         with h5py.File(lc_fn, "r") as hdf:
-            file_idx = hdf["file_idx"][...]
+            file_idx = hdf["coreforest_file_idx"][...]
         corefile_indices = np.unique(file_idx).astype(int)
 
         lc_xdict[(stepnum, skypatch)] = corefile_indices
