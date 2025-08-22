@@ -265,12 +265,12 @@ def test_decompose_sfh_singlegal_into_bulge_disk_knots_agrees_with_vmap():
     gal_burstshape_params = gal_burstshape_params.reshape((n_gals, 3))
 
     gal_burst_age_weights = _burst_age_weights_from_params_vmap(
-            ssp_lg_age_yr, gal_burstshape_params[:, 1], gal_burstshape_params[:, 2],
-        )
+        ssp_lg_age_yr, gal_burstshape_params[:, 1], gal_burstshape_params[:, 2],
+    )
     age_weights_singleburst = _burst_age_weights_from_params(
-            ssp_lg_age_yr, DEFAULT_BURST_PARAMS.lgyr_peak,
-            DEFAULT_BURST_PARAMS.lgyr_max,
-        )
+        ssp_lg_age_yr, DEFAULT_BURST_PARAMS.lgyr_peak,
+        DEFAULT_BURST_PARAMS.lgyr_max,
+    )
 
     age_weights_burstpop = np.tile(age_weights_singleburst, n_gals)
     age_weights_burstpop = age_weights_burstpop.reshape((n_gals, n_age))

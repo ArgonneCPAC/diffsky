@@ -286,8 +286,8 @@ def decompose_sfhpop_into_bulge_disk_knots(
 
     """
     ssp_lg_age_yr = ssp_lg_age_gyr + 9.0
-    lgyr_peak = gal_burstshape_params[:, 1]                                                                          
-    lgyr_max = gal_burstshape_params[:, 2]    
+    lgyr_peak = gal_burstshape_params[:, 1]
+    lgyr_max = gal_burstshape_params[:, 2]
     gal_burst_age_weights = _burst_age_weights_from_params_vmap(
         ssp_lg_age_yr, lgyr_peak, lgyr_max,
     )
