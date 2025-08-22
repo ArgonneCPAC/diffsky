@@ -1,9 +1,9 @@
 import numpy as np
 from jax import random as jran
 
-from ...legacy.roman_rubin_2023.dsps.experimental.diffburst import (
-    DEFAULT_PARAMS,
-    _age_weights_from_params,
+from dsps.sfh.diffburst import (
+    DEFAULT_BURST_PARAMS,
+    _pureburst_age_weights_from_params,
 )
 from ..disk_knots import _disk_knot_kern, _disk_knot_vmap
 
@@ -25,7 +25,10 @@ def test_disk_knot_kern():
         fknot = 10 ** jran.uniform(fknot_key, minval=-4, maxval=-0.5, shape=())
 
         ssp_lg_age_yr = np.linspace(5, 10.5, 100)
-        age_weights_burst = _age_weights_from_params(ssp_lg_age_yr, DEFAULT_PARAMS)
+        lgyr_peak = DEFAULT_BURST_PARAMS.lgyr_peak
+        lgyr_max = DEFAULT_BURST_PARAMS.lgyr_max
+        age_weights_burst = _pureburst_age_weights_from_params(ssp_lg_age_yr,
+                                                               lgyr_peak, lgyr_max)
         assert np.allclose(1.0, age_weights_burst.sum(), rtol=0.01)
 
         lg_gyr = ssp_lg_age_yr - 9.0
@@ -64,7 +67,10 @@ def test_disk_knot_vmap():
 
     n_age = 100
     ssp_lg_age_yr = np.linspace(5, 10.5, n_age)
-    age_weights_singleburst = _age_weights_from_params(ssp_lg_age_yr, DEFAULT_PARAMS)
+    lgyr_peak = DEFAULT_BURST_PARAMS.lgyr_peak
+    lgyr_max = DEFAULT_BURST_PARAMS.lgyr_max
+    age_weights_singleburst = _pureburst_age_weights_from_params(ssp_lg_age_yr,
+                                                                 lgyr_peak, lgyr_max)
     age_weights_burstpop = np.tile(age_weights_singleburst, n_gals)
     age_weights_burstpop = age_weights_burstpop.reshape((n_gals, n_age))
 

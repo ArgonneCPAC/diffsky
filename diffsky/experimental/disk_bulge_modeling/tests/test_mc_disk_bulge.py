@@ -9,7 +9,7 @@ from ..mc_disk_bulge import (
     _bulge_sfh_vmap,
     generate_fbulge_parameters_2d_sigmoid,
     mc_disk_bulge,
-    DEFAULT_FBULGEPARAMS,
+    DEFAULT_FBULGE_2dSIGMOID_PARAMS,
 )
 
 
@@ -33,7 +33,8 @@ def test_mc_disk_bulge_component_functions_work_together():
     ssfr = jnp.divide(ran_sfh_pop, smh_pop)
     logssfr0 = jnp.log10(ssfr[:, -1])
     fbulge_params = generate_fbulge_parameters_2d_sigmoid(
-        ran_key_fbulge, logsm0, logssfr0, t10, t90, DEFAULT_FBULGEPARAMS,
+        ran_key_fbulge, logsm0, logssfr0, t10, t90,
+        DEFAULT_FBULGE_2dSIGMOID_PARAMS,
     )
 
     assert fbulge_params.shape == (n_gals, 3)
@@ -65,7 +66,8 @@ def test_mc_disk_bulge():
 
     ran_sfh_pop = jran.uniform(ran_key_sfh, minval=0, maxval=100, shape=(n_gals, n_t))
 
-    _res = mc_disk_bulge(ran_key, tarr, ran_sfh_pop, FbulgeFixedParams=DEFAULT_FBULGEPARAMS,
+    _res = mc_disk_bulge(ran_key, tarr, ran_sfh_pop,
+                         Fbulge2dParams=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
                          new_model=True,
                          )
     fbulge_params, smh_pop, effbulge, sfh_bulge, smh_bulge, bth = _res

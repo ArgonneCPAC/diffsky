@@ -11,8 +11,8 @@ from jax import jit as jjit
 from jax import lax, vmap
 from jax import numpy as jnp
 
-from ..legacy.roman_rubin_2023.dsps.experimental.diffburst import (
-    _age_weights_from_params as _burst_age_weights_from_params,
+from dsps.sfh.diffburst import (
+    _pureburst_age_weights_from_params as _burst_age_weights_from_params,
 )
 from .disk_knots import _disk_knot_kern, _disk_knot_vmap
 
@@ -32,7 +32,7 @@ DEFAULT_FBULGE_PARAMS = np.array(list(DEFAULT_FBULGE_PDICT.values()))
 
 _linterp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
-_A = (None, 0)
+_A = (None, 0, 0)
 _burst_age_weights_from_params_vmap = jjit(
     vmap(_burst_age_weights_from_params, in_axes=_A)
 )
@@ -246,10 +246,11 @@ def decompose_sfhpop_into_bulge_disk_knots(
     gal_fburst : ndarray, shape (n_gals, )
         Fraction of stellar mass in the burst population of each galaxy
 
-    gal_burstshape_params : ndarray, shape (n_gals, 2)
+    gal_burstshape_params : ndarray, shape (n_gals, 3)
         Parameters controlling P(τ) for burst population in each galaxy
-        lgyr_peak = gal_burstshape_params[:, 0]
-        lgyr_max = gal_burstshape_params[:, 1]
+        lgfburst = gal_burstshape_params[:, 0]
+        lgyr_peak = gal_burstshape_params[:, 1]
+        lgyr_max = gal_burstshape_params[:, 2]
 
     ssp_lg_age_gyr : ndarray, shape (n_age, )
         Grid in age τ at which the SSPs are computed, stored as log10(τ/Gyr)
@@ -285,8 +286,10 @@ def decompose_sfhpop_into_bulge_disk_knots(
 
     """
     ssp_lg_age_yr = ssp_lg_age_gyr + 9.0
+    lgyr_peak = gal_burstshape_params[:, 1]                                                                          
+    lgyr_max = gal_burstshape_params[:, 2]    
     gal_burst_age_weights = _burst_age_weights_from_params_vmap(
-        ssp_lg_age_yr, gal_burstshape_params
+        ssp_lg_age_yr, lgyr_peak, lgyr_max,
     )
     return _decompose_sfhpop_into_bulge_disk_knots(
         gal_fbulge_params,
