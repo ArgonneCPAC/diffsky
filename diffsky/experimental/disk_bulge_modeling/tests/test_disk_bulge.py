@@ -23,8 +23,6 @@ from ..disk_bulge_kernels import (
     _burst_age_weights_from_params_vmap,
     _decompose_sfh_singlegal_into_bulge_disk_knots,
     _decompose_sfhpop_into_bulge_disk_knots,
-    _get_params_from_u_params,
-    _get_u_params_from_params,
     _linterp_vmap,
     calc_tform_kern,
     decompose_sfhpop_into_bulge_disk_knots,
@@ -50,26 +48,6 @@ def test_bulge_fraction_vs_tform():
     assert np.all(np.isfinite(fbulge))
     assert np.all(fbulge > FBULGE_MIN)
     assert np.all(fbulge < FBULGE_MAX)
-
-
-def test_param_bounding():
-    n_tests = 1_000
-    for __ in range(n_tests):
-        u_params = np.random.uniform(-5, 5, len(DEFAULT_FBULGE_PARAMS))
-
-        params = np.array(_get_params_from_u_params(u_params, DEFAULT_T10, DEFAULT_T90))
-        assert np.all(np.isfinite(params))
-
-        tcrit, frac_early, frac_late = params
-        assert DEFAULT_T10 <= tcrit <= DEFAULT_T90
-        assert FBULGE_MIN < frac_early < FBULGE_MAX
-        assert FBULGE_MIN < frac_late < FBULGE_MAX
-        assert frac_late < frac_early
-
-        inferred_u_params = _get_u_params_from_params(params, DEFAULT_T10, DEFAULT_T90)
-        assert np.all(np.isfinite(inferred_u_params)), params
-
-        assert np.allclose(u_params, inferred_u_params, rtol=0.01)
 
 
 def test_calc_tform_kern():

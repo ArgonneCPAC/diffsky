@@ -15,6 +15,8 @@ from dsps.sfh.diffburst import (
     _pureburst_age_weights_from_params as _burst_age_weights_from_params,
 )
 from .disk_knots import _disk_knot_kern, _disk_knot_vmap
+from ...utils.tw_utils import _tw_sigmoid
+from ...utils.utility_funcs import _sigmoid
 
 FBULGE_MIN = 0.05
 FBULGE_MAX = 0.95
@@ -44,35 +46,6 @@ calc_age_weights_from_sfh_table_vmap = jjit(
 
 
 @jjit
-def _sigmoid(x, x0, k, ymin, ymax):
-    height_diff = ymax - ymin
-    return ymin + height_diff * lax.logistic(k * (x - x0))
-
-
-@jjit
-def _inverse_sigmoid(y, x0, k, ymin, ymax):
-    lnarg = (ymax - ymin) / (y - ymin) - 1
-    return x0 - lax.log(lnarg) / k
-
-
-@jjit
-def _tw_cuml_kern(x, m, h):
-    """Triweight kernel version of an err function."""
-    z = (x - m) / h
-    val = -5 * z**7 / 69984 + 7 * z**5 / 2592 - 35 * z**3 / 864 + 35 * z / 96 + 1 / 2
-    val = jnp.where(z < -3, 0, val)
-    val = jnp.where(z > 3, 1, val)
-    return val
-
-
-@jjit
-def _tw_sigmoid(x, x0, tw_h, ymin, ymax):
-    height_diff = ymax - ymin
-    body = _tw_cuml_kern(x, x0, tw_h)
-    return ymin + height_diff * body
-
-
-@jjit
 def _sigmoid_2d(x, x0, y, y0, kx, ky, zmin, zmax):
     height_diff = zmax - zmin
     return zmin + height_diff * lax.logistic(kx * (x - x0) - ky * (y - y0))
@@ -86,52 +59,6 @@ def _bulge_fraction_kernel(t, thalf, frac_early, frac_late, dt):
     """
     tw_h = dt / 6.0
     return _tw_sigmoid(t, thalf, tw_h, frac_early, frac_late)
-
-
-@jjit
-def _get_u_params_from_params(params, t10, t90):
-    fbulge_tcrit, fbulge_early, fbulge_late = params
-
-    t50 = (t10 + t90) / 2
-    u_fbulge_tcrit = _inverse_sigmoid(fbulge_tcrit, t50, BOUNDING_K, t10, t90)
-
-    x0 = (FBULGE_MIN + FBULGE_MAX) / 2
-    u_fbulge_early = _inverse_sigmoid(
-        fbulge_early, x0, BOUNDING_K, FBULGE_MIN, FBULGE_MAX
-    )
-
-    x0_late = (fbulge_early + FBULGE_MIN) / 2
-    u_fbulge_late = _inverse_sigmoid(
-        fbulge_late, x0_late, BOUNDING_K, fbulge_early, FBULGE_MIN
-    )
-
-    u_params = u_fbulge_tcrit, u_fbulge_early, u_fbulge_late
-    return u_params
-
-
-@jjit
-def _get_params_from_u_params(u_params, t10, t90):
-    u_fbulge_tcrit, u_fbulge_early, u_fbulge_late = u_params
-
-    t50 = (t10 + t90) / 2
-    fbulge_tcrit = _sigmoid(u_fbulge_tcrit, t50, BOUNDING_K, t10, t90)
-
-    x0 = (FBULGE_MIN + FBULGE_MAX) / 2
-    fbulge_early = _sigmoid(u_fbulge_early, x0, BOUNDING_K, FBULGE_MIN, FBULGE_MAX)
-
-    x0_late = (fbulge_early + FBULGE_MIN) / 2
-    fbulge_late = _sigmoid(u_fbulge_late, x0_late, BOUNDING_K, fbulge_early, FBULGE_MIN)
-
-    params = fbulge_tcrit, fbulge_early, fbulge_late
-    return params
-
-
-@jjit
-def _bulge_fraction_vs_tform_u_params(t, t10, t90, u_params):
-    params = _get_params_from_u_params(u_params, t10, t90)
-    fbulge_tcrit, fbulge_early, fbulge_late = params
-    dt = t90 - t10
-    return _bulge_fraction_kernel(t, fbulge_tcrit, fbulge_early, fbulge_late, dt)
 
 
 @jjit
@@ -388,10 +315,3 @@ def _decompose_sfhpop_into_bulge_disk_knots(
     age_weights = bulge_age_weights, dd_age_weights, knot_age_weights
     ret = (*masses, *age_weights, bulge_sfh, gal_frac_bulge_t_obs)
     return ret
-
-
-DEFAULT_FBULGE_U_PARAMS = _get_u_params_from_params(
-    DEFAULT_FBULGE_PARAMS, DEFAULT_T10, DEFAULT_T90
-)
-_A = (0, 0, 0)
-_get_params_from_u_params_vmap = jjit(vmap(_get_params_from_u_params, in_axes=_A))

@@ -11,7 +11,6 @@ from jax import random as jran
 
 from .disk_bulge_kernels import (
     _bulge_sfh_vmap,
-    _get_params_from_u_params_vmap,
     _sigmoid_2d,
     calc_tform_pop,
 )
@@ -39,7 +38,6 @@ DEFAULT_FBULGE_2dSIGMOID_PARAMS = Fbulge2dParams(**DEFAULT_FBULGE_PDICT)
 
 def mc_disk_bulge(
     ran_key, tarr, sfh_pop, Fbulge2dParams=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
-    new_model=True
 ):
     """Decompose input SFHs into disk and bulge contributions
 
@@ -84,103 +82,53 @@ def mc_disk_bulge(
     t90 = calc_tform_pop(tarr, smh_pop, 0.9)
     logsm0 = jnp.log10(smh_pop[:, -1])
 
-    if new_model:
-        ssfr = jnp.divide(sfh_pop, smh_pop)
-        logssfr0 = jnp.log10(ssfr[:, -1])
-        fbulge_params = generate_fbulge_parameters_2d_sigmoid(
-            ran_key, logsm0, logssfr0, t10, t90, Fbulge2dParams
-        )
-    else:
-        fbulge_params = generate_fbulge_params(ran_key, t10, t90, logsm0)
+    ssfr = jnp.divide(sfh_pop, smh_pop)
+    logssfr0 = jnp.log10(ssfr[:, -1])
+    fbulge_params = generate_fbulge_parameters_2d_sigmoid(
+        ran_key, logsm0, logssfr0, t10, t90, Fbulge2dParams
+    )
 
     _res = _bulge_sfh_vmap(tarr, sfh_pop, fbulge_params)
     smh, eff_bulge, sfh_bulge, smh_bulge, bth = _res
     return fbulge_params, smh, eff_bulge, sfh_bulge, smh_bulge, bth
 
 
-def generate_fbulge_params(
-    ran_key,
-    t10,
-    t90,
-    logsm0,
-    mu_u_tcrit=2,
-    delta_mu_u_tcrit=3,
-    mu_u_early=5,
-    delta_mu_u_early=0.1,
-    mu_u_late=5,
-    delta_mu_u_late=3,
-    scale_u_early=10,
-    scale_u_late=8,
-    scale_u_tcrit=20,
-):
-    n = t10.size
-    tcrit_key, early_key, late_key = jran.split(ran_key, 3)
-    u_tcrit_table = [
-        mu_u_tcrit - delta_mu_u_tcrit * scale_u_tcrit,
-        mu_u_tcrit + delta_mu_u_tcrit * scale_u_tcrit,
-    ]
-    logsm_table = 8, 11.5
-    mu_u_tcrit_pop = np.interp(logsm0, logsm_table, u_tcrit_table)
-    mc_u_tcrit = jran.normal(tcrit_key, shape=(n,)) * scale_u_tcrit + mu_u_tcrit_pop
-
-    u_early_table = [
-        mu_u_early - delta_mu_u_early * scale_u_early,
-        mu_u_early + delta_mu_u_early * scale_u_early,
-    ]
-    mu_u_early_pop = np.interp(logsm0, logsm_table, u_early_table)
-    mc_u_early = jran.normal(early_key, shape=(n,)) * scale_u_early + mu_u_early_pop
-
-    u_late_table = [
-        mu_u_late + delta_mu_u_late * scale_u_late,
-        mu_u_late - delta_mu_u_late * scale_u_late,
-    ]
-    mu_u_late_pop = np.interp(logsm0, logsm_table, u_late_table)
-    mc_u_late = jran.normal(late_key, shape=(n,)) * scale_u_late + mu_u_late_pop
-
-    u_params = np.array((mc_u_tcrit, mc_u_early, mc_u_late)).T
-    fbulge_tcrit, fbulge_early, fbulge_late = _get_params_from_u_params_vmap(
-        u_params, t10, t90
-    )
-    fbulge_params = np.array((fbulge_tcrit, fbulge_early, fbulge_late)).T
-    return fbulge_params
-
-
 def generate_fbulge_parameters_2d_sigmoid(
-    ran_key, logsm0, logssfr0, t10, t90, FbulgeParams
+    ran_key, logsm0, logssfr0, t10, t90, f_bulge_params
 ):
     fbulge_early = _sigmoid_2d(
         logssfr0,
-        FbulgeParams.early_logssfr0_x0,
+        f_bulge_params.early_logssfr0_x0,
         logsm0,
-        FbulgeParams.early_logsm0_x0,
-        FbulgeParams.early_logssfr0_k,
-        FbulgeParams.early_logsm0_k,
-        FbulgeParams.early_zmin,
-        FbulgeParams.early_zmax,
+        f_bulge_params.early_logsm0_x0,
+        f_bulge_params.early_logssfr0_k,
+        f_bulge_params.early_logsm0_k,
+        f_bulge_params.early_zmin,
+        f_bulge_params.early_zmax,
     )
 
     fbulge_late = _sigmoid_2d(
         logssfr0,
-        FbulgeParams.late_logssfr0_x0,
+        f_bulge_params.late_logssfr0_x0,
         logsm0,
-        FbulgeParams.late_logsm0_x0,
-        FbulgeParams.late_logssfr0_k,
-        FbulgeParams.late_logsm0_k,
+        f_bulge_params.late_logsm0_x0,
+        f_bulge_params.late_logssfr0_k,
+        f_bulge_params.late_logsm0_k,
         fbulge_early,
-        FbulgeParams.late_zmax,
+        f_bulge_params.late_zmax,
     )
 
     fbulge_tcrit = _sigmoid_2d(
         logssfr0,
-        FbulgeParams.tcrit_logssfr0_x0,
+        f_bulge_params.tcrit_logssfr0_x0,
         logsm0,
-        FbulgeParams.tcrit_logsm0_x0,
-        FbulgeParams.tcrit_logssfr0_k,
-        FbulgeParams.tcrit_logsm0_k,
+        f_bulge_params.tcrit_logsm0_x0,
+        f_bulge_params.tcrit_logssfr0_k,
+        f_bulge_params.tcrit_logsm0_k,
         t90,
         t10,
     )
 
-    fbulge_params = np.asarray((fbulge_tcrit, fbulge_early, fbulge_late)).T
+    fbulge_param_arr = np.asarray((fbulge_tcrit, fbulge_early, fbulge_late)).T
 
-    return fbulge_params
+    return fbulge_param_arr
