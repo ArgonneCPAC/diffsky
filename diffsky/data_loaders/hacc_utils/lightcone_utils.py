@@ -312,6 +312,13 @@ def get_diffsky_quantities_for_lc_patch(
     n_olap = msk_olap.sum()
     if n_olap > 0:
         olap_chunk_idx = lc_patch_data["coreforest_row_idx"][msk_olap] - cf_first_row
+
+        # Enforce exact match in core_tag
+        core_tags_cf = cf_matrices["core_tag"][:, -1][olap_chunk_idx]
+        core_tags_lc = lc_patch_data["core_tag"][msk_olap]
+        msg = "Mismatched core_tag between coreforest and lc-cores"
+        assert np.allclose(core_tags_cf, core_tags_lc), msg
+
         olap_chunk_ult_host_idx = cf_matrices["top_host_row"][:, timestep_idx][
             olap_chunk_idx
         ]
