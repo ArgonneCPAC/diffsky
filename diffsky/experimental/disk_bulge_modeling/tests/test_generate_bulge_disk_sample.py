@@ -29,19 +29,21 @@ def test_bulge_disk_test_sample():
     assert "smh" in keys, "smh not returned"
     assert diffstar_cens["smh"].shape == (n_gals, n_t)
 
+
 def test_get_redshifts_from_times():
     nt = 100
     t_table = np.linspace(0.1, 13.8, nt)
 
-    redshifts = get_redshifts_from_times(t_table, cosmo_params)
+    redshifts = get_redshifts_from_times(t_table, DEFAULT_COSMOLOGY)
 
     zcheck = 3
     mask = redshifts <= zcheck
     t_interp = age_at_z(redshifts, *DEFAULT_COSMOLOGY)
     check = np.isclose(t_interp, t_table, atol=1e-3, rtol=1e-3)
-    msg ="times calculated from redshifts not within 1e-3 for z<{}".format(zcheck)
+    msg = "times calculated from redshifts not within 1e-3 for z<{}".format(zcheck)
     assert np.all(check[mask]), msg
-    
+
+
 def test_get_bulge_disk_decomposition():
     ran_key = jran.key(0)
     halo_key, ran_key = jran.split(ran_key, 2)

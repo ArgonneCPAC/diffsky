@@ -14,8 +14,6 @@ from dsps.sfh.diffburst import (
 )
 from ..disk_bulge_kernels import (
     DEFAULT_FBULGE_PARAMS,
-    DEFAULT_T10,
-    DEFAULT_T90,
     FBULGE_MAX,
     FBULGE_MIN,
     _bulge_fraction_vs_tform,
@@ -28,6 +26,7 @@ from ..disk_bulge_kernels import (
     decompose_sfhpop_into_bulge_disk_knots,
 )
 
+DEFAULT_T10, DEFAULT_T90 = 2.0, 9.0
 
 def test_bulge_sfh():
     nt = 100

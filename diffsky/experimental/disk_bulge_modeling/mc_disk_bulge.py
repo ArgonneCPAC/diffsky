@@ -7,7 +7,6 @@ import jax.numpy as jnp
 import numpy as np
 from diffstar.utils import cumulative_mstar_formed_galpop
 from dsps.constants import SFR_MIN
-from jax import random as jran
 
 from .disk_bulge_kernels import (
     _bulge_sfh_vmap,

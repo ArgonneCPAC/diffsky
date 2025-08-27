@@ -16,7 +16,6 @@ from dsps.sfh.diffburst import (
 )
 from .disk_knots import _disk_knot_kern, _disk_knot_vmap
 from ...utils.tw_utils import _tw_sigmoid
-from ...utils.utility_funcs import _sigmoid
 
 FBULGE_MIN = 0.05
 FBULGE_MAX = 0.95
@@ -26,8 +25,6 @@ BOUNDING_K = 0.1
 DEFAULT_FBULGE_EARLY = 0.75
 DEFAULT_FBULGE_LATE = 0.15
 
-
-DEFAULT_T10, DEFAULT_T90 = 2.0, 9.0
 DEFAULT_FBULGE_PDICT = OrderedDict(fbulge_tcrit=8.0, fbulge_early=0.5, fbulge_late=0.1)
 DEFAULT_FBULGE_PARAMS = np.array(list(DEFAULT_FBULGE_PDICT.values()))
 
