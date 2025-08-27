@@ -28,6 +28,7 @@ from ..disk_bulge_kernels import (
 
 DEFAULT_T10, DEFAULT_T90 = 2.0, 9.0
 
+
 def test_bulge_sfh():
     nt = 100
     tarr = np.linspace(0.1, 13.8, nt)
