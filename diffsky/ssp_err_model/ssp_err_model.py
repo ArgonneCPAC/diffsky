@@ -5,8 +5,8 @@ from collections import OrderedDict, namedtuple
 from dsps.utils import _tw_sigmoid
 from jax import jit as jjit
 from jax import numpy as jnp
-from jax import vmap
 from jax import random as jran
+from jax import vmap
 
 from ..utils import _inverse_sigmoid, _sigmoid, _tw_interp_kern
 
@@ -430,7 +430,7 @@ def compute_delta_mags_all_bands(logsm, z_obs, ssperr_params):
 
 
 @jjit
-def _redshift_interpolation_kern(zarr, y0, y1, y2, k=10.0, xa=0.5, xb=0.75):
+def _redshift_interpolation_kern(zarr, y0, y1, y2, k=5.0, xa=0.5, xb=1.5):
     dxab = xb - xa
     xab = xa + 0.5 * dxab
     w0 = _sigmoid(zarr, xa, k, y0, y1)
@@ -523,11 +523,7 @@ def noisy_delta_mag(
 ):
 
     delta_mag = delta_mag_from_lambda_rest(
-        ssperr_params,
-        z_obs,
-        logsm,
-        wave_eff_aa_obs,
-        wave_eff_rest
+        ssperr_params, z_obs, logsm, wave_eff_aa_obs, wave_eff_rest
     )
 
     delta_scatter = compute_delta_scatter(ran_key, delta_mag)
@@ -550,25 +546,15 @@ def add_delta_mag_to_photometry(
     mags_q_smooth,
     mags_q_bursty,
     mags_ms_smooth,
-    mags_ms_bursty
+    mags_ms_bursty,
 ):
 
     noisy_delta_mag_q = noisy_delta_mag(
-        ssperr_params,
-        z_obs,
-        logsm_q,
-        wave_eff_aa_obs,
-        wave_eff_rest,
-        q_key
+        ssperr_params, z_obs, logsm_q, wave_eff_aa_obs, wave_eff_rest, q_key
     )
 
     noisy_delta_mag_ms = noisy_delta_mag(
-        ssperr_params,
-        z_obs,
-        logsm_ms,
-        wave_eff_aa_obs,
-        wave_eff_rest,
-        ms_key
+        ssperr_params, z_obs, logsm_ms, wave_eff_aa_obs, wave_eff_rest, ms_key
     )
 
     new_mags_q_smooth = mags_q_smooth + noisy_delta_mag_q
