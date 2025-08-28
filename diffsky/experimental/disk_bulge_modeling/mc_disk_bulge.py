@@ -131,4 +131,3 @@ def generate_fbulge_parameters_2d_sigmoid(
     fbulge_param_arr = np.asarray((fbulge_tcrit, fbulge_early, fbulge_late)).T
 
     return fbulge_param_arr
-
