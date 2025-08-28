@@ -67,7 +67,7 @@ def test_mc_disk_bulge():
     ran_sfh_pop = jran.uniform(ran_key_sfh, minval=0, maxval=100, shape=(n_gals, n_t))
 
     _res = mc_disk_bulge(ran_key, tarr, ran_sfh_pop,
-                         Fbulge2dParams=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
+                         fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
                          )
     fbulge_params, smh_pop, effbulge, sfh_bulge, smh_bulge, bth = _res
     assert smh_pop.shape == (n_gals, n_t)
