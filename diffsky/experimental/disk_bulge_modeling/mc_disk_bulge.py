@@ -36,7 +36,7 @@ DEFAULT_FBULGE_2dSIGMOID_PARAMS = Fbulge2dParams(**DEFAULT_FBULGE_PDICT)
 
 
 def mc_disk_bulge(
-    ran_key, tarr, sfh_pop, Fbulge2dParams=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
+    ran_key, tarr, sfh_pop, fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
 ):
     """Decompose input SFHs into disk and bulge contributions
 
@@ -48,7 +48,7 @@ def mc_disk_bulge(
 
     sfh_pop : ndarray, shape (n_gals, n_t)
 
-    Fbulge2dParams : named tuple of parameters for 2d-sigmoid
+    fbulge_2d_params : named tuple of parameters for 2d-sigmoid
 
     new_model : boolean flag to switch between new and old model
 
@@ -84,7 +84,7 @@ def mc_disk_bulge(
     ssfr = jnp.divide(sfh_pop, smh_pop)
     logssfr0 = jnp.log10(ssfr[:, -1])
     fbulge_params = generate_fbulge_parameters_2d_sigmoid(
-        ran_key, logsm0, logssfr0, t10, t90, Fbulge2dParams
+        ran_key, logsm0, logssfr0, t10, t90, fbulge_2d_params
     )
 
     _res = _bulge_sfh_vmap(tarr, sfh_pop, fbulge_params)
@@ -131,3 +131,4 @@ def generate_fbulge_parameters_2d_sigmoid(
     fbulge_param_arr = np.asarray((fbulge_tcrit, fbulge_early, fbulge_late)).T
 
     return fbulge_param_arr
+
