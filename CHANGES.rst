@@ -1,3 +1,8 @@
+0.2.4 (2025-09-02)
+-------------------
+- Release associated with diffskyopt+kdescent calibration by Alan Pearl
+
+
 0.2.3 (2025-07-30)
 -------------------
 - Fix bug in lightcone data loader (https://github.com/ArgonneCPAC/diffsky/pull/195)
