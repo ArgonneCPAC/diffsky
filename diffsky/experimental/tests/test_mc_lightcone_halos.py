@@ -332,3 +332,38 @@ def test_mc_lightcone_obs_mags_cens():
     assert np.all(cenpop["ftrans"] <= 1)
     assert np.any(cenpop["ftrans"] > 0)
     assert np.any(cenpop["ftrans"] < 1)
+
+
+def test_generate_weighted_sobol_lc_data():
+    """Enforce mc_lightcone_host_halo_diffmah returns reasonable results when passed
+    alternative halo mass function parameters"""
+    ran_key = jran.key(0)
+    lgmp_min = 12.0
+    lgmp_max = 15.0
+    sky_area_degsq = 1.0
+    num_halos = 500
+
+    n_tests = 5
+    z_max_arr = np.linspace(0.2, 2.5, n_tests)
+    for z_max in z_max_arr:
+        test_key, ran_key = jran.split(ran_key, 2)
+        z_min = z_max - 0.05
+
+        cenpop = mclh.generate_weighted_sobol_lc_data(
+            num_halos,
+            z_min,
+            z_max,
+            lgmp_min,
+            lgmp_max,
+            sky_area_degsq,
+            ran_key=test_key,
+        )
+        n_gals = cenpop["z_obs"].size
+        assert cenpop["logmp_obs"].size == cenpop["logmp0"].size == n_gals == num_halos
+        assert np.all(np.isfinite(cenpop["z_obs"]))
+
+        assert np.all(cenpop["z_obs"] >= z_min)
+        assert np.all(cenpop["z_obs"] <= z_max)
+
+        assert np.all(cenpop["logmp_obs"] >= lgmp_min)
+        assert np.all(cenpop["logmp_obs"] <= lgmp_max)

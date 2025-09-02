@@ -5,6 +5,8 @@ from jax import config
 
 config.update("jax_enable_x64", True)
 
+import warnings
+
 import numpy as np
 from diffmah.diffmah_kernels import _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
@@ -22,6 +24,8 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
+from jax.scipy.interpolate import RegularGridInterpolator
+from scipy.stats import qmc
 
 from ..burstpop import diffqburstpop_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
@@ -32,6 +36,13 @@ from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psp
 from .lc_utils import spherical_shell_comoving_volume
 from .scatter import DEFAULT_SCATTER_PARAMS
+
+try:
+    from mpi4py import MPI
+
+    COMM = MPI.COMM_WORLD
+except ImportError:
+    MPI = COMM = None
 
 N_HMF_GRID = 2_000
 N_SFH_TABLE = 100
@@ -90,7 +101,7 @@ def mc_lightcone_host_halo_mass_function(
 
     Parameters
     ----------
-    ran_key : jax.random.key
+    ran_key : jran.key
 
     lgmp_min : float
         Minimum halo mass in units of Msun (not Msun/h)
@@ -242,7 +253,7 @@ def mc_lightcone_host_halo_diffmah(
 
     Parameters
     ----------
-    ran_key : jax.random.key
+    ran_key : jran.key
 
     lgmp_min : float
         Minimum halo mass in units of Msun (not Msun/h)
@@ -336,7 +347,7 @@ def get_weighted_lightcone_grid_host_halo_diffmah(
 
     Parameters
     ----------
-    ran_key : jax.random.key
+    ran_key : jran.key
 
     lgmp_grid : array, shape (n_m, )
         Grid of Base-10 log of halo mass in units of Msun (not Msun/h)
@@ -443,7 +454,7 @@ def mc_lightcone_diffstar_cens(
 
     Parameters
     ----------
-    ran_key : jax.random.key
+    ran_key : jran.key
 
     lgmp_min : float
         Base-10 log of minimum halo mass in units of Msun (not Msun/h)
@@ -640,7 +651,7 @@ def mc_lightcone_diffstar_stellar_ages_cens(
 
     Parameters
     ----------
-    ran_key : jax.random.key
+    ran_key : jran.key
 
     lgmp_min : float
        Base-10 log of minimum halo mass in units of Msun (not Msun/h)
@@ -899,7 +910,7 @@ def mc_lightcone_obs_mags_cens(
 
     Parameters
     ----------
-    ran_key : jax.random.key
+    ran_key : jran.key
 
     lgmp_min : float
         Minimum halo mass in units of Msun (not Msun/h)
@@ -1110,3 +1121,154 @@ _G = (None, 0, 0, 0, None)
 get_frac_ssp_err_vmap = jjit(
     vmap(vmap(ssp_err_model.F_sps_err_lambda, in_axes=_F), in_axes=_G)
 )
+
+
+def get_nhalo_from_grid_interp(
+    tot_num_halos,
+    z_obs,
+    logmp_obs_mf,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmp_max,
+    sky_area_degsq,
+    hmf_params,
+    cosmo_params,
+):
+    ngrid_z = 200
+    ngrid_m = 200
+    ngrid_tot = ngrid_z * ngrid_m
+    z_grid = jnp.linspace(z_min, z_max, ngrid_z)
+    lgmp_grid = jnp.linspace(lgmp_min, lgmp_max, ngrid_m)
+    nhalo_grid = get_nhalo_weighted_lc_grid(
+        lgmp_grid, z_grid, sky_area_degsq, hmf_params, cosmo_params
+    )
+
+    interpolator = RegularGridInterpolator(
+        (z_grid, lgmp_grid), nhalo_grid, bounds_error=False, fill_value=None
+    )  # type: ignore
+
+    interp = interpolator(jnp.column_stack([z_obs, logmp_obs_mf]))
+    return interp * ngrid_tot / tot_num_halos
+
+
+def generate_weighted_sobol_lc_data(
+    num_halos,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmp_max,
+    sky_area_degsq,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    ran_key=None,
+    logmp_cutoff=0.0,
+    comm=None,
+):
+    if comm is None:
+        comm = MPI.COMM_WORLD
+    if ran_key is None:
+        ran_key = jran.key(0)
+    ran_key, ran_key_sobol = jran.split(ran_key, 2)
+
+    # ONLY generate the halos necessary on this rank
+    num_halos_on_rank = num_halos // comm.size + (
+        1 if comm.rank < num_halos % comm.size else 0
+    )
+    starting_index = comm.rank * (num_halos // comm.size) + min(
+        comm.rank, num_halos % comm.size
+    )
+
+    # Generate Sobol sequence for halo masses and redshifts
+    seed = int(jran.randint(ran_key_sobol, (), 0, 2**31 - 1))
+    bits = None
+    if num_halos > 1e9:
+        # 64-bit sequence required to generate over 2^30 halos
+        bits = 64
+    sampler = qmc.Sobol(d=2, scramble=True, rng=seed, bits=bits)
+    if starting_index > 0:
+        sampler.fast_forward(starting_index)
+
+    with warnings.catch_warnings():
+        # Ignore warning about Sobol sequences not being fully balanced
+        warnings.filterwarnings("ignore", category=UserWarning)
+        sample = sampler.random(num_halos_on_rank)
+    z_obs, logmp_obs_mf = qmc.scale(sample, (z_min, lgmp_min), (z_max, lgmp_max)).T
+
+    mclh_args = (
+        ran_key,
+        num_halos,
+        z_obs,
+        logmp_obs_mf,
+        z_min,
+        z_max,
+        lgmp_min,
+        lgmp_max,
+        sky_area_degsq,
+    )
+    mclh_kwargs = dict(hmf_params=hmf_params)
+
+    res = get_weighted_lightcone_sobol_host_halo_diffmah(
+        *mclh_args, logmp_cutoff=logmp_cutoff, **mclh_kwargs
+    )  # type: ignore
+
+    return res
+
+
+def get_weighted_lightcone_sobol_host_halo_diffmah(
+    ran_key,
+    tot_num_halos,
+    z_obs,
+    logmp_obs_mf,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmp_max,
+    sky_area_degsq,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    logmp_cutoff=0.0,
+):
+    """
+    Compute the number of halos on the input halo mass and redshift points
+    """
+
+    nhalo_weights = get_nhalo_from_grid_interp(
+        tot_num_halos,
+        z_obs,
+        logmp_obs_mf,
+        z_min,
+        z_max,
+        lgmp_min,
+        lgmp_max,
+        sky_area_degsq,
+        hmf_params=hmf_params,
+        cosmo_params=cosmo_params,
+    )
+    t_obs = flat_wcdm.age_at_z(z_obs, *cosmo_params)
+    t_0 = flat_wcdm.age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t_0)
+
+    logmp_obs_mf_clipped = np.clip(logmp_obs_mf, logmp_cutoff, np.inf)
+
+    tarr = np.array((10**lgt0,))
+    args = (diffmahpop_params, tarr, logmp_obs_mf_clipped, t_obs, ran_key, lgt0)
+    mah_params_uncorrected = mc_cenpop(*args)[0]  # mah_params, dmhdt, log_mah
+
+    logmp_obs_orig = _log_mah_kern(mah_params_uncorrected, t_obs, lgt0)
+    delta_logmh_clip = logmp_obs_orig - logmp_obs_mf
+    mah_params = mah_params_uncorrected._replace(
+        logm0=mah_params_uncorrected.logm0 - delta_logmh_clip
+    )
+
+    logmp0 = _log_mah_kern(mah_params, 10**lgt0, lgt0)
+    logmp_obs = _log_mah_kern(mah_params, t_obs, lgt0)
+
+    fields = ("z_obs", "t_obs", "logmp_obs", "mah_params", "logmp0")
+    values = (z_obs, t_obs, logmp_obs, mah_params, logmp0)
+    cenpop_out = dict()
+    for key, value in zip(fields, values):
+        cenpop_out[key] = value
+    cenpop_out["nhalos"] = nhalo_weights
+
+    return cenpop_out
