@@ -1165,18 +1165,22 @@ def generate_weighted_sobol_lc_data(
     comm=None,
 ):
     if comm is None:
-        comm = MPI.COMM_WORLD
+        try:
+            comm = MPI.COMM_WORLD
+            # ONLY generate the halos necessary on this rank
+            num_halos_on_rank = num_halos // comm.size + (
+                1 if comm.rank < num_halos % comm.size else 0
+            )
+            starting_index = comm.rank * (num_halos // comm.size) + min(
+                comm.rank, num_halos % comm.size
+            )
+        except AttributeError:
+            num_halos_on_rank = num_halos
+            starting_index = 0
+
     if ran_key is None:
         ran_key = jran.key(0)
     ran_key, ran_key_sobol = jran.split(ran_key, 2)
-
-    # ONLY generate the halos necessary on this rank
-    num_halos_on_rank = num_halos // comm.size + (
-        1 if comm.rank < num_halos % comm.size else 0
-    )
-    starting_index = comm.rank * (num_halos // comm.size) + min(
-        comm.rank, num_halos % comm.size
-    )
 
     # Generate Sobol sequence for halo masses and redshifts
     seed = int(jran.randint(ran_key_sobol, (), 0, 2**31 - 1))
