@@ -99,9 +99,9 @@ if __name__ == "__main__":
     line_pat = "python {0} {1:.3f} {2:.3f} -istart {3} -iend {4} -drn_out {5} "
 
     if submit_job:
-        print("Submitting jobs to queue")
+        print("\nSubmitting jobs to queue\n")
     else:
-        print("Dry run: jobs not submitted")
+        print("\nDry run: jobs not submitted\n")
 
     for job_info in job_list:
 
