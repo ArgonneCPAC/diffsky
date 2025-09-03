@@ -11,7 +11,8 @@ from . import test_lc_phot_kern as tlcphk
 
 def test_mc_diffsky_seds():
     ran_key = jran.key(0)
-    lc_data = lc_data = tlcphk._generate_sobol_lc_data()
+    lc_data = tlcphk._generate_sobol_lc_data()
+    n_gals = lc_data.logmp0.size
 
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
     assert lc_data.z_phot_table.shape == (n_z_table,)
@@ -37,3 +38,6 @@ def test_mc_diffsky_seds():
     assert np.all(np.isfinite(sed_info.burst_params.lgfburst))
     assert np.all(np.isfinite(sed_info.burst_params.lgyr_peak))
     assert np.all(np.isfinite(sed_info.burst_params.lgyr_max))
+
+    assert np.all(np.isfinite(sed_info.smooth_age_weights))
+    assert sed_info.smooth_age_weights.shape == (n_gals, n_age)
