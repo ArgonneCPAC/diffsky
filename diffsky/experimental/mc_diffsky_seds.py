@@ -18,7 +18,7 @@ from . import lc_phot_kern
 from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
 
-SED_INFO_KEYS = ("diffstar_params",)
+SED_INFO_KEYS = ("diffstar_params", "burst_params")
 SedInfo = namedtuple("SedInfo", SED_INFO_KEYS)
 SEDINFO_EMPTY = SedInfo._make([None] * len(SedInfo._fields))
 
@@ -210,6 +210,8 @@ def mc_diffsky_seds_kern(
     diffstar_params = mc_select_diffstar_params(
         diffstar_galpop.diffstar_params_q, diffstar_galpop.diffstar_params_ms, mc_q
     )
-    sed_info = SEDINFO_EMPTY._replace(diffstar_params=diffstar_params)
+    sed_info = SEDINFO_EMPTY._replace(
+        diffstar_params=diffstar_params, burst_params=burst_params
+    )
 
     return lc_phot, sed_info

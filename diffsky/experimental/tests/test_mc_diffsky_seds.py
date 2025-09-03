@@ -33,3 +33,7 @@ def test_mc_diffsky_seds():
 
     assert np.all(np.isfinite(sed_info.diffstar_params.ms_params))
     assert np.all(np.isfinite(sed_info.diffstar_params.q_params))
+
+    assert np.all(np.isfinite(sed_info.burst_params.lgfburst))
+    assert np.all(np.isfinite(sed_info.burst_params.lgyr_peak))
+    assert np.all(np.isfinite(sed_info.burst_params.lgyr_max))
