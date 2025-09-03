@@ -10,12 +10,12 @@ from dsps.data_loaders.defaults import TransmissionCurve
 from dsps.metallicity import umzr
 from jax import random as jran
 
-from ..scatter import DEFAULT_SCATTER_PARAMS
 from ...param_utils import diffsky_param_wrapper as dpw
 from ...param_utils import spspop_param_utils as spspu
 from ...ssp_err_model import ssp_err_model
 from .. import lc_phot_kern
 from .. import mc_lightcone_halos as mclh
+from ..scatter import DEFAULT_SCATTER_PARAMS
 
 
 def test_multiband_lc_phot_kern():
@@ -156,3 +156,44 @@ def test_multiband_lc_phot_kern_u_param_arr():
     assert np.all(lc_phot.weights_q <= 1)
     assert np.any(lc_phot.weights_q > 0)
     assert np.any(lc_phot.weights_q < 1)
+
+
+def _generate_sobol_lc_data():
+    ran_key = jran.key(0)
+    num_halos = 500
+    lgmp_min, lgmp_max = 10.0, 15.0
+    z_min, z_max = 0.01, 3.0
+    sky_area_degsq = 100.0
+
+    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
+
+    _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
+    wave, u, g, r, i, z, y = _res
+
+    tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+
+    n_z_phot_table = 15
+    z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+
+    args = (
+        ran_key,
+        num_halos,
+        z_min,
+        z_max,
+        lgmp_min,
+        lgmp_max,
+        sky_area_degsq,
+        ssp_data,
+        tcurves,
+        z_phot_table,
+    )
+    lc_data = lc_phot_kern.generate_sobol_grid_lc_data(*args)
+
+    return lc_data
+
+
+def test_generate_sobol_lc_data():
+    lc_data = _generate_sobol_lc_data()
+    assert np.all(np.isfinite(lc_data.logmp0))
+    for x in lc_data.mah_params:
+        assert np.all(np.isfinite(x))
