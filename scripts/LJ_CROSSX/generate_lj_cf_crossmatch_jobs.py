@@ -11,7 +11,7 @@ import subprocess
 import numpy as np
 
 BN_JOB = "run_lc_cf_crossx_{0}_to_{1}.sh"
-
+BN_SCRIPT = "lc_cf_crossmatch_script.py"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -25,11 +25,6 @@ if __name__ == "__main__":
     parser.add_argument("z_min", help="Minimum redshift", type=float)
     parser.add_argument("z_max", help="Maximum redshift", type=float)
     parser.add_argument("drn_out", help="Directory to write mock", default="")
-    parser.add_argument(
-        "-script_name",
-        help="Filename of cross-matching script",
-        default="lc_cf_crossmatch_script.py",
-    )
     parser.add_argument("-fn_patch_list", help="Filename of patch list", default="")
     parser.add_argument("-istart", help="Filename of patch list", default=-1, type=int)
     parser.add_argument("-iend", help="Filename of patch list", default=-1, type=int)
@@ -54,7 +49,6 @@ if __name__ == "__main__":
     iend = args.iend
     job_size = args.job_size
     conda_env = args.conda_env
-    script_name = args.script_name
     drn_out = args.drn_out
     drn_script = args.drn_script
     submit_job = args.submit_job
@@ -98,6 +92,8 @@ if __name__ == "__main__":
         "",
         f"cd {drn_script}",
         "",
+        f"rsync /home/ahearin/work/repositories/python/diffsky/scripts/LJ_CROSSX/{BN_SCRIPT} ./",
+        "",
     )
 
     line_pat = "python {0} {1:.3f} {2:.3f} -istart {3} -iend {4} -drn_out {5} "
@@ -115,7 +111,7 @@ if __name__ == "__main__":
             for line_out in header_lines:
                 fout.write(line_out + "\n")
 
-            line_out = line_pat.format(script_name, z_min, z_max, i, j, drn_out)
+            line_out = line_pat.format(BN_SCRIPT, z_min, z_max, i, j, drn_out)
             fout.write(line_out + "\n")
 
         if submit_job:
