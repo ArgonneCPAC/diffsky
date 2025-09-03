@@ -98,6 +98,11 @@ if __name__ == "__main__":
 
     line_pat = "python {0} {1:.3f} {2:.3f} -istart {3} -iend {4} -drn_out {5} "
 
+    if submit_job:
+        print("Submitting jobs to queue")
+    else:
+        print("Dry run: jobs not submitted")
+
     for job_info in job_list:
 
         i = job_info[0]
@@ -115,8 +120,5 @@ if __name__ == "__main__":
             fout.write(line_out + "\n")
 
         if submit_job:
-            print("Submitting jobs to queue")
             command = f"qsub {fn_submit_script}"
             raw_result = subprocess.check_output(command, shell=True)
-        else:
-            print("Dry run: jobs not submitted")
