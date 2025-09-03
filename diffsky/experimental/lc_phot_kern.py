@@ -433,26 +433,30 @@ def generate_weighted_grid_lc_data(
 
 def generate_sobol_grid_lc_data(
     ran_key,
-    tot_num_halos,
-    z_grid,
+    num_halos,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmp_max,
     sky_area_degsq,
     ssp_data,
-    cosmo_params,
     tcurves,
     z_phot_table,
+    logmp_cutoff=11.0,
+    cosmo_params=flat_wcdm.PLANCK15,
 ):
     args = (
-        ran_key,
-        tot_num_halos,
-        z_obs,
-        logmp_obs_mf,
+        num_halos,
         z_min,
         z_max,
         lgmp_min,
         lgmp_max,
         sky_area_degsq,
     )
-    lc_grid = mclh.get_weighted_lightcone_sobol_host_halo_diffmah(*args)
+
+    lc_grid = mclh.generate_weighted_sobol_lc_data(
+        *args, ran_key=ran_key, logmp_cutoff=logmp_cutoff
+    )
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
