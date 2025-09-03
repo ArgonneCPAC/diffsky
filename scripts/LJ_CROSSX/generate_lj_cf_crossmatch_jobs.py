@@ -1,15 +1,18 @@
 """Script to generate scripts for cross-matching LastJourney core lightcones
 
-python generate_lj_cf_crossmatch_jobs.py galsampler 4 0.01 3.0 /Users/aphearin/work/random/0903/CROSSX_JOBS -istart 0 -iend 5
+python generate_lj_cf_crossmatch_jobs.py galsampler 8 0.01 3.0 /Users/aphearin/work/random/0903/CROSSX_JOBS -istart 0 -iend 90 -drn_script /Users/aphearin/work/random/0903/CROSSX_JOBS
+
+python generate_lj_cf_crossmatch_jobs.py galsampler 8 0.01 3.0 /Users/aphearin/work/random/0903/CROSSX_JOBS -istart 90 -iend 180 -drn_script /Users/aphearin/work/random/0903/CROSSX_JOBS
 
 """
 
 import argparse
 import os
+import subprocess
 
 import numpy as np
 
-BN_JOB = "run_lc_cf_crossmatch_{0}_to_{1}.sh"
+BN_JOB = "run_lc_cf_crossx_{0}_to_{1}.sh"
 
 
 if __name__ == "__main__":
@@ -32,11 +35,12 @@ if __name__ == "__main__":
     parser.add_argument("-fn_patch_list", help="Filename of patch list", default="")
     parser.add_argument("-istart", help="Filename of patch list", default=-1, type=int)
     parser.add_argument("-iend", help="Filename of patch list", default=-1, type=int)
-    parser.add_argument("--dry_run", action="store_false", help="Submit jobs")
-
+    parser.add_argument("--submit_job", action="store_true", help="Submit jobs")
     parser.add_argument(
-        "-drn_submit_script", help="Directory to write scripts", default=""
+        "-job_size", help="Number of patches per job", default=5, type=int
     )
+
+    parser.add_argument("-drn_script", help="Directory to write scripts", default="")
 
     parser.add_argument(
         "-conda_env", help="conda environment to activate", default="improv311"
@@ -50,14 +54,15 @@ if __name__ == "__main__":
     fn_patch_list = args.fn_patch_list
     istart = args.istart
     iend = args.iend
+    job_size = args.job_size
     conda_env = args.conda_env
     script_name = args.script_name
     drn_out = args.drn_out
-    drn_submit_script = args.drn_submit_script
-    dry_run = args.dry_run
+    drn_script = args.drn_script
+    submit_job = args.submit_job
 
-    if drn_submit_script == "":
-        drn_submit_script = os.path.dirname(os.path.abspath(__file__))
+    if drn_script == "":
+        drn_script = os.path.dirname(os.path.abspath(__file__))
 
     if fn_patch_list == "":
         patch_list = np.arange(istart, iend).astype(int)
@@ -66,6 +71,11 @@ if __name__ == "__main__":
     if len(patch_list) == 0:
         msg = f"fn_patch_list='{fn_patch_list}' and (istart,iend)=({istart},{iend})"
         raise ValueError(msg)
+
+    n_jobs = len(patch_list) // job_size
+    job_list = np.array_split(patch_list, n_jobs)
+
+    nchar = len(str(np.max(patch_list)))
 
     header_lines = (
         "#!/bin/bash",
@@ -85,19 +95,28 @@ if __name__ == "__main__":
         "source ~/.bash_profile",
         f"conda activate {conda_env}",
         "",
-        f"cd {drn_submit_script}",
+        f"cd {drn_script}",
         "",
     )
 
     line_pat = "python {0} {1:.3f} {2:.3f} {3} {4} -drn_out {5} "
-    # python lc_cf_crossmatch_script.py 0.01 3.0 -istart 0 -iend 5 -drn_out /lcrc/project/halotools/random_data/0826
 
-    bn_patch_list = os.path.basename(fn_patch_list)
-    fn_submit_script = os.path.join(drn_submit_script, BN_JOB.format(istart, iend))
+    for job_info in job_list:
 
-    with open(fn_submit_script, "w") as fout:
-        for line_out in header_lines:
+        i = job_info[0]
+        j = job_info[-1]
+        ibn = f"{i:0{nchar}d}"
+        jbn = f"{j:0{nchar}d}"
+
+        fn_submit_script = os.path.join(drn_script, BN_JOB.format(ibn, jbn))
+
+        with open(fn_submit_script, "w") as fout:
+            for line_out in header_lines:
+                fout.write(line_out + "\n")
+
+            line_out = line_pat.format(script_name, z_min, z_max, i, j, drn_out)
             fout.write(line_out + "\n")
 
-        line_out = line_pat.format(script_name, z_min, z_max, istart, iend, drn_out)
-        fout.write(line_out + "\n")
+        if submit_job:
+            command = f"qsub {fn_submit_script}"
+            raw_result = subprocess.check_output(command, shell=True)
