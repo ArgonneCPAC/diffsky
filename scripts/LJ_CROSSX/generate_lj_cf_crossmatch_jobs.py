@@ -74,6 +74,9 @@ if __name__ == "__main__":
 
     n_jobs = len(patch_list) // job_size
     job_list = np.array_split(patch_list, n_jobs)
+    print(f"\nCreating {n_jobs} jobs")
+    node_hours_tot = walltime * n_jobs
+    print(f"Total node hours = {node_hours_tot:.1f}\n")
 
     nchar = len(str(np.max(patch_list)))
 
