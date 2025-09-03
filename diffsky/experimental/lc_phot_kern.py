@@ -73,6 +73,8 @@ _DPKEYS = (
     "sfh_q",
     "logsm_obs_q",
     "logssfr_obs_q",
+    "diffstar_params_ms",
+    "diffstar_params_q",
 )
 DiffstarPopQuantities = namedtuple("DiffstarPopQuantities", _DPKEYS)
 DPQ_EMPTY = DiffstarPopQuantities._make([None] * len(_DPKEYS))
@@ -145,6 +147,8 @@ def diffstarpop_lc_cen_wrapper(
         sfh_q=sfh_q,
         logsm_obs_q=logsm_obs_q,
         logssfr_obs_q=logssfr_obs_q,
+        diffstar_params_ms=diffstar_params_ms,
+        diffstar_params_q=diffstar_params_q,
     )
 
     return diffstar_galpop
