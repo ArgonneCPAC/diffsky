@@ -23,10 +23,13 @@ def test_mc_diffsky_seds():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
-    lc_phot = mcsed.mc_diffsky_seds(u_param_arr, ran_key, lc_data)
+    lc_phot, sed_info = mcsed.mc_diffsky_seds(u_param_arr, ran_key, lc_data)
     lc_phot_orig = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
         u_param_arr, ran_key, lc_data
     )
     for pname, pval in zip(lc_phot_orig._fields, lc_phot_orig):
         pval2 = getattr(lc_phot, pname)
         assert np.allclose(pval, pval2)
+
+    assert np.all(np.isfinite(sed_info.diffstar_params.ms_params))
+    assert np.all(np.isfinite(sed_info.diffstar_params.q_params))
