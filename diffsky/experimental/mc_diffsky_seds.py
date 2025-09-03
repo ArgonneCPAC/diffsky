@@ -18,7 +18,7 @@ from . import lc_phot_kern
 from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
 
-SED_INFO_KEYS = ("diffstar_params", "burst_params")
+SED_INFO_KEYS = ("diffstar_params", "burst_params", "smooth_age_weights")
 SedInfo = namedtuple("SedInfo", SED_INFO_KEYS)
 SEDINFO_EMPTY = SedInfo._make([None] * len(SedInfo._fields))
 
@@ -206,12 +206,17 @@ def mc_diffsky_seds_kern(
     ran_key, smooth_sfh_key = jran.split(ran_key, 2)
     uran_smooth_sfh = jran.uniform(smooth_sfh_key, shape=(n_gals,))
     mc_q = uran_smooth_sfh < diffstar_galpop.frac_q
-
     diffstar_params = mc_select_diffstar_params(
         diffstar_galpop.diffstar_params_q, diffstar_galpop.diffstar_params_ms, mc_q
     )
+    smooth_age_weights = jnp.where(
+        mc_q.reshape((-1, 1)), smooth_age_weights_q, smooth_age_weights_ms
+    )
+
     sed_info = SEDINFO_EMPTY._replace(
-        diffstar_params=diffstar_params, burst_params=burst_params
+        diffstar_params=diffstar_params,
+        burst_params=burst_params,
+        smooth_age_weights=smooth_age_weights,
     )
 
     return lc_phot, sed_info
