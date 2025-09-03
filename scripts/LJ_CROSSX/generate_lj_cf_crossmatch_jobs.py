@@ -1,8 +1,6 @@
 """Script to generate scripts for cross-matching LastJourney core lightcones
 
-python generate_lj_cf_crossmatch_jobs.py galsampler 8 0.01 3.0 /Users/aphearin/work/random/0903/CROSSX_JOBS -istart 0 -iend 90 -drn_script /Users/aphearin/work/random/0903/CROSSX_JOBS
-
-python generate_lj_cf_crossmatch_jobs.py galsampler 8 0.01 3.0 /Users/aphearin/work/random/0903/CROSSX_JOBS -istart 90 -iend 180 -drn_script /Users/aphearin/work/random/0903/CROSSX_JOBS
+python generate_lj_cf_crossmatch_jobs.py galsampler 8 0.01 3.0 /lcrc/project/halotools/random_data/0903 -istart 0 -iend 20 -drn_script /home/ahearin/work/random/0903/CROSSX_JOBS
 
 """
 

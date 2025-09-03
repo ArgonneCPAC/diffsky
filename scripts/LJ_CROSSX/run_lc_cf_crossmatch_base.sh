@@ -14,9 +14,8 @@
 # Load software
 source ~/.bash_profile
 cd /home/ahearin/work/random/0826/CROSSX
-rsync -avz /home/ahearin/work/repositories/python/diffsky/scripts/lc_cf_crossmatch_script.py ./
-rsync -avz /home/ahearin/work/repositories/python/diffsky/scripts/inspect_lightcone_mock.py ./
+rsync -avz /home/ahearin/work/repositories/python/diffsky/scripts/LJ_CROSSX/lc_cf_crossmatch_script.py ./
 
-mpirun -n 1 python lc_cf_crossmatch_script.py 0.01 3.0 -istart 0 -iend 5 -drn_out /lcrc/project/halotools/random_data/0826 -machine lcrc
+python lc_cf_crossmatch_script.py 0.01 3.0 -istart 0 -iend 5 -drn_out /lcrc/project/halotools/random_data/0826 -machine lcrc
 
 python inspect_lightcone_mock.py /lcrc/project/halotools/random_data/0826
