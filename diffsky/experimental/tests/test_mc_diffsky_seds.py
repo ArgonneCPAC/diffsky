@@ -39,5 +39,11 @@ def test_mc_diffsky_seds():
     assert np.all(np.isfinite(sed_info.burst_params.lgyr_peak))
     assert np.all(np.isfinite(sed_info.burst_params.lgyr_max))
 
-    assert np.all(np.isfinite(sed_info.smooth_age_weights))
-    assert sed_info.smooth_age_weights.shape == (n_gals, n_age)
+    assert np.all(np.isfinite(sed_info.ssp_weights))
+    assert sed_info.ssp_weights.shape == (n_gals, n_met, n_age)
+    ssp_wtot = np.sum(sed_info.ssp_weights, axis=(1, 2))
+    assert np.allclose(ssp_wtot, 1.0, rtol=1e-4)
+
+    weights_cuml = lc_phot.weights_q + lc_phot.weights_smooth_ms
+    wtot = weights_cuml + lc_phot.weights_bursty_ms
+    assert np.allclose(wtot, 1.0, rtol=1e-4)
