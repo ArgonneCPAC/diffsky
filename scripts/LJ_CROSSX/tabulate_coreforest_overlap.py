@@ -13,7 +13,7 @@ from diffsky.data_loaders.hacc_utils import get_diffsky_info_from_hacc_sim
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
 DRN_LJ_LC_LCRC = (
-    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-5/output"
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-6/output"
 )
 
 
