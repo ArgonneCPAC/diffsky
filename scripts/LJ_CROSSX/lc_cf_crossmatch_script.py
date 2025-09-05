@@ -62,8 +62,8 @@ if __name__ == "__main__":
     parser.add_argument("z_min", help="Minimum redshift", type=float)
     parser.add_argument("z_max", help="Maximum redshift", type=float)
 
-    parser.add_argument("-istart", help="First lc patch", type=int, default=0)
-    parser.add_argument("-iend", help="Last lc patch", type=int, default=0)
+    parser.add_argument("-istart", help="First lc patch", type=int, default=-1)
+    parser.add_argument("-iend", help="Last lc patch", type=int, default=-1)
     parser.add_argument(
         "-lc_patch_list_cfg", help="fname to ASCII with list of sky patches", default=""
     )
