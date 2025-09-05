@@ -28,7 +28,7 @@ DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 
 DRN_LJ_LC_LCRC = (
-    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-5/output"
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-6/output"
 )
 DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc_cores"
 
