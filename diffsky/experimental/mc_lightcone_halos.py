@@ -46,6 +46,9 @@ except ImportError:
 
 N_HMF_GRID = 2_000
 N_SFH_TABLE = 100
+DEFAULT_LOGMP_CUTOFF = 10.0
+DEFAULT_LOGMP_HIMASS_CUTOFF = 14.5
+
 
 _AGEPOP = (None, 0, None, 0)
 calc_age_weights_from_sfh_table_vmap = jjit(
@@ -246,7 +249,8 @@ def mc_lightcone_host_halo_diffmah(
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     n_hmf_grid=N_HMF_GRID,
-    logmp_cutoff=0.0,
+    logmp_cutoff=DEFAULT_LOGMP_CUTOFF,
+    logmp_cutoff_himass=DEFAULT_LOGMP_HIMASS_CUTOFF,
     lgmp_max=mc_hosts.LGMH_MAX,
 ):
     """Generate halo MAHs for host halos sampled from a lightcone
@@ -309,7 +313,7 @@ def mc_lightcone_host_halo_diffmah(
     t_0 = flat_wcdm.age_at_z0(*cosmo_params)
     lgt0 = jnp.log10(t_0)
 
-    logmp_obs_mf_clipped = np.clip(logmp_obs_mf, logmp_cutoff, np.inf)
+    logmp_obs_mf_clipped = np.clip(logmp_obs_mf, logmp_cutoff, logmp_cutoff_himass)
 
     tarr = np.array((10**lgt0,))
     args = (diffmahpop_params, tarr, logmp_obs_mf_clipped, t_obs, mah_key, lgt0)
@@ -341,7 +345,8 @@ def get_weighted_lightcone_grid_host_halo_diffmah(
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
-    logmp_cutoff=0.0,
+    logmp_cutoff=DEFAULT_LOGMP_CUTOFF,
+    logmp_cutoff_himass=DEFAULT_LOGMP_HIMASS_CUTOFF,
 ):
     """Compute the number of halos on the input grid of halo mass and redshift
 
@@ -409,7 +414,7 @@ def get_weighted_lightcone_grid_host_halo_diffmah(
     t_0 = flat_wcdm.age_at_z0(*cosmo_params)
     lgt0 = jnp.log10(t_0)
 
-    logmp_obs_mf_clipped = np.clip(logmp_obs_mf, logmp_cutoff, np.inf)
+    logmp_obs_mf_clipped = np.clip(logmp_obs_mf, logmp_cutoff, logmp_cutoff_himass)
 
     tarr = np.array((10**lgt0,))
     args = (diffmahpop_params, tarr, logmp_obs_mf_clipped, t_obs, ran_key, lgt0)
@@ -447,7 +452,8 @@ def mc_lightcone_diffstar_cens(
     n_hmf_grid=N_HMF_GRID,
     n_sfh_table=N_SFH_TABLE,
     return_internal_quantities=False,
-    logmp_cutoff=0.0,
+    logmp_cutoff=DEFAULT_LOGMP_CUTOFF,
+    logmp_cutoff_himass=DEFAULT_LOGMP_HIMASS_CUTOFF,
 ):
     """
     Generate halo MAH and galaxy SFH for host halos sampled from a lightcone
@@ -517,6 +523,202 @@ def mc_lightcone_diffstar_cens(
         diffmahpop_params=diffmahpop_params,
         n_hmf_grid=n_hmf_grid,
         logmp_cutoff=logmp_cutoff,
+        logmp_cutoff_himass=logmp_cutoff_himass,
+    )
+
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+
+    t_table = jnp.linspace(T_TABLE_MIN, t0, n_sfh_table)
+
+    upids = jnp.zeros_like(cenpop["logmp0"]).astype(int) - 1
+    lgmu_infall = jnp.zeros_like(cenpop["logmp0"])
+    logmhost_infall = jnp.zeros_like(cenpop["logmp0"]) + cenpop["logmp0"]
+    gyr_since_infall = jnp.zeros_like(cenpop["logmp0"])
+    args = (
+        diffstarpop_params,
+        cenpop["mah_params"],
+        cenpop["logmp0"],
+        upids,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        ran_key,
+        t_table,
+    )
+
+    ddp_fields = "sfh_params_ms", "sfh_params_q", "sfh_ms", "sfh_q", "frac_q", "mc_is_q"
+    ddp_values = mc_diffstar_sfh_galpop(*args)
+    diffstarpop_data = dict()
+    for key, value in zip(ddp_fields, ddp_values):
+        diffstarpop_data[key] = value
+
+    sfh_table = jnp.where(
+        diffstarpop_data["mc_is_q"].reshape((-1, 1)),
+        diffstarpop_data["sfh_q"],
+        diffstarpop_data["sfh_ms"],
+    )
+    sfh_params = dpu.mc_select_diffstar_params(
+        diffstarpop_data["sfh_params_q"],
+        diffstarpop_data["sfh_params_ms"],
+        diffstarpop_data["mc_is_q"],
+    )
+
+    logsmh_table = np.log10(cumulative_mstar_formed_galpop(t_table, sfh_table))
+    logsm_obs = interp_vmap(cenpop["t_obs"], t_table, logsmh_table)
+    logsfr_obs = interp_vmap(cenpop["t_obs"], t_table, np.log10(sfh_table))
+    logssfr_obs = logsfr_obs - logsm_obs
+
+    if return_internal_quantities:
+        logsmh_table_q = np.log10(
+            cumulative_mstar_formed_galpop(t_table, diffstarpop_data["sfh_q"])
+        )
+        logsm_obs_q = interp_vmap(cenpop["t_obs"], t_table, logsmh_table_q)
+        logsfr_obs_q = interp_vmap(
+            cenpop["t_obs"], t_table, np.log10(diffstarpop_data["sfh_q"])
+        )
+        logssfr_obs_q = logsfr_obs_q - logsm_obs_q
+
+        logsmh_table_ms = np.log10(
+            cumulative_mstar_formed_galpop(t_table, diffstarpop_data["sfh_ms"])
+        )
+        logsm_obs_ms = interp_vmap(cenpop["t_obs"], t_table, logsmh_table_ms)
+        logsfr_obs_ms = interp_vmap(
+            cenpop["t_obs"], t_table, np.log10(diffstarpop_data["sfh_ms"])
+        )
+        logssfr_obs_ms = logsfr_obs_ms - logsm_obs_ms
+
+    fields = (
+        *cenpop.keys(),
+        "logsm_obs",
+        "logssfr_obs",
+        "sfh_params",
+        "sfh_table",
+        "t_table",
+        "diffstarpop_data",
+    )
+    values = (
+        *cenpop.values(),
+        logsm_obs,
+        logssfr_obs,
+        sfh_params,
+        sfh_table,
+        t_table,
+        diffstarpop_data,
+    )
+
+    if return_internal_quantities:
+        fields = (
+            *fields,
+            "logsm_obs_ms",
+            "logssfr_obs_ms",
+            "sfh_params_ms",
+            "sfh_table_ms",
+            "logsm_obs_q",
+            "logssfr_obs_q",
+            "sfh_params_q",
+            "sfh_table_q",
+        )
+        values = (
+            *values,
+            logsm_obs_ms,
+            logssfr_obs_ms,
+            diffstarpop_data["sfh_params_ms"],
+            diffstarpop_data["sfh_ms"],
+            logsm_obs_q,
+            logssfr_obs_q,
+            diffstarpop_data["sfh_params_q"],
+            diffstarpop_data["sfh_q"],
+        )
+
+    cenpop_out = dict()
+    for key, value in zip(fields, values):
+        cenpop_out[key] = value
+
+    return cenpop_out
+
+
+def sobol_lightcone_diffstar_cens(
+    ran_key,
+    num_halos,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmp_max,
+    sky_area_degsq,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
+    diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
+    n_sfh_table=N_SFH_TABLE,
+    return_internal_quantities=False,
+    logmp_cutoff=DEFAULT_LOGMP_CUTOFF,
+    logmp_cutoff_himass=DEFAULT_LOGMP_HIMASS_CUTOFF,
+):
+    """
+    Generate halo MAH and galaxy SFH for host halos sampled from a lightcone
+
+    Parameters
+    ----------
+    ran_key : jran.key
+
+    num_halos : int
+        Number of halos to generate
+
+    z_min, z_max : float
+
+    lgmp_min, lgmp_max : float
+        Base-10 log of min/max halo mass in units of Msun (not Msun/h)
+
+    sky_area_degsq : float
+        Sky area in units of deg^2
+
+    Returns
+    -------
+    cenpop : dict
+
+        z_obs : narray, shape (n_halos, )
+            Lightcone redshift
+
+        logmp_obs : narray, shape (n_halos, )
+            Halo mass at the lightcone redshift
+
+        mah_params : namedtuple of diffmah params
+            Each tuple entry is an ndarray with shape (n_halos, )
+
+        logmp0 : narray, shape (n_halos, )
+            Base-10 log of halo mass in units of Msun at z=0
+
+        logsm_obs : narray, shape (n_halos, )
+            log10(Mstar) at the time of observation
+
+        logssfr_obs : narray, shape (n_halos, )
+            log10(SFR/Mstar) at the time of observation
+
+        sfh_params : namedtuple
+            Diffstar params for every galaxy
+
+        sfh_table : narray, shape (n_halos, n_times)
+            Star formation rate in Msun/yr
+
+        t_table : narray, shape (n_times, )
+
+        diffstarpop_data : dict
+            ancillary diffstarpop data such as frac_q
+
+    Notes
+    -----
+    All mass quantities quoted in Msun (not Msun/h)
+
+    """
+    ran_key, lc_key = jran.split(ran_key, 2)
+    args = (num_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
+    cenpop = generate_weighted_sobol_lc_data(
+        *args,
+        ran_key=lc_key,
+        hmf_params=hmf_params,
+        diffmahpop_params=diffmahpop_params,
+        logmp_cutoff=logmp_cutoff,
+        logmp_cutoff_himass=logmp_cutoff_himass,
     )
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
@@ -1160,8 +1362,10 @@ def generate_weighted_sobol_lc_data(
     lgmp_max,
     sky_area_degsq,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     ran_key=None,
-    logmp_cutoff=0.0,
+    logmp_cutoff=DEFAULT_LOGMP_CUTOFF,
+    logmp_cutoff_himass=DEFAULT_LOGMP_HIMASS_CUTOFF,
     comm=None,
 ):
     if comm is None:
@@ -1209,10 +1413,15 @@ def generate_weighted_sobol_lc_data(
         lgmp_max,
         sky_area_degsq,
     )
-    mclh_kwargs = dict(hmf_params=hmf_params)
+    mclh_kwargs = dict(
+        hmf_params=hmf_params,
+        diffmahpop_params=diffmahpop_params,
+        logmp_cutoff=logmp_cutoff,
+        logmp_cutoff_himass=logmp_cutoff_himass,
+    )
 
     res = get_weighted_lightcone_sobol_host_halo_diffmah(
-        *mclh_args, logmp_cutoff=logmp_cutoff, **mclh_kwargs
+        *mclh_args, **mclh_kwargs
     )  # type: ignore
 
     return res
@@ -1220,7 +1429,7 @@ def generate_weighted_sobol_lc_data(
 
 def get_weighted_lightcone_sobol_host_halo_diffmah(
     ran_key,
-    tot_num_halos,
+    num_halos,
     z_obs,
     logmp_obs_mf,
     z_min,
@@ -1231,14 +1440,15 @@ def get_weighted_lightcone_sobol_host_halo_diffmah(
     cosmo_params=flat_wcdm.PLANCK15,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
-    logmp_cutoff=0.0,
+    logmp_cutoff=DEFAULT_LOGMP_CUTOFF,
+    logmp_cutoff_himass=DEFAULT_LOGMP_HIMASS_CUTOFF,
 ):
     """
     Compute the number of halos on the input halo mass and redshift points
     """
 
     nhalo_weights = get_nhalo_from_grid_interp(
-        tot_num_halos,
+        num_halos,
         z_obs,
         logmp_obs_mf,
         z_min,
@@ -1253,11 +1463,33 @@ def get_weighted_lightcone_sobol_host_halo_diffmah(
     t_0 = flat_wcdm.age_at_z0(*cosmo_params)
     lgt0 = jnp.log10(t_0)
 
-    logmp_obs_mf_clipped = np.clip(logmp_obs_mf, logmp_cutoff, np.inf)
+    logmp_obs_mf_clipped = np.clip(logmp_obs_mf, logmp_cutoff, logmp_cutoff_himass)
 
     tarr = np.array((10**lgt0,))
-    args = (diffmahpop_params, tarr, logmp_obs_mf_clipped, t_obs, ran_key, lgt0)
-    mah_params_uncorrected = mc_cenpop(*args)[0]  # mah_params, dmhdt, log_mah
+
+    ran_key, mah_key = jran.split(ran_key, 2)
+    args = (diffmahpop_params, tarr, logmp_obs_mf_clipped, t_obs, mah_key, lgt0)
+    mah_params_uncorrected = mc_cenpop(*args)[0]
+    msk_mah_params_nan = np.isnan(mah_params_uncorrected.logm0)
+
+    # workaround to the problem of diffmahpop occasionally returning NaN for logm0
+    has_logm0_nans = np.any(msk_mah_params_nan)
+    while has_logm0_nans:
+        ran_key, mah_key = jran.split(ran_key, 2)
+
+        args = (diffmahpop_params, tarr, logmp_obs_mf_clipped, t_obs, mah_key, lgt0)
+        mah_params_uncorrected_new = mc_cenpop(*args)[0]  # mah_params, dmhdt, log_mah
+        mah_params_uncorrected_logm0 = jnp.where(
+            msk_mah_params_nan,
+            mah_params_uncorrected_new.logm0,
+            mah_params_uncorrected.logm0,
+        )
+        mah_params_uncorrected = mah_params_uncorrected._replace(
+            logm0=mah_params_uncorrected_logm0
+        )
+
+        msk_nan = np.isnan(mah_params_uncorrected.logm0)
+        has_logm0_nans = np.sum(msk_nan) > 0
 
     logmp_obs_orig = _log_mah_kern(mah_params_uncorrected, t_obs, lgt0)
     delta_logmh_clip = logmp_obs_orig - logmp_obs_mf
