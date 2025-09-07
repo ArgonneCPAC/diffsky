@@ -7,3 +7,4 @@ Diffsky Code Demos
 
    demo_diffmahpop_t_peak.ipynb
    demo_mc_lightcones.ipynb
+   demo_diffstarpop.ipynb
