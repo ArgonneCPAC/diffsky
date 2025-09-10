@@ -28,6 +28,7 @@ SED_INFO_KEYS = (
     "frac_ssp_err_sed",
     "ftrans_sed",
     "mc_sfh_type",
+    "sed",
 )
 SedInfo = namedtuple("SedInfo", SED_INFO_KEYS)
 SEDINFO_EMPTY = SedInfo._make([None] * len(SedInfo._fields))
@@ -282,15 +283,28 @@ def mc_diffsky_seds_kern(
     ftrans_sed = jnp.where(
         mc_sfh_type.reshape((-1, 1, 1)) > 0, ftrans_sed_ms, ftrans_sed_q
     )
-    ftrans_sed = ftrans_sed.reshape((n_gals, n_wave, 1, n_age))
+    ftrans_sed = jnp.swapaxes(ftrans_sed, 1, 2)
+    ftrans_sed = ftrans_sed.reshape((n_gals, 1, n_age, n_wave))
 
     frac_ssp_err_sed = jnp.where(
         mc_sfh_type.reshape((-1, 1)) > 0, frac_ssp_err_sed_ms, frac_ssp_err_sed_q
     )
 
-    # integrand_smooth_ms = ssp_photflux_table * _w_smooth_ms * _ftrans_ms * _ferr_ssp_ms
-    # photflux_galpop_smooth_ms = jnp.sum(integrand_smooth_ms, axis=(2, 3)) * _mstar_ms
-    # obs_mags_smooth_ms = -2.5 * jnp.log10(photflux_galpop_smooth_ms) + delta_scatter_ms
+    frac_ssp_err = frac_ssp_err_sed.reshape((n_gals, 1, 1, n_wave))
+
+    flux_table = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
+    weights = ssp_weights.reshape((n_gals, n_met, n_age, 1))
+
+    sed_integrand = flux_table * weights * ftrans_sed * frac_ssp_err
+
+    _mstar_ms = 10 ** diffstar_galpop.logsm_obs_ms.reshape((n_gals, 1))
+    _mstar_q = 10 ** diffstar_galpop.logsm_obs_q.reshape((n_gals, 1))
+    logsm = jnp.where(
+        mc_sfh_type > 0, diffstar_galpop.logsm_obs_ms, diffstar_galpop.logsm_obs_q
+    )
+    mstar = 10 ** logsm.reshape((n_gals, 1))
+
+    sed = jnp.sum(sed_integrand, axis=(1, 2)) * mstar
 
     sed_info = SEDINFO_EMPTY._replace(
         diffstar_params=diffstar_params,
@@ -300,6 +314,7 @@ def mc_diffsky_seds_kern(
         frac_ssp_err_sed=frac_ssp_err_sed,
         ftrans_sed=ftrans_sed,
         mc_sfh_type=mc_sfh_type,
+        sed=sed,
     )
 
     return lc_phot, sed_info
