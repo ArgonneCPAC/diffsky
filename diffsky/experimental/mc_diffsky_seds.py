@@ -25,8 +25,10 @@ SED_INFO_KEYS = (
     "burst_params",
     "ssp_weights",
     "wave_eff_galpop",
-    "frac_ssp_err_sed_q",
     "frac_ssp_err_sed_ms",
+    "frac_ssp_err_sed_q",
+    "ftrans_sed_ms",
+    "ftrans_sed_q",
 )
 SedInfo = namedtuple("SedInfo", SED_INFO_KEYS)
 SEDINFO_EMPTY = SedInfo._make([None] * len(SedInfo._fields))
@@ -231,22 +233,57 @@ def mc_diffsky_seds_kern(
     ssp_weights = jnp.where(mc_smooth_ms, ssp_weights_smooth_ms, ssp_weights)
     ssp_weights = jnp.where(mc_bursty_ms, ssp_weights_bursty_ms, ssp_weights)
 
-    delta_mag_sed_q = ssp_err_interp(
-        ssp_data.ssp_wave, delta_scatter_q, wave_eff_galpop
-    )
     delta_mag_sed_ms = ssp_err_interp(
         ssp_data.ssp_wave, delta_scatter_ms, wave_eff_galpop
     )
-    frac_ssp_err_sed_q = 10 ** (-0.4 * delta_mag_sed_q)
+    delta_mag_sed_q = ssp_err_interp(
+        ssp_data.ssp_wave, delta_scatter_q, wave_eff_galpop
+    )
     frac_ssp_err_sed_ms = 10 ** (-0.4 * delta_mag_sed_ms)
+    frac_ssp_err_sed_q = 10 ** (-0.4 * delta_mag_sed_q)
+
+    n_wave = ssp_data.ssp_wave.size
+    ssp_wave_galpop = jnp.tile(ssp_data.ssp_wave, n_gals).reshape((n_gals, n_wave))
+
+    ftrans_sed_args_ms = (
+        spspop_params.dustpop_params,
+        ssp_wave_galpop,
+        diffstar_galpop.logsm_obs_ms,
+        diffstar_galpop.logssfr_obs_ms,
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        scatter_params,
+    )
+    _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_sed_args_ms)
+    ftrans_sed_ms = _res[1]
+
+    ftrans_sed_args_q = (
+        spspop_params.dustpop_params,
+        ssp_wave_galpop,
+        diffstar_galpop.logsm_obs_q,
+        diffstar_galpop.logssfr_obs_q,
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        scatter_params,
+    )
+    _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_sed_args_q)
+    ftrans_sed_q = _res[1]
 
     sed_info = SEDINFO_EMPTY._replace(
         diffstar_params=diffstar_params,
         burst_params=burst_params,
         ssp_weights=ssp_weights,
         wave_eff_galpop=wave_eff_galpop,
-        frac_ssp_err_sed_q=frac_ssp_err_sed_q,
         frac_ssp_err_sed_ms=frac_ssp_err_sed_ms,
+        frac_ssp_err_sed_q=frac_ssp_err_sed_q,
+        ftrans_sed_ms=ftrans_sed_ms,
+        ftrans_sed_q=ftrans_sed_q,
     )
 
     return lc_phot, sed_info
