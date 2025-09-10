@@ -24,13 +24,20 @@ def test_mc_diffsky_seds():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
-    lc_phot, sed_info = mcsed.mc_diffsky_seds(u_param_arr, ran_key, lc_data)
+    sed_info = mcsed.mc_diffsky_seds(u_param_arr, ran_key, lc_data)
     lc_phot_orig = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
         u_param_arr, ran_key, lc_data
     )
-    for pname, pval in zip(lc_phot_orig._fields, lc_phot_orig):
-        pval2 = getattr(lc_phot, pname)
-        assert np.allclose(pval, pval2)
+    msk_q = sed_info.mc_sfh_type == 0
+    assert np.allclose(lc_phot_orig.obs_mags_q[msk_q], sed_info.obs_mags[msk_q])
+    msk_smooth_ms = sed_info.mc_sfh_type == 1
+    assert np.allclose(
+        lc_phot_orig.obs_mags_smooth_ms[msk_smooth_ms], sed_info.obs_mags[msk_smooth_ms]
+    )
+    msk_bursty_ms = sed_info.mc_sfh_type == 2
+    assert np.allclose(
+        lc_phot_orig.obs_mags_bursty_ms[msk_bursty_ms], sed_info.obs_mags[msk_bursty_ms]
+    )
 
     assert np.all(np.isfinite(sed_info.diffstar_params.ms_params))
     assert np.all(np.isfinite(sed_info.diffstar_params.q_params))
@@ -44,6 +51,5 @@ def test_mc_diffsky_seds():
     ssp_wtot = np.sum(sed_info.ssp_weights, axis=(1, 2))
     assert np.allclose(ssp_wtot, 1.0, rtol=1e-4)
 
-    weights_cuml = lc_phot.weights_q + lc_phot.weights_smooth_ms
-    wtot = weights_cuml + lc_phot.weights_bursty_ms
+    wtot = np.sum(sed_info.ssp_weights, axis=(1, 2))
     assert np.allclose(wtot, 1.0, rtol=1e-4)

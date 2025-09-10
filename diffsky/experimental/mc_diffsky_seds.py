@@ -22,6 +22,7 @@ from . import photometry_interpolation as photerp
 
 SED_INFO_KEYS = (
     "sed",
+    "obs_mags",
     "diffstar_params",
     "burst_params",
     "ssp_weights",
@@ -305,8 +306,16 @@ def mc_diffsky_seds_kern(
 
     sed = jnp.sum(sed_integrand, axis=(1, 2)) * mstar
 
+    msk_ms = mc_sfh_type.reshape((-1, 1)) == 1
+    msk_bursty = mc_sfh_type.reshape((-1, 1)) == 2
+
+    obs_mags = jnp.copy(lc_phot.obs_mags_q)
+    obs_mags = jnp.where(msk_ms, lc_phot.obs_mags_smooth_ms, obs_mags)
+    obs_mags = jnp.where(msk_bursty, lc_phot.obs_mags_bursty_ms, obs_mags)
+
     sed_info = SEDINFO_EMPTY._replace(
         sed=sed,
+        obs_mags=obs_mags,
         diffstar_params=diffstar_params,
         burst_params=burst_params,
         ssp_weights=ssp_weights,
@@ -315,4 +324,4 @@ def mc_diffsky_seds_kern(
         mc_sfh_type=mc_sfh_type,
     )
 
-    return lc_phot, sed_info
+    return sed_info
