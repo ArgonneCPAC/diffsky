@@ -8,8 +8,10 @@ from collections import namedtuple
 
 from diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.metallicity import umzr
+from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
+from jax import vmap
 
 from ..burstpop import freqburst_mono
 from ..param_utils import diffsky_param_wrapper as dpw
@@ -18,9 +20,18 @@ from . import lc_phot_kern
 from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
 
-SED_INFO_KEYS = ("diffstar_params", "burst_params", "ssp_weights")
+SED_INFO_KEYS = (
+    "diffstar_params",
+    "burst_params",
+    "ssp_weights",
+    "wave_eff_galpop",
+    "frac_ssp_err_sed_q",
+    "frac_ssp_err_sed_ms",
+)
 SedInfo = namedtuple("SedInfo", SED_INFO_KEYS)
 SEDINFO_EMPTY = SedInfo._make([None] * len(SedInfo._fields))
+
+ssp_err_interp = jjit(vmap(ssp_err_model._tw_wave_interp_kern, in_axes=(None, 0, 0)))
 
 
 def mc_diffsky_seds(u_param_arr, ran_key, lc_data):
@@ -220,10 +231,22 @@ def mc_diffsky_seds_kern(
     ssp_weights = jnp.where(mc_smooth_ms, ssp_weights_smooth_ms, ssp_weights)
     ssp_weights = jnp.where(mc_bursty_ms, ssp_weights_bursty_ms, ssp_weights)
 
+    delta_mag_sed_q = ssp_err_interp(
+        ssp_data.ssp_wave, delta_scatter_q, wave_eff_galpop
+    )
+    delta_mag_sed_ms = ssp_err_interp(
+        ssp_data.ssp_wave, delta_scatter_ms, wave_eff_galpop
+    )
+    frac_ssp_err_sed_q = 10 ** (-0.4 * delta_mag_sed_q)
+    frac_ssp_err_sed_ms = 10 ** (-0.4 * delta_mag_sed_ms)
+
     sed_info = SEDINFO_EMPTY._replace(
         diffstar_params=diffstar_params,
         burst_params=burst_params,
         ssp_weights=ssp_weights,
+        wave_eff_galpop=wave_eff_galpop,
+        frac_ssp_err_sed_q=frac_ssp_err_sed_q,
+        frac_ssp_err_sed_ms=frac_ssp_err_sed_ms,
     )
 
     return lc_phot, sed_info
