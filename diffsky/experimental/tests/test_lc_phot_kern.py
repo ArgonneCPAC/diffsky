@@ -162,7 +162,7 @@ def _generate_sobol_lc_data():
     ran_key = jran.key(0)
     num_halos = 500
     lgmp_min, lgmp_max = 10.0, 15.0
-    z_min, z_max = 0.01, 3.0
+    z_min, z_max = 0.1, 3.0
     sky_area_degsq = 100.0
 
     ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
@@ -172,8 +172,7 @@ def _generate_sobol_lc_data():
 
     tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
 
-    n_z_phot_table = 15
-    z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+    z_phot_table = 10 ** np.linspace(np.log10(z_min), np.log10(z_max), 30)
 
     args = (
         ran_key,
