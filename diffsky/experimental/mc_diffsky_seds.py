@@ -25,10 +25,9 @@ SED_INFO_KEYS = (
     "burst_params",
     "ssp_weights",
     "wave_eff_galpop",
-    "frac_ssp_err_sed_ms",
-    "frac_ssp_err_sed_q",
-    "ftrans_sed_ms",
-    "ftrans_sed_q",
+    "frac_ssp_err_sed",
+    "ftrans_sed",
+    "mc_sfh_type",
 )
 SedInfo = namedtuple("SedInfo", SED_INFO_KEYS)
 SEDINFO_EMPTY = SedInfo._make([None] * len(SedInfo._fields))
@@ -191,10 +190,6 @@ def mc_diffsky_seds_kern(
     _ftrans_ms = ftrans_ms.reshape((n_gals, n_bands, 1, n_age))
     _ftrans_q = ftrans_q.reshape((n_gals, n_bands, 1, n_age))
 
-    integrand_q = ssp_photflux_table * _w_q * _ftrans_q * _ferr_ssp_q
-    photflux_galpop_q = jnp.sum(integrand_q, axis=(2, 3)) * _mstar_q
-    obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q) + delta_scatter_q
-
     integrand_smooth_ms = ssp_photflux_table * _w_smooth_ms * _ftrans_ms * _ferr_ssp_ms
     photflux_galpop_smooth_ms = jnp.sum(integrand_smooth_ms, axis=(2, 3)) * _mstar_ms
     obs_mags_smooth_ms = -2.5 * jnp.log10(photflux_galpop_smooth_ms) + delta_scatter_ms
@@ -203,9 +198,13 @@ def mc_diffsky_seds_kern(
     photflux_galpop_bursty_ms = jnp.sum(integrand_bursty_ms, axis=(2, 3)) * _mstar_ms
     obs_mags_bursty_ms = -2.5 * jnp.log10(photflux_galpop_bursty_ms) + delta_scatter_ms
 
-    weights_q = diffstar_galpop.frac_q
+    integrand_q = ssp_photflux_table * _w_q * _ftrans_q * _ferr_ssp_q
+    photflux_galpop_q = jnp.sum(integrand_q, axis=(2, 3)) * _mstar_q
+    obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q) + delta_scatter_q
+
     weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - p_burst_ms)
     weights_bursty_ms = (1 - diffstar_galpop.frac_q) * p_burst_ms
+    weights_q = diffstar_galpop.frac_q
 
     lc_phot = lc_phot_kern.LCPHOT_EMPTY._replace(
         obs_mags_bursty_ms=obs_mags_bursty_ms,
@@ -225,8 +224,13 @@ def mc_diffsky_seds_kern(
         diffstar_galpop.diffstar_params_q, diffstar_galpop.diffstar_params_ms, mc_q
     )
 
+    # mc_sfh_type = 0 for quenched, 1 for smooth ms, 2 for bursty ms
+    mc_sfh_type = jnp.zeros(n_gals).astype(int)
     mc_smooth_ms = (uran_smooth_sfh >= cuml_q) & (uran_smooth_sfh < cuml_ms)
+    mc_sfh_type = jnp.where(mc_smooth_ms, 1, mc_sfh_type)
     mc_bursty_ms = uran_smooth_sfh >= cuml_ms
+    mc_sfh_type = jnp.where(mc_bursty_ms, 2, mc_sfh_type)
+
     mc_smooth_ms = mc_smooth_ms.reshape((n_gals, 1, 1))
     mc_bursty_ms = mc_bursty_ms.reshape((n_gals, 1, 1))
     ssp_weights = jnp.copy(ssp_weights_q)
@@ -275,15 +279,27 @@ def mc_diffsky_seds_kern(
     _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_sed_args_q)
     ftrans_sed_q = _res[1]
 
+    ftrans_sed = jnp.where(
+        mc_sfh_type.reshape((-1, 1, 1)) > 0, ftrans_sed_ms, ftrans_sed_q
+    )
+    ftrans_sed = ftrans_sed.reshape((n_gals, n_wave, 1, n_age))
+
+    frac_ssp_err_sed = jnp.where(
+        mc_sfh_type.reshape((-1, 1)) > 0, frac_ssp_err_sed_ms, frac_ssp_err_sed_q
+    )
+
+    # integrand_smooth_ms = ssp_photflux_table * _w_smooth_ms * _ftrans_ms * _ferr_ssp_ms
+    # photflux_galpop_smooth_ms = jnp.sum(integrand_smooth_ms, axis=(2, 3)) * _mstar_ms
+    # obs_mags_smooth_ms = -2.5 * jnp.log10(photflux_galpop_smooth_ms) + delta_scatter_ms
+
     sed_info = SEDINFO_EMPTY._replace(
         diffstar_params=diffstar_params,
         burst_params=burst_params,
         ssp_weights=ssp_weights,
         wave_eff_galpop=wave_eff_galpop,
-        frac_ssp_err_sed_ms=frac_ssp_err_sed_ms,
-        frac_ssp_err_sed_q=frac_ssp_err_sed_q,
-        ftrans_sed_ms=ftrans_sed_ms,
-        ftrans_sed_q=ftrans_sed_q,
+        frac_ssp_err_sed=frac_ssp_err_sed,
+        ftrans_sed=ftrans_sed,
+        mc_sfh_type=mc_sfh_type,
     )
 
     return lc_phot, sed_info
