@@ -21,14 +21,13 @@ from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
 
 SED_INFO_KEYS = (
+    "sed",
     "diffstar_params",
     "burst_params",
     "ssp_weights",
-    "wave_eff_galpop",
     "frac_ssp_err_sed",
     "ftrans_sed",
     "mc_sfh_type",
-    "sed",
 )
 SedInfo = namedtuple("SedInfo", SED_INFO_KEYS)
 SEDINFO_EMPTY = SedInfo._make([None] * len(SedInfo._fields))
@@ -307,14 +306,13 @@ def mc_diffsky_seds_kern(
     sed = jnp.sum(sed_integrand, axis=(1, 2)) * mstar
 
     sed_info = SEDINFO_EMPTY._replace(
+        sed=sed,
         diffstar_params=diffstar_params,
         burst_params=burst_params,
         ssp_weights=ssp_weights,
-        wave_eff_galpop=wave_eff_galpop,
         frac_ssp_err_sed=frac_ssp_err_sed,
         ftrans_sed=ftrans_sed,
         mc_sfh_type=mc_sfh_type,
-        sed=sed,
     )
 
     return lc_phot, sed_info
