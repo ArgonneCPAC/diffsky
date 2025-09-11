@@ -1,17 +1,23 @@
 """ """
 
 import numpy as np
+from dsps.cosmology import DEFAULT_COSMOLOGY
+from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
+from jax import vmap
 
 from ...param_utils import diffsky_param_wrapper as dpw
 from .. import lc_phot_kern
 from .. import mc_diffsky_seds as mcsed
 from . import test_lc_phot_kern as tlcphk
 
+_A = [None, 0, None, None, 0, *[None] * 4]
+calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
+
 
 def test_mc_diffsky_seds():
     ran_key = jran.key(0)
-    lc_data = tlcphk._generate_sobol_lc_data()
+    lc_data, tcurves = tlcphk._generate_sobol_lc_data()
     n_gals = lc_data.logmp0.size
 
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
@@ -53,3 +59,19 @@ def test_mc_diffsky_seds():
 
     wtot = np.sum(sed_info.ssp_weights, axis=(1, 2))
     assert np.allclose(wtot, 1.0, rtol=1e-4)
+
+    # Enforce agreement between precomputed vs exact magnitudes
+    for iband in range(n_bands):
+        args = (
+            lc_data.ssp_data.ssp_wave,
+            sed_info.rest_sed,
+            tcurves[iband].wave,
+            tcurves[iband].transmission,
+            lc_data.z_obs,
+            *DEFAULT_COSMOLOGY,
+        )
+
+        mags = calc_obs_mags_galpop(*args)
+        mag_err = mags - sed_info.obs_mags[:, iband]
+        assert np.mean(mag_err) < 0.05
+        assert np.std(mag_err) < 0.1

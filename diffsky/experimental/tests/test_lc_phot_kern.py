@@ -188,11 +188,11 @@ def _generate_sobol_lc_data():
     )
     lc_data = lc_phot_kern.generate_sobol_grid_lc_data(*args)
 
-    return lc_data
+    return lc_data, tcurves
 
 
 def test_generate_sobol_lc_data():
-    lc_data = _generate_sobol_lc_data()
+    lc_data, tcurves = _generate_sobol_lc_data()
     assert np.all(np.isfinite(lc_data.logmp0))
     for x in lc_data.mah_params:
         assert np.all(np.isfinite(x))
