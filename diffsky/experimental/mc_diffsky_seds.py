@@ -241,14 +241,12 @@ def mc_diffsky_seds_kern(
     ssp_weights = jnp.where(mc_smooth_ms, ssp_weights_smooth_ms, ssp_weights)
     ssp_weights = jnp.where(mc_bursty_ms, ssp_weights_bursty_ms, ssp_weights)
 
-    delta_mag_sed_ms = ssp_err_interp(
-        ssp_data.ssp_wave, delta_scatter_ms, wave_eff_galpop
+    frac_ssp_err_sed_ms = ssp_err_interp(
+        ssp_data.ssp_wave, frac_ssp_err_ms, wave_eff_galpop
     )
-    delta_mag_sed_q = ssp_err_interp(
-        ssp_data.ssp_wave, delta_scatter_q, wave_eff_galpop
+    frac_ssp_err_sed_q = ssp_err_interp(
+        ssp_data.ssp_wave, frac_ssp_err_q, wave_eff_galpop
     )
-    frac_ssp_err_sed_ms = 10 ** (-0.4 * delta_mag_sed_ms)
-    frac_ssp_err_sed_q = 10 ** (-0.4 * delta_mag_sed_q)
 
     n_wave = ssp_data.ssp_wave.size
     ssp_wave_galpop = jnp.tile(ssp_data.ssp_wave, n_gals).reshape((n_gals, n_wave))
