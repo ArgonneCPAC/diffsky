@@ -1,5 +1,5 @@
 # flake8: noqa: E402
-""" """
+"""Module implements the mc_diffsky_seds Monte Carlo generator of lightcone SEDs"""
 from jax import config
 
 config.update("jax_enable_x64", True)
@@ -37,7 +37,27 @@ ssp_err_interp = jjit(vmap(ssp_err_model._tw_wave_interp_kern, in_axes=(None, 0,
 
 
 def mc_diffsky_seds(u_param_arr, ran_key, lc_data):
-    """"""
+    """Populate the input lightcone with galaxy SEDs
+
+    Parameters
+    ----------
+    u_param_arr : array, shape (n_params, )
+
+    ran_key : jax.random.key
+
+    lc_data : namedtuple
+        Contains info about the halo lightcone, SED inputs, and diffsky parameters
+
+    Returns
+    -------
+    sed_info : namedtuple
+        Contains info about the galaxy SEDs
+
+    Notes
+    -----
+    This function is just a wrapper around the mc_diffsky_seds_kern function
+
+    """
     u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
     param_collection = dpw.get_param_collection_from_u_param_collection(
         *u_param_collection
@@ -63,7 +83,7 @@ def mc_diffsky_seds_kern(
     scatter_params,
     ssp_err_pop_params,
 ):
-    """"""
+    """Populate the input lightcone with galaxy SEDs"""
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
     n_gals = logmp0.size
 
