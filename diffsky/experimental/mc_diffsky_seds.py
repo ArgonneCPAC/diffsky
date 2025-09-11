@@ -21,7 +21,7 @@ from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
 
 SED_INFO_KEYS = (
-    "sed",
+    "rest_sed",
     "obs_mags",
     "diffstar_params",
     "burst_params",
@@ -37,6 +37,7 @@ ssp_err_interp = jjit(vmap(ssp_err_model._tw_wave_interp_kern, in_axes=(None, 0,
 
 
 def mc_diffsky_seds(u_param_arr, ran_key, lc_data):
+    """"""
     u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
     param_collection = dpw.get_param_collection_from_u_param_collection(
         *u_param_collection
@@ -62,21 +63,27 @@ def mc_diffsky_seds_kern(
     scatter_params,
     ssp_err_pop_params,
 ):
+    """"""
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
     n_gals = logmp0.size
 
+    # Calculate SFH with diffstarpop
     ran_key, sfh_key = jran.split(ran_key, 2)
     diffstar_galpop = lc_phot_kern.diffstarpop_lc_cen_wrapper(
         diffstarpop_params, sfh_key, mah_params, logmp0, t_table, t_obs
     )
+    # diffstar_galpop has separate diffstar params and SFH tables for ms and q
 
+    # Calculate stellar age PDF weights from SFH
     smooth_age_weights_ms = lc_phot_kern.calc_age_weights_from_sfh_table_vmap(
         t_table, diffstar_galpop.sfh_ms, ssp_data.ssp_lg_age_gyr, t_obs
     )
+    # smooth_age_weights_ms.shape = (n_gals, n_age)
     smooth_age_weights_q = lc_phot_kern.calc_age_weights_from_sfh_table_vmap(
         t_table, diffstar_galpop.sfh_q, ssp_data.ssp_lg_age_gyr, t_obs
     )
 
+    # Calculate stellar age PDF weights from SFH + burstiness
     _args = (
         spspop_params.burstpop_params,
         diffstar_galpop.logsm_obs_ms,
@@ -84,19 +91,23 @@ def mc_diffsky_seds_kern(
         ssp_data.ssp_lg_age_gyr,
         smooth_age_weights_ms,
     )
-    bursty_age_weights_ms, burst_params = lc_phot_kern._calc_bursty_age_weights_vmap(
-        *_args
-    )
+    _res = lc_phot_kern._calc_bursty_age_weights_vmap(*_args)
+    bursty_age_weights_ms = _res[0]  # bursty_age_weights_ms.shape = (n_gals, age)
+    burst_params = _res[1]  # ('lgfburst', 'lgyr_peak', 'lgyr_max')
 
+    # Calculate the frequency of SFH bursts
     p_burst_ms = freqburst_mono.get_freqburst_from_freqburst_params(
         spspop_params.burstpop_params.freqburst_params,
         diffstar_galpop.logsm_obs_ms,
         diffstar_galpop.logssfr_obs_ms,
     )
 
+    # Calculate mean metallicity of the population
     lgmet_med_ms = umzr.mzr_model(diffstar_galpop.logsm_obs_ms, t_obs, *mzr_params)
     lgmet_med_q = umzr.mzr_model(diffstar_galpop.logsm_obs_q, t_obs, *mzr_params)
 
+    # Calculate metallicity distribution function
+    # lgmet_weights_q.shape = (n_gals, n_met)
     lgmet_weights_ms = lc_phot_kern._calc_lgmet_weights_galpop(
         lgmet_med_ms, lc_phot_kern.LGMET_SCATTER, ssp_data.ssp_lgmet
     )
@@ -104,10 +115,7 @@ def mc_diffsky_seds_kern(
         lgmet_med_q, lc_phot_kern.LGMET_SCATTER, ssp_data.ssp_lgmet
     )
 
-    _w_age_q = smooth_age_weights_q.reshape((n_gals, 1, n_age))
-    _w_lgmet_q = lgmet_weights_q.reshape((n_gals, n_met, 1))
-    ssp_weights_q = _w_lgmet_q * _w_age_q
-
+    # Calculate SSP weights = P_SSP = P_met * P_age
     _w_age_ms = smooth_age_weights_ms.reshape((n_gals, 1, n_age))
     _w_lgmet_ms = lgmet_weights_ms.reshape((n_gals, n_met, 1))
     ssp_weights_smooth_ms = _w_lgmet_ms * _w_age_ms
@@ -115,21 +123,21 @@ def mc_diffsky_seds_kern(
     _w_age_bursty_ms = bursty_age_weights_ms.reshape((n_gals, 1, n_age))
     ssp_weights_bursty_ms = _w_lgmet_ms * _w_age_bursty_ms
 
+    _w_age_q = smooth_age_weights_q.reshape((n_gals, 1, n_age))
+    _w_lgmet_q = lgmet_weights_q.reshape((n_gals, n_met, 1))
+    ssp_weights_q = _w_lgmet_q * _w_age_q  # (n_gals, n_met, n_age)
+
+    # Interpolate SSP mag table to z_obs of each galaxy
     photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
         z_obs, z_phot_table, precomputed_ssp_mag_table
     )
     ssp_photflux_table = 10 ** (-0.4 * photmag_table_galpop)
 
+    # For each filter, calculate λ_eff in the restframe of each galaxy
     wave_eff_galpop = lc_phot_kern.interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
-    # Delta mags
-    frac_ssp_err_q = lc_phot_kern.get_frac_ssp_err_vmap(
-        ssp_err_pop_params,
-        z_obs,
-        diffstar_galpop.logsm_obs_q,
-        wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
-    )
+    # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
+    # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
     frac_ssp_err_ms = lc_phot_kern.get_frac_ssp_err_vmap(
         ssp_err_pop_params,
         z_obs,
@@ -137,13 +145,24 @@ def mc_diffsky_seds_kern(
         wave_eff_galpop,
         ssp_err_model.LAMBDA_REST,
     )
+    # frac_ssp_err_ms.shape = (n_gals, n_bands)
+    frac_ssp_err_q = lc_phot_kern.get_frac_ssp_err_vmap(
+        ssp_err_pop_params,
+        z_obs,
+        diffstar_galpop.logsm_obs_q,
+        wave_eff_galpop,
+        ssp_err_model.LAMBDA_REST,
+    )
 
+    # Generate randoms for stochasticity in dust attenuation curves
     ran_key, dust_key = jran.split(ran_key, 2)
     av_key, delta_key, funo_key = jran.split(dust_key, 3)
     uran_av = jran.uniform(av_key, shape=(n_gals,))
     uran_delta = jran.uniform(delta_key, shape=(n_gals,))
     uran_funo = jran.uniform(funo_key, shape=(n_gals,))
 
+    # Calculate fraction of flux transmitted through dust for each galaxy
+    # Note that F_trans(λ_eff, τ_age) varies with stellar age τ_age
     ftrans_args_q = (
         spspop_params.dustpop_params,
         wave_eff_galpop,
@@ -157,7 +176,7 @@ def mc_diffsky_seds_kern(
         scatter_params,
     )
     _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_args_q)
-    ftrans_q = _res[1]
+    ftrans_q = _res[1]  # ftrans_q.shape = (n_gals, n_bands, n_age)
 
     ftrans_args_ms = (
         spspop_params.dustpop_params,
@@ -174,6 +193,22 @@ def mc_diffsky_seds_kern(
     _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_args_ms)
     ftrans_ms = _res[1]
 
+    # Calculate stochasticity in fractional changes to SSP fluxes
+    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
+    delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_err_q)
+    delta_scatter_ms = ssp_err_model.compute_delta_scatter(ssp_ms_key, frac_ssp_err_ms)
+
+    # Calculate fractional changes to SSP fluxes
+    frac_ssp_err_ms = frac_ssp_err_ms * 10 ** (-0.4 * delta_scatter_ms)
+    frac_ssp_err_q = frac_ssp_err_q * 10 ** (-0.4 * delta_scatter_q)
+
+    # Reshape arrays before calculating galaxy magnitudes
+    _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
+    _ferr_ssp_q = frac_ssp_err_q.reshape((n_gals, n_bands, 1, 1))
+
+    _ftrans_ms = ftrans_ms.reshape((n_gals, n_bands, 1, n_age))
+    _ftrans_q = ftrans_q.reshape((n_gals, n_bands, 1, n_age))
+
     _mstar_ms = 10 ** diffstar_galpop.logsm_obs_ms.reshape((n_gals, 1))
     _mstar_q = 10 ** diffstar_galpop.logsm_obs_q.reshape((n_gals, 1))
 
@@ -181,19 +216,7 @@ def mc_diffsky_seds_kern(
     _w_bursty_ms = ssp_weights_bursty_ms.reshape((n_gals, 1, n_met, n_age))
     _w_q = ssp_weights_q.reshape((n_gals, 1, n_met, n_age))
 
-    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
-    delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_err_q)
-    delta_scatter_ms = ssp_err_model.compute_delta_scatter(ssp_ms_key, frac_ssp_err_ms)
-
-    frac_ssp_err_ms = frac_ssp_err_ms * 10 ** (-0.4 * delta_scatter_ms)
-    frac_ssp_err_q = frac_ssp_err_q * 10 ** (-0.4 * delta_scatter_q)
-
-    _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
-    _ferr_ssp_q = frac_ssp_err_q.reshape((n_gals, n_bands, 1, 1))
-
-    _ftrans_ms = ftrans_ms.reshape((n_gals, n_bands, 1, n_age))
-    _ftrans_q = ftrans_q.reshape((n_gals, n_bands, 1, n_age))
-
+    # Calculate galaxy magnitudes as PDF-weighted sums
     integrand_smooth_ms = ssp_photflux_table * _w_smooth_ms * _ftrans_ms * _ferr_ssp_ms
     photflux_galpop_smooth_ms = jnp.sum(integrand_smooth_ms, axis=(2, 3)) * _mstar_ms
     obs_mags_smooth_ms = -2.5 * jnp.log10(photflux_galpop_smooth_ms)
@@ -210,40 +233,42 @@ def mc_diffsky_seds_kern(
     weights_bursty_ms = (1 - diffstar_galpop.frac_q) * p_burst_ms
     weights_q = diffstar_galpop.frac_q
 
-    lc_phot = lc_phot_kern.LCPHOT_EMPTY._replace(
-        obs_mags_bursty_ms=obs_mags_bursty_ms,
-        obs_mags_smooth_ms=obs_mags_smooth_ms,
-        obs_mags_q=obs_mags_q,
-        weights_bursty_ms=weights_bursty_ms,
-        weights_smooth_ms=weights_smooth_ms,
-        weights_q=weights_q,
-    )
-
+    # Generate Monte Carlo noise to stochastically select q, or ms-smooth, or ms-bursty
     ran_key, smooth_sfh_key = jran.split(ran_key, 2)
     uran_smooth_sfh = jran.uniform(smooth_sfh_key, shape=(n_gals,))
-    cuml_q = lc_phot.weights_q
-    cuml_ms = lc_phot.weights_q + lc_phot.weights_smooth_ms
-    mc_q = uran_smooth_sfh < cuml_q
+
+    # Calculate CDFs from weights
+    # 0 < cdf < f_q ==> quenched
+    # f_q < cdf < f_q + f_smooth_ms ==> smooth main sequence
+    # f_q + f_smooth_ms < cdf < 1 ==> bursty main sequence
+    cdf_q = weights_q
+    cdf_ms = weights_q + weights_smooth_ms
+    mc_q = uran_smooth_sfh < cdf_q
     diffstar_params = mc_select_diffstar_params(
         diffstar_galpop.diffstar_params_q, diffstar_galpop.diffstar_params_ms, mc_q
     )
 
     # mc_sfh_type = 0 for quenched, 1 for smooth ms, 2 for bursty ms
     mc_sfh_type = jnp.zeros(n_gals).astype(int)
-    mc_smooth_ms = (uran_smooth_sfh >= cuml_q) & (uran_smooth_sfh < cuml_ms)
+    mc_smooth_ms = (uran_smooth_sfh >= cdf_q) & (uran_smooth_sfh < cdf_ms)
     mc_sfh_type = jnp.where(mc_smooth_ms, 1, mc_sfh_type)
-    mc_bursty_ms = uran_smooth_sfh >= cuml_ms
+    mc_bursty_ms = uran_smooth_sfh >= cdf_ms
     mc_sfh_type = jnp.where(mc_bursty_ms, 2, mc_sfh_type)
 
+    # Calculate stochastic realization of SSP weights
     mc_smooth_ms = mc_smooth_ms.reshape((n_gals, 1, 1))
     mc_bursty_ms = mc_bursty_ms.reshape((n_gals, 1, 1))
     ssp_weights = jnp.copy(ssp_weights_q)
     ssp_weights = jnp.where(mc_smooth_ms, ssp_weights_smooth_ms, ssp_weights)
     ssp_weights = jnp.where(mc_bursty_ms, ssp_weights_bursty_ms, ssp_weights)
+    # ssp_weights.shape = (n_gals, n_met, n_age)
 
+    # Calculate fractional change to restframe SED of each galaxy
+    # F(λ_SED) is calculated by smooth triweight-interpolation of F(λ_eff)
     frac_ssp_err_sed_ms = ssp_err_interp(
         ssp_data.ssp_wave, frac_ssp_err_ms, wave_eff_galpop
     )
+    # frac_ssp_err_sed_ms.shape = (n_gals, n_wave)
     frac_ssp_err_sed_q = ssp_err_interp(
         ssp_data.ssp_wave, frac_ssp_err_q, wave_eff_galpop
     )
@@ -251,6 +276,7 @@ def mc_diffsky_seds_kern(
     n_wave = ssp_data.ssp_wave.size
     ssp_wave_galpop = jnp.tile(ssp_data.ssp_wave, n_gals).reshape((n_gals, n_wave))
 
+    # Recalculate dust transmission fraction at each λ_SED for each galaxy
     ftrans_sed_args_ms = (
         spspop_params.dustpop_params,
         ssp_wave_galpop,
@@ -264,7 +290,7 @@ def mc_diffsky_seds_kern(
         scatter_params,
     )
     _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_sed_args_ms)
-    ftrans_sed_ms = _res[1]
+    ftrans_sed_ms = _res[1]  # ftrans_sed_ms.shape = (n_gals, n_wave, n_age)
 
     ftrans_sed_args_q = (
         spspop_params.dustpop_params,
@@ -279,25 +305,22 @@ def mc_diffsky_seds_kern(
         scatter_params,
     )
     _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_sed_args_q)
-    ftrans_sed_q = _res[1]
+    ftrans_sed_q = _res[1]  # ftrans_sed_q.shape = (n_gals, n_wave, n_age)
 
+    # Select the transmission curve according to the SFH selection
     ftrans_sed = jnp.where(
-        mc_sfh_type.reshape((-1, 1, 1)) > 0, ftrans_sed_ms, ftrans_sed_q
+        mc_sfh_type.reshape((n_gals, 1, 1)) > 0, ftrans_sed_ms, ftrans_sed_q
     )
     ftrans_sed = jnp.swapaxes(ftrans_sed, 1, 2)
     ftrans_sed = ftrans_sed.reshape((n_gals, 1, n_age, n_wave))
+    # ftrans_sed.shape = (n_gals, 1, n_age, n_wave)
 
+    # Select the fractional change to SSP mags according to the SFH selection
     frac_ssp_err_sed = jnp.where(
-        mc_sfh_type.reshape((-1, 1)) > 0, frac_ssp_err_sed_ms, frac_ssp_err_sed_q
+        mc_sfh_type.reshape((n_gals, 1)) > 0, frac_ssp_err_sed_ms, frac_ssp_err_sed_q
     )
 
-    frac_ssp_err = frac_ssp_err_sed.reshape((n_gals, 1, 1, n_wave))
-
-    flux_table = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
-    weights = ssp_weights.reshape((n_gals, n_met, n_age, 1))
-
-    sed_integrand = flux_table * weights * ftrans_sed * frac_ssp_err
-
+    # Reshape stellar mass used to normalize SED
     _mstar_ms = 10 ** diffstar_galpop.logsm_obs_ms.reshape((n_gals, 1))
     _mstar_q = 10 ** diffstar_galpop.logsm_obs_q.reshape((n_gals, 1))
     logsm = jnp.where(
@@ -305,17 +328,26 @@ def mc_diffsky_seds_kern(
     )
     mstar = 10 ** logsm.reshape((n_gals, 1))
 
-    sed = jnp.sum(sed_integrand, axis=(1, 2)) * mstar
+    # Reshape arrays storing weights and fluxes form SED integrand
+    frac_ssp_err = frac_ssp_err_sed.reshape((n_gals, 1, 1, n_wave))
+    flux_table = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
+    weights = ssp_weights.reshape((n_gals, n_met, n_age, 1))
 
+    # Compute restframe SED as PDF-weighted sum of SSPs
+    sed_integrand = flux_table * weights * ftrans_sed * frac_ssp_err
+    rest_sed = jnp.sum(sed_integrand, axis=(1, 2)) * mstar
+
+    # Reshape boolean array storing SFH type
     msk_ms = mc_sfh_type.reshape((-1, 1)) == 1
     msk_bursty = mc_sfh_type.reshape((-1, 1)) == 2
 
-    obs_mags = jnp.copy(lc_phot.obs_mags_q)
-    obs_mags = jnp.where(msk_ms, lc_phot.obs_mags_smooth_ms, obs_mags)
-    obs_mags = jnp.where(msk_bursty, lc_phot.obs_mags_bursty_ms, obs_mags)
+    # Select observed mags according to SFH selection
+    obs_mags = jnp.copy(obs_mags_q)
+    obs_mags = jnp.where(msk_ms, obs_mags_smooth_ms, obs_mags)
+    obs_mags = jnp.where(msk_bursty, obs_mags_bursty_ms, obs_mags)
 
     sed_info = SEDINFO_EMPTY._replace(
-        sed=sed,
+        rest_sed=rest_sed,
         obs_mags=obs_mags,
         diffstar_params=diffstar_params,
         burst_params=burst_params,
