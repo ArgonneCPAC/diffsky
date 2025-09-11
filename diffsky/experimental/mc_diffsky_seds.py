@@ -22,6 +22,7 @@ from . import photometry_interpolation as photerp
 
 SED_INFO_KEYS = (
     "rest_sed",
+    "logsm",
     "obs_mags",
     "diffstar_params",
     "burst_params",
@@ -368,6 +369,7 @@ def mc_diffsky_seds_kern(
 
     sed_info = SEDINFO_EMPTY._replace(
         rest_sed=rest_sed,
+        logsm=logsm,
         obs_mags=obs_mags,
         diffstar_params=diffstar_params,
         burst_params=burst_params,

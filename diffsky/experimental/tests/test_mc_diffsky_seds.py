@@ -3,6 +3,7 @@
 import numpy as np
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.photometry import photometry_kernels as phk
+from dsps.sfh.diffburst import LGFBURST_MAX, LGFBURST_MIN, LGYR_PEAK_MAX, LGYR_PEAK_MIN
 from jax import random as jran
 from jax import vmap
 
@@ -49,8 +50,18 @@ def test_mc_diffsky_seds():
     assert np.all(np.isfinite(sed_info.diffstar_params.q_params))
 
     assert np.all(np.isfinite(sed_info.burst_params.lgfburst))
+    assert np.all(sed_info.burst_params.lgfburst >= LGFBURST_MIN)
+    assert np.all(sed_info.burst_params.lgfburst <= LGFBURST_MAX)
+
     assert np.all(np.isfinite(sed_info.burst_params.lgyr_peak))
+    assert np.all(sed_info.burst_params.lgyr_peak >= LGYR_PEAK_MIN)
+    assert np.all(sed_info.burst_params.lgyr_peak <= LGYR_PEAK_MAX)
+
     assert np.all(np.isfinite(sed_info.burst_params.lgyr_max))
+
+    assert np.all(np.isfinite(sed_info.logsm))
+    assert np.all(sed_info.logsm > 5)
+    assert np.all(sed_info.logsm < 13)
 
     # Enforce SSP weights sum to unity
     assert np.all(np.isfinite(sed_info.ssp_weights))

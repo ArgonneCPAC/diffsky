@@ -17,6 +17,8 @@ from .. import lc_phot_kern
 from .. import mc_lightcone_halos as mclh
 from ..scatter import DEFAULT_SCATTER_PARAMS
 
+SSP_DATA = retrieve_fake_fsps_data.load_fake_ssp_data()
+
 
 def test_multiband_lc_phot_kern():
     ran_key = jran.key(0)
@@ -158,14 +160,12 @@ def test_multiband_lc_phot_kern_u_param_arr():
     assert np.any(lc_phot.weights_q < 1)
 
 
-def _generate_sobol_lc_data(num_halos=75):
+def _generate_sobol_lc_data(num_halos=75, ssp_data=SSP_DATA):
     ran_key = jran.key(0)
 
     lgmp_min, lgmp_max = 10.0, 15.0
     z_min, z_max = 0.1, 3.0
     sky_area_degsq = 100.0
-
-    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
 
     _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
     wave, u, g, r, i, z, y = _res
