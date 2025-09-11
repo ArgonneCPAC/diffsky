@@ -52,13 +52,11 @@ def test_mc_diffsky_seds():
     assert np.all(np.isfinite(sed_info.burst_params.lgyr_peak))
     assert np.all(np.isfinite(sed_info.burst_params.lgyr_max))
 
+    # Enforce SSP weights sum to unity
     assert np.all(np.isfinite(sed_info.ssp_weights))
     assert sed_info.ssp_weights.shape == (n_gals, n_met, n_age)
     ssp_wtot = np.sum(sed_info.ssp_weights, axis=(1, 2))
     assert np.allclose(ssp_wtot, 1.0, rtol=1e-4)
-
-    wtot = np.sum(sed_info.ssp_weights, axis=(1, 2))
-    assert np.allclose(wtot, 1.0, rtol=1e-4)
 
     # Enforce agreement between precomputed vs exact magnitudes
     for iband in range(n_bands):
