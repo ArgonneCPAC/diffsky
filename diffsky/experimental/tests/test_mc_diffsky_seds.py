@@ -75,13 +75,20 @@ def _check_sed_info(sed_info, lc_data, tcurves):
 
     assert np.all(np.isfinite(sed_info.burst_params.lgyr_max))
 
+    assert sed_info.logmp_obs.shape == (n_gals,)
     assert np.all(np.isfinite(sed_info.logmp_obs))
     assert np.all(sed_info.logmp_obs > 5)
     assert np.all(sed_info.logmp_obs <= 18)
 
+    assert sed_info.logsm_obs.shape == (n_gals,)
     assert np.all(np.isfinite(sed_info.logsm_obs))
     assert np.all(sed_info.logsm_obs > 5)
     assert np.all(sed_info.logsm_obs < 13)
+
+    assert sed_info.logssfr_obs.shape == (n_gals,)
+    assert np.all(np.isfinite(sed_info.logssfr_obs))
+    assert np.all(sed_info.logssfr_obs > -100)
+    assert np.all(sed_info.logssfr_obs < -5)
 
     assert sed_info.sfh_table.shape[0] == n_gals
     assert np.all(np.isfinite(sed_info.sfh_table))

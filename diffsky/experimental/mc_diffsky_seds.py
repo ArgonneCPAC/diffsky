@@ -25,6 +25,7 @@ SED_INFO_KEYS = (
     "rest_sed",
     "logmp_obs",
     "logsm_obs",
+    "logssfr_obs",
     "sfh_table",
     "obs_mags",
     "diffstar_params",
@@ -381,6 +382,11 @@ def _mc_diffsky_seds_kern(
     )
     mstar_obs = 10 ** logsm_obs.reshape((n_gals, 1))
 
+    # Calculate specific SFR at z_obs
+    logssfr_obs = jnp.where(
+        mc_sfh_type > 0, diffstar_galpop.logssfr_obs_ms, diffstar_galpop.logssfr_obs_q
+    )
+
     # Reshape arrays storing weights and fluxes form SED integrand
     frac_ssp_err = frac_ssp_err_sed.reshape((n_gals, 1, 1, n_wave))
     flux_table = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
@@ -417,6 +423,7 @@ def _mc_diffsky_seds_kern(
         rest_sed=rest_sed,
         logmp_obs=logmp_obs,
         logsm_obs=logsm_obs,
+        logssfr_obs=logssfr_obs,
         sfh_table=sfh_table,
         obs_mags=obs_mags,
         diffstar_params=diffstar_params,
