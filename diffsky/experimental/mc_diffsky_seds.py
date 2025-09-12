@@ -63,7 +63,7 @@ def mc_weighted_diffsky_lightcone(
 
     Returns
     -------
-    sed_info : namedtuple
+    sed_info : dict
         Contains info about the galaxy SEDs
 
     """
@@ -435,4 +435,4 @@ def _mc_diffsky_seds_kern(
         mc_sfh_type=mc_sfh_type,
     )
 
-    return sed_info
+    return sed_info._asdict()
