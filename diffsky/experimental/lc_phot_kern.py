@@ -1,6 +1,5 @@
 # flake8: noqa: E402
 """ """
-import numpy as np
 from jax import config
 
 config.update("jax_enable_x64", True)
@@ -8,6 +7,7 @@ config.update("jax_enable_x64", True)
 
 from collections import namedtuple
 
+import numpy as np
 from diffstar.utils import cumulative_mstar_formed_galpop
 from diffstarpop import mc_diffstar_sfh_galpop
 from dsps.constants import T_TABLE_MIN
@@ -73,6 +73,8 @@ _DPKEYS = (
     "sfh_q",
     "logsm_obs_q",
     "logssfr_obs_q",
+    "diffstar_params_ms",
+    "diffstar_params_q",
 )
 DiffstarPopQuantities = namedtuple("DiffstarPopQuantities", _DPKEYS)
 DPQ_EMPTY = DiffstarPopQuantities._make([None] * len(_DPKEYS))
@@ -145,6 +147,8 @@ def diffstarpop_lc_cen_wrapper(
         sfh_q=sfh_q,
         logsm_obs_q=logsm_obs_q,
         logssfr_obs_q=logssfr_obs_q,
+        diffstar_params_ms=diffstar_params_ms,
+        diffstar_params_q=diffstar_params_q,
     )
 
     return diffstar_galpop
@@ -407,6 +411,55 @@ def generate_weighted_grid_lc_data(
 ):
     args = (ran_key, lgmp_grid, z_grid, sky_area_degsq)
     lc_grid = mclh.get_weighted_lightcone_grid_host_halo_diffmah(*args)
+
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+
+    precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    lc_data = LCData(
+        lc_grid["nhalos"],
+        lc_grid["z_obs"],
+        lc_grid["t_obs"],
+        lc_grid["mah_params"],
+        lc_grid["logmp0"],
+        t_table,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+    )
+    return lc_data
+
+
+def mc_weighted_lightcone_data(
+    ran_key,
+    num_halos,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmp_max,
+    sky_area_degsq,
+    ssp_data,
+    tcurves,
+    z_phot_table,
+    logmp_cutoff=11.0,
+    cosmo_params=flat_wcdm.PLANCK15,
+):
+    args = (
+        ran_key,
+        num_halos,
+        z_min,
+        z_max,
+        lgmp_min,
+        lgmp_max,
+        sky_area_degsq,
+    )
+
+    lc_grid = mclh.mc_weighted_halo_lightcone(*args, logmp_cutoff=logmp_cutoff)
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)

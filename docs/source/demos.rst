@@ -6,5 +6,6 @@ Diffsky Code Demos
    :caption: Notebooks:
 
    demo_diffmahpop_t_peak.ipynb
-   demo_mc_lightcones.ipynb
-   demo_diffstarpop.ipynb
+   validate_mc_lightcones.ipynb
+   demo_diffmahpop_lightcone.ipynb
+   demo_diffsky_lightcone.ipynb

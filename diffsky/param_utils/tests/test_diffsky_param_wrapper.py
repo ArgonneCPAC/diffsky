@@ -12,6 +12,17 @@ def test_get_flat_param_names():
     assert len(flat_param_names) == len(set(flat_param_names))
 
 
+def test_default_param_collection_fields():
+    pnames = (
+        "diffstarpop_params",
+        "mzr_params",
+        "spspop_params",
+        "scatter_params",
+        "ssperr_params",
+    )
+    assert dpw.DEFAULT_PARAM_COLLECTION._fields == pnames
+
+
 def test_unroll_u_param_collection_into_flat_array():
 
     u_param_collection = dpw.get_u_param_collection_from_param_collection(

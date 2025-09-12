@@ -711,10 +711,9 @@ def sobol_lightcone_diffstar_cens(
 
     """
     ran_key, lc_key = jran.split(ran_key, 2)
-    args = (num_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
-    cenpop = generate_weighted_sobol_lc_data(
+    args = (lc_key, num_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
+    cenpop = mc_weighted_halo_lightcone(
         *args,
-        ran_key=lc_key,
         hmf_params=hmf_params,
         diffmahpop_params=diffmahpop_params,
         logmp_cutoff=logmp_cutoff,
@@ -1354,7 +1353,8 @@ def get_nhalo_from_grid_interp(
     return interp * ngrid_tot / tot_num_halos
 
 
-def generate_weighted_sobol_lc_data(
+def mc_weighted_halo_lightcone(
+    ran_key,
     num_halos,
     z_min,
     z_max,
@@ -1363,7 +1363,6 @@ def generate_weighted_sobol_lc_data(
     sky_area_degsq,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
-    ran_key=None,
     logmp_cutoff=DEFAULT_LOGMP_CUTOFF,
     logmp_cutoff_himass=DEFAULT_LOGMP_HIMASS_CUTOFF,
     comm=None,
@@ -1382,8 +1381,6 @@ def generate_weighted_sobol_lc_data(
             num_halos_on_rank = num_halos
             starting_index = 0
 
-    if ran_key is None:
-        ran_key = jran.key(0)
     ran_key, ran_key_sobol = jran.split(ran_key, 2)
 
     # Generate Sobol sequence for halo masses and redshifts
