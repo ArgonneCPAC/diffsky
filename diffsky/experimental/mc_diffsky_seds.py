@@ -17,7 +17,6 @@ from ..burstpop import freqburst_mono
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
-from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
 
 SED_INFO_KEYS = (
@@ -38,13 +37,19 @@ SEDINFO_EMPTY = SedInfo._make([None] * len(SedInfo._fields))
 ssp_err_interp = jjit(vmap(ssp_err_model._tw_wave_interp_kern, in_axes=(None, 0, 0)))
 
 
-def mc_diffsky_seds(u_param_arr, ran_key, lc_data):
+def mc_diffsky_seds(
+    ran_key,
+    lc_data,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+):
     """Populate the input lightcone with galaxy SEDs
 
     Parameters
     ----------
-    u_param_arr : array, shape (n_params, )
-
     ran_key : jax.random.key
 
     lc_data : namedtuple
@@ -55,20 +60,24 @@ def mc_diffsky_seds(u_param_arr, ran_key, lc_data):
     sed_info : namedtuple
         Contains info about the galaxy SEDs
 
-    Notes
-    -----
-    This function is just a wrapper around the mc_diffsky_seds_kern function
-
     """
+    param_collection = dpw.DEFAULT_PARAM_COLLECTION._make(
+        (diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params)
+    )
+    sed_data = _mc_diffsky_seds_kern(ran_key, *lc_data[1:], *param_collection)
+    return sed_data
+
+
+def _mc_diffsky_seds_flat_u_params(u_param_arr, ran_key, lc_data):
     u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
     param_collection = dpw.get_param_collection_from_u_param_collection(
         *u_param_collection
     )
-    sed_data = mc_diffsky_seds_kern(ran_key, *lc_data[1:], *param_collection)
+    sed_data = _mc_diffsky_seds_kern(ran_key, *lc_data[1:], *param_collection)
     return sed_data
 
 
-def mc_diffsky_seds_kern(
+def _mc_diffsky_seds_kern(
     ran_key,
     z_obs,
     t_obs,

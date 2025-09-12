@@ -19,7 +19,14 @@ calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 def test_mc_diffsky_seds():
     ran_key = jran.key(0)
     lc_data, tcurves = tlcphk._generate_sobol_lc_data()
-    n_gals = lc_data.logmp0.size
+    sed_info = mcsed.mc_diffsky_seds(ran_key, lc_data)
+
+    _check_sed_info(sed_info, lc_data, tcurves)
+
+
+def test_mc_diffsky_seds_flat_u_params():
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcphk._generate_sobol_lc_data()
 
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
     assert lc_data.z_phot_table.shape == (n_z_table,)
@@ -31,7 +38,7 @@ def test_mc_diffsky_seds():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
-    sed_info = mcsed.mc_diffsky_seds(u_param_arr, ran_key, lc_data)
+    sed_info = mcsed._mc_diffsky_seds_flat_u_params(u_param_arr, ran_key, lc_data)
     lc_phot_orig = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
         u_param_arr, ran_key, lc_data
     )
@@ -45,6 +52,13 @@ def test_mc_diffsky_seds():
     assert np.allclose(
         lc_phot_orig.obs_mags_bursty_ms[msk_bursty_ms], sed_info.obs_mags[msk_bursty_ms]
     )
+
+    _check_sed_info(sed_info, lc_data, tcurves)
+
+
+def _check_sed_info(sed_info, lc_data, tcurves):
+    n_gals = lc_data.logmp0.size
+    n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
 
     assert np.all(np.isfinite(sed_info.diffstar_params.ms_params))
     assert np.all(np.isfinite(sed_info.diffstar_params.q_params))
