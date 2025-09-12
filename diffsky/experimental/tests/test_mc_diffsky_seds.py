@@ -84,3 +84,27 @@ def test_mc_diffsky_seds():
         mag_err = mags - sed_info.obs_mags[:, iband]
         assert np.mean(mag_err) < 0.05
         assert np.std(mag_err) < 0.1
+
+    assert np.all(np.isfinite(sed_info.dust_params.av))
+    assert np.all(np.isfinite(sed_info.dust_params.delta))
+    assert np.all(np.isfinite(sed_info.dust_params.funo))
+
+    assert sed_info.dust_params.av.shape == (n_gals, n_age)
+    assert sed_info.dust_params.delta.shape == (n_gals,)
+    assert sed_info.dust_params.funo.shape == (n_gals,)
+
+    # Enforce broadly reasonable values of Av
+    assert np.all(sed_info.dust_params.av > 0)
+    assert np.all(sed_info.dust_params.av < 5)
+
+    # Enforce that av strictly decreases with stellar age
+    assert np.all(np.diff(sed_info.dust_params.av, axis=1) <= 0)
+    assert np.any(np.diff(sed_info.dust_params.av, axis=1) < 0)
+
+    # Enforce broadly reasonable values of delta
+    assert np.all(sed_info.dust_params.delta > -2)
+    assert np.all(sed_info.dust_params.delta < 2)
+
+    # Enforce physically sensible values of funo
+    assert np.all(sed_info.dust_params.funo > 0)
+    assert np.all(sed_info.dust_params.funo < 1)

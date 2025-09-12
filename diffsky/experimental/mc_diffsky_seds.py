@@ -26,6 +26,7 @@ SED_INFO_KEYS = (
     "obs_mags",
     "diffstar_params",
     "burst_params",
+    "dust_params",
     "ssp_weights",
     "frac_ssp_err_sed",
     "ftrans_sed",
@@ -198,6 +199,7 @@ def mc_diffsky_seds_kern(
     )
     _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_args_q)
     ftrans_q = _res[1]  # ftrans_q.shape = (n_gals, n_bands, n_age)
+    noisy_dust_params_q = _res[3]  # fields = ('av', 'delta', 'funo')
 
     ftrans_args_ms = (
         spspop_params.dustpop_params,
@@ -213,6 +215,7 @@ def mc_diffsky_seds_kern(
     )
     _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_args_ms)
     ftrans_ms = _res[1]
+    noisy_dust_params_ms = _res[3]  # fields = ('av', 'delta', 'funo')
 
     # Calculate stochasticity in fractional changes to SSP fluxes
     ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
@@ -367,12 +370,27 @@ def mc_diffsky_seds_kern(
     obs_mags = jnp.where(msk_ms, obs_mags_smooth_ms, obs_mags)
     obs_mags = jnp.where(msk_bursty, obs_mags_bursty_ms, obs_mags)
 
+    msk_q = mc_sfh_type == 0
+    av = jnp.where(
+        msk_q.reshape((n_gals, 1)),
+        noisy_dust_params_q.av[:, 0, :],
+        noisy_dust_params_ms.av[:, 0, :],
+    )
+    delta = jnp.where(
+        msk_q, noisy_dust_params_q.delta[:, 0], noisy_dust_params_ms.delta[:, 0]
+    )
+    funo = jnp.where(
+        msk_q, noisy_dust_params_q.funo[:, 0], noisy_dust_params_ms.funo[:, 0]
+    )
+    dust_params = noisy_dust_params_q._make((av, delta, funo))
+
     sed_info = SEDINFO_EMPTY._replace(
         rest_sed=rest_sed,
         logsm=logsm,
         obs_mags=obs_mags,
         diffstar_params=diffstar_params,
         burst_params=burst_params,
+        dust_params=dust_params,
         ssp_weights=ssp_weights,
         frac_ssp_err_sed=frac_ssp_err_sed,
         ftrans_sed=ftrans_sed,
