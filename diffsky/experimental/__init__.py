@@ -1,3 +1,4 @@
+# flake8: noqa: F401
 """"""
 
 from .lc_phot_kern import mc_weighted_lightcone_data
