@@ -450,6 +450,7 @@ def mc_weighted_lightcone_data(
     cosmo_params=flat_wcdm.PLANCK15,
 ):
     args = (
+        ran_key,
         num_halos,
         z_min,
         z_max,
@@ -458,9 +459,7 @@ def mc_weighted_lightcone_data(
         sky_area_degsq,
     )
 
-    lc_grid = mclh.mc_weighted_halo_lightcone(
-        *args, ran_key=ran_key, logmp_cutoff=logmp_cutoff
-    )
+    lc_grid = mclh.mc_weighted_halo_lightcone(*args, logmp_cutoff=logmp_cutoff)
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)

@@ -350,13 +350,13 @@ def test_mc_weighted_halo_lightcone():
         z_min = z_max - 0.05
 
         cenpop = mclh.mc_weighted_halo_lightcone(
+            test_key,
             num_halos,
             z_min,
             z_max,
             lgmp_min,
             lgmp_max,
             sky_area_degsq,
-            ran_key=test_key,
         )
         n_gals = cenpop["z_obs"].size
         assert cenpop["logmp_obs"].size == cenpop["logmp0"].size == n_gals == num_halos
