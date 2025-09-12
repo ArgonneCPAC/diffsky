@@ -8,3 +8,4 @@ Diffsky Code Demos
    demo_diffmahpop_t_peak.ipynb
    validate_mc_lightcones.ipynb
    demo_diffmahpop_lightcone.ipynb
+   demo_diffsky_lightcone.ipynb
