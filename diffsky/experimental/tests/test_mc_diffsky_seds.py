@@ -38,7 +38,9 @@ def test_mc_diffsky_seds_flat_u_params():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
-    sed_info = mcsed._mc_diffsky_seds_flat_u_params(u_param_arr, ran_key, lc_data)
+    sed_info = mcsed._mc_diffsky_seds_flat_u_params(
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+    )
     lc_phot_orig = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
         u_param_arr, ran_key, lc_data
     )
@@ -73,9 +75,17 @@ def _check_sed_info(sed_info, lc_data, tcurves):
 
     assert np.all(np.isfinite(sed_info.burst_params.lgyr_max))
 
-    assert np.all(np.isfinite(sed_info.logsm))
-    assert np.all(sed_info.logsm > 5)
-    assert np.all(sed_info.logsm < 13)
+    assert np.all(np.isfinite(sed_info.logmp_obs))
+    assert np.all(sed_info.logmp_obs > 5)
+    assert np.all(sed_info.logmp_obs <= 18)
+
+    assert np.all(np.isfinite(sed_info.logsm_obs))
+    assert np.all(sed_info.logsm_obs > 5)
+    assert np.all(sed_info.logsm_obs < 13)
+
+    assert sed_info.sfh_table.shape[0] == n_gals
+    assert np.all(np.isfinite(sed_info.sfh_table))
+    assert np.all(sed_info.sfh_table > 0)
 
     # Enforce SSP weights sum to unity
     assert np.all(np.isfinite(sed_info.ssp_weights))

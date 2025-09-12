@@ -6,7 +6,9 @@ config.update("jax_enable_x64", True)
 
 from collections import namedtuple
 
+from diffmah import logmh_at_t_obs
 from diffstarpop.param_utils import mc_select_diffstar_params
+from dsps.cosmology import DEFAULT_COSMOLOGY, age_at_z0
 from dsps.metallicity import umzr
 from jax import jit as jjit
 from jax import numpy as jnp
@@ -21,7 +23,9 @@ from . import photometry_interpolation as photerp
 
 SED_INFO_KEYS = (
     "rest_sed",
-    "logsm",
+    "logmp_obs",
+    "logsm_obs",
+    "sfh_table",
     "obs_mags",
     "diffstar_params",
     "burst_params",
@@ -45,6 +49,7 @@ def mc_weighted_diffsky_lightcone(
     spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
     scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
     ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
 ):
     """Populate the input lightcone with galaxy SEDs
 
@@ -64,16 +69,20 @@ def mc_weighted_diffsky_lightcone(
     param_collection = dpw.DEFAULT_PARAM_COLLECTION._make(
         (diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params)
     )
-    sed_data = _mc_diffsky_seds_kern(ran_key, *lc_data[1:], *param_collection)
+    sed_data = _mc_diffsky_seds_kern(
+        ran_key, *lc_data[1:], *param_collection, cosmo_params
+    )
     return sed_data
 
 
-def _mc_diffsky_seds_flat_u_params(u_param_arr, ran_key, lc_data):
+def _mc_diffsky_seds_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params):
     u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
     param_collection = dpw.get_param_collection_from_u_param_collection(
         *u_param_collection
     )
-    sed_data = _mc_diffsky_seds_kern(ran_key, *lc_data[1:], *param_collection)
+    sed_data = _mc_diffsky_seds_kern(
+        ran_key, *lc_data[1:], *param_collection, cosmo_params
+    )
     return sed_data
 
 
@@ -93,10 +102,16 @@ def _mc_diffsky_seds_kern(
     spspop_params,
     scatter_params,
     ssp_err_pop_params,
+    cosmo_params,
 ):
     """Populate the input lightcone with galaxy SEDs"""
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
     n_gals = logmp0.size
+
+    # Calculate halo mass at the observed redshift
+    t0 = age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t0)
+    logmp_obs = logmh_at_t_obs(mah_params, t_obs, lgt0)
 
     # Calculate SFH with diffstarpop
     ran_key, sfh_key = jran.split(ran_key, 2)
@@ -287,6 +302,11 @@ def _mc_diffsky_seds_kern(
     mc_sfh_type = jnp.where(mc_smooth_ms, 1, mc_sfh_type)
     mc_bursty_ms = uran_smooth_sfh >= cdf_ms
     mc_sfh_type = jnp.where(mc_bursty_ms, 2, mc_sfh_type)
+    sfh_table = jnp.where(
+        mc_sfh_type.reshape((n_gals, 1)) == 0,
+        diffstar_galpop.sfh_q,
+        diffstar_galpop.sfh_ms,
+    )
 
     # Calculate stochastic realization of SSP weights
     mc_smooth_ms = mc_smooth_ms.reshape((n_gals, 1, 1))
@@ -356,10 +376,10 @@ def _mc_diffsky_seds_kern(
     # Reshape stellar mass used to normalize SED
     _mstar_ms = 10 ** diffstar_galpop.logsm_obs_ms.reshape((n_gals, 1))
     _mstar_q = 10 ** diffstar_galpop.logsm_obs_q.reshape((n_gals, 1))
-    logsm = jnp.where(
+    logsm_obs = jnp.where(
         mc_sfh_type > 0, diffstar_galpop.logsm_obs_ms, diffstar_galpop.logsm_obs_q
     )
-    mstar = 10 ** logsm.reshape((n_gals, 1))
+    mstar_obs = 10 ** logsm_obs.reshape((n_gals, 1))
 
     # Reshape arrays storing weights and fluxes form SED integrand
     frac_ssp_err = frac_ssp_err_sed.reshape((n_gals, 1, 1, n_wave))
@@ -368,7 +388,7 @@ def _mc_diffsky_seds_kern(
 
     # Compute restframe SED as PDF-weighted sum of SSPs
     sed_integrand = flux_table * weights * ftrans_sed * frac_ssp_err
-    rest_sed = jnp.sum(sed_integrand, axis=(1, 2)) * mstar
+    rest_sed = jnp.sum(sed_integrand, axis=(1, 2)) * mstar_obs
 
     # Reshape boolean array storing SFH type
     msk_ms = mc_sfh_type.reshape((-1, 1)) == 1
@@ -395,7 +415,9 @@ def _mc_diffsky_seds_kern(
 
     sed_info = SEDINFO_EMPTY._replace(
         rest_sed=rest_sed,
-        logsm=logsm,
+        logmp_obs=logmp_obs,
+        logsm_obs=logsm_obs,
+        sfh_table=sfh_table,
         obs_mags=obs_mags,
         diffstar_params=diffstar_params,
         burst_params=burst_params,
