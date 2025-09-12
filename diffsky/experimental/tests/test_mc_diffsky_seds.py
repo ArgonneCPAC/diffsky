@@ -16,17 +16,17 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-def test_mc_diffsky_seds():
+def test_mc_weighted_diffsky_lightcone():
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._generate_sobol_lc_data()
-    sed_info = mcsed.mc_diffsky_seds(ran_key, lc_data)
+    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+    sed_info = mcsed.mc_weighted_diffsky_lightcone(ran_key, lc_data)
 
     _check_sed_info(sed_info, lc_data, tcurves)
 
 
 def test_mc_diffsky_seds_flat_u_params():
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._generate_sobol_lc_data()
+    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
 
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
     assert lc_data.z_phot_table.shape == (n_z_table,)

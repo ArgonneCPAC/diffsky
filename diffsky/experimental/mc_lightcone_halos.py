@@ -712,7 +712,7 @@ def sobol_lightcone_diffstar_cens(
     """
     ran_key, lc_key = jran.split(ran_key, 2)
     args = (num_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
-    cenpop = generate_weighted_sobol_lc_data(
+    cenpop = mc_weighted_halo_lightcone(
         *args,
         ran_key=lc_key,
         hmf_params=hmf_params,
@@ -1354,7 +1354,7 @@ def get_nhalo_from_grid_interp(
     return interp * ngrid_tot / tot_num_halos
 
 
-def generate_weighted_sobol_lc_data(
+def mc_weighted_halo_lightcone(
     num_halos,
     z_min,
     z_max,

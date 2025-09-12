@@ -12,8 +12,8 @@ from .. import mc_lightcone_halos as mclh
 
 
 def test_mc_lightcone_host_halo_mass_function():
-    """Enforce mc_lightcone_host_halo_mass_function produces consistent halo mass functions as
-    the diffsky.mass_functions.mc_hosts function evaluated at the median redshift
+    """Enforce mc_lightcone_host_halo_mass_function produces halo mass functions
+    that are consistent diffsky.mass_functions.mc_hosts evaluated at the median redshift
 
     """
     lgmp_min = 12.0
@@ -334,7 +334,7 @@ def test_mc_lightcone_obs_mags_cens():
     assert np.any(cenpop["ftrans"] < 1)
 
 
-def test_generate_weighted_sobol_lc_data():
+def test_mc_weighted_halo_lightcone():
     """Enforce mc_lightcone_host_halo_diffmah returns reasonable results when passed
     alternative halo mass function parameters"""
     ran_key = jran.key(0)
@@ -349,7 +349,7 @@ def test_generate_weighted_sobol_lc_data():
         test_key, ran_key = jran.split(ran_key, 2)
         z_min = z_max - 0.05
 
-        cenpop = mclh.generate_weighted_sobol_lc_data(
+        cenpop = mclh.mc_weighted_halo_lightcone(
             num_halos,
             z_min,
             z_max,

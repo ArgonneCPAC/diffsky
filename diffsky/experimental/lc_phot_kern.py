@@ -435,7 +435,7 @@ def generate_weighted_grid_lc_data(
     return lc_data
 
 
-def generate_sobol_grid_lc_data(
+def mc_weighted_lightcone_data(
     ran_key,
     num_halos,
     z_min,
@@ -458,7 +458,7 @@ def generate_sobol_grid_lc_data(
         sky_area_degsq,
     )
 
-    lc_grid = mclh.generate_weighted_sobol_lc_data(
+    lc_grid = mclh.mc_weighted_halo_lightcone(
         *args, ran_key=ran_key, logmp_cutoff=logmp_cutoff
     )
 

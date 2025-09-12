@@ -37,7 +37,7 @@ SEDINFO_EMPTY = SedInfo._make([None] * len(SedInfo._fields))
 ssp_err_interp = jjit(vmap(ssp_err_model._tw_wave_interp_kern, in_axes=(None, 0, 0)))
 
 
-def mc_diffsky_seds(
+def mc_weighted_diffsky_lightcone(
     ran_key,
     lc_data,
     diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,

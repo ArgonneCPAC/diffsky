@@ -160,7 +160,7 @@ def test_multiband_lc_phot_kern_u_param_arr():
     assert np.any(lc_phot.weights_q < 1)
 
 
-def _generate_sobol_lc_data(num_halos=75, ssp_data=SSP_DATA):
+def _get_weighted_lc_data_for_unit_testing(num_halos=75, ssp_data=SSP_DATA):
     ran_key = jran.key(0)
 
     lgmp_min, lgmp_max = 10.0, 15.0
@@ -186,13 +186,13 @@ def _generate_sobol_lc_data(num_halos=75, ssp_data=SSP_DATA):
         tcurves,
         z_phot_table,
     )
-    lc_data = lc_phot_kern.generate_sobol_grid_lc_data(*args)
+    lc_data = lc_phot_kern.mc_weighted_lightcone_data(*args)
 
     return lc_data, tcurves
 
 
-def test_generate_sobol_lc_data():
-    lc_data, tcurves = _generate_sobol_lc_data()
+def test_get_weighted_lc_data_for_unit_testing():
+    lc_data, tcurves = _get_weighted_lc_data_for_unit_testing()
     assert np.all(np.isfinite(lc_data.logmp0))
     for x in lc_data.mah_params:
         assert np.all(np.isfinite(x))
