@@ -16,6 +16,23 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
+def test_mc_diffsky_phot_flat_u_params():
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+    sed_info = mcsed.mc_weighted_diffsky_lightcone(ran_key, lc_data)
+
+    u_param_collection = dpw.get_u_param_collection_from_param_collection(
+        *dpw.DEFAULT_PARAM_COLLECTION
+    )
+    u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
+
+    phot_info = mcsed._mc_diffsky_phot_flat_u_params(
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+    )
+
+    assert np.allclose(sed_info["obs_mags"], phot_info["obs_mags"], rtol=1e-4)
+
+
 def test_mc_weighted_diffsky_lightcone():
     ran_key = jran.key(0)
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
