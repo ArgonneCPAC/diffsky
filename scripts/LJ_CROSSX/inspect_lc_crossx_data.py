@@ -1,4 +1,4 @@
-"""Script to run sanity checks on HACC lightcone mocks"""
+"""Script to run sanity checks on cross-matched Last Journey lightcone data"""
 
 import argparse
 import os
