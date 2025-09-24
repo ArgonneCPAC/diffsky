@@ -35,6 +35,8 @@ PHOT_INFO_KEYS = (
     "uran_av",
     "uran_delta",
     "uran_funo",
+    "delta_scatter_ms",
+    "delta_scatter_q",
 )
 SED_INFO_KEYS = ["rest_sed", *PHOT_INFO_KEYS, "frac_ssp_err_sed", "ftrans_sed"]
 
@@ -333,16 +335,6 @@ def _mc_diffsky_seds_kern(
     ssp_weights = jnp.where(mc_bursty_ms, ssp_weights_bursty_ms, ssp_weights)
     # ssp_weights.shape = (n_gals, n_met, n_age)
 
-    # Calculate fractional change to restframe SED of each galaxy
-    # F(λ_SED) is calculated by smooth triweight-interpolation of F(λ_eff)
-    frac_ssp_err_sed_ms = ssp_err_interp(
-        ssp_data.ssp_wave, frac_ssp_err_ms, wave_eff_galpop
-    )
-    # frac_ssp_err_sed_ms.shape = (n_gals, n_wave)
-    frac_ssp_err_sed_q = ssp_err_interp(
-        ssp_data.ssp_wave, frac_ssp_err_q, wave_eff_galpop
-    )
-
     n_wave = ssp_data.ssp_wave.size
     ftrans_sed = _get_ftrans_sed(
         z_obs,
@@ -359,9 +351,14 @@ def _mc_diffsky_seds_kern(
         scatter_params,
     )
 
-    # Select the fractional change to SSP mags according to the SFH selection
-    frac_ssp_err_sed = jnp.where(
-        mc_sfh_type.reshape((n_gals, 1)) > 0, frac_ssp_err_sed_ms, frac_ssp_err_sed_q
+    frac_ssp_err_sed = _get_frac_ssp_err(
+        ssp_data,
+        z_obs,
+        mc_sfh_type,
+        diffstar_galpop.logsm_obs_ms,
+        diffstar_galpop.logsm_obs_q,
+        wave_eff_galpop,
+        ssp_err_pop_params,
     )
 
     # Reshape stellar mass used to normalize SED
@@ -424,6 +421,8 @@ def _mc_diffsky_seds_kern(
         uran_av=uran_av,
         uran_delta=uran_delta,
         uran_funo=uran_funo,
+        delta_scatter_ms=delta_scatter_ms,
+        delta_scatter_q=delta_scatter_q,
         frac_ssp_err_sed=frac_ssp_err_sed,
         ftrans_sed=ftrans_sed,
     )
@@ -710,6 +709,8 @@ def _mc_diffsky_phot_kern(
         uran_av=uran_av,
         uran_delta=uran_delta,
         uran_funo=uran_funo,
+        delta_scatter_ms=delta_scatter_ms,
+        delta_scatter_q=delta_scatter_q,
     )
 
     return phot_info._asdict()
@@ -792,3 +793,51 @@ def _get_ftrans_sed(
     ftrans_sed = ftrans_sed.reshape((n_gals, 1, n_age, n_wave))
 
     return ftrans_sed
+
+
+def _get_frac_ssp_err(
+    ssp_data,
+    z_obs,
+    mc_sfh_type,
+    logsm_obs_ms,
+    logsm_obs_q,
+    wave_eff_galpop,
+    ssp_err_pop_params,
+):
+
+    n_gals = mc_sfh_type.shape[0]
+
+    # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
+    # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
+    frac_ssp_err_ms = lc_phot_kern.get_frac_ssp_err_vmap(
+        ssp_err_pop_params,
+        z_obs,
+        logsm_obs_ms,
+        wave_eff_galpop,
+        ssp_err_model.LAMBDA_REST,
+    )
+    # frac_ssp_err_ms.shape = (n_gals, n_bands)
+    frac_ssp_err_q = lc_phot_kern.get_frac_ssp_err_vmap(
+        ssp_err_pop_params,
+        z_obs,
+        logsm_obs_q,
+        wave_eff_galpop,
+        ssp_err_model.LAMBDA_REST,
+    )
+
+    # Calculate fractional change to restframe SED of each galaxy
+    # F(λ_SED) is calculated by smooth triweight-interpolation of F(λ_eff)
+    frac_ssp_err_sed_ms = ssp_err_interp(
+        ssp_data.ssp_wave, frac_ssp_err_ms, wave_eff_galpop
+    )
+    # frac_ssp_err_sed_ms.shape = (n_gals, n_wave)
+    frac_ssp_err_sed_q = ssp_err_interp(
+        ssp_data.ssp_wave, frac_ssp_err_q, wave_eff_galpop
+    )
+
+    # Select the fractional change to SSP mags according to the SFH selection
+    frac_ssp_err_sed = jnp.where(
+        mc_sfh_type.reshape((n_gals, 1)) > 0, frac_ssp_err_sed_ms, frac_ssp_err_sed_q
+    )
+
+    return frac_ssp_err_sed
