@@ -347,7 +347,7 @@ def _mc_diffsky_seds_kern(
         uran_delta,
         uran_funo,
         ssp_data,
-        spspop_params.dustpop_params,
+        spspop_params,
         scatter_params,
     )
 
