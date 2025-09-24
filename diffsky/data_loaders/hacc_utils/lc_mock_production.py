@@ -15,6 +15,7 @@ from diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
 from jax import random as jran
 
+from ...experimental import lc_phot_kern
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
@@ -121,7 +122,7 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     gyr_since_infall = np.zeros_like(logmp0)
     upids = np.where(lc_data["central"] == 1, -1, 0)
 
-    t_table = np.linspace(0.1, 10**sim_info.lgt0, 100)
+    diffsky_data["t_table"] = np.linspace(0.1, 10**sim_info.lgt0, 100)
 
     args = (
         DEFAULT_DIFFSTARPOP_PARAMS,
@@ -132,7 +133,7 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
         logmhost_infall,
         gyr_since_infall,
         ran_key,
-        t_table,
+        diffsky_data["t_table"],
     )
 
     _res = mc_diffstar_sfh_galpop(*args)
@@ -141,16 +142,41 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     sfh = np.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     sfh_params = mc_select_diffstar_params(sfh_params_q, sfh_params_ms, mc_is_q)
 
+    diffsky_data["mc_is_q"] = mc_is_q
+    # Need to add SFH table after MC selection
+
     for key in sfh_params.ms_params._fields:
         diffsky_data[key] = getattr(sfh_params.ms_params, key)
     for key in sfh_params.q_params._fields:
         diffsky_data[key] = getattr(sfh_params.q_params, key)
 
-    logsm_obs, logssfr_obs = get_logsm_logssfr_at_t_obs(lc_data["t_obs"], t_table, sfh)
+    logsm_obs, logssfr_obs = get_logsm_logssfr_at_t_obs(
+        lc_data["t_obs"], diffsky_data["t_table"], sfh
+    )
     diffsky_data["logsm_obs"] = logsm_obs
     diffsky_data["logssfr_obs"] = logssfr_obs
 
     return lc_data, diffsky_data
+
+
+def add_sed_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
+    lc_data, diffsky_data = add_sfh_quantities_to_mock(
+        sim_info, lc_data, diffsky_data, ran_key
+    )
+    # Calculate stellar age PDF weights from SFH
+    smooth_age_weights_ms = lc_phot_kern.calc_age_weights_from_sfh_table_vmap(
+        diffsky_data["t_table"],
+        diffstar_galpop.sfh_ms,
+        ssp_data.ssp_lg_age_gyr,
+        lc_data["t_obs"],
+    )
+    # smooth_age_weights_ms.shape = (n_gals, n_age)
+    smooth_age_weights_q = lc_phot_kern.calc_age_weights_from_sfh_table_vmap(
+        diffsky_data["t_table"],
+        diffstar_galpop.sfh_q,
+        ssp_data.ssp_lg_age_gyr,
+        lc_data["t_obs"],
+    )
 
 
 def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5.0):
