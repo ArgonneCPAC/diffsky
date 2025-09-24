@@ -32,6 +32,9 @@ PHOT_INFO_KEYS = (
     "burst_params",
     "dust_params",
     "ssp_weights",
+    "uran_av",
+    "uran_delta",
+    "uran_funo",
 )
 SED_INFO_KEYS = ["rest_sed", *PHOT_INFO_KEYS, "frac_ssp_err_sed", "ftrans_sed"]
 
@@ -341,46 +344,20 @@ def _mc_diffsky_seds_kern(
     )
 
     n_wave = ssp_data.ssp_wave.size
-    ssp_wave_galpop = jnp.tile(ssp_data.ssp_wave, n_gals).reshape((n_gals, n_wave))
-
-    # Recalculate dust transmission fraction at each λ_SED for each galaxy
-    ftrans_sed_args_ms = (
-        spspop_params.dustpop_params,
-        ssp_wave_galpop,
+    ftrans_sed = _get_ftrans_sed(
+        z_obs,
+        mc_sfh_type,
         diffstar_galpop.logsm_obs_ms,
         diffstar_galpop.logssfr_obs_ms,
-        z_obs,
-        ssp_data.ssp_lg_age_gyr,
-        uran_av,
-        uran_delta,
-        uran_funo,
-        scatter_params,
-    )
-    _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_sed_args_ms)
-    ftrans_sed_ms = _res[1]  # ftrans_sed_ms.shape = (n_gals, n_wave, n_age)
-
-    ftrans_sed_args_q = (
-        spspop_params.dustpop_params,
-        ssp_wave_galpop,
         diffstar_galpop.logsm_obs_q,
         diffstar_galpop.logssfr_obs_q,
-        z_obs,
-        ssp_data.ssp_lg_age_gyr,
         uran_av,
         uran_delta,
         uran_funo,
+        ssp_data,
+        spspop_params.dustpop_params,
         scatter_params,
     )
-    _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_sed_args_q)
-    ftrans_sed_q = _res[1]  # ftrans_sed_q.shape = (n_gals, n_wave, n_age)
-
-    # Select the transmission curve according to the SFH selection
-    ftrans_sed = jnp.where(
-        mc_sfh_type.reshape((n_gals, 1, 1)) > 0, ftrans_sed_ms, ftrans_sed_q
-    )
-    ftrans_sed = jnp.swapaxes(ftrans_sed, 1, 2)
-    ftrans_sed = ftrans_sed.reshape((n_gals, 1, n_age, n_wave))
-    # ftrans_sed.shape = (n_gals, 1, n_age, n_wave)
 
     # Select the fractional change to SSP mags according to the SFH selection
     frac_ssp_err_sed = jnp.where(
@@ -444,6 +421,9 @@ def _mc_diffsky_seds_kern(
         burst_params=burst_params,
         dust_params=dust_params,
         ssp_weights=ssp_weights,
+        uran_av=uran_av,
+        uran_delta=uran_delta,
+        uran_funo=uran_funo,
         frac_ssp_err_sed=frac_ssp_err_sed,
         ftrans_sed=ftrans_sed,
     )
@@ -723,10 +703,92 @@ def _mc_diffsky_phot_kern(
         sfh_table=sfh_table,
         obs_mags=obs_mags,
         diffstar_params=diffstar_params,
+        mc_sfh_type=mc_sfh_type,
         burst_params=burst_params,
         dust_params=dust_params,
         ssp_weights=ssp_weights,
-        mc_sfh_type=mc_sfh_type,
+        uran_av=uran_av,
+        uran_delta=uran_delta,
+        uran_funo=uran_funo,
     )
 
     return phot_info._asdict()
+
+
+def _recompute_sed_from_phot_info(phot_info, ssp_data):
+    # Reshape arrays storing weights and fluxes form SED integrand
+    n_met, n_age, n_wave = ssp_data.ssp_flux.shape
+    n_gals = phot_info["logmp_obs"].size
+
+    mstar_obs = 10**phot_info.logmp_obs
+
+    frac_ssp_err = frac_ssp_err_sed.reshape((n_gals, 1, 1, n_wave))
+    flux_table = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
+    weights = phot_info["ssp_weights"].reshape((n_gals, n_met, n_age, 1))
+
+    # Compute restframe SED as PDF-weighted sum of SSPs
+    sed_integrand = flux_table * weights * ftrans_sed * frac_ssp_err
+    rest_sed = jnp.sum(sed_integrand, axis=(1, 2)) * mstar_obs
+
+    return rest_sed
+
+
+def _get_ftrans_sed(
+    z_obs,
+    mc_sfh_type,
+    logsm_obs_ms,
+    logssfr_obs_ms,
+    logsm_obs_q,
+    logssfr_obs_q,
+    uran_av,
+    uran_delta,
+    uran_funo,
+    ssp_data,
+    spspop_params,
+    scatter_params,
+):
+    n_gals = z_obs.size
+    n_wave = ssp_data.ssp_wave.size
+    n_age = ssp_data.ssp_lg_age_gyr.size
+
+    ssp_wave_galpop = jnp.tile(ssp_data.ssp_wave, n_gals).reshape((n_gals, n_wave))
+
+    # Recalculate dust transmission fraction at each λ_SED for each galaxy
+    ftrans_sed_args_ms = (
+        spspop_params.dustpop_params,
+        ssp_wave_galpop,
+        logsm_obs_ms,
+        logssfr_obs_ms,
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        scatter_params,
+    )
+    _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_sed_args_ms)
+    ftrans_sed_ms = _res[1]  # ftrans_sed_ms.shape = (n_gals, n_wave, n_age)
+
+    ftrans_sed_args_q = (
+        spspop_params.dustpop_params,
+        ssp_wave_galpop,
+        logsm_obs_q,
+        logssfr_obs_q,
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        scatter_params,
+    )
+    _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_sed_args_q)
+    ftrans_sed_q = _res[1]  # ftrans_sed_q.shape = (n_gals, n_wave, n_age)
+
+    # Select the transmission curve according to the SFH selection
+    ftrans_sed = jnp.where(
+        mc_sfh_type.reshape((n_gals, 1, 1)) > 0, ftrans_sed_ms, ftrans_sed_q
+    )
+    ftrans_sed = jnp.swapaxes(ftrans_sed, 1, 2)
+    ftrans_sed = ftrans_sed.reshape((n_gals, 1, n_age, n_wave))
+
+    return ftrans_sed
