@@ -18,4 +18,4 @@ rsync -avz /home/ahearin/work/repositories/python/diffsky/scripts/LJ_CROSSX/lc_c
 
 python lc_cf_crossmatch_script.py 0.01 3.0 -istart 0 -iend 5 -drn_out /lcrc/project/halotools/random_data/0826 -machine lcrc
 
-python inspect_lightcone_mock.py /lcrc/project/halotools/random_data/0826
+python inspect_lc_crossx_data.py /lcrc/project/halotools/random_data/0826
