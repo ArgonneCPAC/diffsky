@@ -96,6 +96,10 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
             hdf_out[key_out] = diffsky_data[key]
 
 
+def write_lc_sed_mock_to_disk(fnout, lc_data, diffsky_data):
+    raise NotImplementedError("Need to add SED quantities to write_lc_sed_mock_to_disk")
+
+
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     lc_data["t_obs"] = flat_wcdm.age_at_z(
         lc_data["redshift_true"], *sim_info.cosmo_params
@@ -202,13 +206,15 @@ def add_sed_quantities_to_mock(
 
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
 
+    ran_key, sfh_key = jran.split(ran_key, 2)
     lc_data, diffsky_data = add_sfh_quantities_to_mock(
-        sim_info, lc_data, diffsky_data, ran_key
+        sim_info, lc_data, diffsky_data, sfh_key
     )
     n_gals = diffsky_data["logsm_obs"].size
 
+    ran_key, sed_key = jran.split(ran_key, 2)
     args = (
-        ran_key,
+        sed_key,
         lc_data["redshift_true"],
         lc_data["t_obs"],
         diffsky_data["mah_params"],

@@ -153,9 +153,9 @@ if __name__ == "__main__":
                     fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
                 )
 
-            patch_key, sfh_key = jran.split(patch_key, 2)
-            lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
-                sim_info, lc_data, diffsky_data, sfh_key
+            patch_key, sed_key = jran.split(patch_key, 2)
+            lc_data, diffsky_data = lcmp.add_sed_quantities_to_mock(
+                sim_info, lc_data, diffsky_data, sed_key
             )
 
             patch_key, nfw_key = jran.split(patch_key, 2)
@@ -165,7 +165,7 @@ if __name__ == "__main__":
 
             bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
             fn_out = os.path.join(drn_out, bn_out)
-            lcmp.write_lc_sfh_mock_to_disk(fn_out, lc_data, diffsky_data)
+            lcmp.write_lc_sed_mock_to_disk(fn_out, lc_data, diffsky_data)
             metadata_sfh_mock.append_metadata(fn_out, sim_name)
 
             del lc_data
