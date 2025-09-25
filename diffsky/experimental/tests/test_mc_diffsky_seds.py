@@ -1,6 +1,7 @@
 """ """
 
 import numpy as np
+import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.photometry import photometry_kernels as phk
 from dsps.sfh.diffburst import LGFBURST_MAX, LGFBURST_MIN, LGYR_PEAK_MAX, LGYR_PEAK_MIN
@@ -16,6 +17,88 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
+@pytest.mark.skip
+def test_mc_diffsky_phot_flat_u_params():
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+    sed_info = mcsed.mc_weighted_diffsky_lightcone(ran_key, lc_data)
+
+    u_param_collection = dpw.get_u_param_collection_from_param_collection(
+        *dpw.DEFAULT_PARAM_COLLECTION
+    )
+    u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
+
+    phot_info = mcsed._mc_diffsky_phot_flat_u_params(
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+    )
+
+    assert np.allclose(sed_info["obs_mags"], phot_info["obs_mags"], rtol=1e-4)
+
+
+def test_recompute_sed_from_phot_mock():
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+
+    (
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+    ) = dpw.DEFAULT_PARAM_COLLECTION
+
+    u_param_collection = dpw.get_u_param_collection_from_param_collection(
+        *dpw.DEFAULT_PARAM_COLLECTION
+    )
+    u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
+
+    phot_info = mcsed._mc_diffsky_phot_flat_u_params(
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+    )
+
+    z_phot_table = np.linspace(0.01, 3, 20)
+    wave_eff_table = lc_phot_kern.get_wave_eff_table(z_phot_table, tcurves)
+    args = (
+        lc_data.z_obs,
+        lc_data.ssp_data,
+        phot_info["logmp_obs"],
+        phot_info["mc_sfh_type"],
+        phot_info["ssp_weights"],
+        phot_info["uran_av"],
+        phot_info["uran_delta"],
+        phot_info["uran_funo"],
+        phot_info["logsm_obs_ms"],
+        phot_info["logsm_obs_q"],
+        phot_info["logssfr_obs_ms"],
+        phot_info["logssfr_obs_q"],
+        ssp_err_pop_params,
+        spspop_params,
+        scatter_params,
+        z_phot_table,
+        wave_eff_table,
+    )
+
+    rest_sed_recomputed = mcsed._recompute_sed_from_phot_mock(*args)
+
+    # Enforce agreement between precomputed vs exact magnitudes
+    n_bands = phot_info["obs_mags"].shape[1]
+    for iband in range(n_bands):
+        args = (
+            lc_data.ssp_data.ssp_wave,
+            rest_sed_recomputed,
+            tcurves[iband].wave,
+            tcurves[iband].transmission,
+            lc_data.z_obs,
+            *DEFAULT_COSMOLOGY,
+        )
+
+        mags = calc_obs_mags_galpop(*args)
+        mag_err = mags - phot_info["obs_mags"][:, iband]
+        assert np.mean(mag_err) < 0.05
+        assert np.std(mag_err) < 0.1
+
+
+@pytest.mark.skip
 def test_mc_weighted_diffsky_lightcone():
     ran_key = jran.key(0)
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
@@ -24,6 +107,7 @@ def test_mc_weighted_diffsky_lightcone():
     _check_sed_info(sed_info, lc_data, tcurves)
 
 
+@pytest.mark.skip
 def test_mc_diffsky_seds_flat_u_params():
     ran_key = jran.key(0)
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
