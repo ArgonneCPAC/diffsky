@@ -35,6 +35,10 @@ PHOT_INFO_KEYS = (
     "uran_av",
     "uran_delta",
     "uran_funo",
+    "logsm_obs_ms",
+    "logssfr_obs_ms",
+    "logsm_obs_q",
+    "logssfr_obs_q",
     "delta_scatter_ms",
     "delta_scatter_q",
 )
@@ -421,6 +425,10 @@ def _mc_diffsky_seds_kern(
         uran_av=uran_av,
         uran_delta=uran_delta,
         uran_funo=uran_funo,
+        logsm_obs_ms=diffstar_galpop.logsm_obs_ms,
+        logsm_obs_q=diffstar_galpop.logsm_obs_q,
+        logssfr_obs_ms=diffstar_galpop.logssfr_obs_ms,
+        logssfr_obs_q=diffstar_galpop.logssfr_obs_q,
         delta_scatter_ms=delta_scatter_ms,
         delta_scatter_q=delta_scatter_q,
         frac_ssp_err_sed=frac_ssp_err_sed,
@@ -709,6 +717,10 @@ def _mc_diffsky_phot_kern(
         uran_av=uran_av,
         uran_delta=uran_delta,
         uran_funo=uran_funo,
+        logsm_obs_ms=diffstar_galpop.logsm_obs_ms,
+        logsm_obs_q=diffstar_galpop.logsm_obs_q,
+        logssfr_obs_ms=diffstar_galpop.logssfr_obs_ms,
+        logssfr_obs_q=diffstar_galpop.logssfr_obs_q,
         delta_scatter_ms=delta_scatter_ms,
         delta_scatter_q=delta_scatter_q,
     )
@@ -716,18 +728,67 @@ def _mc_diffsky_phot_kern(
     return phot_info._asdict()
 
 
-def _recompute_sed_from_phot_info(phot_info, ssp_data):
+def _recompute_sed_from_phot_mock(
+    redshift_true,
+    ssp_data,
+    logmp_obs,
+    mc_sfh_type,
+    ssp_weights,
+    uran_av,
+    uran_delta,
+    uran_funo,
+    logsm_obs_ms,
+    logsm_obs_q,
+    logssfr_obs_ms,
+    logssfr_obs_q,
+    ssp_err_pop_params,
+    spspop_params,
+    scatter_params,
+    z_phot_table,
+    wave_eff_table,
+):
     # Reshape arrays storing weights and fluxes form SED integrand
     n_met, n_age, n_wave = ssp_data.ssp_flux.shape
-    n_gals = phot_info["logmp_obs"].size
+    n_gals = logmp_obs.size
 
-    mstar_obs = 10**phot_info.logmp_obs
+    # For each filter, calculate λ_eff in the restframe of each galaxy
+    wave_eff_galpop = lc_phot_kern.interp_vmap2(
+        redshift_true, z_phot_table, wave_eff_table
+    )
+
+    frac_ssp_err_sed = _get_frac_ssp_err(
+        ssp_data,
+        redshift_true,
+        mc_sfh_type,
+        logsm_obs_ms,
+        logsm_obs_q,
+        wave_eff_galpop,
+        ssp_err_pop_params,
+    )
+
+    ftrans_sed = _get_ftrans_sed(
+        redshift_true,
+        mc_sfh_type,
+        logsm_obs_ms,
+        logssfr_obs_ms,
+        logsm_obs_q,
+        logssfr_obs_q,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        ssp_data,
+        spspop_params,
+        scatter_params,
+    )
 
     frac_ssp_err = frac_ssp_err_sed.reshape((n_gals, 1, 1, n_wave))
     flux_table = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
-    weights = phot_info["ssp_weights"].reshape((n_gals, n_met, n_age, 1))
+    weights = ssp_weights.reshape((n_gals, n_met, n_age, 1))
 
     # Compute restframe SED as PDF-weighted sum of SSPs
+    logsm_obs = jnp.where(mc_sfh_type == 0, logsm_obs_q, logsm_obs_ms)
+    mstar_obs = 10 ** logsm_obs.reshape((n_gals, 1))
+
     sed_integrand = flux_table * weights * ftrans_sed * frac_ssp_err
     rest_sed = jnp.sum(sed_integrand, axis=(1, 2)) * mstar_obs
 
