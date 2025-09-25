@@ -13,12 +13,9 @@ from diffstarpop import mc_diffstar_sfh_galpop
 from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
-from dsps.metallicity import umzr
 from jax import random as jran
 
-from ...burstpop import freqburst_mono
-from ...experimental import lc_phot_kern
-from ...experimental import photometry_interpolation as photerp
+from ...experimental import mc_diffsky_seds
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...param_utils import diffsky_param_wrapper as dpw
@@ -110,6 +107,7 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     for pname, pval in zip(mah_params._fields, mah_params):
         diffsky_data[pname] = pval
     diffsky_data["has_diffmah_fit"] = msk_has_diffmah_fit
+    diffsky_data["mah_params"] = mah_params
 
     logmp0 = logmh_at_t_obs(
         mah_params, np.zeros(mah_params.logm0.size) + 10**sim_info.lgt0, sim_info.lgt0
@@ -209,79 +207,25 @@ def add_sed_quantities_to_mock(
     )
     n_gals = diffsky_data["logsm_obs"].size
 
-    # Calculate stellar age PDF weights from SFH
-    # smooth_age_weights_ms.shape = (n_gals, n_age)
-    smooth_age_weights_ms = lc_phot_kern.calc_age_weights_from_sfh_table_vmap(
-        diffsky_data["t_table"],
-        diffsky_data["sfh_table_ms"],
-        ssp_data.ssp_lg_age_gyr,
+    args = (
+        ran_key,
+        lc_data["redshift_true"],
         lc_data["t_obs"],
-    )
-    smooth_age_weights_q = lc_phot_kern.calc_age_weights_from_sfh_table_vmap(
+        diffsky_data["mah_params"],
+        diffsky_data["logmp0"],
         diffsky_data["t_table"],
-        diffsky_data["sfh_table_q"],
-        ssp_data.ssp_lg_age_gyr,
-        lc_data["t_obs"],
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        sim_info.cosmo_params,
     )
-
-    # Calculate stellar age PDF weights from SFH + burstiness
-    _args = (
-        spspop_params.burstpop_params,
-        diffsky_data["logsm_obs_ms"],
-        diffsky_data["logssfr_obs_ms"],
-        ssp_data.ssp_lg_age_gyr,
-        smooth_age_weights_ms,
-    )
-    _res = lc_phot_kern._calc_bursty_age_weights_vmap(*_args)
-    bursty_age_weights_ms = _res[0]  # bursty_age_weights_ms.shape = (n_gals, age)
-    burst_params = _res[1]  # ('lgfburst', 'lgyr_peak', 'lgyr_max')
-
-    # Calculate the frequency of SFH bursts
-    p_burst_ms = freqburst_mono.get_freqburst_from_freqburst_params(
-        spspop_params.burstpop_params.freqburst_params,
-        diffsky_data["logsm_obs_ms"],
-        diffsky_data["logssfr_obs_ms"],
-    )
-
-    # Calculate mean metallicity of the population
-    lgmet_med_ms = umzr.mzr_model(
-        diffsky_data["logsm_obs_ms"], lc_data["t_obs"], *mzr_params
-    )
-    lgmet_med_q = umzr.mzr_model(
-        diffsky_data["logsm_obs_q"], lc_data["t_obs"], *mzr_params
-    )
-
-    # Calculate metallicity distribution function
-    # lgmet_weights_q.shape = (n_gals, n_met)
-    lgmet_weights_ms = lc_phot_kern._calc_lgmet_weights_galpop(
-        lgmet_med_ms, lc_phot_kern.LGMET_SCATTER, ssp_data.ssp_lgmet
-    )
-    lgmet_weights_q = lc_phot_kern._calc_lgmet_weights_galpop(
-        lgmet_med_q, lc_phot_kern.LGMET_SCATTER, ssp_data.ssp_lgmet
-    )
-
-    # Calculate SSP weights = P_SSP = P_met * P_age
-    _w_age_ms = smooth_age_weights_ms.reshape((n_gals, 1, n_age))
-    _w_lgmet_ms = lgmet_weights_ms.reshape((n_gals, n_met, 1))
-    ssp_weights_smooth_ms = _w_lgmet_ms * _w_age_ms
-
-    _w_age_bursty_ms = bursty_age_weights_ms.reshape((n_gals, 1, n_age))
-    ssp_weights_bursty_ms = _w_lgmet_ms * _w_age_bursty_ms
-
-    _w_age_q = smooth_age_weights_q.reshape((n_gals, 1, n_age))
-    _w_lgmet_q = lgmet_weights_q.reshape((n_gals, n_met, 1))
-    ssp_weights_q = _w_lgmet_q * _w_age_q  # (n_gals, n_met, n_age)
-
-    # Interpolate SSP mag table to z_obs of each galaxy
-    photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
-        lc_data["redshift_true"], z_phot_table, precomputed_ssp_mag_table
-    )
-    ssp_photflux_table = 10 ** (-0.4 * photmag_table_galpop)
-
-    # For each filter, calculate λ_eff in the restframe of each galaxy
-    wave_eff_galpop = lc_phot_kern.interp_vmap2(
-        lc_data["redshift_true"], z_phot_table, wave_eff_table
-    )
+    sed_info = mc_diffsky_seds._mc_diffsky_seds_kern(*args)
 
 
 def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5.0):
