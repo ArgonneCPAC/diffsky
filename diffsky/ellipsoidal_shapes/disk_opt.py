@@ -68,6 +68,9 @@ def _pred_kern(disk_params, pred_data):
     return ba_pdf_pred
 
 
+loss_and_grad_kern = jjit(value_and_grad(loss_kern, argnums=0))
+
+
 @jjit
 def _pred_ellipse_samples_kern(disk_params, disk_key, mu_ran, phi_ran):
     ngals = mu_ran.shape[0]
@@ -97,8 +100,6 @@ if __name__ == "__main__":
         default="spiral_b_over_a_pdf_rodriguez_padilla_2013.txt",
     )
     args = parser.parse_args()
-
-    loss_and_grad_kern = jjit(value_and_grad(loss_kern, argnums=0))
 
     VariedParams = namedtuple("VariedParams", ("c_min", "c_max"))
     varied_params = VariedParams._make(

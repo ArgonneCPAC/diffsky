@@ -106,6 +106,9 @@ def _nondiff_pred_kern(bulge_params, pred_data):
     return ba_pdf_pred
 
 
+loss_and_grad_kern = jjit(value_and_grad(loss_kern, argnums=0))
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -124,8 +127,6 @@ if __name__ == "__main__":
         default="ellipsoid_b_over_a_pdf_rodriguez_padilla_2013.txt",
     )
     args = parser.parse_args()
-
-    loss_and_grad_kern = jjit(value_and_grad(loss_kern, argnums=0))
 
     VariedParams = namedtuple("VariedParams", ("ba_peak", "ba_sigma", "c_min"))
     varied_params = VariedParams._make(
