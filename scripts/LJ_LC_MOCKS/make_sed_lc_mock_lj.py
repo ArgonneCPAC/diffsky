@@ -10,12 +10,12 @@ import numpy as np
 from dsps.data_loaders import load_ssp_templates, load_transmission_curve
 from jax import random as jran
 
+from diffsky import phot_utils
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
 from diffsky.data_loaders.hacc_utils import metadata_sfh_mock
-from diffsky.experimental import phot_utils
 from diffsky.experimental import precompute_ssp_phot as psspp
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
