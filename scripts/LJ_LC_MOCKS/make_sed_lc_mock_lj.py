@@ -7,7 +7,7 @@ import pickle
 from time import time
 
 import numpy as np
-from dsps.data_loaders import load_ssp_templates
+from dsps.data_loaders import load_ssp_templates, load_transmission_curve
 from jax import random as jran
 
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
@@ -15,6 +15,7 @@ from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
 from diffsky.data_loaders.hacc_utils import metadata_sfh_mock
+from diffsky.experimental import phot_utils
 from diffsky.experimental import precompute_ssp_phot as psspp
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
@@ -125,6 +126,10 @@ if __name__ == "__main__":
 
     n_z_phot_table = 15
     z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+    bn_pat_list = [f"lsst_{x}*" for x in ("u", "g", "r", "i", "z", "y")]
+    tcurves = [load_transmission_curve(bn_pat=bn_pat) for bn_pat in bn_pat_list]
+    wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
+
     precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
         tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
     )
