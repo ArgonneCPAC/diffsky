@@ -187,7 +187,7 @@ if __name__ == "__main__":
                 wave_eff_table,
                 sed_key,
             )
-            lc_data, diffsky_data = lcmp.add_sed_quantities_to_mock(*args)
+            sed_info, lc_data, diffsky_data = lcmp.add_sed_quantities_to_mock(*args)
 
             patch_key, nfw_key = jran.split(patch_key, 2)
             lc_data, diffsky_data = lcmp.reposition_satellites(
