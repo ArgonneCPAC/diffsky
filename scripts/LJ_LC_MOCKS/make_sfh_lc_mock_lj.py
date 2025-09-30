@@ -41,8 +41,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("z_min", help="Minimum redshift", type=float)
     parser.add_argument("z_max", help="Maximum redshift", type=float)
-    parser.add_argument("istart", help="Minimum redshift", type=int)
-    parser.add_argument("iend", help="Maximum redshift", type=int)
+    parser.add_argument("istart", help="First sky patch", type=int)
+    parser.add_argument("iend", help="Last sky patch", type=int)
 
     parser.add_argument("drn_out", help="Output directory")
     parser.add_argument(
