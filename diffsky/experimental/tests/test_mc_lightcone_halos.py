@@ -9,6 +9,7 @@ from jax import random as jran
 from ...mass_functions import mc_hosts
 from ...mass_functions.fitting_utils.calibrations import hacc_core_shmf_params as hcshmf
 from .. import mc_lightcone_halos as mclh
+from .. import precompute_ssp_phot as psspp
 
 
 def test_mc_lightcone_host_halo_mass_function():
@@ -300,8 +301,9 @@ def test_mc_lightcone_obs_mags_cens():
 
     n_z_phot_table = 15
     z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
-    precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table
+    cosmo_params = flat_wcdm.PLANCK15
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
     )
 
     args = (
