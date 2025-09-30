@@ -231,8 +231,8 @@ def add_sed_quantities_to_mock(
         ssp_err_pop_params,
         sim_info.cosmo_params,
     )
-    sed_info = mc_diffsky_seds._mc_diffsky_seds_kern(*args)
-    return sed_info, lc_data, diffsky_data
+    phot_info = mc_diffsky_seds._mc_diffsky_phot_kern(*args)
+    return phot_info, lc_data, diffsky_data
 
 
 def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5.0):
