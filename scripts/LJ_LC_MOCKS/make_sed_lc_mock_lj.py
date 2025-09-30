@@ -7,6 +7,7 @@ import pickle
 from time import time
 
 import numpy as np
+from dsps.data_loaders import load_ssp_templates
 from jax import random as jran
 
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
@@ -14,6 +15,7 @@ from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
 from diffsky.data_loaders.hacc_utils import metadata_sfh_mock
+from diffsky.experimental import precompute_ssp_phot as psspp
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -46,6 +48,10 @@ if __name__ == "__main__":
 
     parser.add_argument("drn_out", help="Output directory")
     parser.add_argument(
+        "-fn_u_params", help="Best-fit diffsky parameters", default="best_fit.txt"
+    )
+
+    parser.add_argument(
         "-indir_lc_data",
         help="Input drn storing lc_cores-*.*.hdf5",
         default=DRN_LJ_LC_LCRC,
@@ -72,6 +78,8 @@ if __name__ == "__main__":
     istart = args.istart
     iend = args.iend
     drn_out = args.drn_out
+
+    fn_u_params = args.fn_u_params
     itest = args.itest
     sim_name = args.sim_name
     synthetic_cores = args.synthetic_cores
@@ -111,6 +119,15 @@ if __name__ == "__main__":
         lc_patch_list = [0, 1]
     else:
         lc_patch_list = np.arange(istart, iend).astype(int)
+
+    ssp_data = load_ssp_templates()
+    u_param_arr = np.loadtxt(fn_u_params)
+
+    n_z_phot_table = 15
+    z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
+    )
 
     start_script = time()
     for lc_patch in lc_patch_list:
@@ -154,6 +171,17 @@ if __name__ == "__main__":
                 )
 
             patch_key, sed_key = jran.split(patch_key, 2)
+            args = (
+                sim_info,
+                lc_data,
+                diffsky_data,
+                ssp_data,
+                u_param_arr,
+                precomputed_ssp_mag_table,
+                z_phot_table,
+                wave_eff_table,
+                sed_key,
+            )
             lc_data, diffsky_data = lcmp.add_sed_quantities_to_mock(
                 sim_info, lc_data, diffsky_data, sed_key
             )
