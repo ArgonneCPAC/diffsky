@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import os
 
@@ -113,3 +112,12 @@ def get_wave_eff_from_tcurves(tcurves, z_obs):
         wave_eff_arr.append(waveff)
     wave_eff_arr = np.array(wave_eff_arr)
     return wave_eff_arr
+
+
+def get_wave_eff_table(z_phot_table, tcurves):
+    collector = []
+    for z_obs in z_phot_table:
+        wave_eff = get_wave_eff_from_tcurves(tcurves, z_obs)
+        collector.append(wave_eff)
+    wave_eff_table = np.array(collector)
+    return wave_eff_table

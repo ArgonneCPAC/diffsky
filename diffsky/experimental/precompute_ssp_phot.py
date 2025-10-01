@@ -153,3 +153,33 @@ def get_tcurve_matrix_from_tcurves(tcurves):
     X = np.array([x.wave for x in tcurves])
     Y = np.array([x.transmission for x in tcurves])
     return X, Y
+
+
+def get_precompute_ssp_mag_redshift_table(
+    tcurves, ssp_data, z_phot_table, cosmo_params
+):
+    """Calculate precomputed SSP magnitude table to use for lightcone interpolation
+
+    Parameters
+    ----------
+    tcurves : list of n_bands transmission curves
+
+    ssp_data : namedtuple
+
+    z_phot_table : ndarray, shape (n_phot_table, )
+
+    cosmo_params : namedtuple
+
+    Returns
+    -------
+    precomputed_ssp_mag_table : ndarray, shape (n_phot_table, n_bands, n_met, n_age)
+
+    """
+    collector = []
+    for z_obs in z_phot_table:
+        ssp_obsflux_table = get_ssp_obsflux_table(
+            ssp_data, tcurves, z_obs, cosmo_params
+        )
+        collector.append(ssp_obsflux_table)
+    precomputed_ssp_mag_table = -2.5 * np.log10(np.array(collector))
+    return precomputed_ssp_mag_table

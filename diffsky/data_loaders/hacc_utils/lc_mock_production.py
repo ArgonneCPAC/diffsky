@@ -15,8 +15,10 @@ from diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
 from jax import random as jran
 
+from ...experimental import mc_diffsky_seds
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
+from ...param_utils import diffsky_param_wrapper as dpw
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
 from . import lightcone_utils as hlu
 from . import load_lc_cf
@@ -94,6 +96,10 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
             hdf_out[key_out] = diffsky_data[key]
 
 
+def write_lc_sed_mock_to_disk(fnout, lc_data, diffsky_data):
+    raise NotImplementedError("Need to add SED quantities to write_lc_sed_mock_to_disk")
+
+
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     lc_data["t_obs"] = flat_wcdm.age_at_z(
         lc_data["redshift_true"], *sim_info.cosmo_params
@@ -105,6 +111,7 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     for pname, pval in zip(mah_params._fields, mah_params):
         diffsky_data[pname] = pval
     diffsky_data["has_diffmah_fit"] = msk_has_diffmah_fit
+    diffsky_data["mah_params"] = mah_params
 
     logmp0 = logmh_at_t_obs(
         mah_params, np.zeros(mah_params.logm0.size) + 10**sim_info.lgt0, sim_info.lgt0
@@ -121,7 +128,7 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     gyr_since_infall = np.zeros_like(logmp0)
     upids = np.where(lc_data["central"] == 1, -1, 0)
 
-    t_table = np.linspace(0.1, 10**sim_info.lgt0, 100)
+    diffsky_data["t_table"] = np.linspace(0.1, 10**sim_info.lgt0, 100)
 
     args = (
         DEFAULT_DIFFSTARPOP_PARAMS,
@@ -132,25 +139,100 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
         logmhost_infall,
         gyr_since_infall,
         ran_key,
-        t_table,
+        diffsky_data["t_table"],
     )
 
     _res = mc_diffstar_sfh_galpop(*args)
     sfh_params_ms, sfh_params_q, sfh_ms, sfh_q, frac_q, mc_is_q = _res
 
-    sfh = np.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
+    diffsky_data["sfh_table"] = np.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     sfh_params = mc_select_diffstar_params(sfh_params_q, sfh_params_ms, mc_is_q)
+
+    diffsky_data["sfh_table_ms"] = sfh_ms
+    diffsky_data["sfh_table_q"] = sfh_q
+
+    diffsky_data["mc_is_q"] = mc_is_q
+    # Need to add SFH table after MC selection
 
     for key in sfh_params.ms_params._fields:
         diffsky_data[key] = getattr(sfh_params.ms_params, key)
     for key in sfh_params.q_params._fields:
         diffsky_data[key] = getattr(sfh_params.q_params, key)
 
-    logsm_obs, logssfr_obs = get_logsm_logssfr_at_t_obs(lc_data["t_obs"], t_table, sfh)
+    logsm_obs, logssfr_obs = get_logsm_logssfr_at_t_obs(
+        lc_data["t_obs"], diffsky_data["t_table"], diffsky_data["sfh_table"]
+    )
     diffsky_data["logsm_obs"] = logsm_obs
     diffsky_data["logssfr_obs"] = logssfr_obs
 
+    logsm_obs_ms, logssfr_obs_ms = get_logsm_logssfr_at_t_obs(
+        lc_data["t_obs"], diffsky_data["t_table"], diffsky_data["sfh_table_ms"]
+    )
+    diffsky_data["logsm_obs_ms"] = logsm_obs_ms
+    diffsky_data["logssfr_obs_ms"] = logssfr_obs_ms
+
+    logsm_obs_q, logssfr_obs_q = get_logsm_logssfr_at_t_obs(
+        lc_data["t_obs"], diffsky_data["t_table"], diffsky_data["sfh_table_q"]
+    )
+    diffsky_data["logsm_obs_q"] = logsm_obs_q
+    diffsky_data["logssfr_obs_q"] = logssfr_obs_q
+
     return lc_data, diffsky_data
+
+
+def add_sed_quantities_to_mock(
+    sim_info,
+    lc_data,
+    diffsky_data,
+    ssp_data,
+    u_param_arr,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    ran_key,
+):
+    u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
+    param_collection = dpw.get_param_collection_from_u_param_collection(
+        *u_param_collection
+    )
+
+    (
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+    ) = param_collection
+
+    n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
+
+    ran_key, sfh_key = jran.split(ran_key, 2)
+    lc_data, diffsky_data = add_sfh_quantities_to_mock(
+        sim_info, lc_data, diffsky_data, sfh_key
+    )
+    n_gals = diffsky_data["logsm_obs"].size
+
+    ran_key, sed_key = jran.split(ran_key, 2)
+    args = (
+        sed_key,
+        lc_data["redshift_true"],
+        lc_data["t_obs"],
+        diffsky_data["mah_params"],
+        diffsky_data["logmp0"],
+        diffsky_data["t_table"],
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        sim_info.cosmo_params,
+    )
+    phot_info = mc_diffsky_seds._mc_diffsky_phot_kern(*args)
+    return phot_info, lc_data, diffsky_data
 
 
 def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5.0):
