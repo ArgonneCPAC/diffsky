@@ -1,3 +1,8 @@
+0.2.5 (2025-10-01)
+-------------------
+- Minor changes before updating to diffstar v1.0
+
+
 0.2.4 (2025-09-02)
 -------------------
 - Release associated with diffskyopt+kdescent calibration by Alan Pearl
