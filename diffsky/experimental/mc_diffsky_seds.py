@@ -7,7 +7,7 @@ config.update("jax_enable_x64", True)
 from collections import namedtuple
 
 from diffmah import logmh_at_t_obs
-from diffstarpop.param_utils import mc_select_diffstar_params
+from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import DEFAULT_COSMOLOGY, age_at_z0
 from dsps.metallicity import umzr
 from jax import jit as jjit

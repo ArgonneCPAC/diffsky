@@ -181,9 +181,9 @@ def get_param_collection_from_u_param_collection(
 def get_u_param_collection_from_u_param_array(u_param_arr):
     u_params = UParamsFlat(*u_param_arr)
 
-    diffstarpop_u_params = [
-        getattr(u_params, name) for name in DEFAULT_DIFFSTARPOP_U_PARAMS._fields
-    ]
+    diffstarpop_u_params = DEFAULT_DIFFSTARPOP_U_PARAMS._make(
+        [getattr(u_params, name) for name in DEFAULT_DIFFSTARPOP_U_PARAMS._fields]
+    )
 
     u_mzr_params = [
         getattr(u_params, name) for name in umzr.DEFAULT_MZR_U_PARAMS._fields

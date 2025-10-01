@@ -5,7 +5,7 @@ from jax import config
 
 config.update("jax_enable_x64", True)
 
-from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
+from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw

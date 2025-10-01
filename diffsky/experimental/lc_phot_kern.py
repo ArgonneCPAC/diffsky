@@ -8,8 +8,8 @@ config.update("jax_enable_x64", True)
 from collections import namedtuple
 
 import numpy as np
+from diffstar.diffstarpop import mc_diffstar_sfh_galpop
 from diffstar.utils import cumulative_mstar_formed_galpop
-from diffstarpop import mc_diffstar_sfh_galpop
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
 from dsps.metallicity import umzr

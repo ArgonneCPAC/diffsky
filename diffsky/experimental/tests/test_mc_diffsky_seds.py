@@ -144,8 +144,7 @@ def _check_sed_info(sed_info, lc_data, tcurves):
     n_gals = lc_data.logmp0.size
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
 
-    assert np.all(np.isfinite(sed_info["diffstar_params"].ms_params))
-    assert np.all(np.isfinite(sed_info["diffstar_params"].q_params))
+    assert np.all(np.isfinite(sed_info["diffstar_params"]))
 
     assert np.all(np.isfinite(sed_info["burst_params"].lgfburst))
     assert np.all(sed_info["burst_params"].lgfburst >= LGFBURST_MIN)
