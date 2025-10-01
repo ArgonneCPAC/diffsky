@@ -5,8 +5,8 @@ import os
 import numpy as np
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
-from diffstarpop import mc_diffstar_sfh_galpop
-from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
+from diffstar.diffstarpop import mc_diffstar_sfh_galpop
+from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.cosmology.flat_wcdm import _age_at_z_kern, age_at_z0
