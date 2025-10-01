@@ -4,10 +4,10 @@ import os
 
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffstar.defaults import T_TABLE_MIN
+from diffstar.diffstarpop import mc_diffstar_sfh_galpop
+from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
+from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from diffstar.utils import cumulative_mstar_formed_galpop
-from diffstarpop import mc_diffstar_sfh_galpop
-from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
-from diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from jax import jit as jjit

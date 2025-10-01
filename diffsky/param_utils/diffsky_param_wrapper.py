@@ -2,7 +2,7 @@
 
 from collections import namedtuple
 
-from diffstarpop import (
+from diffstar.diffstarpop import (
     DEFAULT_DIFFSTARPOP_PARAMS,
     DEFAULT_DIFFSTARPOP_U_PARAMS,
     get_bounded_diffstarpop_params,
@@ -41,10 +41,7 @@ DEFAULT_PARAM_COLLECTION = ParamCollection(
 
 
 def get_flat_param_names():
-    diffstarpop_pnames_flat = (
-        *DEFAULT_DIFFSTARPOP_PARAMS.sfh_pdf_cens_params._fields,
-        *DEFAULT_DIFFSTARPOP_PARAMS.satquench_params._fields,
-    )
+    diffstarpop_pnames_flat = (*DEFAULT_DIFFSTARPOP_PARAMS._fields,)
 
     burstpop_pnames_flat = (
         *spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.freqburst_params._fields,
@@ -76,10 +73,7 @@ def unroll_param_collection_into_flat_array(
     scatter_params,
     ssp_err_pop_params,
 ):
-    diffstarpop_params_flat = (
-        *diffstarpop_params.sfh_pdf_cens_params,
-        *diffstarpop_params.satquench_params,
-    )
+    diffstarpop_params_flat = diffstarpop_params
 
     burstpop_params_flat = (
         *spspop_params.burstpop_params.freqburst_params,
@@ -111,10 +105,7 @@ def unroll_u_param_collection_into_flat_array(
     scatter_u_params,
     ssp_err_pop_u_params,
 ):
-    diffstarpop_u_params_flat = (
-        *diffstarpop_u_params.u_sfh_pdf_cens_params,
-        *diffstarpop_u_params.u_satquench_params,
-    )
+    diffstarpop_u_params_flat = diffstarpop_u_params
 
     burstpop_params_flat = (
         *spspop_u_params.u_burstpop_params.freqburst_u_params,
@@ -190,23 +181,8 @@ def get_param_collection_from_u_param_collection(
 def get_u_param_collection_from_u_param_array(u_param_arr):
     u_params = UParamsFlat(*u_param_arr)
 
-    u_sfh_pdf_cens_params = [
-        getattr(u_params, name)
-        for name in DEFAULT_DIFFSTARPOP_U_PARAMS.u_sfh_pdf_cens_params._fields
-    ]
-    u_sfh_pdf_cens_params = DEFAULT_DIFFSTARPOP_U_PARAMS.u_sfh_pdf_cens_params._make(
-        u_sfh_pdf_cens_params
-    )
-    u_satquench_params = [
-        getattr(u_params, name)
-        for name in DEFAULT_DIFFSTARPOP_U_PARAMS.u_satquench_params._fields
-    ]
-    u_satquench_params = DEFAULT_DIFFSTARPOP_U_PARAMS.u_satquench_params._make(
-        u_satquench_params
-    )
-
     diffstarpop_u_params = DEFAULT_DIFFSTARPOP_U_PARAMS._make(
-        (u_sfh_pdf_cens_params, u_satquench_params)
+        [getattr(u_params, name) for name in DEFAULT_DIFFSTARPOP_U_PARAMS._fields]
     )
 
     u_mzr_params = [

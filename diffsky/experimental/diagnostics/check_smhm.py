@@ -1,7 +1,7 @@
 """ """
 
 import numpy as np
-from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
+from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from jax import random as jran
 
 from .. import mc_lightcone_halos as mclh

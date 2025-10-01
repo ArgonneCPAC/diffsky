@@ -47,16 +47,8 @@ def test_get_param_collection_from_u_param_collection():
     u_param_collection2 = dpw.get_u_param_collection_from_param_collection(
         *param_collection
     )
-    assert np.allclose(
-        u_param_collection[0].u_sfh_pdf_cens_params,
-        u_param_collection2[0].u_sfh_pdf_cens_params,
-    )
 
-    assert np.allclose(
-        u_param_collection[0].u_satquench_params,
-        u_param_collection2[0].u_satquench_params,
-    )
-
+    assert np.allclose(u_param_collection[0], u_param_collection2[0])
     assert np.allclose(u_param_collection[1], u_param_collection2[1])
 
     assert np.allclose(

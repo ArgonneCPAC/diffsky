@@ -9,9 +9,9 @@ import h5py
 import numpy as np
 from diffmah import DEFAULT_MAH_PARAMS, logmh_at_t_obs
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
-from diffstarpop import mc_diffstar_sfh_galpop
-from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
-from diffstarpop.param_utils import mc_select_diffstar_params
+from diffstar.diffstarpop import mc_diffstar_sfh_galpop
+from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
+from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
 from jax import random as jran
 

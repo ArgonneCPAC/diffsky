@@ -11,10 +11,10 @@ import numpy as np
 from diffmah.diffmah_kernels import _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
+from diffstar.diffstarpop import mc_diffstar_sfh_galpop
+from diffstar.diffstarpop import param_utils as dpu
+from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstar.utils import cumulative_mstar_formed_galpop
-from diffstarpop import mc_diffstar_sfh_galpop
-from diffstarpop import param_utils as dpu
-from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
 from dsps.metallicity import umzr

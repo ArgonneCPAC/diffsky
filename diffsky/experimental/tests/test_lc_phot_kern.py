@@ -2,7 +2,7 @@
 
 import numpy as np
 from diffstar.defaults import T_TABLE_MIN
-from diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
+from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.cosmology import flat_wcdm
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.data_loaders import retrieve_fake_fsps_data
