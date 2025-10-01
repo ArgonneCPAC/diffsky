@@ -15,6 +15,7 @@ from ...param_utils import spspop_param_utils as spspu
 from ...ssp_err_model import ssp_err_model
 from .. import lc_phot_kern
 from .. import mc_lightcone_halos as mclh
+from .. import precompute_ssp_phot as psspp
 from ..scatter import DEFAULT_SCATTER_PARAMS
 
 SSP_DATA = retrieve_fake_fsps_data.load_fake_ssp_data()
@@ -40,8 +41,8 @@ def test_multiband_lc_phot_kern():
 
     n_z_phot_table = 15
     z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
-    precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, DEFAULT_COSMOLOGY
     )
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
 

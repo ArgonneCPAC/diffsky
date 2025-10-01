@@ -27,6 +27,7 @@ from ..phot_utils import get_wave_eff_from_tcurves
 from ..ssp_err_model import ssp_err_model
 from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
+from . import precompute_ssp_phot as psspp
 
 _M = (0, None, None)
 _calc_lgmet_weights_galpop = jjit(
@@ -378,8 +379,8 @@ def generate_lc_data(
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
 
-    precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
     nhalos = np.ones(len(lc_halopop["z_obs"]))
@@ -415,8 +416,8 @@ def generate_weighted_grid_lc_data(
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
 
-    precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
@@ -464,8 +465,8 @@ def mc_weighted_lightcone_data(
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
 
-    precomputed_ssp_mag_table = mclh.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
