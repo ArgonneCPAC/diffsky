@@ -1,3 +1,8 @@
+0.3.0 (2025-10-03)
+-------------------
+- Update diffsky to be compatible with diffstar v1.0
+
+
 0.2.5 (2025-10-01)
 -------------------
 - Minor changes before updating to diffstar v1.0
