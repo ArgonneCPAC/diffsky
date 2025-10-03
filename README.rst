@@ -1,8 +1,8 @@
 diffsky
 ============
 
-Diffsky is a python library based on JAX for producing mock catalogs based on 
-`diffstar <https://diffstar.readthedocs.io/en/latest/>`_ 
+Diffsky is a python library based on JAX for producing mock catalogs based on
+`diffstar <https://diffstar.readthedocs.io/en/latest/>`_
 and `dsps <https://dsps.readthedocs.io/en/latest/>`_.
 
 Installation
@@ -28,18 +28,7 @@ For a typical development environment in conda-forge::
 Documentation
 -------------
 
-Online documentation for diffsky is available at 
+Online documentation for diffsky is available at
 `diffsky.readthedocs.io <https://diffsky.readthedocs.io/en/latest/>`_.
 
-Testing
--------
-To run the suite of unit tests::
-
-    $ cd /path/to/root/diffsky
-    $ pytest
-
-To build html of test coverage::
-
-    $ pytest -v --cov --cov-report html
-    $ open htmlcov/index.html
 
