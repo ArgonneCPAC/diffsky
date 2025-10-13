@@ -185,17 +185,12 @@ def add_sed_quantities_to_mock(
     lc_data,
     diffsky_data,
     ssp_data,
-    u_param_arr,
+    param_collection,
     precomputed_ssp_mag_table,
     z_phot_table,
     wave_eff_table,
     ran_key,
 ):
-    u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
-    param_collection = dpw.get_param_collection_from_u_param_collection(
-        *u_param_collection
-    )
-
     (
         diffstarpop_params,
         mzr_params,

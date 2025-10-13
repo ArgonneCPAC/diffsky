@@ -17,6 +17,7 @@ from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
 from diffsky.data_loaders.hacc_utils import metadata_sfh_mock
 from diffsky.experimental import precompute_ssp_phot as psspp
+from diffsky.param_utils import diffsky_param_wrapper as dpw
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -48,9 +49,7 @@ if __name__ == "__main__":
     parser.add_argument("iend", help="Last sky patch", type=int)
 
     parser.add_argument("drn_out", help="Output directory")
-    parser.add_argument(
-        "-fn_u_params", help="Best-fit diffsky parameters", default="best_fit.txt"
-    )
+    parser.add_argument("-fn_u_params", help="Best-fit diffsky parameters", default="")
 
     parser.add_argument(
         "-indir_lc_data",
@@ -122,7 +121,14 @@ if __name__ == "__main__":
         lc_patch_list = np.arange(istart, iend).astype(int)
 
     ssp_data = load_ssp_templates()
-    u_param_arr = np.loadtxt(fn_u_params)
+    if fn_u_params == "":
+        param_collection = dpw.DEFAULT_PARAM_COLLECTION
+    else:
+        u_param_arr = np.loadtxt(fn_u_params)
+        u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
+        param_collection = dpw.get_param_collection_from_u_param_collection(
+            *u_param_collection
+        )
 
     n_z_phot_table = 15
     z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
@@ -181,7 +187,7 @@ if __name__ == "__main__":
                 lc_data,
                 diffsky_data,
                 ssp_data,
-                u_param_arr,
+                param_collection,
                 precomputed_ssp_mag_table,
                 z_phot_table,
                 wave_eff_table,
