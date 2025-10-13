@@ -72,12 +72,10 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
         hdf_out["data/logmp_obs"] = diffsky_data["logmp_obs"]
 
         # Write diffstar params
-        for key in DEFAULT_DIFFSTAR_PARAMS.ms_params._fields:
+        for key in DEFAULT_DIFFSTAR_PARAMS._fields:
             key_out = "data/" + key
             hdf_out[key_out] = diffsky_data[key]
-        for key in DEFAULT_DIFFSTAR_PARAMS.q_params._fields:
-            key_out = "data/" + key
-            hdf_out[key_out] = diffsky_data[key]
+
         hdf_out["data/logsm_obs"] = diffsky_data["logsm_obs"]
         hdf_out["data/logssfr_obs"] = diffsky_data["logssfr_obs"]
 
@@ -154,10 +152,8 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     diffsky_data["mc_is_q"] = mc_is_q
     # Need to add SFH table after MC selection
 
-    for key in sfh_params.ms_params._fields:
-        diffsky_data[key] = getattr(sfh_params.ms_params, key)
-    for key in sfh_params.q_params._fields:
-        diffsky_data[key] = getattr(sfh_params.q_params, key)
+    for key in sfh_params._fields:
+        diffsky_data[key] = getattr(sfh_params, key)
 
     logsm_obs, logssfr_obs = get_logsm_logssfr_at_t_obs(
         lc_data["t_obs"], diffsky_data["t_table"], diffsky_data["sfh_table"]

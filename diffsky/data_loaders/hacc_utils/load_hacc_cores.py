@@ -391,10 +391,8 @@ def write_sfh_mock_to_disk(diffsky_data, sfh_params, rank_outname):
     with h5py.File(rank_outname, "w") as hdf_out:
         for key in DEFAULT_MAH_PARAMS._fields:
             hdf_out[key] = getattr(diffsky_data["subcat"].mah_params, key)
-        for key in sfh_params.ms_params._fields:
-            hdf_out[key] = getattr(sfh_params.ms_params, key)
-        for key in sfh_params.q_params._fields:
-            hdf_out[key] = getattr(sfh_params.q_params, key)
+        for key in sfh_params._fields:
+            hdf_out[key] = getattr(sfh_params, key)
 
 
 def collate_hdf5_file_collection(fname_collection, fnout):
