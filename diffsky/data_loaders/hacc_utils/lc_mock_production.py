@@ -114,7 +114,7 @@ def write_lc_sed_mock_to_disk(
 
     with h5py.File(fnout, "a") as hdf_out:
         for iband, name in enumerate(filter_nicknames):
-            hdf_out["data"][name] = phot_info.obs_mags[:, iband]
+            hdf_out["data"][name] = phot_info["obs_mags"][:, iband]
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
