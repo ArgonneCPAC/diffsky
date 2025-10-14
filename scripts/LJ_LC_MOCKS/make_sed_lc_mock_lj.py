@@ -132,7 +132,8 @@ if __name__ == "__main__":
 
     n_z_phot_table = 15
     z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
-    bn_pat_list = [f"lsst_{x}*" for x in ("u", "g", "r", "i", "z", "y")]
+    filter_nicknames = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
+    bn_pat_list = [name + "*" for name in filter_nicknames]
     tcurves = [load_transmission_curve(bn_pat=bn_pat) for bn_pat in bn_pat_list]
     wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
 
