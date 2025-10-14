@@ -25,10 +25,9 @@ column_metadata["lgmcrit"] = ("None", "Diffstar parameter for galaxy SFH")
 column_metadata["lgy_at_mcrit"] = ("None", "Diffstar parameter for galaxy SFH")
 column_metadata["indx_lo"] = ("None", "Diffstar parameter for galaxy SFH")
 column_metadata["indx_hi"] = ("None", "Diffstar parameter for galaxy SFH")
-column_metadata["tau_dep"] = ("None", "Diffstar parameter for galaxy SFH")
 column_metadata["lg_qt"] = ("None", "Diffstar parameter for galaxy SFH")
-column_metadata["lg_drop"] = ("None", "Diffstar parameter for galaxy SFH")
 column_metadata["qlglgdt"] = ("None", "Diffstar parameter for galaxy SFH")
+column_metadata["lg_drop"] = ("None", "Diffstar parameter for galaxy SFH")
 column_metadata["lg_rejuv"] = ("None", "Diffstar parameter for galaxy SFH")
 
 column_metadata["logmp0"] = ("Msun (not Msun/h)", "Log10 of halo mass at z=0")
@@ -165,7 +164,6 @@ def get_dependency_versions():
     version_info = dict()
     import diffmah  # noqa
     import diffstar  # noqa
-    import diffstarpop  # noqa
     import dsps  # noqa
     import jax  # noqa
     import numpy  # noqa
@@ -175,7 +173,6 @@ def get_dependency_versions():
     version_info["diffmah"] = str(diffmah.__version__)
     version_info["diffsky"] = str(diffsky.__version__)
     version_info["diffstar"] = str(diffstar.__version__)
-    version_info["diffstarpop"] = str(diffstarpop.__version__)
     version_info["dsps"] = str(dsps.__version__)
     version_info["jax"] = str(jax.__version__)
     version_info["numpy"] = str(numpy.__version__)

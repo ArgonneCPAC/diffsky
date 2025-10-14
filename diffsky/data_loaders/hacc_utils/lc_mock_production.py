@@ -44,6 +44,8 @@ LC_DATA_KEYS_OUT = (
     "central",
     "ra_nfw",
     "dec_nfw",
+    "redshift_true",
+    "snapnum",
 )
 
 DIFFSKY_DATA_KEYS_OUT = (
@@ -54,7 +56,36 @@ DIFFSKY_DATA_KEYS_OUT = (
     "vy",
     "vz",
     "logmp_obs_host",
+    "has_diffmah_fit",
+    "logmp0",
+    "logmp_obs",
+    "logsm_obs",
+    "logssfr_obs",
     *TOP_HOST_SHAPE_KEYS,
+    *DEFAULT_MAH_PARAMS._fields,
+    *DEFAULT_DIFFSTAR_PARAMS._fields,
+)
+
+PHOT_INFO_KEYS_OUT = (
+    "logmp_obs",
+    "logsm_obs",
+    "logssfr_obs",
+    "sfh_table",
+    "obs_mags",
+    "diffstar_params",
+    "mc_sfh_type",
+    "burst_params",
+    "dust_params",
+    "ssp_weights",
+    "uran_av",
+    "uran_delta",
+    "uran_funo",
+    "logsm_obs_ms",
+    "logssfr_obs_ms",
+    "logsm_obs_q",
+    "logssfr_obs_q",
+    "delta_scatter_ms",
+    "delta_scatter_q",
 )
 
 
@@ -63,27 +94,9 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
 
         hdf_out.require_group("data")
 
-        # Write diffmah params
-        for key in DEFAULT_MAH_PARAMS._fields:
-            key_out = "data/" + key
-            hdf_out[key_out] = diffsky_data[key]
-        hdf_out["data/has_diffmah_fit"] = diffsky_data["has_diffmah_fit"]
-        hdf_out["data/logmp0"] = diffsky_data["logmp0"]
-        hdf_out["data/logmp_obs"] = diffsky_data["logmp_obs"]
-
-        # Write diffstar params
-        for key in DEFAULT_DIFFSTAR_PARAMS._fields:
-            key_out = "data/" + key
-            hdf_out[key_out] = diffsky_data[key]
-
-        hdf_out["data/logsm_obs"] = diffsky_data["logsm_obs"]
-        hdf_out["data/logssfr_obs"] = diffsky_data["logssfr_obs"]
-
-        hdf_out["data/redshift_true"] = lc_data["redshift_true"]
         ra, dec = hlu._get_lon_lat_from_theta_phi(lc_data["theta"], lc_data["phi"])
         hdf_out["data/ra"] = ra
         hdf_out["data/dec"] = dec
-        hdf_out["data/snapnum"] = lc_data["snapnum"]
 
         for key in LC_DATA_KEYS_OUT:
             key_out = "data/" + key
@@ -94,8 +107,14 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
             hdf_out[key_out] = diffsky_data[key]
 
 
-def write_lc_sed_mock_to_disk(fnout, lc_data, diffsky_data):
-    raise NotImplementedError("Need to add SED quantities to write_lc_sed_mock_to_disk")
+def write_lc_sed_mock_to_disk(
+    fnout, phot_info, lc_data, diffsky_data, filter_nicknames
+):
+    write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data)
+
+    with h5py.File(fnout, "a") as hdf_out:
+        for iband, name in enumerate(filter_nicknames):
+            hdf_out["data"][name] = phot_info["obs_mags"][:, iband]
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
