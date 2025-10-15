@@ -66,8 +66,6 @@ DIFFSKY_DATA_KEYS_OUT = (
 )
 
 PHOT_INFO_KEYS_OUT = (
-    "burst_params",
-    "dust_params",
     "uran_av",
     "uran_delta",
     "uran_funo",
@@ -99,18 +97,18 @@ def write_lc_sed_mock_to_disk(
 ):
     write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data)
 
-    new_fields = phot_info["burst_params"]._fields
-    new_fields = (*new_fields, *phot_info["dust_params"]._fields)
-
-    burst_shapes = [p.shape for p in phot_info["burst_params"]]
-    dust_shapes = [p.shape for p in phot_info["dust_params"]]
-    new_shapes = (*burst_shapes, *dust_shapes)
-
-    assert False, (new_fields, new_shapes)
-
     with h5py.File(fnout, "a") as hdf_out:
         for iband, name in enumerate(filter_nicknames):
             hdf_out["data"][name] = phot_info["obs_mags"][:, iband]
+
+        gen = zip(phot_info["burst_params"]._fields, phot_info["burst_params"])
+        for name, parr in gen:
+            hdf_out["data"][name] = parr
+
+        hdf_out["data"]["mc_sfh_type"] = phot_info["mc_sfh_type"]
+
+        for name in PHOT_INFO_KEYS_OUT:
+            hdf_out["data"][name] = phot_info[name]
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
