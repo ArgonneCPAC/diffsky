@@ -252,7 +252,7 @@ def add_sed_quantities_to_mock(
 
 
 def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
-    _res = mc_disk_bulge(lc_data["t_table"], phot_info["sfh_table"])
+    _res = mc_disk_bulge(diffsky_data["t_table"], phot_info["sfh_table"])
     fbulge_params = _res[0]
     gen = zip(fbulge_params._fields, fbulge_params)
     for pname, pval in gen:
@@ -260,7 +260,7 @@ def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
 
     bulge_to_total_history = _res[-1]
     diffsky_data["bulge_to_total"] = interp_vmap(
-        lc_data["t_obs"], lc_data["t_table"], bulge_to_total_history
+        lc_data["t_obs"], diffsky_data["t_table"], bulge_to_total_history
     )
     return diffsky_data
 
