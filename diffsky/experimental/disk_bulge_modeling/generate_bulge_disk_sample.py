@@ -1,14 +1,11 @@
 import jax.numpy as jnp
 import numpy as np
-from ...mc_diffsky import mc_diffstar_cenpop, mc_diffstar_galpop
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.cosmology.flat_wcdm import age_at_z
 from jax import random as jran
 
-from .mc_disk_bulge import (
-    DEFAULT_FBULGE_2dSIGMOID_PARAMS,
-    mc_disk_bulge,
-)
+from ...mc_diffsky import mc_diffstar_cenpop, mc_diffstar_galpop
+from .mc_disk_bulge import DEFAULT_FBULGE_2dSIGMOID_PARAMS, mc_disk_bulge
 
 ran_key = jran.key(0)
 halo_key, ran_key = jran.split(ran_key, 2)
@@ -17,7 +14,11 @@ halo_key, ran_key = jran.split(ran_key, 2)
 
 
 def get_redshifts_from_times(
-    t_table, cosmo_params, zmin=0.001, zmax=50, Ngrid=200,
+    t_table,
+    cosmo_params,
+    zmin=0.001,
+    zmax=50,
+    Ngrid=200,
 ):
     zgrid = np.logspace(np.log10(zmax), np.log10(zmin), Ngrid)
     age_grid = age_at_z(zgrid, *cosmo_params)
@@ -53,7 +54,9 @@ def get_bulge_disk_test_sample(
 
 
 def get_bulge_disk_decomposition(
-    ran_key, diffstar, fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
+    ran_key,
+    diffstar,
+    fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
 ):
     _res = mc_disk_bulge(
         ran_key,
@@ -63,9 +66,9 @@ def get_bulge_disk_decomposition(
     )
     fbulge_params, smh, eff_bulge, sfh_bulge, smh_bulge, bth = _res
 
-    diffstar["tcrit_bulge"] = fbulge_params[:, 0]
-    diffstar["fbulge_early"] = fbulge_params[:, 1]
-    diffstar["fbulge_late"] = fbulge_params[:, 2]
+    diffstar["fbulge_tcrit"] = fbulge_params.fbulge_tcrit
+    diffstar["fbulge_early"] = fbulge_params.fbulge_early
+    diffstar["fbulge_late"] = fbulge_params.fbulge_late
     diffstar["bth"] = bth
     diffstar["eff_bulge"] = eff_bulge
 
