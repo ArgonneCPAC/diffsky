@@ -151,6 +151,7 @@ if __name__ == "__main__":
         lc_patch_list = [0, 1]
     elif roman_hltds == 1:
         lc_patch_list = np.array(ROMAN_HLTDS_PATCHES)
+        print("Making all lightcone patches for Roman HLTDS")
     else:
         lc_patch_list = np.arange(istart, iend).astype(int)
 
