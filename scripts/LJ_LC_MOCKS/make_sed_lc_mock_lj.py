@@ -7,6 +7,9 @@ import pickle
 from time import time
 
 import numpy as np
+from diffstar.diffstarpop.kernels.params.params_diffstarpop_fits_mgash import (
+    DiffstarPop_UParams_Diffstarpopfits_mgash as diffstarpop_models_u_p_dict,
+)
 from dsps.data_loaders import load_ssp_templates, load_transmission_curve
 from jax import random as jran
 
@@ -35,6 +38,13 @@ DRN_LC_CF_XDATA_POBOY = os.path.join(DRN_LJ_CROSSX_OUT_POBOY, "LC_CF_XDATA")
 LC_XDICT_BNAME = "lc_xdict.pickle"
 
 SIM_NAME = "LastJourney"
+DIFFSTARPOP_CALIBRATIONS = [
+    "smdpl_dr1_nomerging",
+    "smdpl_dr1",
+    "tng",
+    "galacticus_in_situ",
+    "galacticus_in_plus_ex_situ",
+]
 
 
 if __name__ == "__main__":
@@ -50,6 +60,12 @@ if __name__ == "__main__":
 
     parser.add_argument("drn_out", help="Output directory")
     parser.add_argument("-fn_u_params", help="Best-fit diffsky parameters", default="")
+    parser.add_argument(
+        "-sfh_model",
+        help="Assumed SFH model in diffsky calibration",
+        default="tng",
+        choices=DIFFSTARPOP_CALIBRATIONS,
+    )
 
     parser.add_argument(
         "-indir_lc_data",
@@ -77,6 +93,7 @@ if __name__ == "__main__":
     z_max = args.z_max
     istart = args.istart
     iend = args.iend
+    sfh_model = args.sfh_model
     drn_out = args.drn_out
 
     fn_u_params = args.fn_u_params
@@ -121,9 +138,26 @@ if __name__ == "__main__":
         lc_patch_list = np.arange(istart, iend).astype(int)
 
     ssp_data = load_ssp_templates()
+
+    #  Load diffsky model parameters
     if fn_u_params == "":
         param_collection = dpw.DEFAULT_PARAM_COLLECTION
+        print(
+            "No input params detected. "
+            "Using default diffsky model parameters DEFAULT_PARAM_COLLECTION"
+        )
+    elif fn_u_params == "sfh_model":
+        bn_u_params = f"u_param_arr_fixed_sfh_{sfh_model}.txt"
+        fn_u_params = os.path.join(drn_params, bn_u_params)
+        u_param_arr_sps = np.loadtxt(fn_u_params)
+        diffstarpop_u_params = diffstarpop_models_u_p_dict[sfh_model]
+        u_param_arr = np.concatenate((diffstarpop_u_params, u_param_arr_sps))
+        u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
+        param_collection = dpw.get_param_collection_from_u_param_collection(
+            *u_param_collection
+        )
     else:
+        print(f"Reading diffsky parameter array from disk. Filename = {fn_u_params}")
         u_param_arr = np.loadtxt(fn_u_params)
         u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
         param_collection = dpw.get_param_collection_from_u_param_collection(
