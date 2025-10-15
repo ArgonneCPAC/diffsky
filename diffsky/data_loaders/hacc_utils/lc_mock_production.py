@@ -239,6 +239,20 @@ def add_sed_quantities_to_mock(
     return phot_info, lc_data, diffsky_data
 
 
+def add_morphology_quantities_to_mock(
+    sim_info,
+    lc_data,
+    diffsky_data,
+    ssp_data,
+    param_collection,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    ran_key,
+):
+    pass
+
+
 def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5.0):
 
     pos = np.array((lc_data["x"], lc_data["y"], lc_data["z"])).T
