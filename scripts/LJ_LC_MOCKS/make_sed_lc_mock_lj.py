@@ -41,7 +41,7 @@ SIM_NAME = "LastJourney"
 DIFFSTARPOP_CALIBRATIONS = [
     "smdpl_dr1",
     "tng",
-    "galacticus_in_situ",
+    "galacticus_in_plus_ex_situ",
 ]
 
 
@@ -57,7 +57,11 @@ if __name__ == "__main__":
     parser.add_argument("iend", help="Last sky patch", type=int)
 
     parser.add_argument("drn_out", help="Output directory")
-    parser.add_argument("-fn_u_params", help="Best-fit diffsky parameters", default="")
+    parser.add_argument(
+        "-fn_u_params",
+        help="Best-fit diffsky parameters. Set to `sfh_model` to use a few specific calibrations",
+        default="",
+    )
     parser.add_argument(
         "-sfh_model",
         help="Assumed SFH model in diffsky calibration",
@@ -112,6 +116,8 @@ if __name__ == "__main__":
             msg += "must specify lgmp_min and lgmp_max"
             raise ValueError(msg)
 
+    if fn_u_params == "sfh_model":
+        drn_out = os.path.join(drn_out, sfh_model)
     os.makedirs(drn_out, exist_ok=True)
 
     if machine == "poboy":
