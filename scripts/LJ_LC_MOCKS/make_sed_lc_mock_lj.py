@@ -7,9 +7,6 @@ import pickle
 from time import time
 
 import numpy as np
-from diffstar.diffstarpop.kernels.params.params_diffstarpop_fits_mgash import (
-    DiffstarPop_UParams_Diffstarpopfits_mgash as diffstarpop_models_u_p_dict,
-)
 from dsps.data_loaders import load_ssp_templates, load_transmission_curve
 from jax import random as jran
 
@@ -20,6 +17,9 @@ from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
 from diffsky.data_loaders.hacc_utils import metadata_sfh_mock
 from diffsky.experimental import precompute_ssp_phot as psspp
+from diffsky.experimental.sfh_model_calibrations import (
+    load_diffsky_sfh_model_calibrations as ldup,
+)
 from diffsky.param_utils import diffsky_param_wrapper as dpw
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
@@ -147,11 +147,7 @@ if __name__ == "__main__":
             "Using default diffsky model parameters DEFAULT_PARAM_COLLECTION"
         )
     elif fn_u_params == "sfh_model":
-        bn_u_params = f"u_param_arr_fixed_sfh_{sfh_model}.txt"
-        fn_u_params = os.path.join(drn_params, bn_u_params)
-        u_param_arr_sps = np.loadtxt(fn_u_params)
-        diffstarpop_u_params = diffstarpop_models_u_p_dict[sfh_model]
-        u_param_arr = np.concatenate((diffstarpop_u_params, u_param_arr_sps))
+        u_param_arr = ldup.load_diffsky_u_params_for_sfh_model(sfh_model)
         u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
         param_collection = dpw.get_param_collection_from_u_param_collection(
             *u_param_collection
