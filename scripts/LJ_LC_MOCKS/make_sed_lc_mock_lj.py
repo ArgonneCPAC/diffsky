@@ -64,6 +64,7 @@ if __name__ == "__main__":
         help="Use all patches overlapping with Roman HLTDS. Overrides istart and iend",
         default=0,
         choices=[0, 1],
+        type=int,
     )
 
     parser.add_argument(
