@@ -18,6 +18,7 @@ from jax import random as jran
 from jax import vmap
 
 from ...experimental import mc_diffsky_seds
+from ...experimental.black_hole_modeling import black_hole_mass as bhm
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
 from ...experimental.disk_bulge_modeling.mc_disk_bulge import mc_disk_bulge
 from ...fake_sats import halo_boundary_functions as hbf
@@ -78,6 +79,7 @@ PHOT_INFO_KEYS_OUT = (
 )
 
 MORPH_KEYS_OUT = ("bulge_to_total", *dbk.DEFAULT_FBULGE_PARAMS._fields)
+BLACK_HOLE_KEYS_OUT = ("black_hole_mass",)
 
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
@@ -120,6 +122,9 @@ def write_lc_sed_mock_to_disk(
             hdf_out["data"][name] = phot_info[name]
 
         for name in MORPH_KEYS_OUT:
+            hdf_out["data"][name] = diffsky_data[name]
+
+        for name in BLACK_HOLE_KEYS_OUT:
             hdf_out["data"][name] = diffsky_data[name]
 
 
@@ -262,6 +267,12 @@ def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
     diffsky_data["bulge_to_total"] = interp_vmap(
         lc_data["t_obs"], diffsky_data["t_table"], bulge_to_total_history
     )
+    return diffsky_data
+
+
+def add_black_hole_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
+    bulge_mass = diffsky_data["bulge_to_total"] * 10 ** diffsky_data["logsm_obs"]
+    diffsky_data["black_hole_mass"] = bhm.bh_mass_from_bulge_mass(bulge_mass)
     return diffsky_data
 
 

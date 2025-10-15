@@ -128,6 +128,8 @@ column_metadata["fbulge_tcrit"] = ("None", "Bulge model parameter")
 column_metadata["fbulge_early"] = ("None", "Bulge model parameter")
 column_metadata["fbulge_late"] = ("None", "Bulge model parameter")
 
+column_metadata["black_hole_mass"] = ("Msun", "Black hole mass")
+
 
 HEADER_COMMENT = """
 This file contains diffsky galaxy data.
