@@ -39,11 +39,9 @@ LC_XDICT_BNAME = "lc_xdict.pickle"
 
 SIM_NAME = "LastJourney"
 DIFFSTARPOP_CALIBRATIONS = [
-    "smdpl_dr1_nomerging",
     "smdpl_dr1",
     "tng",
     "galacticus_in_situ",
-    "galacticus_in_plus_ex_situ",
 ]
 
 
