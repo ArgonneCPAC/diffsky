@@ -44,7 +44,7 @@ DIFFSTARPOP_CALIBRATIONS = [
     "galacticus_in_plus_ex_situ",
 ]
 
-ROMAN_HLTDS_PATCHES = [118, 119, 157, 158]
+ROMAN_HLTDS_PATCHES = [157, 158, 118, 119]
 
 
 if __name__ == "__main__":
