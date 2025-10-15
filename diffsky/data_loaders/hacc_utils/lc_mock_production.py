@@ -66,23 +66,11 @@ DIFFSKY_DATA_KEYS_OUT = (
 )
 
 PHOT_INFO_KEYS_OUT = (
-    "logmp_obs",
-    "logsm_obs",
-    "logssfr_obs",
-    "sfh_table",
-    "obs_mags",
-    "diffstar_params",
-    "mc_sfh_type",
     "burst_params",
     "dust_params",
-    "ssp_weights",
     "uran_av",
     "uran_delta",
     "uran_funo",
-    "logsm_obs_ms",
-    "logssfr_obs_ms",
-    "logsm_obs_q",
-    "logssfr_obs_q",
     "delta_scatter_ms",
     "delta_scatter_q",
 )
