@@ -44,6 +44,8 @@ DIFFSTARPOP_CALIBRATIONS = [
     "galacticus_in_plus_ex_situ",
 ]
 
+ROMAN_HLTDS_PATCHES = [118, 119, 157, 158]
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -57,6 +59,13 @@ if __name__ == "__main__":
     parser.add_argument("iend", help="Last sky patch", type=int)
 
     parser.add_argument("drn_out", help="Output directory")
+    parser.add_argument(
+        "-roman_hltds",
+        help="Use all patches overlapping with Roman HLTDS. Overrides istart and iend",
+        default=0,
+        choices=[0, 1],
+    )
+
     parser.add_argument(
         "-fn_u_params",
         help="Best-fit diffsky parameters. Set to `sfh_model` to use a few specific calibrations",
@@ -98,6 +107,7 @@ if __name__ == "__main__":
     sfh_model = args.sfh_model
     drn_out = args.drn_out
 
+    roman_hltds = args.roman_hltds
     fn_u_params = args.fn_u_params
     itest = args.itest
     sim_name = args.sim_name
@@ -138,6 +148,8 @@ if __name__ == "__main__":
 
     if itest == 1:
         lc_patch_list = [0, 1]
+    elif roman_hltds == 1:
+        lc_patch_list = np.array(ROMAN_HLTDS_PATCHES)
     else:
         lc_patch_list = np.arange(istart, iend).astype(int)
 
