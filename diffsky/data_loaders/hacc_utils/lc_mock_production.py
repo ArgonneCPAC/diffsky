@@ -99,6 +99,15 @@ def write_lc_sed_mock_to_disk(
 ):
     write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data)
 
+    new_fields = phot_info["burst_params"]._fields
+    new_fields = (*new_fields, *phot_info["dust_params"]._fields)
+
+    burst_shapes = [p.shape for p in phot_info["burst_params"]]
+    dust_shapes = [p.shape for p in phot_info["dust_params"]]
+    new_shapes = (*burst_shapes, *dust_shapes)
+
+    assert False, (new_fields, new_shapes)
+
     with h5py.File(fnout, "a") as hdf_out:
         for iband, name in enumerate(filter_nicknames):
             hdf_out["data"][name] = phot_info["obs_mags"][:, iband]
