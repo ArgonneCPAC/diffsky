@@ -54,12 +54,9 @@ def get_bulge_disk_test_sample(
 
 
 def get_bulge_disk_decomposition(
-    ran_key,
-    diffstar,
-    fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
+    diffstar, fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS
 ):
     _res = mc_disk_bulge(
-        ran_key,
         diffstar["t_table"],
         diffstar["sfh"],
         fbulge_2d_params=fbulge_2d_params,

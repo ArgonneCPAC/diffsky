@@ -60,7 +60,6 @@ def test_decompose_sfh_into_bulge_disk_knots():
     different distributions of {Fburst, t_obs}
 
     """
-    ran_key = jran.PRNGKey(0)
 
     n_age = 40
     ssp_lg_age_yr = np.linspace(5, 10.25, n_age)
@@ -74,7 +73,6 @@ def test_decompose_sfh_into_bulge_disk_knots():
     n_gals = 1_000
     n_tests = 20
     for itest in range(n_tests):
-        itest_key, ran_key = jran.split(ran_key, 2)
 
         # make sure t_obs > t_table_min
         t_obs_min = 0.2
@@ -108,7 +106,7 @@ def test_decompose_sfh_into_bulge_disk_knots():
         assert np.allclose(gal_burst_age_weights, age_weights_burstpop, rtol=0.001)
 
         gal_fknot = np.random.uniform(0, FKNOT_MAX, n_gals)
-        gal_fbulge_params = mc_disk_bulge(itest_key, gal_t_table, gal_sfh)[0]
+        gal_fbulge_params = mc_disk_bulge(gal_t_table, gal_sfh)[0]
 
         args = (
             gal_fbulge_params,
@@ -210,8 +208,6 @@ def test_decompose_sfh_into_bulge_disk_knots():
 
 
 def test_decompose_sfh_singlegal_into_bulge_disk_knots_agrees_with_vmap():
-    ran_key = jran.PRNGKey(0)
-
     n_age = 40
     ssp_lg_age_yr = np.linspace(5, 10.25, n_age)
     ssp_lg_age_gyr = ssp_lg_age_yr - 9.0
@@ -222,8 +218,6 @@ def test_decompose_sfh_singlegal_into_bulge_disk_knots_agrees_with_vmap():
     gal_t_table = np.linspace(t_table_min, t0, n_t)
 
     n_gals = 10
-
-    itest_key, ran_key = jran.split(ran_key, 2)
 
     # make sure t_obs > t_table_min
     t_obs_min = 0.2
@@ -257,7 +251,7 @@ def test_decompose_sfh_singlegal_into_bulge_disk_knots_agrees_with_vmap():
     assert np.allclose(gal_burst_age_weights, age_weights_burstpop, rtol=0.001)
 
     gal_fknot = np.random.uniform(0, FKNOT_MAX, n_gals)
-    gal_fbulge_params = mc_disk_bulge(itest_key, gal_t_table, gal_sfh)[0]
+    gal_fbulge_params = mc_disk_bulge(gal_t_table, gal_sfh)[0]
 
     args = (
         gal_fbulge_params,

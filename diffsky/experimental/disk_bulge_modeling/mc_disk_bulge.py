@@ -33,7 +33,6 @@ DEFAULT_FBULGE_2dSIGMOID_PARAMS = Fbulge2dParams(**DEFAULT_FBULGE_PDICT)
 
 
 def mc_disk_bulge(
-    ran_key,
     tarr,
     sfh_pop,
     fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
@@ -84,7 +83,7 @@ def mc_disk_bulge(
     ssfr = jnp.divide(sfh_pop, smh_pop)
     logssfr0 = jnp.log10(ssfr[:, -1])
     fbulge_params = generate_fbulge_parameters_2d_sigmoid(
-        ran_key, logsm0, logssfr0, t10, t90, fbulge_2d_params
+        logsm0, logssfr0, t10, t90, fbulge_2d_params
     )
 
     _res = dbk._bulge_sfh_vmap(tarr, sfh_pop, fbulge_params)
@@ -92,9 +91,7 @@ def mc_disk_bulge(
     return fbulge_params, smh, eff_bulge, sfh_bulge, smh_bulge, bth
 
 
-def generate_fbulge_parameters_2d_sigmoid(
-    ran_key, logsm0, logssfr0, t10, t90, f_bulge_params
-):
+def generate_fbulge_parameters_2d_sigmoid(logsm0, logssfr0, t10, t90, f_bulge_params):
     fbulge_early = dbk._sigmoid_2d(
         logssfr0,
         f_bulge_params.early_logssfr0_x0,
