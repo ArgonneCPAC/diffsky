@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 
 from ..boris_dust import DEFAULT_U_PARAMS as DEFAULT_BORIS_U_PARAMS

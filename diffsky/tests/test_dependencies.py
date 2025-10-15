@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 from diffstar.defaults import SFR_MIN as DIFFSTAR_SFR_MIN
 from dsps.constants import SFR_MIN as DSPS_SFR_MIN

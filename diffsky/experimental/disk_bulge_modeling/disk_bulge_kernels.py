@@ -1,21 +1,22 @@
 """
 Kernels for disk-bulge modeling
 """
-from collections import OrderedDict
 
-import numpy as np
+from collections import OrderedDict, namedtuple
+
 from diffstar.utils import cumulative_mstar_formed
 from dsps.constants import SFR_MIN
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
-from jax import jit as jjit
-from jax import lax, vmap
-from jax import numpy as jnp
-
 from dsps.sfh.diffburst import (
     _pureburst_age_weights_from_params as _burst_age_weights_from_params,
 )
-from .disk_knots import _disk_knot_kern, _disk_knot_vmap
+from jax import jit as jjit
+from jax import lax
+from jax import numpy as jnp
+from jax import vmap
+
 from ...utils.tw_utils import _tw_sigmoid
+from .disk_knots import _disk_knot_kern, _disk_knot_vmap
 
 FBULGE_MIN = 0.05
 FBULGE_MAX = 0.95
@@ -26,7 +27,8 @@ DEFAULT_FBULGE_EARLY = 0.75
 DEFAULT_FBULGE_LATE = 0.15
 
 DEFAULT_FBULGE_PDICT = OrderedDict(fbulge_tcrit=8.0, fbulge_early=0.5, fbulge_late=0.1)
-DEFAULT_FBULGE_PARAMS = np.array(list(DEFAULT_FBULGE_PDICT.values()))
+FbulgeParams = namedtuple("FbulgeParams", list(DEFAULT_FBULGE_PDICT.keys()))
+DEFAULT_FBULGE_PARAMS = FbulgeParams(*DEFAULT_FBULGE_PDICT.values())
 
 
 _linterp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
@@ -213,7 +215,9 @@ def decompose_sfhpop_into_bulge_disk_knots(
     lgyr_peak = gal_burstshape_params[:, 1]
     lgyr_max = gal_burstshape_params[:, 2]
     gal_burst_age_weights = _burst_age_weights_from_params_vmap(
-        ssp_lg_age_yr, lgyr_peak, lgyr_max,
+        ssp_lg_age_yr,
+        lgyr_peak,
+        lgyr_max,
     )
     return _decompose_sfhpop_into_bulge_disk_knots(
         gal_fbulge_params,

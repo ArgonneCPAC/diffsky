@@ -202,7 +202,7 @@ def test_add_delta_mag_to_photometry():
         mags,
         mags,
         mags,
-        mags
+        mags,
     )
 
     (new_mags_q_smooth, new_mags_q_bursty, new_mags_ms_smooth, new_mags_ms_bursty) = res

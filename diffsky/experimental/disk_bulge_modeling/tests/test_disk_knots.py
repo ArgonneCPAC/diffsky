@@ -27,8 +27,9 @@ def test_disk_knot_kern():
         ssp_lg_age_yr = np.linspace(5, 10.5, 100)
         lgyr_peak = DEFAULT_BURST_PARAMS.lgyr_peak
         lgyr_max = DEFAULT_BURST_PARAMS.lgyr_max
-        age_weights_burst = _pureburst_age_weights_from_params(ssp_lg_age_yr,
-                                                               lgyr_peak, lgyr_max)
+        age_weights_burst = _pureburst_age_weights_from_params(
+            ssp_lg_age_yr, lgyr_peak, lgyr_max
+        )
         assert np.allclose(1.0, age_weights_burst.sum(), rtol=0.01)
 
         lg_gyr = ssp_lg_age_yr - 9.0
@@ -69,8 +70,9 @@ def test_disk_knot_vmap():
     ssp_lg_age_yr = np.linspace(5, 10.5, n_age)
     lgyr_peak = DEFAULT_BURST_PARAMS.lgyr_peak
     lgyr_max = DEFAULT_BURST_PARAMS.lgyr_max
-    age_weights_singleburst = _pureburst_age_weights_from_params(ssp_lg_age_yr,
-                                                                 lgyr_peak, lgyr_max)
+    age_weights_singleburst = _pureburst_age_weights_from_params(
+        ssp_lg_age_yr, lgyr_peak, lgyr_max
+    )
     age_weights_burstpop = np.tile(age_weights_singleburst, n_gals)
     age_weights_burstpop = age_weights_burstpop.reshape((n_gals, n_age))
 

@@ -1,6 +1,7 @@
 """
 Generate disk-bulge decomposition
 """
+
 from collections import OrderedDict, namedtuple
 
 import jax.numpy as jnp
@@ -8,11 +9,7 @@ import numpy as np
 from diffstar.utils import cumulative_mstar_formed_galpop
 from dsps.constants import SFR_MIN
 
-from .disk_bulge_kernels import (
-    _bulge_sfh_vmap,
-    _sigmoid_2d,
-    calc_tform_pop,
-)
+from . import disk_bulge_kernels as dbk
 
 DEFAULT_FBULGE_PDICT = OrderedDict(
     early_logsm0_x0=10.0,
@@ -36,7 +33,9 @@ DEFAULT_FBULGE_2dSIGMOID_PARAMS = Fbulge2dParams(**DEFAULT_FBULGE_PDICT)
 
 
 def mc_disk_bulge(
-    ran_key, tarr, sfh_pop, fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
+    tarr,
+    sfh_pop,
+    fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
 ):
     """Decompose input SFHs into disk and bulge contributions
 
@@ -77,25 +76,23 @@ def mc_disk_bulge(
     """
     sfh_pop = np.where(sfh_pop < SFR_MIN, SFR_MIN, sfh_pop)
     smh_pop = cumulative_mstar_formed_galpop(tarr, sfh_pop)
-    t10 = calc_tform_pop(tarr, smh_pop, 0.1)
-    t90 = calc_tform_pop(tarr, smh_pop, 0.9)
+    t10 = dbk.calc_tform_pop(tarr, smh_pop, 0.1)
+    t90 = dbk.calc_tform_pop(tarr, smh_pop, 0.9)
     logsm0 = jnp.log10(smh_pop[:, -1])
 
     ssfr = jnp.divide(sfh_pop, smh_pop)
     logssfr0 = jnp.log10(ssfr[:, -1])
     fbulge_params = generate_fbulge_parameters_2d_sigmoid(
-        ran_key, logsm0, logssfr0, t10, t90, fbulge_2d_params
+        logsm0, logssfr0, t10, t90, fbulge_2d_params
     )
 
-    _res = _bulge_sfh_vmap(tarr, sfh_pop, fbulge_params)
+    _res = dbk._bulge_sfh_vmap(tarr, sfh_pop, fbulge_params)
     smh, eff_bulge, sfh_bulge, smh_bulge, bth = _res
     return fbulge_params, smh, eff_bulge, sfh_bulge, smh_bulge, bth
 
 
-def generate_fbulge_parameters_2d_sigmoid(
-    ran_key, logsm0, logssfr0, t10, t90, f_bulge_params
-):
-    fbulge_early = _sigmoid_2d(
+def generate_fbulge_parameters_2d_sigmoid(logsm0, logssfr0, t10, t90, f_bulge_params):
+    fbulge_early = dbk._sigmoid_2d(
         logssfr0,
         f_bulge_params.early_logssfr0_x0,
         logsm0,
@@ -106,7 +103,7 @@ def generate_fbulge_parameters_2d_sigmoid(
         f_bulge_params.early_zmax,
     )
 
-    fbulge_late = _sigmoid_2d(
+    fbulge_late = dbk._sigmoid_2d(
         logssfr0,
         f_bulge_params.late_logssfr0_x0,
         logsm0,
@@ -117,7 +114,7 @@ def generate_fbulge_parameters_2d_sigmoid(
         f_bulge_params.late_zmax,
     )
 
-    fbulge_tcrit = _sigmoid_2d(
+    fbulge_tcrit = dbk._sigmoid_2d(
         logssfr0,
         f_bulge_params.tcrit_logssfr0_x0,
         logsm0,
@@ -127,7 +124,6 @@ def generate_fbulge_parameters_2d_sigmoid(
         t90,
         t10,
     )
+    fbulge_params = dbk.FbulgeParams(fbulge_tcrit, fbulge_early, fbulge_late)
 
-    fbulge_param_arr = np.asarray((fbulge_tcrit, fbulge_early, fbulge_late)).T
-
-    return fbulge_param_arr
+    return fbulge_params

@@ -1,5 +1,4 @@
-"""Key parameters to vary: ssp_ff_x0, ssp_ff_lgssfr_x0, ssp_ff_ylo_yhi
-"""
+"""Key parameters to vary: ssp_ff_x0, ssp_ff_lgssfr_x0, ssp_ff_ylo_yhi"""
 
 from collections import OrderedDict, namedtuple
 

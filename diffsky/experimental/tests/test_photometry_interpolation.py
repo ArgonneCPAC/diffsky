@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import numpy as np
 from ..photometry_interpolation import get_interpolated_photometry

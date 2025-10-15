@@ -1,17 +1,12 @@
 import numpy as np
 from diffstar.utils import cumulative_mstar_formed_galpop
-from jax import random as jran
-
-from ...disk_bulge_modeling.disk_knots import FKNOT_MAX
-from ...disk_bulge_modeling.mc_disk_bulge import (
-    mc_disk_bulge,
-)
-from dsps.sfh.diffburst import (
-    DEFAULT_BURST_PARAMS,
-)
+from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from dsps.sfh.diffburst import (
     _pureburst_age_weights_from_params as _burst_age_weights_from_params,
 )
+
+from ...disk_bulge_modeling.disk_knots import FKNOT_MAX
+from ...disk_bulge_modeling.mc_disk_bulge import mc_disk_bulge
 from ..disk_bulge_kernels import (
     DEFAULT_FBULGE_PARAMS,
     FBULGE_MAX,
@@ -64,7 +59,6 @@ def test_decompose_sfh_into_bulge_disk_knots():
     different distributions of {Fburst, t_obs}
 
     """
-    ran_key = jran.PRNGKey(0)
 
     n_age = 40
     ssp_lg_age_yr = np.linspace(5, 10.25, n_age)
@@ -78,7 +72,6 @@ def test_decompose_sfh_into_bulge_disk_knots():
     n_gals = 1_000
     n_tests = 20
     for itest in range(n_tests):
-        itest_key, ran_key = jran.split(ran_key, 2)
 
         # make sure t_obs > t_table_min
         t_obs_min = 0.2
@@ -97,11 +90,14 @@ def test_decompose_sfh_into_bulge_disk_knots():
         gal_burstshape_params = gal_burstshape_params.reshape((n_gals, 3))
 
         gal_burst_age_weights = _burst_age_weights_from_params_vmap(
-            ssp_lg_age_yr, gal_burstshape_params[:, 1], gal_burstshape_params[:, 2],
+            ssp_lg_age_yr,
+            gal_burstshape_params[:, 1],
+            gal_burstshape_params[:, 2],
         )
 
         age_weights_singleburst = _burst_age_weights_from_params(
-            ssp_lg_age_yr, DEFAULT_BURST_PARAMS.lgyr_peak,
+            ssp_lg_age_yr,
+            DEFAULT_BURST_PARAMS.lgyr_peak,
             DEFAULT_BURST_PARAMS.lgyr_max,
         )
         age_weights_burstpop = np.tile(age_weights_singleburst, n_gals)
@@ -109,7 +105,7 @@ def test_decompose_sfh_into_bulge_disk_knots():
         assert np.allclose(gal_burst_age_weights, age_weights_burstpop, rtol=0.001)
 
         gal_fknot = np.random.uniform(0, FKNOT_MAX, n_gals)
-        gal_fbulge_params = mc_disk_bulge(itest_key, gal_t_table, gal_sfh)[0]
+        gal_fbulge_params = mc_disk_bulge(gal_t_table, gal_sfh)[0]
 
         args = (
             gal_fbulge_params,
@@ -211,8 +207,6 @@ def test_decompose_sfh_into_bulge_disk_knots():
 
 
 def test_decompose_sfh_singlegal_into_bulge_disk_knots_agrees_with_vmap():
-    ran_key = jran.PRNGKey(0)
-
     n_age = 40
     ssp_lg_age_yr = np.linspace(5, 10.25, n_age)
     ssp_lg_age_gyr = ssp_lg_age_yr - 9.0
@@ -223,8 +217,6 @@ def test_decompose_sfh_singlegal_into_bulge_disk_knots_agrees_with_vmap():
     gal_t_table = np.linspace(t_table_min, t0, n_t)
 
     n_gals = 10
-
-    itest_key, ran_key = jran.split(ran_key, 2)
 
     # make sure t_obs > t_table_min
     t_obs_min = 0.2
@@ -243,10 +235,13 @@ def test_decompose_sfh_singlegal_into_bulge_disk_knots_agrees_with_vmap():
     gal_burstshape_params = gal_burstshape_params.reshape((n_gals, 3))
 
     gal_burst_age_weights = _burst_age_weights_from_params_vmap(
-        ssp_lg_age_yr, gal_burstshape_params[:, 1], gal_burstshape_params[:, 2],
+        ssp_lg_age_yr,
+        gal_burstshape_params[:, 1],
+        gal_burstshape_params[:, 2],
     )
     age_weights_singleburst = _burst_age_weights_from_params(
-        ssp_lg_age_yr, DEFAULT_BURST_PARAMS.lgyr_peak,
+        ssp_lg_age_yr,
+        DEFAULT_BURST_PARAMS.lgyr_peak,
         DEFAULT_BURST_PARAMS.lgyr_max,
     )
 
@@ -255,7 +250,7 @@ def test_decompose_sfh_singlegal_into_bulge_disk_knots_agrees_with_vmap():
     assert np.allclose(gal_burst_age_weights, age_weights_burstpop, rtol=0.001)
 
     gal_fknot = np.random.uniform(0, FKNOT_MAX, n_gals)
-    gal_fbulge_params = mc_disk_bulge(itest_key, gal_t_table, gal_sfh)[0]
+    gal_fbulge_params = mc_disk_bulge(gal_t_table, gal_sfh)[0]
 
     args = (
         gal_fbulge_params,
@@ -270,14 +265,16 @@ def test_decompose_sfh_singlegal_into_bulge_disk_knots_agrees_with_vmap():
     _res_vmap = _decompose_sfhpop_into_bulge_disk_knots(*args)
 
     for igal in range(n_gals):
-        fbulge_params = gal_fbulge_params[igal, :]
         fknot = gal_fknot[igal]
         t_obs = gal_t_obs[igal]
         sfh_table = gal_sfh[igal, :]
         fburst = gal_fburst[igal]
         age_weights_burst = age_weights_burstpop[igal, :]
+        fbulge_params_igal = gal_fbulge_params._make(
+            [x[igal] for x in gal_fbulge_params]
+        )
         args = (
-            fbulge_params,
+            fbulge_params_igal,
             fknot,
             t_obs,
             gal_t_table,

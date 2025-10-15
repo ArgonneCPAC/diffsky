@@ -1,4 +1,5 @@
 """Module provides convenience functions used to measure the CCSHMF in SMDPL"""
+
 import numpy as np
 
 NHOST_BIN_MIN = 4

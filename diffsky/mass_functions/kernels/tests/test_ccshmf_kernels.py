@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 
 from ..ccshmf_kernels import DEFAULT_CCSHMF_KERN_PARAMS, lg_ccshmf_kern

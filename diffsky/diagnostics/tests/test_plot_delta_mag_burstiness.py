@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from .. import plot_delta_mag_burstiness as pb
 

@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 from collections import OrderedDict, namedtuple
 
 from dsps.sfh.diffburst import (

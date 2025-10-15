@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 from collections import namedtuple
 
 from dsps.sfh.diffburst import BurstParams, calc_bursty_age_weights

@@ -1,6 +1,7 @@
 """cshmf_kernel_fitter is a convenience function used to calibrate
 ccshmf_kernels.lg_ccshmf_kern, the CCSHMF of an individual halo
 """
+
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import value_and_grad

@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 from ..lgfburstpop import _get_lgfburst_galpop_from_params
 from ..lgfburstpop import _get_lgfburst_galpop_from_u_params

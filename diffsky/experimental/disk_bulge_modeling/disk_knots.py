@@ -1,6 +1,7 @@
 """
 Add knot component
 """
+
 from diffstar.utils import cumulative_mstar_formed
 from dsps.constants import SFR_MIN
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table

@@ -1,15 +1,14 @@
+import jax.numpy as jnp
 import numpy as np
 from diffstar.utils import cumulative_mstar_formed_galpop
 from dsps.constants import SFR_MIN
 from jax import random as jran
-import jax.numpy as jnp
 
-from ..disk_bulge_kernels import calc_tform_pop
+from ..disk_bulge_kernels import _bulge_sfh_vmap, calc_tform_pop
 from ..mc_disk_bulge import (
-    _bulge_sfh_vmap,
+    DEFAULT_FBULGE_2dSIGMOID_PARAMS,
     generate_fbulge_parameters_2d_sigmoid,
     mc_disk_bulge,
-    DEFAULT_FBULGE_2dSIGMOID_PARAMS,
 )
 
 
@@ -20,7 +19,7 @@ def test_mc_disk_bulge_component_functions_work_together():
     tarr = np.linspace(0.01, 13.8, n_t)
 
     n_gals = 5_000
-    ran_key_sfh, ran_key_fbulge = jran.split(ran_key, 2)
+    ran_key, ran_key_sfh = jran.split(ran_key, 2)
 
     ran_sfh_pop = jran.uniform(ran_key_sfh, minval=0, maxval=100, shape=(n_gals, n_t))
 
@@ -33,12 +32,18 @@ def test_mc_disk_bulge_component_functions_work_together():
     ssfr = jnp.divide(ran_sfh_pop, smh_pop)
     logssfr0 = jnp.log10(ssfr[:, -1])
     fbulge_params = generate_fbulge_parameters_2d_sigmoid(
-        ran_key_fbulge, logsm0, logssfr0, t10, t90,
+        logsm0,
+        logssfr0,
+        t10,
+        t90,
         DEFAULT_FBULGE_2dSIGMOID_PARAMS,
     )
 
-    assert fbulge_params.shape == (n_gals, 3)
-    assert np.all(np.isfinite(fbulge_params))
+    assert fbulge_params.fbulge_tcrit.shape == (n_gals,)
+    assert fbulge_params.fbulge_early.shape == (n_gals,)
+    assert fbulge_params.fbulge_late.shape == (n_gals,)
+    for x in fbulge_params:
+        assert np.all(np.isfinite(x))
 
     _res = _bulge_sfh_vmap(tarr, ran_sfh_pop, fbulge_params)
     for x in _res:
@@ -62,17 +67,21 @@ def test_mc_disk_bulge():
     tarr = np.linspace(0.01, 13.8, n_t)
 
     n_gals = 5_000
-    ran_key_sfh, ran_key_fbulge = jran.split(ran_key, 2)
+    ran_key, ran_key_sfh = jran.split(ran_key, 2)
 
     ran_sfh_pop = jran.uniform(ran_key_sfh, minval=0, maxval=100, shape=(n_gals, n_t))
 
-    _res = mc_disk_bulge(ran_key, tarr, ran_sfh_pop,
-                         fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
-                         )
+    _res = mc_disk_bulge(
+        tarr,
+        ran_sfh_pop,
+        fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
+    )
     fbulge_params, smh_pop, effbulge, sfh_bulge, smh_bulge, bth = _res
     assert smh_pop.shape == (n_gals, n_t)
     assert effbulge.shape == (n_gals, n_t)
-    assert fbulge_params.shape == (n_gals, 3)
+    assert fbulge_params.fbulge_tcrit.shape == (n_gals,)
+    assert fbulge_params.fbulge_early.shape == (n_gals,)
+    assert fbulge_params.fbulge_late.shape == (n_gals,)
 
     assert np.all(sfh_bulge <= ran_sfh_pop)
     assert np.all(smh_bulge <= smh_pop)

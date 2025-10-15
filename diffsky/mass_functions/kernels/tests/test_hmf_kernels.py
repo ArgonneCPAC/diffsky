@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 
 from ..hmf_kernels import DEFAULT_HMF_KERN_PARAMS, lg_hmf_kern

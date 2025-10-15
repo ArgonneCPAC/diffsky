@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 
 from .. import sbl18_dustpop as twd

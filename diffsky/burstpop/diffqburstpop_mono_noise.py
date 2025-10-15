@@ -13,7 +13,7 @@ from .fburstpop_mono import (
     get_fburst_from_fburstpop_params,
     get_unbounded_fburstpop_params,
     _get_bounded_fburstpop_param,
-    _get_unbounded_fburstpop_param
+    _get_unbounded_fburstpop_param,
 )
 from .freqburst_mono import (
     DEFAULT_FREQBURST_PARAMS,
@@ -88,7 +88,9 @@ def calc_bursty_age_weights_from_diffburstpop_params(
         diffburstpop_params.fburstpop_params, logsm, logssfr
     )
     ufburst = _get_unbounded_fburstpop_param(f_burst, FBURST_BOUNDS)
-    noisy_ufburst = _inverse_sigmoid(random_draw_burst, ufburst, scatter_params.fburst_scatter, 0.0, 1.0)
+    noisy_ufburst = _inverse_sigmoid(
+        random_draw_burst, ufburst, scatter_params.fburst_scatter, 0.0, 1.0
+    )
     noisy_fburst = _get_bounded_fburstpop_param(noisy_ufburst, FBURST_BOUNDS)
     lgfburst = jnp.log10(noisy_fburst)
 
@@ -113,7 +115,6 @@ def calc_bursty_age_weights_from_diffburstpop_u_params(
     smooth_age_weights,
     random_draw_burst,
     scatter_params,
-
 ):
     diffburstpop_params = get_bounded_diffburstpop_params(diffburstpop_u_params)
     args = (
@@ -123,7 +124,8 @@ def calc_bursty_age_weights_from_diffburstpop_u_params(
         ssp_lg_age_gyr,
         smooth_age_weights,
         random_draw_burst,
-        scatter_params)
+        scatter_params,
+    )
     age_weights, burst_params = calc_bursty_age_weights_from_diffburstpop_params(*args)
     return age_weights, burst_params
 

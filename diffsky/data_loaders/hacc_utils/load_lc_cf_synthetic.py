@@ -41,7 +41,9 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
     diffsky_data["redshift_true"] = diffsky_data["z_obs"]
     del diffsky_data["z_obs"]
 
-    diffsky_data["top_host_idx"] = np.arange(len(diffsky_data["redshift_true"])).astype(int)
+    diffsky_data["top_host_idx"] = np.arange(len(diffsky_data["redshift_true"])).astype(
+        int
+    )
     for key in diffsky_data["mah_params"]._fields:
         diffsky_data[key] = getattr(diffsky_data["mah_params"], key)
 

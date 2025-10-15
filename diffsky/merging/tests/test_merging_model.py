@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import numpy as np
 
@@ -16,7 +15,7 @@ from ..merging_model import (
     merge,
     merge_model_with_preprocessing,
     merge_model_with_preprocessing_mc_draws,
-    merge_with_MC_draws
+    merge_with_MC_draws,
 )
 
 
@@ -40,9 +39,7 @@ def test_param_u_param_names_propagate_properly():
     assert set(inferred_default_params._fields) == set(DEFAULT_MERGE_PARAMS._fields)
 
     inferred_default_u_params = get_unbounded_merge_params(DEFAULT_MERGE_PARAMS)
-    assert set(inferred_default_u_params._fields) == set(
-        DEFAULT_MERGE_U_PARAMS._fields
-    )
+    assert set(inferred_default_u_params._fields) == set(DEFAULT_MERGE_U_PARAMS._fields)
 
 
 def test_get_bounded_merging_params_fails_when_passing_params():
@@ -76,11 +73,9 @@ def test_get_p_merge_from_merging_u_params_fails_when_passing_params():
             log_mhost_infall,
             t_interest,
             t_infall,
-            upids
+            upids,
         )
-        raise NameError(
-            "get_p_merge_from_merging_u_params should not accept params"
-        )
+        raise NameError("get_p_merge_from_merging_u_params should not accept params")
     except AttributeError:
         pass
 
@@ -100,11 +95,9 @@ def test_get_p_merge_from_merging_params_fails_when_passing_u_params():
             log_mhost_infall,
             t_interest,
             t_infall,
-            upids
+            upids,
         )
-        raise NameError(
-            "get_p_merge_from_merging_params should not accept u_params"
-        )
+        raise NameError("get_p_merge_from_merging_params should not accept u_params")
     except AttributeError:
         pass
 

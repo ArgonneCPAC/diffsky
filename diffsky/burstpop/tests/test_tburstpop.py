@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 from dsps.sfh.diffburst import (
     _pureburst_age_weights_from_params,

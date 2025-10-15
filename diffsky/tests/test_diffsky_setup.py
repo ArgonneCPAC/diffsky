@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 
 def test_diffsky_has_main_branch_dsps():

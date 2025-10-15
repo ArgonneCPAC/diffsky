@@ -196,6 +196,14 @@ if __name__ == "__main__":
             )
             phot_info, lc_data, diffsky_data = lcmp.add_sed_quantities_to_mock(*args)
 
+            diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
+                phot_info, lc_data, diffsky_data
+            )
+
+            diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
+                lc_data, diffsky_data
+            )
+
             patch_key, nfw_key = jran.split(patch_key, 2)
             lc_data, diffsky_data = lcmp.reposition_satellites(
                 sim_info, lc_data, diffsky_data, nfw_key

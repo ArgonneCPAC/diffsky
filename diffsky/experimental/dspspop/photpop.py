@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 from dsps.constants import SFR_MIN
 from dsps.cosmology.flat_wcdm import _age_at_z_kern
 from dsps.metallicity.mzr import DEFAULT_MET_PDICT, mzr_model

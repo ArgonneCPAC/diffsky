@@ -4,6 +4,7 @@ the Cumulative Conditional Subhalo Mass Function (CCSHMF),
 The lg_ccshmf_kern function is a single-halo kernel called by ccshmf.predict_ccshmf
 
 """
+
 from collections import OrderedDict, namedtuple
 
 from jax import grad
