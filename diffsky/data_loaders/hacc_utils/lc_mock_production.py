@@ -270,7 +270,7 @@ def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
     return diffsky_data
 
 
-def add_black_hole_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
+def add_black_hole_quantities_to_diffsky_data(diffsky_data):
     bulge_mass = diffsky_data["bulge_to_total"] * 10 ** diffsky_data["logsm_obs"]
     diffsky_data["black_hole_mass"] = bhm.bh_mass_from_bulge_mass(bulge_mass)
     return diffsky_data
