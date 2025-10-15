@@ -4,7 +4,6 @@
 import jax
 
 jax.config.update("jax_enable_x64", True)
-
 import h5py
 import numpy as np
 from diffmah import DEFAULT_MAH_PARAMS, logmh_at_t_obs
@@ -13,9 +12,14 @@ from diffstar.diffstarpop import mc_diffstar_sfh_galpop
 from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
+from jax import jit as jjit
+from jax import numpy as jnp
 from jax import random as jran
+from jax import vmap
 
 from ...experimental import mc_diffsky_seds
+from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
+from ...experimental.disk_bulge_modeling.mc_disk_bulge import mc_disk_bulge
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
@@ -73,6 +77,11 @@ PHOT_INFO_KEYS_OUT = (
     "delta_scatter_q",
 )
 
+MORPH_KEYS_OUT = ("bulge_to_total", *dbk.DEFAULT_FBULGE_PARAMS._fields)
+
+
+interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
+
 
 def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
     with h5py.File(fnout, "w") as hdf_out:
@@ -109,6 +118,9 @@ def write_lc_sed_mock_to_disk(
 
         for name in PHOT_INFO_KEYS_OUT:
             hdf_out["data"][name] = phot_info[name]
+
+        for name in MORPH_KEYS_OUT:
+            hdf_out["data"][name] = diffsky_data[name]
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
@@ -239,18 +251,18 @@ def add_sed_quantities_to_mock(
     return phot_info, lc_data, diffsky_data
 
 
-def add_morphology_quantities_to_mock(
-    sim_info,
-    lc_data,
-    diffsky_data,
-    ssp_data,
-    param_collection,
-    precomputed_ssp_mag_table,
-    z_phot_table,
-    wave_eff_table,
-    ran_key,
-):
-    pass
+def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
+    _res = mc_disk_bulge(lc_data["t_table"], phot_info["sfh_table"])
+    fbulge_params = _res[0]
+    gen = zip(fbulge_params._fields, fbulge_params)
+    for pname, pval in gen:
+        diffsky_data[pname] = pval
+
+    bulge_to_total_history = _res[-1]
+    diffsky_data["bulge_to_total"] = interp_vmap(
+        lc_data["t_obs"], lc_data["t_table"], bulge_to_total_history
+    )
+    return diffsky_data
 
 
 def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5.0):
