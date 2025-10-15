@@ -107,6 +107,27 @@ column_metadata["dec_nfw"] = (
     "Latitude in degrees. Based on NFW-repositioned satellites.",
 )
 
+column_metadata["uran_av"] = ("None", "Array for adding noise to dust parameter Av")
+column_metadata["uran_delta"] = (
+    "None",
+    "Array for adding noise to dust parameter delta",
+)
+column_metadata["uran_funo"] = ("None", "Array for adding noise to dust parameter funo")
+
+column_metadata["delta_scatter_ms"] = (
+    "None",
+    "Array for adding noise to SSP SED errors",
+)
+column_metadata["delta_scatter_q"] = (
+    "None",
+    "Array for adding noise to SSP SED errors",
+)
+
+column_metadata["bulge_to_total"] = ("None", "Bulge-to-total mass ratio")
+column_metadata["fbulge_tcrit"] = ("None", "Bulge model parameter")
+column_metadata["fbulge_early"] = ("None", "Bulge model parameter")
+column_metadata["fbulge_late"] = ("None", "Bulge model parameter")
+
 
 HEADER_COMMENT = """
 This file contains diffsky galaxy data.
