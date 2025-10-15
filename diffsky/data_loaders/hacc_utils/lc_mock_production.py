@@ -83,7 +83,11 @@ PHOT_INFO_KEYS_OUT = (
 )
 
 MORPH_KEYS_OUT = ("bulge_to_total", *dbk.DEFAULT_FBULGE_PARAMS._fields)
-BLACK_HOLE_KEYS_OUT = ("black_hole_mass",)
+BLACK_HOLE_KEYS_OUT = (
+    "black_hole_mass",
+    "black_hole_eddington_ratio",
+    "black_hole_accretion_rate",
+)
 
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
