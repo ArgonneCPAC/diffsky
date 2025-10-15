@@ -18,7 +18,6 @@ from jax import random as jran
 from ...experimental import mc_diffsky_seds
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
-from ...param_utils import diffsky_param_wrapper as dpw
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
 from . import lightcone_utils as hlu
 from . import load_lc_cf
