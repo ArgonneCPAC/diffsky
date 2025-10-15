@@ -19,6 +19,10 @@ from jax import vmap
 
 from ...experimental import mc_diffsky_seds
 from ...experimental.black_hole_modeling import black_hole_mass as bhm
+from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
+    monte_carlo_bh_acc_rate,
+)
+from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
 from ...experimental.disk_bulge_modeling.mc_disk_bulge import mc_disk_bulge
 from ...fake_sats import halo_boundary_functions as hbf
@@ -270,9 +274,16 @@ def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
     return diffsky_data
 
 
-def add_black_hole_quantities_to_diffsky_data(diffsky_data):
+def add_black_hole_quantities_to_diffsky_data(lc_data, diffsky_data):
     bulge_mass = diffsky_data["bulge_to_total"] * 10 ** diffsky_data["logsm_obs"]
     diffsky_data["black_hole_mass"] = bhm.bh_mass_from_bulge_mass(bulge_mass)
+
+    p_ssfr = approximate_ssfr_percentile(diffsky_data["logssfr_obs"])
+    z = lc_data["redshift_true"].mean()
+    _res = monte_carlo_bh_acc_rate(z, diffsky_data["black_hole_mass"], p_ssfr)
+    diffsky_data["black_hole_eddington_ratio"] = _res[0]
+    diffsky_data["black_hole_accretion_rate"] = _res[1]
+
     return diffsky_data
 
 

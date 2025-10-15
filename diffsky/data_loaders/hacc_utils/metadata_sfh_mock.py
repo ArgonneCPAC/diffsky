@@ -129,6 +129,14 @@ column_metadata["fbulge_early"] = ("None", "Bulge model parameter")
 column_metadata["fbulge_late"] = ("None", "Bulge model parameter")
 
 column_metadata["black_hole_mass"] = ("Msun", "Black hole mass")
+column_metadata["black_hole_eddington_ratio"] = (
+    "None",
+    "dimensionless Eddington ratio",
+)
+column_metadata["black_hole_accretion_rate"] = (
+    "Msun/yr",
+    "Black hole mass accretion rate",
+)
 
 
 HEADER_COMMENT = """
