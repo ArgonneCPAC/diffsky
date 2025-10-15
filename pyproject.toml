@@ -13,7 +13,7 @@ write_to_template = "__version__ = '{version}'\n"
 [tool.setuptools]
 include-package-data = true
 packages = {find = {exclude=["tests*", "scripts*", "docs*", "notebooks*"]}}
-package-data = {diffsky = ["tests/testing_data/*.dat", "*/tests/testing_data/*.dat", "tests/testing_data/*.txt", "*/tests/testing_data/*.txt", "*/*/tests/testing_data/*.txt", "mass_functions/hmf_calibrations/tests/testing_data/*"]}
+package-data = {diffsky = ["tests/testing_data/*.dat", "*/tests/testing_data/*.dat", "*/*/data/*.npy", "tests/testing_data/*.txt", "*/tests/testing_data/*.txt", "*/*/tests/testing_data/*.txt", "mass_functions/hmf_calibrations/tests/testing_data/*"]}
 package-dir = {diffsky = "diffsky"}
 
 [project.urls]
