@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 
 from .loader import um_dtype

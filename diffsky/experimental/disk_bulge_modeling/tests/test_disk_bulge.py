@@ -4,7 +4,6 @@ from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from dsps.sfh.diffburst import (
     _pureburst_age_weights_from_params as _burst_age_weights_from_params,
 )
-from jax import random as jran
 
 from ...disk_bulge_modeling.disk_knots import FKNOT_MAX
 from ...disk_bulge_modeling.mc_disk_bulge import mc_disk_bulge

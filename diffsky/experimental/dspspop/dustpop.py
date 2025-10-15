@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 from dsps.dust.att_curves import (
     UV_BUMP_DW,
     UV_BUMP_W0,

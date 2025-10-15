@@ -1,4 +1,5 @@
 """JAX kernels for N-dimensional triweighted histograms"""
+
 from jax import numpy as jnp
 from jax import vmap
 from jax import jit as jjit
@@ -12,13 +13,7 @@ def _tw_cuml_lax_kern(x, m, h):
     This kernel accepts and returns scalars for all arguments
     """
     z = (x - m) / h
-    val = (
-        -5 * z**7 / 69984
-        + 7 * z**5 / 2592
-        - 35 * z**3 / 864
-        + 35 * z / 96
-        + 1 / 2
-    )
+    val = -5 * z**7 / 69984 + 7 * z**5 / 2592 - 35 * z**3 / 864 + 35 * z / 96 + 1 / 2
     val = lax.cond(z < -3, lambda s: 0.0, lambda s: val, z)
     val = lax.cond(z > 3, lambda s: 1.0, lambda s: val, z)
     return val

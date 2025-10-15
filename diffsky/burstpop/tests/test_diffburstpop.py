@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 from dsps.sfh import diffburst
 from jax import random as jran

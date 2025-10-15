@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 # flake8: noqa
 
 from .diffburstpop import (

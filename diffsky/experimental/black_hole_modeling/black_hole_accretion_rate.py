@@ -40,7 +40,10 @@ def eddington_ratio_distribution(redshift, npts=1000):
     >>> rate_table, pdf_table = eddington_ratio_distribution(redshift)
     """
     z = np.atleast_1d(redshift)
-    msg = "Input ``redshift`` argument to eddington_ratio_distribution function " "must be a single float"
+    msg = (
+        "Input ``redshift`` argument to eddington_ratio_distribution function "
+        "must be a single float"
+    )
     assert len(z) == 1, msg
     redshift = float(max(z[0], 0.0))
     redshift = min(redshift, 5.0)  # No redshift evolution beyond z>5
@@ -80,7 +83,10 @@ def monte_carlo_eddington_ratio(redshift, sfr_percentile):
 
     """
     redshift = np.atleast_1d(redshift)
-    msg = "monte_carlo_eddington_ratio only accepts " "a single float for ``redshift`` argument"
+    msg = (
+        "monte_carlo_eddington_ratio only accepts "
+        "a single float for ``redshift`` argument"
+    )
     assert len(redshift) == 1, msg
 
     rate_table, prob_table = eddington_ratio_distribution(redshift[0])
@@ -131,7 +137,10 @@ def monte_carlo_bh_acc_rate(redshift, black_hole_mass, sfr_percentile):
 
     """
     redshift = np.atleast_1d(redshift)
-    msg = "monte_carlo_bh_acc_rate only accepts " "a single float for ``redshift`` argument"
+    msg = (
+        "monte_carlo_bh_acc_rate only accepts "
+        "a single float for ``redshift`` argument"
+    )
     assert len(redshift) == 1, msg
 
     eddington_ratio = monte_carlo_eddington_ratio(redshift, sfr_percentile)

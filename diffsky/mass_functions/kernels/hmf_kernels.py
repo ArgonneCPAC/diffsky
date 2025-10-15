@@ -3,6 +3,7 @@ the cumulative Host Halo Mass Function (HMF), <Nhalos(>mp)>,
 here mp is the peak historical mass of the main progenitor halo.
 
 """
+
 from collections import OrderedDict, namedtuple
 
 from jax import grad

@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 
 from ..sbl18_photgrad import (

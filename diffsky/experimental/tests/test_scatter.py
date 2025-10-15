@@ -1,12 +1,11 @@
-"""
-"""
+""" """
 
 from ..scatter import (
     DEFAULT_SCATTER_PARAMS,
     DEFAULT_SCATTER_U_PARAMS,
     SCATTER_PBOUNDS,
     get_unbounded_scatter_params,
-    get_bounded_scatter_params
+    get_bounded_scatter_params,
 )
 
 import numpy as np
@@ -18,9 +17,7 @@ TOL = 1e-4
 
 
 def test_dustpop_noise_u_param_inversion_default_params():
-    u_params = get_unbounded_scatter_params(
-        DEFAULT_SCATTER_PARAMS
-    )
+    u_params = get_unbounded_scatter_params(DEFAULT_SCATTER_PARAMS)
     assert np.all(np.isfinite(u_params))
     params = get_bounded_scatter_params(u_params)
     assert np.all(np.isfinite(params))
@@ -36,16 +33,10 @@ def test_param_u_param_names_propagate_properly():
         assert u_key[:2] == "u_"
         assert u_key[2:] == key
 
-    inferred_default_params = get_bounded_scatter_params(
-        DEFAULT_SCATTER_U_PARAMS
-    )
-    assert set(inferred_default_params._fields) == set(
-        DEFAULT_SCATTER_PARAMS._fields
-    )
+    inferred_default_params = get_bounded_scatter_params(DEFAULT_SCATTER_U_PARAMS)
+    assert set(inferred_default_params._fields) == set(DEFAULT_SCATTER_PARAMS._fields)
 
-    inferred_default_u_params = get_unbounded_scatter_params(
-        DEFAULT_SCATTER_PARAMS
-    )
+    inferred_default_u_params = get_unbounded_scatter_params(DEFAULT_SCATTER_PARAMS)
     assert set(inferred_default_u_params._fields) == set(
         DEFAULT_SCATTER_U_PARAMS._fields
     )
@@ -71,9 +62,7 @@ def test_get_unbounded_params_fails_when_passing_params():
 
 def test_default_params_are_in_bounds():
 
-    gen = zip(
-        DEFAULT_SCATTER_PARAMS, DEFAULT_SCATTER_PARAMS._fields
-    )
+    gen = zip(DEFAULT_SCATTER_PARAMS, DEFAULT_SCATTER_PARAMS._fields)
     for val, key in gen:
         bound = getattr(SCATTER_PBOUNDS, key)
         assert bound[0] < val < bound[1]

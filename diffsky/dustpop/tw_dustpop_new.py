@@ -1,6 +1,7 @@
 """Module calculating the fraction of light transmitted through dust based on the
 triweight attenuation kernel
 """
+
 from collections import OrderedDict, namedtuple
 
 from jax import jit as jjit

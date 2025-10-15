@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 import numpy as np
 from ..lgavpop import _get_lgav_galpop_from_params
 from ..lgavpop import _get_lgav_galpop_from_u_params

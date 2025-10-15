@@ -1,12 +1,10 @@
-"""
-"""
+""" """
 
 from ..spspop_param_utils import (
     DEFAULT_SPSPOP_PARAMS,
     DEFAULT_SPSPOP_U_PARAMS,
     get_bounded_spspop_params_tw_dust,
     get_unbounded_spspop_params_tw_dust,
-
 )
 
 
@@ -19,7 +17,9 @@ def test_spspop_param_u_param_names_propagate_properly():
     inferred_default_params = get_bounded_spspop_params_tw_dust(DEFAULT_SPSPOP_U_PARAMS)
     assert set(inferred_default_params._fields) == set(DEFAULT_SPSPOP_PARAMS._fields)
 
-    inferred_default_u_params = get_unbounded_spspop_params_tw_dust(DEFAULT_SPSPOP_PARAMS)
+    inferred_default_u_params = get_unbounded_spspop_params_tw_dust(
+        DEFAULT_SPSPOP_PARAMS
+    )
     assert set(inferred_default_u_params._fields) == set(
         DEFAULT_SPSPOP_U_PARAMS._fields
     )

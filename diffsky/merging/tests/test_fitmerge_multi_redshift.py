@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 import numpy as np
 
@@ -14,7 +13,7 @@ from ..fitmerge_multi_redshift import (
     conditional_model_histogram,
     mapped_model_csmf,
     model_mass,
-    sat_frac
+    sat_frac,
 )
 
 
@@ -27,8 +26,7 @@ def test_scalar_smf():
     bin_width = 0.5
     comoving_volume = 20.0**3
 
-    hist = scalar_smf(
-        logM, lobins, a_interest, sigma, bin_width, comoving_volume)
+    hist = scalar_smf(logM, lobins, a_interest, sigma, bin_width, comoving_volume)
 
     assert ~np.isnan(hist)
 
@@ -45,8 +43,8 @@ def test_csmf_sats_cens_all():
     comoving_volume = 20.0**3
 
     smf = csmf_sats_cens_all(
-        all_sm_no_zero, host_lgmp, upid, a, lobins,
-        sigma, bin_width, comoving_volume)
+        all_sm_no_zero, host_lgmp, upid, a, lobins, sigma, bin_width, comoving_volume
+    )
 
     assert np.all(~np.isnan(smf))
 
@@ -72,9 +70,7 @@ def test_csmf():
     bin_width = 0.5
     comoving_volume = 20.0**3
 
-    smf = csmf(
-        all_sm_no_zero, host_lgmp, a, lobins,
-        sigma, bin_width, comoving_volume)
+    smf = csmf(all_sm_no_zero, host_lgmp, a, lobins, sigma, bin_width, comoving_volume)
 
     assert np.all(~np.isnan(smf))
 
@@ -104,11 +100,26 @@ def test_model_histogram():
 
     hist = model_histogram(
         DEFAULT_MERGE_U_PARAMS,
-        logMpeak_penultimate_infall, logMpeak_ultimate_infall,
-        logMhost_penultimate_infall, logMhost_ultimate_infall,
-        tinterest, t_penultimate_infall, t_ultimate_infall, upids, sfr,
-        penultimate_dump, ultimate_dump, MC, dT, i_interest, a_interest,
-        sigma, bin_width, comoving_volume, lobins)
+        logMpeak_penultimate_infall,
+        logMpeak_ultimate_infall,
+        logMhost_penultimate_infall,
+        logMhost_ultimate_infall,
+        tinterest,
+        t_penultimate_infall,
+        t_ultimate_infall,
+        upids,
+        sfr,
+        penultimate_dump,
+        ultimate_dump,
+        MC,
+        dT,
+        i_interest,
+        a_interest,
+        sigma,
+        bin_width,
+        comoving_volume,
+        lobins,
+    )
 
     assert ~np.isnan(hist)
 
@@ -139,12 +150,27 @@ def test_conditional_model_histogram():
 
     hist = conditional_model_histogram(
         DEFAULT_MERGE_U_PARAMS,
-        logMpeak_penultimate_infall, logMpeak_ultimate_infall,
-        logMhost_penultimate_infall, logMhost_ultimate_infall,
-        tinterest, t_penultimate_infall, t_ultimate_infall,
-        upids, sfr, penultimate_dump, ultimate_dump, MC, dT,
-        i_interest, a_interest, sigma, bin_width, comoving_volume,
-        lobins, keep)
+        logMpeak_penultimate_infall,
+        logMpeak_ultimate_infall,
+        logMhost_penultimate_infall,
+        logMhost_ultimate_infall,
+        tinterest,
+        t_penultimate_infall,
+        t_ultimate_infall,
+        upids,
+        sfr,
+        penultimate_dump,
+        ultimate_dump,
+        MC,
+        dT,
+        i_interest,
+        a_interest,
+        sigma,
+        bin_width,
+        comoving_volume,
+        lobins,
+        keep,
+    )
 
     assert ~np.isnan(hist)
 
@@ -175,12 +201,27 @@ def test_mapped_model_csmf():
 
     hist = mapped_model_csmf(
         DEFAULT_MERGE_U_PARAMS,
-        logMpeak_penultimate_infall, logMpeak_ultimate_infall,
-        logMhost_penultimate_infall, logMhost_ultimate_infall,
-        tinterest, t_penultimate_infall, t_ultimate_infall,
-        upids, sfr, penultimate_dump, ultimate_dump, MC, dT,
-        i_interest, a_interest, sigma, bin_width, comoving_volume,
-        lobins, keep)
+        logMpeak_penultimate_infall,
+        logMpeak_ultimate_infall,
+        logMhost_penultimate_infall,
+        logMhost_ultimate_infall,
+        tinterest,
+        t_penultimate_infall,
+        t_ultimate_infall,
+        upids,
+        sfr,
+        penultimate_dump,
+        ultimate_dump,
+        MC,
+        dT,
+        i_interest,
+        a_interest,
+        sigma,
+        bin_width,
+        comoving_volume,
+        lobins,
+        keep,
+    )
 
     assert np.all(~np.isnan(hist))
 
@@ -205,11 +246,21 @@ def test_model_mass():
 
     M_interest = model_mass(
         DEFAULT_MERGE_U_PARAMS,
-        logMpeak_penultimate_infall, logMpeak_ultimate_infall,
-        logMhost_penultimate_infall, logMhost_ultimate_infall,
-        tinterest, t_penultimate_infall, t_ultimate_infall,
-        upids, sfr, penultimate_dump, ultimate_dump,
-        MC, dT, i_interest)
+        logMpeak_penultimate_infall,
+        logMpeak_ultimate_infall,
+        logMhost_penultimate_infall,
+        logMhost_ultimate_infall,
+        tinterest,
+        t_penultimate_infall,
+        t_ultimate_infall,
+        upids,
+        sfr,
+        penultimate_dump,
+        ultimate_dump,
+        MC,
+        dT,
+        i_interest,
+    )
 
     assert np.all(~np.isnan(M_interest))
 
@@ -224,7 +275,14 @@ def test_sat_frac():
     t_penultimate_infall = np.array([1.0, 4.0, 7.0, 10.0])
     t_ultimate_infall = np.array([2.0, 5.0, 8.0, 10.0])
     upids = np.array([1, 1, 1, -1])
-    sfr = np.array(([1., 2., 3., 4.], [1., 2., 3., 4.], [1., 2., 3., 4.], [1., 2., 3., 4.]))
+    sfr = np.array(
+        (
+            [1.0, 2.0, 3.0, 4.0],
+            [1.0, 2.0, 3.0, 4.0],
+            [1.0, 2.0, 3.0, 4.0],
+            [1.0, 2.0, 3.0, 4.0],
+        )
+    )
     sfr = sfr.astype("f8")
     penultimate_dump = np.array([2, 2, 2, 3])
     ultimate_dump = np.array([3, 3, 3, 3])
@@ -236,11 +294,23 @@ def test_sat_frac():
 
     satfrac = sat_frac(
         DEFAULT_MERGE_U_PARAMS,
-        logMpeak_penultimate_infall, logMpeak_ultimate_infall,
-        logMhost_penultimate_infall, logMhost_ultimate_infall,
-        tinterest, t_penultimate_infall, t_ultimate_infall,
-        upids, sfr, penultimate_dump, ultimate_dump, MC, dT,
-        i_interest, bins, bin_width)
+        logMpeak_penultimate_infall,
+        logMpeak_ultimate_infall,
+        logMhost_penultimate_infall,
+        logMhost_ultimate_infall,
+        tinterest,
+        t_penultimate_infall,
+        t_ultimate_infall,
+        upids,
+        sfr,
+        penultimate_dump,
+        ultimate_dump,
+        MC,
+        dT,
+        i_interest,
+        bins,
+        bin_width,
+    )
 
     print(satfrac)
 

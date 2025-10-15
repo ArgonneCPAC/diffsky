@@ -1,5 +1,4 @@
-"""
-"""
+""" """
 
 from dsps.utils import _tw_cuml_kern
 from jax import jit as jjit

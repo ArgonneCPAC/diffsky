@@ -1,5 +1,5 @@
-"""Implementation of jax_adam_wrapper that is compatible with namedtuple parameters
-"""
+"""Implementation of jax_adam_wrapper that is compatible with namedtuple parameters"""
+
 from copy import deepcopy
 
 import numpy as np
