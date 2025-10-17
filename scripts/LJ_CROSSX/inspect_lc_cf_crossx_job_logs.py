@@ -104,6 +104,24 @@ def infer_iend(drn, bn_pat="run_lc_cf_crossx_{0}_to_{1}.sh"):
     return iend
 
 
+def record_uncollated_rank_data(drn, fnout="uncollated_rank_data.txt"):
+    pat = os.path.join(drn, "lc_cores-*_rank_0.hdf5")
+    fn_list = glob(pat)
+    with open(fnout, "w") as fout:
+        for fn in fn_list:
+            fout.write(fn + "\n")
+
+
+def record_lc_cf_fnames(
+    drn, bnpat="lc_cores-*.*.diffsky_data.hdf5", fnout="lc_cf_fnames.txt"
+):
+    pat = os.path.join(drn, bnpat)
+    fn_list = glob(pat)
+    with open(fnout, "w") as fout:
+        for fn in fn_list:
+            fout.write(fn + "\n")
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()

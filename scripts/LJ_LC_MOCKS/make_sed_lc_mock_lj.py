@@ -30,7 +30,7 @@ DRN_LJ_LC_LCRC = (
 )
 DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc_cores"
 
-DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/halotools/LastJourney/lc-cf-diffsky"
+DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-cf-diffsky"
 DRN_LC_CF_XDATA_LCRC = os.path.join(DRN_LJ_CROSSX_OUT_LCRC, "LC_CF_XDATA")
 DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
 DRN_LC_CF_XDATA_POBOY = os.path.join(DRN_LJ_CROSSX_OUT_POBOY, "LC_CF_XDATA")
@@ -191,6 +191,7 @@ if __name__ == "__main__":
 
     start_script = time()
     for lc_patch in lc_patch_list:
+        gc.collect()
         print(f"Working on lc_patch={lc_patch}")
 
         ran_key, patch_key, shuffle_key = jran.split(ran_key, 3)
