@@ -208,7 +208,7 @@ if __name__ == "__main__":
         print(f"bn_list_lc_patch={bn_list_lc_patch}")
 
         start = time()
-        for indx_step in indx_all_steps:
+        for indx_step in indx_all_steps[::-1]:
             fn_lc_diffsky = fn_list_lc_patch[indx_step]
             stepnum = lc_patch_info_list[indx_step][0]
             print(f"Working on={os.path.basename(fn_lc_diffsky)}")
