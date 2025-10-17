@@ -194,7 +194,7 @@ if __name__ == "__main__":
         lc_patch_info_list = sorted(
             hlu.get_lc_patches_in_zrange(
                 sim_name, lc_xdict, z_min, z_max, patch_list=[lc_patch]
-            )[::-1]
+            )
         )
         fn_list_lc_patch = [
             os.path.join(indir_lc_diffsky, lcmp.LC_CF_BNPAT.format(*patch_info))
