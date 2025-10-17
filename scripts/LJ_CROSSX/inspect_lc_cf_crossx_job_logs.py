@@ -112,6 +112,16 @@ def record_uncollated_rank_data(drn, fnout="uncollated_rank_data.txt"):
             fout.write(fn + "\n")
 
 
+def record_lc_cf_fnames(
+    drn, bnpat="lc_cores-*.*.diffsky_data.hdf5", fnout="lc_cf_fnames.txt"
+):
+    pat = os.path.join(drn, bnpat)
+    fn_list = glob(pat)
+    with open(fnout, "w") as fout:
+        for fn in fn_list:
+            fout.write(fn + "\n")
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
