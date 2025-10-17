@@ -226,10 +226,18 @@ if __name__ == "__main__":
                     fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
                 )
 
-            z_min = lc_data["redshift_true"].min() - 1e-3
-            z_max = lc_data["redshift_true"].max() + 1e-3
-            z_min = max(z_min, 0.001)
+            # Define redshift table used for magnitude interpolation
+            _EPS = 1e-3
+            z_max = lc_data["redshift_true"].max() + _EPS
+
+            z_min_shell = lc_data["redshift_true"].min()
+            z_min = z_min_shell - _EPS
+            z_min_cutoff = 1e-3
+            if z_min < z_min_cutoff:
+                z_min = z_min_shell / 2
             z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+
+            # Precompute photometry at each element of the redshift table
             wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
 
             precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
