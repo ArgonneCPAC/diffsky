@@ -179,15 +179,10 @@ if __name__ == "__main__":
         )
 
     n_z_phot_table = 15
-    z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+
     filter_nicknames = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
     bn_pat_list = [name + "*" for name in filter_nicknames]
     tcurves = [load_transmission_curve(bn_pat=bn_pat) for bn_pat in bn_pat_list]
-    wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
-
-    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
-    )
 
     start_script = time()
     for lc_patch in lc_patch_list:
@@ -230,6 +225,16 @@ if __name__ == "__main__":
                 lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(
                     fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
                 )
+
+            z_min = lc_data["redshift_true"].min() - 1e-3
+            z_max = lc_data["redshift_true"].max() + 1e-3
+            z_min = max(z_min, 0.001)
+            z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+            wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
+
+            precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+                tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
+            )
 
             patch_key, sed_key = jran.split(patch_key, 2)
             args = (
