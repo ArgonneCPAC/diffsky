@@ -17,6 +17,9 @@ from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
 from diffsky.data_loaders.hacc_utils import metadata_sfh_mock
 from diffsky.experimental import precompute_ssp_phot as psspp
+from diffsky.experimental.sfh_model_calibrations import (
+    load_diffsky_sfh_model_calibrations as ldup,
+)
 from diffsky.param_utils import diffsky_param_wrapper as dpw
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
@@ -35,6 +38,13 @@ DRN_LC_CF_XDATA_POBOY = os.path.join(DRN_LJ_CROSSX_OUT_POBOY, "LC_CF_XDATA")
 LC_XDICT_BNAME = "lc_xdict.pickle"
 
 SIM_NAME = "LastJourney"
+DIFFSTARPOP_CALIBRATIONS = [
+    "smdpl_dr1",
+    "tng",
+    "galacticus_in_plus_ex_situ",
+]
+
+ROMAN_HLTDS_PATCHES = [157, 158, 118, 119]
 
 
 if __name__ == "__main__":
@@ -49,7 +59,25 @@ if __name__ == "__main__":
     parser.add_argument("iend", help="Last sky patch", type=int)
 
     parser.add_argument("drn_out", help="Output directory")
-    parser.add_argument("-fn_u_params", help="Best-fit diffsky parameters", default="")
+    parser.add_argument(
+        "-roman_hltds",
+        help="Use all patches overlapping with Roman HLTDS. Overrides istart and iend",
+        default=0,
+        choices=[0, 1],
+        type=int,
+    )
+
+    parser.add_argument(
+        "-fn_u_params",
+        help="Best-fit diffsky parameters. Set to `sfh_model` to use a few specific calibrations",
+        default="",
+    )
+    parser.add_argument(
+        "-sfh_model",
+        help="Assumed SFH model in diffsky calibration",
+        default="tng",
+        choices=DIFFSTARPOP_CALIBRATIONS,
+    )
 
     parser.add_argument(
         "-indir_lc_data",
@@ -77,8 +105,10 @@ if __name__ == "__main__":
     z_max = args.z_max
     istart = args.istart
     iend = args.iend
+    sfh_model = args.sfh_model
     drn_out = args.drn_out
 
+    roman_hltds = args.roman_hltds
     fn_u_params = args.fn_u_params
     itest = args.itest
     sim_name = args.sim_name
@@ -97,6 +127,8 @@ if __name__ == "__main__":
             msg += "must specify lgmp_min and lgmp_max"
             raise ValueError(msg)
 
+    if fn_u_params == "sfh_model":
+        drn_out = os.path.join(drn_out, sfh_model)
     os.makedirs(drn_out, exist_ok=True)
 
     if machine == "poboy":
@@ -117,13 +149,29 @@ if __name__ == "__main__":
 
     if itest == 1:
         lc_patch_list = [0, 1]
+    elif roman_hltds == 1:
+        lc_patch_list = np.array(ROMAN_HLTDS_PATCHES)
+        print("Making all lightcone patches for Roman HLTDS")
     else:
         lc_patch_list = np.arange(istart, iend).astype(int)
 
     ssp_data = load_ssp_templates()
+
+    #  Load diffsky model parameters
     if fn_u_params == "":
         param_collection = dpw.DEFAULT_PARAM_COLLECTION
+        print(
+            "No input params detected. "
+            "Using default diffsky model parameters DEFAULT_PARAM_COLLECTION"
+        )
+    elif fn_u_params == "sfh_model":
+        u_param_arr = ldup.load_diffsky_u_params_for_sfh_model(sfh_model)
+        u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
+        param_collection = dpw.get_param_collection_from_u_param_collection(
+            *u_param_collection
+        )
     else:
+        print(f"Reading diffsky parameter array from disk. Filename = {fn_u_params}")
         u_param_arr = np.loadtxt(fn_u_params)
         u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
         param_collection = dpw.get_param_collection_from_u_param_collection(
