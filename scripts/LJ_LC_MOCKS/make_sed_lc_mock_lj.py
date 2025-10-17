@@ -191,6 +191,7 @@ if __name__ == "__main__":
 
     start_script = time()
     for lc_patch in lc_patch_list:
+        gc.collect()
         print(f"Working on lc_patch={lc_patch}")
 
         ran_key, patch_key, shuffle_key = jran.split(ran_key, 3)
