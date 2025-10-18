@@ -102,6 +102,8 @@ if __name__ == "__main__":
     else:
         lc_patch_list = np.loadtxt(lc_patch_list_cfg).astype(int)
 
+    print(f"Running crossmatching for the following sky patches:\n{lc_patch_list}")
+
     if machine == "lcrc":
         drn_lc = DRN_LJ_LC_LCRC
         drn_cf = DRN_LJ_CF_LCRC
