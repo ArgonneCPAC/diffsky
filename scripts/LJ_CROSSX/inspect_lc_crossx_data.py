@@ -10,34 +10,56 @@ from diffsky.data_loaders.hacc_utils.lightcone_utils import (
 )
 
 BN_GLOBPAT_LC_CORES = "lc_cores-*.*.diffsky_data.hdf5"
+DRN_LJ_LC_LCRC = (
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-6/output"
+)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("drn", help="Directory storing lightcone mock")
-    parser.add_argument("-bnpat", help="Basename pattern", default=BN_GLOBPAT_LC_CORES)
+    parser.add_argument("drn_lc_cf", help="Directory with cross-matched diffsky_data")
+    parser.add_argument(
+        "-bnpat_lc_cf",
+        help="Basename pattern for cross-matched diffsky_data",
+        default=BN_GLOBPAT_LC_CORES,
+    )
+
+    parser.add_argument(
+        "-drn_lc_cores", help="Directory with lc_cores", default=DRN_LJ_LC_LCRC
+    )
+    parser.add_argument(
+        "-bnpat_lc_cores",
+        help="Basename pattern for lc_cores",
+        default="lc_cores-{0}.{1}.hdf5",
+    )
 
     args = parser.parse_args()
-    drn = args.drn
-    bnpat = args.bnpat
-    fn_list = glob(os.path.join(drn, bnpat))
+    drn_lc_cf = args.drn_lc_cf
+    bnpat_lc_cf = args.bnpat_lc_cf
+    drn_lc_cores = args.drn_lc_cores
+    bnpat_lc_cores = args.bnpat_lc_cores
 
-    all_good = True
-    failure_collector = []
-    for fn in fn_list:
-        report = check_lc_cores_diffsky_data(fn)
-        fn_report = fn.replace(".hdf5", ".report.txt")
-        all_good_fn = write_lc_cores_diffsky_data_report_to_disk(report, fn_report)
-        all_good = all_good & all_good_fn
-        if not all_good_fn:
-            bname = os.path.basename(fn)
-            print(f"{bname} fails readiness test")
-            failure_collector.append(bname)
+    fn_lc_cf_list = glob(os.path.join(drn_lc_cf, bnpat_lc_cf))
+    fn_lc_cores_list = glob(os.path.join(drn_lc_cores, bnpat_lc_cores))
 
-    if all_good:
-        print("All lightcone patches pass all tests")
-    else:
-        print("Some failures in the following lightcone patches:\n")
-        for failing_bn in failure_collector:
-            print(f"{failing_bn}")
+    # Check for missing files
+
+    # all_good = True
+    # failure_collector = []
+    # for fn in fn_list:
+    #     report = check_lc_cores_diffsky_data(fn)
+    #     fn_report = fn.replace(".hdf5", ".report.txt")
+    #     all_good_fn = write_lc_cores_diffsky_data_report_to_disk(report, fn_report)
+    #     all_good = all_good & all_good_fn
+    #     if not all_good_fn:
+    #         bname = os.path.basename(fn)
+    #         print(f"{bname} fails readiness test")
+    #         failure_collector.append(bname)
+
+    # if all_good:
+    #     print("All lightcone patches pass all tests")
+    # else:
+    #     print("Some failures in the following lightcone patches:\n")
+    #     for failing_bn in failure_collector:
+    #         print(f"{failing_bn}")
