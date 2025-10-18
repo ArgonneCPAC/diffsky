@@ -66,6 +66,8 @@ if __name__ == "__main__":
     bn_lc_cores_list = [os.path.basename(fn) for fn in fn_lc_cores_list]
 
     missing_bn_collector = []
+    incomplete_patch_collector = []
+    incomplete_487_collector = []
     for bn_lc_cores in bn_lc_cores_list:
         stepnum = int(bn_lc_cores.replace("lc_cores-", "").split(".")[0])
         lc_patch = int(bn_lc_cores.replace("lc_cores-", "").split(".")[1])
@@ -81,6 +83,10 @@ if __name__ == "__main__":
 
             if not os.path.isfile(matching_fn_lc_cf):
                 missing_bn_collector.append(matching_bn_lc_cf)
+                if stepnum == 487:
+                    incomplete_487_collector.append(lc_patch)
+                else:
+                    incomplete_patch_collector.append(lc_patch)
 
     # Check for missing files
 
