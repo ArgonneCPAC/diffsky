@@ -47,6 +47,12 @@ if __name__ == "__main__":
     bn_lc_cf_list = [os.path.basename(fn) for fn in fn_lc_cf_list]
     bn_lc_cores_list = [os.path.basename(fn) for fn in fn_lc_cores_list]
 
+    missing_bn_collector = []
+    for bn_lc_cores in bn_lc_cores_list:
+        matching_bn_lc_cf = bn_lc_cores.replace(".hdf5", ".diffsky_data.hdf5")
+        if matching_bn_lc_cf not in bn_lc_cores_list:
+            missing_bn_collector.append(bn_lc_cores)
+
     # Check for missing files
 
     # all_good = True
