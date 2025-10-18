@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-bnpat_lc_cores",
         help="Basename pattern for lc_cores",
-        default="lc_cores-{0}.{1}.hdf5",
+        default="lc_cores-{0}.{1}.diffsky_data.hdf5",
     )
 
     args = parser.parse_args()
@@ -42,6 +42,9 @@ if __name__ == "__main__":
 
     fn_lc_cf_list = glob(os.path.join(drn_lc_cf, bnpat_lc_cf))
     fn_lc_cores_list = glob(os.path.join(drn_lc_cores, bnpat_lc_cores))
+
+    bn_lc_cf_list = [os.path.basename(fn) for fn in fn_lc_cf_list]
+    bn_lc_cores_list = [os.path.basename(fn) for fn in fn_lc_cores_list]
 
     # Check for missing files
 
