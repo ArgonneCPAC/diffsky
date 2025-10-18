@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-bnpat_lc_cf",
         help="Basename pattern for cross-matched diffsky_data",
-        default=BN_GLOBPAT_LC_CORES,
+        default="lc_cores-{0}.{1}.diffsky_data.hdf5",
     )
 
     parser.add_argument(
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-bnpat_lc_cores",
         help="Basename pattern for lc_cores",
-        default="lc_cores-{0}.{1}.diffsky_data.hdf5",
+        default=BN_GLOBPAT_LC_CORES,
     )
 
     args = parser.parse_args()
