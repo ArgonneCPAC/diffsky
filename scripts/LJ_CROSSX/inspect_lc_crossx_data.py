@@ -4,6 +4,8 @@ import argparse
 import os
 from glob import glob
 
+import numpy as np
+
 from diffsky.data_loaders.hacc_utils import hacc_core_utils as hcu
 from diffsky.data_loaders.hacc_utils.lightcone_utils import (
     check_lc_cores_diffsky_data,
@@ -56,6 +58,8 @@ if __name__ == "__main__":
     drn_lc_cores = args.drn_lc_cores
     bnpat_lc_cores = args.bnpat_lc_cores
 
+    # Check for missing files
+
     _res = hcu.get_timestep_range_from_z_range("LastJourney", z_min, z_max)
     timestep_min, timestep_max = _res[2:]
 
@@ -87,8 +91,10 @@ if __name__ == "__main__":
                     incomplete_487_collector.append(lc_patch)
                 else:
                     incomplete_patch_collector.append(lc_patch)
+    incomplete_patch_collector = np.unique(incomplete_patch_collector).astype(int)
+    np.savetxt("incomplete_patch_collector.txt", incomplete_patch_collector, fmt="%i")
 
-    # Check for missing files
+    # Sanity check the matchup
 
     # all_good = True
     # failure_collector = []
