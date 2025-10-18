@@ -4,6 +4,7 @@ import argparse
 import os
 from glob import glob
 
+from diffsky.data_loaders.hacc_utils import hacc_core_utils as hcu
 from diffsky.data_loaders.hacc_utils.lightcone_utils import (
     check_lc_cores_diffsky_data,
     write_lc_cores_diffsky_data_report_to_disk,
@@ -20,6 +21,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("drn_lc_cf", help="Directory with cross-matched diffsky_data")
+    parser.add_argument(
+        "z_min", help="Minimum redshift to check for matches", type=float
+    )
+    parser.add_argument(
+        "z_max", help="Maximum redshift to check for matches", type=float
+    )
+
     parser.add_argument(
         "-bnpat_lc_cf",
         help="Basename pattern for cross-matched diffsky_data",
@@ -41,6 +49,9 @@ if __name__ == "__main__":
     drn_lc_cores = args.drn_lc_cores
     bnpat_lc_cores = args.bnpat_lc_cores
 
+    _res = hcu.get_timestep_range_from_z_range("LastJourney", 0, 3)
+    timestep_min, timestep_max = _res[2:]
+
     fn_lc_cf_list = glob(os.path.join(drn_lc_cf, bnpat_lc_cf))
     fn_lc_cores_list = glob(os.path.join(drn_lc_cores, bnpat_lc_cores))
 
@@ -51,8 +62,12 @@ if __name__ == "__main__":
     for bn_lc_cores in bn_lc_cores_list:
         matching_bn_lc_cf = bn_lc_cores.replace(".hdf5", ".diffsky_data.hdf5")
         matching_fn_lc_cf = os.path.join(drn_lc_cf, matching_bn_lc_cf)
-        if not os.path.isfile(matching_fn_lc_cf):
-            missing_bn_collector.append(bn_lc_cores)
+
+        stepnum = int(bn_lc_cores.replace("lc_cores-", "").split(".")[0])
+        if (stepnum >= timestep_min) & (stepnum <= timestep_max):
+
+            if not os.path.isfile(matching_fn_lc_cf):
+                missing_bn_collector.append(bn_lc_cores)
 
     # Check for missing files
 
