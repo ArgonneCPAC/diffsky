@@ -9,7 +9,8 @@ from diffsky.data_loaders.hacc_utils.lightcone_utils import (
     write_lc_cores_diffsky_data_report_to_disk,
 )
 
-BN_GLOBPAT_LC_CORES = "lc_cores-*.*.diffsky_data.hdf5"
+BN_GLOBPAT_LC_CORES = "lc_cores-{0}.{1}.hdf5"
+BN_GLOBPAT_LC_CF = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 DRN_LJ_LC_LCRC = (
     "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-6/output"
 )
@@ -22,7 +23,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-bnpat_lc_cf",
         help="Basename pattern for cross-matched diffsky_data",
-        default="lc_cores-{0}.{1}.diffsky_data.hdf5",
+        default=BN_GLOBPAT_LC_CF.format("*", "*"),
     )
 
     parser.add_argument(
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-bnpat_lc_cores",
         help="Basename pattern for lc_cores",
-        default=BN_GLOBPAT_LC_CORES,
+        default=BN_GLOBPAT_LC_CORES.format("*", "*"),
     )
 
     args = parser.parse_args()
