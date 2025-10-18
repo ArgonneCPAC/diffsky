@@ -95,7 +95,7 @@ if __name__ == "__main__":
     if len(incomplete_patch_collector) > 0:
         incomplete_patch_collector = np.unique(incomplete_patch_collector).astype(int)
         n_missing = len(incomplete_patch_collector)
-        print(f"{n_missing} missing patches in the input range.\n")
+        print(f"\n{n_missing} missing patches in the input range.")
         fn_incompl_out = "incomplete_patch_collector.txt"
         print(f"Writing missing patch numbers to {fn_incompl_out}")
         np.savetxt(fn_incompl_out, incomplete_patch_collector, fmt="%i")
