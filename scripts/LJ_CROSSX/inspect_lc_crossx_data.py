@@ -27,6 +27,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "z_max", help="Maximum redshift to check for matches", type=float
     )
+    parser.add_argument(
+        "patch_max", help="Maximum lc_patch to check for matches", type=int
+    )
 
     parser.add_argument(
         "-bnpat_lc_cf",
@@ -45,11 +48,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     drn_lc_cf = args.drn_lc_cf
+    z_min = args.z_min
+    z_max = args.z_max
+    patch_max = args.patch_max
+
     bnpat_lc_cf = args.bnpat_lc_cf
     drn_lc_cores = args.drn_lc_cores
     bnpat_lc_cores = args.bnpat_lc_cores
 
-    _res = hcu.get_timestep_range_from_z_range("LastJourney", 0, 3)
+    _res = hcu.get_timestep_range_from_z_range("LastJourney", z_min, z_max)
     timestep_min, timestep_max = _res[2:]
 
     fn_lc_cf_list = glob(os.path.join(drn_lc_cf, bnpat_lc_cf))
@@ -60,14 +67,20 @@ if __name__ == "__main__":
 
     missing_bn_collector = []
     for bn_lc_cores in bn_lc_cores_list:
-        matching_bn_lc_cf = bn_lc_cores.replace(".hdf5", ".diffsky_data.hdf5")
-        matching_fn_lc_cf = os.path.join(drn_lc_cf, matching_bn_lc_cf)
-
         stepnum = int(bn_lc_cores.replace("lc_cores-", "").split(".")[0])
-        if (stepnum >= timestep_min) & (stepnum <= timestep_max):
+        lc_patch = int(bn_lc_cores.replace("lc_cores-", "").split(".")[1])
+
+        if (
+            (stepnum >= timestep_min)
+            & (stepnum <= timestep_max)
+            & (lc_patch <= patch_max)
+        ):
+
+            matching_bn_lc_cf = bn_lc_cores.replace(".hdf5", ".diffsky_data.hdf5")
+            matching_fn_lc_cf = os.path.join(drn_lc_cf, matching_bn_lc_cf)
 
             if not os.path.isfile(matching_fn_lc_cf):
-                missing_bn_collector.append(bn_lc_cores)
+                missing_bn_collector.append(matching_bn_lc_cf)
 
     # Check for missing files
 
