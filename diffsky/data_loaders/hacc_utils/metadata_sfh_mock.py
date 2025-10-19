@@ -138,6 +138,33 @@ column_metadata["black_hole_accretion_rate"] = (
     "Black hole mass accretion rate",
 )
 
+column_metadata["lgfburst"] = (
+    "None",
+    "Burstiness parameter. Specifies burst intensity.",
+)
+column_metadata["lgyr_max"] = (
+    "None",
+    "Burstiness parameter. Specifies burst duration.",
+)
+column_metadata["lgyr_peak"] = (
+    "None",
+    "Burstiness parameter. Specifies burst recency.",
+)
+
+column_metadata["lsst_u"] = ("None", "Apparent magnitude")
+column_metadata["lsst_g"] = ("None", "Apparent magnitude")
+column_metadata["lsst_r"] = ("None", "Apparent magnitude")
+column_metadata["lsst_i"] = ("None", "Apparent magnitude")
+column_metadata["lsst_z"] = ("None", "Apparent magnitude")
+column_metadata["lsst_y"] = ("None", "Apparent magnitude")
+
+
+column_metadata["mc_sfh_type"] = (
+    "None",
+    "Boolean specifies the type of star formation history."
+    "0 for quenched, 1 for smooth main sequence, 2 for bursty main sequence",
+)
+
 
 HEADER_COMMENT = """
 This file contains diffsky galaxy data.
