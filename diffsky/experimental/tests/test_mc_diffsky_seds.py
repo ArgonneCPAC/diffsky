@@ -33,6 +33,57 @@ def test_mc_diffsky_phot_flat_u_params():
     assert np.allclose(sed_info["obs_mags"], phot_info["obs_mags"], rtol=1e-4)
 
 
+def test_recompute_photometry_from_phot_mock():
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+
+    (
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+    ) = dpw.DEFAULT_PARAM_COLLECTION
+
+    u_param_collection = dpw.get_u_param_collection_from_param_collection(
+        *dpw.DEFAULT_PARAM_COLLECTION
+    )
+    u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
+
+    phot_info = mcsed._mc_diffsky_phot_flat_u_params(
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+    )
+
+    delta_scatter = np.where(
+        phot_info["mc_sfh_type"].reshape((-1, 1)) == 0,
+        phot_info["delta_scatter_q"],
+        phot_info["delta_scatter_ms"],
+    )
+
+    args = (
+        lc_data.z_obs,
+        lc_data.ssp_data,
+        phot_info["logmp_obs"],
+        phot_info["ssp_weights"],
+        phot_info["uran_av"],
+        phot_info["uran_delta"],
+        phot_info["uran_funo"],
+        phot_info["logsm_obs"],
+        phot_info["logssfr_obs"],
+        ssp_err_pop_params,
+        spspop_params,
+        scatter_params,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        lc_data.precomputed_ssp_mag_table,
+        delta_scatter,
+    )
+
+    obs_mags_recomputed = mcsed._recompute_photometry_from_phot_mock(*args)
+    assert np.all(np.isfinite(obs_mags_recomputed))
+    assert np.allclose(obs_mags_recomputed, phot_info["obs_mags"], rtol=1e-4)
+
+
 def test_recompute_sed_from_phot_mock():
     ran_key = jran.key(0)
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
