@@ -52,8 +52,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "machine", help="Machine name where script is run", choices=["lcrc", "poboy"]
     )
-    parser.add_argument("lc_patch", help="Lightcone patch", type=int)
     parser.add_argument("stepnum", help="Stepnum", type=int)
+    parser.add_argument("lc_patch", help="Lightcone patch", type=int)
 
     parser.add_argument("drn_out", help="Output directory")
     parser.add_argument(
