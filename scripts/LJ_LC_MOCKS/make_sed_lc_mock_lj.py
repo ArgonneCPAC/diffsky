@@ -6,6 +6,7 @@ import os
 import pickle
 from time import time
 
+import jax
 import numpy as np
 from dsps.data_loaders import load_ssp_templates, load_transmission_curve
 from jax import random as jran
@@ -281,6 +282,7 @@ if __name__ == "__main__":
             del lc_data
             del diffsky_data
             gc.collect()
+            jax.clear_caches()
 
         end = time()
         runtime = (end - start) / 60.0
