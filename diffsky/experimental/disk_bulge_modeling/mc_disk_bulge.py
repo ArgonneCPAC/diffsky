@@ -31,6 +31,16 @@ DEFAULT_FBULGE_PDICT = OrderedDict(
 Fbulge2dParams = namedtuple("Fbulge2dParams", DEFAULT_FBULGE_PDICT.keys())
 DEFAULT_FBULGE_2dSIGMOID_PARAMS = Fbulge2dParams(**DEFAULT_FBULGE_PDICT)
 
+_DB = (
+    "fbulge_params",
+    "mstar_history",
+    "eff_bulge_history",
+    "sfh_bulge",
+    "smh_bulge",
+    "bulge_to_total_history",
+)
+DiskBulgeHistory = namedtuple("DiskBulgeSFH", _DB)
+
 
 def mc_disk_bulge(
     tarr,
@@ -88,7 +98,7 @@ def mc_disk_bulge(
 
     _res = dbk._bulge_sfh_vmap(tarr, sfh_pop, fbulge_params)
     smh, eff_bulge, sfh_bulge, smh_bulge, bth = _res
-    return fbulge_params, smh, eff_bulge, sfh_bulge, smh_bulge, bth
+    return DiskBulgeHistory(fbulge_params, smh, eff_bulge, sfh_bulge, smh_bulge, bth)
 
 
 def generate_fbulge_parameters_2d_sigmoid(logsm0, logssfr0, t10, t90, f_bulge_params):

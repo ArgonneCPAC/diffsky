@@ -71,20 +71,19 @@ def test_mc_disk_bulge():
 
     ran_sfh_pop = jran.uniform(ran_key_sfh, minval=0, maxval=100, shape=(n_gals, n_t))
 
-    _res = mc_disk_bulge(
+    disk_bulge_history = mc_disk_bulge(
         tarr,
         ran_sfh_pop,
         fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
     )
-    fbulge_params, smh_pop, effbulge, sfh_bulge, smh_bulge, bth = _res
-    assert smh_pop.shape == (n_gals, n_t)
-    assert effbulge.shape == (n_gals, n_t)
-    assert fbulge_params.fbulge_tcrit.shape == (n_gals,)
-    assert fbulge_params.fbulge_early.shape == (n_gals,)
-    assert fbulge_params.fbulge_late.shape == (n_gals,)
+    assert disk_bulge_history.mstar_history.shape == (n_gals, n_t)
+    assert disk_bulge_history.eff_bulge_history.shape == (n_gals, n_t)
+    assert disk_bulge_history.fbulge_params.fbulge_tcrit.shape == (n_gals,)
+    assert disk_bulge_history.fbulge_params.fbulge_early.shape == (n_gals,)
+    assert disk_bulge_history.fbulge_params.fbulge_late.shape == (n_gals,)
 
-    assert np.all(sfh_bulge <= ran_sfh_pop)
-    assert np.all(smh_bulge <= smh_pop)
+    assert np.all(disk_bulge_history.sfh_bulge <= ran_sfh_pop)
+    assert np.all(disk_bulge_history.smh_bulge <= disk_bulge_history.mstar_history)
 
-    assert np.all(bth > 0)
-    assert np.all(bth < 1)
+    assert np.all(disk_bulge_history.bulge_to_total_history > 0)
+    assert np.all(disk_bulge_history.bulge_to_total_history < 1)
