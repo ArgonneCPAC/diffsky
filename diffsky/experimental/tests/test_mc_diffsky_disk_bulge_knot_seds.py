@@ -9,6 +9,7 @@ from jax import vmap
 from ...param_utils import diffsky_param_wrapper as dpw
 from .. import lc_phot_kern
 from .. import mc_diffsky_disk_bulge_knot_seds as mcsed_dbk
+from ..disk_bulge_modeling import disk_knots
 from . import test_lc_phot_kern as tlcphk
 
 _A = [None, 0, None, None, 0, *[None] * 4]
@@ -50,5 +51,9 @@ def test_mc_diffsky_seds_flat_u_params():
     assert sed_info["rest_sed"].shape == sed_info["rest_sed_bulge"].shape
     assert np.all(np.isfinite(sed_info["rest_sed_bulge"]))
     assert not np.allclose(sed_info["rest_sed_bulge"], sed_info["rest_sed"], rtol=0.1)
+
+    assert np.all(np.isfinite(sed_info["fknot"]))
+    assert np.all(sed_info["fknot"] > 0)
+    assert np.all(sed_info["fknot"] < disk_knots.FKNOT_MAX)
 
     # _check_sed_info(sed_info, lc_data, tcurves)

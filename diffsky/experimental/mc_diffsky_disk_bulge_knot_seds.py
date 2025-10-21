@@ -10,6 +10,8 @@ from diffmah import logmh_at_t_obs
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import age_at_z0
 from dsps.metallicity import umzr
+from dsps.sfh import diffburst
+from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
@@ -20,7 +22,13 @@ from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffsky_seds as mcsed
 from . import photometry_interpolation as photerp
+from .disk_bulge_modeling import disk_knots
 from .disk_bulge_modeling import mc_disk_bulge as mcdb
+
+_BPOP = (None, 0, 0)
+_pureburst_age_weights_from_params_vmap = jjit(
+    vmap(diffburst._pureburst_age_weights_from_params, in_axes=_BPOP)
+)
 
 DBK_PHOT_INFO_KEYS = (
     "logmp_obs",
@@ -51,6 +59,7 @@ DBK_SED_INFO_KEYS = [
     *DBK_PHOT_INFO_KEYS,
     "frac_ssp_err_sed",
     "ftrans_sed",
+    "fknot",
 ]
 
 DBK_SedInfo = namedtuple("DBK_SedInfo", DBK_SED_INFO_KEYS)
@@ -387,7 +396,6 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
         lgmet_med_obs, lc_phot_kern.LGMET_SCATTER, ssp_data.ssp_lgmet
     )
 
-    # Calculate SSP weights = P_SSP = P_met * P_age
     _w_age_bulge = age_weights_bulge.reshape((n_gals, 1, n_age))
     _w_lgmet_bulge = lgmet_weights_obs.reshape((n_gals, n_met, 1))
     ssp_weights_bulge = _w_lgmet_bulge * _w_age_bulge
@@ -395,6 +403,29 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
     weights_bulge = ssp_weights_bulge.reshape((n_gals, n_met, n_age, 1))
     sed_integrand_bulge = flux_table * weights_bulge * ftrans_sed * frac_ssp_err
     rest_sed_bulge = jnp.sum(sed_integrand_bulge, axis=(1, 2)) * mstar_obs_bulge
+
+    # Calculate restframe SED of disk and knots
+    ssp_lg_age_yr = ssp_data.ssp_lg_age_gyr + 9.0
+    age_weights_pureburst = _pureburst_age_weights_from_params_vmap(
+        ssp_lg_age_yr, burst_params.lgyr_peak, burst_params.lgyr_max
+    )
+
+    ran_key, knot_key = jran.split(ran_key, 2)
+    fknot = jran.uniform(
+        knot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
+    )
+
+    _res = disk_knots._disk_knot_vmap(
+        t_table,
+        t_obs,
+        sfh_table,
+        sfh_table - disk_bulge_history.sfh_bulge,
+        10**burst_params.lgfburst,
+        fknot,
+        age_weights_pureburst,
+        ssp_data.ssp_lg_age_gyr,
+    )
+    mstar_tot, mburst, mdd, mknot, age_weights_dd, age_weights_knot = _res
 
     sed_info = DBK_SEDINFO_EMPTY._replace(
         rest_sed_disk=None,
@@ -422,6 +453,7 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
         delta_scatter_q=delta_scatter_q,
         frac_ssp_err_sed=frac_ssp_err_sed,
         ftrans_sed=ftrans_sed,
+        fknot=fknot,
     )
 
     return sed_info._asdict()
