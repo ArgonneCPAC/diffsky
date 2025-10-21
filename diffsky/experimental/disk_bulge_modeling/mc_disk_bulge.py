@@ -63,15 +63,13 @@ def mc_disk_bulge(
 
     Returns
     -------
-    fbulge_params : ndarray, shape (n_gals, 3)
-        tcrit_bulge = fbulge_params[:, 0]
-        fbulge_early = fbulge_params[:, 1]
-        fbulge_late = fbulge_params[:, 2]
+    fbulge_params : namedtuple of arrays with shape (n_gals, )
+        fbulge_params._fields = ('fbulge_tcrit', 'fbulge_early', 'fbulge_late')
 
-    smh : ndarray, shape (n_gals, n_t)
+    mstar_history : ndarray, shape (n_gals, n_t)
         Stellar mass history of galaxy in units of Msun
 
-    eff_bulge : ndarray, shape (n_gals, n_t)
+    eff_bulge_history : ndarray, shape (n_gals, n_t)
         History of in-situ bulge growth efficiency for every galaxy
 
     sfh_bulge : ndarray, shape (n_gals, n_t)
@@ -80,7 +78,7 @@ def mc_disk_bulge(
     smh_bulge : ndarray, shape (n_gals, n_t)
         Stellar mass history of bulge in units of Msun
 
-    bth : ndarray, shape (n_gals, n_t)
+    bulge_to_total_history : ndarray, shape (n_gals, n_t)
         History of bulge-to-total mass ratio of every galaxy
 
     """
