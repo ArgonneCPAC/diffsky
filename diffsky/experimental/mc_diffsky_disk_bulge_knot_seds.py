@@ -19,6 +19,7 @@ from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffsky_seds as mcsed
 from . import photometry_interpolation as photerp
+from .disk_bulge_modeling import mc_disk_bulge as mcdb
 
 DBK_PHOT_INFO_KEYS = (
     "logmp_obs",
@@ -45,6 +46,7 @@ DBK_SED_INFO_KEYS = [
     "rest_sed_disk",
     "rest_sed_bulge",
     "rest_sed_knot",
+    "rest_sed",
     *DBK_PHOT_INFO_KEYS,
     "frac_ssp_err_sed",
     "ftrans_sed",
@@ -248,9 +250,7 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
     photflux_galpop_q = jnp.sum(integrand_q, axis=(2, 3)) * _mstar_q
     obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q)
 
-    weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - p_burst_ms)
-    weights_bursty_ms = (1 - diffstar_galpop.frac_q) * p_burst_ms
-    weights_q = diffstar_galpop.frac_q
+    frac_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - p_burst_ms)
 
     # Generate Monte Carlo noise to stochastically select q, or ms-smooth, or ms-bursty
     ran_key, smooth_sfh_key = jran.split(ran_key, 2)
@@ -260,8 +260,8 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
     # 0 < cdf < f_q ==> quenched
     # f_q < cdf < f_q + f_smooth_ms ==> smooth main sequence
     # f_q + f_smooth_ms < cdf < 1 ==> bursty main sequence
-    cdf_q = weights_q
-    cdf_ms = weights_q + weights_smooth_ms
+    cdf_q = diffstar_galpop.frac_q
+    cdf_ms = diffstar_galpop.frac_q + frac_smooth_ms
     mc_q = uran_smooth_sfh < cdf_q
     diffstar_params = mc_select_diffstar_params(
         diffstar_galpop.diffstar_params_q, diffstar_galpop.diffstar_params_ms, mc_q
@@ -358,10 +358,20 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
     )
     dust_params = noisy_dust_params_q._make((av, delta, funo))
 
+    # Begin calculation of disk/bulge/knot quantities
+    # Compute restframe SED of bulge
+    disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(t_table, sfh_table)
+
+    weights_b = ssp_weights_bulge.reshape((n_gals, n_met, n_age, 1))
+
+    sed_integrand_bulge = flux_table * weights_b * ftrans_sed * frac_ssp_err
+    rest_sed_bulge = jnp.sum(sed_integrand_bulge, axis=(1, 2)) * mstar_obs_bulge
+
     sed_info = DBK_SEDINFO_EMPTY._replace(
         rest_sed_disk=rest_sed_disk,
         rest_sed_bulge=rest_sed_bulge,
         rest_sed_knot=rest_sed_knot,
+        rest_sed=rest_sed,
         logmp_obs=logmp_obs,
         logsm_obs=logsm_obs,
         logssfr_obs=logssfr_obs,
