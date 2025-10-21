@@ -15,6 +15,7 @@ from jax import random as jran
 from jax import vmap
 
 from ..burstpop import freqburst_mono
+from ..param_utils import diffsky_param_wrapper as dpw
 from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffsky_seds as mcsed
@@ -57,6 +58,17 @@ DBK_SEDINFO_EMPTY = DBK_SedInfo._make([None] * len(DBK_SedInfo._fields))
 
 DBK_PhotInfo = namedtuple("DBK_PhotInfo", DBK_PHOT_INFO_KEYS)
 DBK_PHOTINFO_EMPTY = DBK_PhotInfo._make([None] * len(DBK_PhotInfo._fields))
+
+
+def _mc_diffsky_seds_dbk_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params):
+    u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
+    param_collection = dpw.get_param_collection_from_u_param_collection(
+        *u_param_collection
+    )
+    sed_data = _mc_diffsky_disk_bulge_knot_seds_kern(
+        ran_key, *lc_data[1:], *param_collection, cosmo_params
+    )
+    return sed_data
 
 
 def _mc_diffsky_disk_bulge_knot_seds_kern(
@@ -362,15 +374,32 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
     # Compute restframe SED of bulge
     disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(t_table, sfh_table)
 
-    weights_b = ssp_weights_bulge.reshape((n_gals, n_met, n_age, 1))
+    logsm_obs_bulge = lc_phot_kern.interp_vmap(
+        t_obs, t_table, jnp.log10(disk_bulge_history.smh_bulge)
+    )
+    mstar_obs_bulge = 10 ** logsm_obs_bulge.reshape((n_gals, 1))
+    age_weights_bulge = lc_phot_kern.calc_age_weights_from_sfh_table_vmap(
+        t_table, disk_bulge_history.sfh_bulge, ssp_data.ssp_lg_age_gyr, t_obs
+    )
 
-    sed_integrand_bulge = flux_table * weights_b * ftrans_sed * frac_ssp_err
+    lgmet_med_obs = umzr.mzr_model(logsm_obs, t_obs, *mzr_params)
+    lgmet_weights_obs = lc_phot_kern._calc_lgmet_weights_galpop(
+        lgmet_med_obs, lc_phot_kern.LGMET_SCATTER, ssp_data.ssp_lgmet
+    )
+
+    # Calculate SSP weights = P_SSP = P_met * P_age
+    _w_age_bulge = age_weights_bulge.reshape((n_gals, 1, n_age))
+    _w_lgmet_bulge = lgmet_weights_obs.reshape((n_gals, n_met, 1))
+    ssp_weights_bulge = _w_lgmet_bulge * _w_age_bulge
+
+    weights_bulge = ssp_weights_bulge.reshape((n_gals, n_met, n_age, 1))
+    sed_integrand_bulge = flux_table * weights_bulge * ftrans_sed * frac_ssp_err
     rest_sed_bulge = jnp.sum(sed_integrand_bulge, axis=(1, 2)) * mstar_obs_bulge
 
     sed_info = DBK_SEDINFO_EMPTY._replace(
-        rest_sed_disk=rest_sed_disk,
+        rest_sed_disk=None,
         rest_sed_bulge=rest_sed_bulge,
-        rest_sed_knot=rest_sed_knot,
+        rest_sed_knot=None,
         rest_sed=rest_sed,
         logmp_obs=logmp_obs,
         logsm_obs=logsm_obs,
