@@ -48,12 +48,40 @@ def test_mc_diffsky_seds_flat_u_params():
         lc_phot_orig.obs_mags_bursty_ms[msk_bursty_ms],
         sed_info["obs_mags"][msk_bursty_ms],
     )
+
+    # check rest_sed_bulge
     assert sed_info["rest_sed"].shape == sed_info["rest_sed_bulge"].shape
     assert np.all(np.isfinite(sed_info["rest_sed_bulge"]))
     assert not np.allclose(sed_info["rest_sed_bulge"], sed_info["rest_sed"], rtol=0.1)
+    assert np.all(sed_info["rest_sed_bulge"] >= 0)
+    assert np.any(sed_info["rest_sed_bulge"] > 0)
+
+    # check rest_sed_disk
+    assert sed_info["rest_sed"].shape == sed_info["rest_sed_disk"].shape
+    assert np.all(np.isfinite(sed_info["rest_sed_disk"]))
+    assert not np.allclose(sed_info["rest_sed_disk"], sed_info["rest_sed"], rtol=0.1)
+    assert not np.allclose(
+        sed_info["rest_sed_disk"], sed_info["rest_sed_bulge"], rtol=0.1
+    )
+    assert np.all(sed_info["rest_sed_disk"] >= 0)
+    assert np.any(sed_info["rest_sed_disk"] > 0)
+
+    # check rest_sed_knot
+    assert sed_info["rest_sed"].shape == sed_info["rest_sed_knot"].shape
+    assert np.all(np.isfinite(sed_info["rest_sed_knot"]))
+    assert not np.allclose(sed_info["rest_sed_knot"], sed_info["rest_sed"], rtol=0.1)
+    assert not np.allclose(
+        sed_info["rest_sed_knot"], sed_info["rest_sed_bulge"], rtol=0.1
+    )
+    assert np.all(sed_info["rest_sed_knot"] >= 0)
+    assert np.any(sed_info["rest_sed_knot"] > 0)
 
     assert np.all(np.isfinite(sed_info["fknot"]))
     assert np.all(sed_info["fknot"] > 0)
     assert np.all(sed_info["fknot"] < disk_knots.FKNOT_MAX)
+
+    assert np.all(sed_info["rest_sed_bulge"] < sed_info["rest_sed"])
+    assert np.all(sed_info["rest_sed_disk"] < sed_info["rest_sed"])
+    assert np.all(sed_info["rest_sed_knot"] < sed_info["rest_sed"])
 
     # _check_sed_info(sed_info, lc_data, tcurves)

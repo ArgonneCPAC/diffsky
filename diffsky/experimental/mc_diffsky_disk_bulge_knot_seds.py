@@ -426,11 +426,29 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
         ssp_data.ssp_lg_age_gyr,
     )
     mstar_tot, mburst, mdd, mknot, age_weights_dd, age_weights_knot = _res
+    mstar_obs_dd = mdd.reshape((n_gals, 1))
+    mstar_obs_knot = mknot.reshape((n_gals, 1))
+
+    _w_age_dd = age_weights_dd.reshape((n_gals, 1, n_age))
+    _w_lgmet_dd = lgmet_weights_obs.reshape((n_gals, n_met, 1))
+    ssp_weights_dd = _w_lgmet_dd * _w_age_dd
+
+    _w_age_knot = age_weights_knot.reshape((n_gals, 1, n_age))
+    _w_lgmet_knot = lgmet_weights_obs.reshape((n_gals, n_met, 1))
+    ssp_weights_knot = _w_lgmet_knot * _w_age_knot
+
+    weights_dd = ssp_weights_dd.reshape((n_gals, n_met, n_age, 1))
+    sed_integrand_dd = flux_table * weights_dd * ftrans_sed * frac_ssp_err
+    rest_sed_dd = jnp.sum(sed_integrand_dd, axis=(1, 2)) * mstar_obs_dd
+
+    weights_knot = ssp_weights_knot.reshape((n_gals, n_met, n_age, 1))
+    sed_integrand_knot = flux_table * weights_knot * ftrans_sed * frac_ssp_err
+    rest_sed_knot = jnp.sum(sed_integrand_knot, axis=(1, 2)) * mstar_obs_knot
 
     sed_info = DBK_SEDINFO_EMPTY._replace(
-        rest_sed_disk=None,
+        rest_sed_disk=rest_sed_dd,
         rest_sed_bulge=rest_sed_bulge,
-        rest_sed_knot=None,
+        rest_sed_knot=rest_sed_knot,
         rest_sed=rest_sed,
         logmp_obs=logmp_obs,
         logsm_obs=logsm_obs,
