@@ -7,8 +7,8 @@ from jax import random as jran
 from ..disk_bulge_kernels import _bulge_sfh_vmap, calc_tform_pop
 from ..mc_disk_bulge import (
     DEFAULT_FBULGE_2dSIGMOID_PARAMS,
+    decompose_sfh_into_disk_bulge_sfh,
     generate_fbulge_parameters_2d_sigmoid,
-    mc_disk_bulge,
 )
 
 
@@ -60,7 +60,7 @@ def test_mc_disk_bulge_component_functions_work_together():
     assert np.all(bth < 1)
 
 
-def test_mc_disk_bulge():
+def test_decompose_sfh_into_disk_bulge_sfh():
     ran_key = jran.PRNGKey(0)
 
     n_t = 200
@@ -71,7 +71,7 @@ def test_mc_disk_bulge():
 
     ran_sfh_pop = jran.uniform(ran_key_sfh, minval=0, maxval=100, shape=(n_gals, n_t))
 
-    disk_bulge_history = mc_disk_bulge(
+    disk_bulge_history = decompose_sfh_into_disk_bulge_sfh(
         tarr,
         ran_sfh_pop,
         fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,

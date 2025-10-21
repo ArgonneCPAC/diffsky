@@ -42,7 +42,7 @@ _DB = (
 DiskBulgeHistory = namedtuple("DiskBulgeSFH", _DB)
 
 
-def mc_disk_bulge(
+def decompose_sfh_into_disk_bulge_sfh(
     tarr,
     sfh_pop,
     fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,

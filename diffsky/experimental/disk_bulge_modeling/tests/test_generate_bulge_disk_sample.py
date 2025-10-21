@@ -9,7 +9,7 @@ from ..generate_bulge_disk_sample import (
     get_bulge_disk_test_sample,
     get_redshifts_from_times,
 )
-from ..mc_disk_bulge import mc_disk_bulge
+from ..mc_disk_bulge import decompose_sfh_into_disk_bulge_sfh
 
 
 def test_bulge_disk_test_sample():
@@ -53,7 +53,9 @@ def test_get_bulge_disk_decomposition():
         halo_key, lgmp_min=lgmp_min, redshift=redshift, Lbox=Lbox
     )
 
-    _res = mc_disk_bulge(diffstar_cens["t_table"], diffstar_cens["sfh"])
+    _res = decompose_sfh_into_disk_bulge_sfh(
+        diffstar_cens["t_table"], diffstar_cens["sfh"]
+    )
     fbulge_params, smh, eff_bulge, sfh_bulge, smh_bulge, bth = _res
 
     diffstar_cens = get_bulge_disk_decomposition(diffstar_cens)
