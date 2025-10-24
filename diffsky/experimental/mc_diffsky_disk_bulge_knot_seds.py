@@ -505,7 +505,7 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
     return sed_info._asdict()
 
 
-def _mc_diffsky_phot_kern(
+def _mc_diffsky_disk_bulge_knot_phot_kern(
     ran_key,
     z_obs,
     t_obs,
@@ -874,12 +874,12 @@ def _mc_diffsky_phot_kern(
     return phot_info._asdict()
 
 
-def _mc_diffsky_phot_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params):
+def _mc_diffsky_phot_dbk_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params):
     u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
     param_collection = dpw.get_param_collection_from_u_param_collection(
         *u_param_collection
     )
-    phot_data = _mc_diffsky_phot_kern(
+    phot_data = _mc_diffsky_disk_bulge_knot_phot_kern(
         ran_key, *lc_data[1:], *param_collection, cosmo_params
     )
     return phot_data

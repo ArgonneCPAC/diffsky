@@ -116,7 +116,7 @@ def test_mc_diffsky_seds_flat_u_params():
     assert np.all(sed_info["obs_mags"] <= sed_info["obs_mags_knots"])
 
 
-def test_mc_diffsky_phot_flat_u_params():
+def test_mc_diffsky_phot_dbk_flat_u_params():
     """Enforce _mc_diffsky_seds_dbk_flat_u_params is consistent with _mc_diffsky_phot_flat_u_params"""
     ran_key = jran.key(0)
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
@@ -134,7 +134,7 @@ def test_mc_diffsky_phot_flat_u_params():
     sed_info = mcsed_dbk._mc_diffsky_seds_dbk_flat_u_params(
         u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
     )
-    phot_info = mcsed_dbk._mc_diffsky_phot_flat_u_params(
+    phot_info = mcsed_dbk._mc_diffsky_phot_dbk_flat_u_params(
         u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
     )
 
