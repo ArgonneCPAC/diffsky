@@ -1,7 +1,6 @@
 """"""
 
 import numpy as np
-import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
