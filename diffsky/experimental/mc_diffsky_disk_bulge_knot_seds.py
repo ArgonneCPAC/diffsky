@@ -774,6 +774,31 @@ def _mc_diffsky_phot_kern(
     # Compute restframe SED of bulge
     disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(t_table, sfh_table)
 
+    # Calculate restframe SED of disk and knots
+    ssp_lg_age_yr = ssp_data.ssp_lg_age_gyr + 9.0
+    age_weights_pureburst = _pureburst_age_weights_from_params_vmap(
+        ssp_lg_age_yr, burst_params.lgyr_peak, burst_params.lgyr_max
+    )
+
+    ran_key, knot_key = jran.split(ran_key, 2)
+    fknot = jran.uniform(
+        knot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
+    )
+
+    _res = disk_knots._disk_knot_vmap(
+        t_table,
+        t_obs,
+        sfh_table,
+        sfh_table - disk_bulge_history.sfh_bulge,
+        10**burst_params.lgfburst,
+        fknot,
+        age_weights_pureburst,
+        ssp_data.ssp_lg_age_gyr,
+    )
+    mstar_tot, mburst, mdd, mknot, age_weights_dd, age_weights_knot = _res
+    mstar_obs_dd = mdd.reshape((n_gals, 1))
+    mstar_obs_knot = mknot.reshape((n_gals, 1))
+
     logsm_obs_bulge = lc_phot_kern.interp_vmap(
         t_obs, t_table, jnp.log10(disk_bulge_history.smh_bulge)
     )
@@ -791,8 +816,35 @@ def _mc_diffsky_phot_kern(
     _w_lgmet_bulge = lgmet_weights_obs.reshape((n_gals, n_met, 1))
     ssp_weights_bulge = _w_lgmet_bulge * _w_age_bulge
 
+    _w_age_knot = age_weights_knot.reshape((n_gals, 1, n_age))
+    _w_lgmet_knot = lgmet_weights_obs.reshape((n_gals, n_met, 1))
+    ssp_weights_knot = _w_lgmet_knot * _w_age_knot
+
+    _w_age_disk = age_weights_dd.reshape((n_gals, 1, n_age))
+    _w_lgmet_disk = lgmet_weights_obs.reshape((n_gals, n_met, 1))
+    ssp_weights_dd = _w_lgmet_disk * _w_age_disk
+
+    _w_bulge = ssp_weights_bulge.reshape((n_gals, 1, n_met, n_age))
+    _w_dd = ssp_weights_dd.reshape((n_gals, 1, n_met, n_age))
+    _w_knot = ssp_weights_knot.reshape((n_gals, 1, n_met, n_age))
+
+    # Compute apparent magnitudes of disk/bulge/knots
+    _mc_q = mc_q.reshape((n_gals, 1, 1, 1))
+    _ftrans = jnp.where(_mc_q, _ftrans_q, _ftrans_ms)
+    _ferr_ssp = jnp.where(_mc_q, _ferr_ssp_q, _ferr_ssp_ms)
+
     # Calculate bulge magnitudes as PDF-weighted sums
-    # ...unfinished...
+    integrand_bulge = ssp_photflux_table * _w_bulge * _ftrans * _ferr_ssp
+    photflux_galpop_bulge = jnp.sum(integrand_bulge, axis=(2, 3)) * mstar_obs_bulge
+    obs_mags_bulge = -2.5 * jnp.log10(photflux_galpop_bulge)
+
+    integrand_disk = ssp_photflux_table * _w_dd * _ftrans * _ferr_ssp
+    photflux_galpop_disk = jnp.sum(integrand_disk, axis=(2, 3)) * mstar_obs_dd
+    obs_mags_disk = -2.5 * jnp.log10(photflux_galpop_disk)
+
+    integrand_knot = ssp_photflux_table * _w_knot * _ftrans * _ferr_ssp
+    photflux_galpop_knot = jnp.sum(integrand_knot, axis=(2, 3)) * mstar_obs_knot
+    obs_mags_knots = -2.5 * jnp.log10(photflux_galpop_knot)
 
     phot_info = DBK_PHOTINFO_EMPTY._replace(
         logmp_obs=logmp_obs,
@@ -800,6 +852,9 @@ def _mc_diffsky_phot_kern(
         logssfr_obs=logssfr_obs,
         sfh_table=sfh_table,
         obs_mags=obs_mags,
+        obs_mags_bulge=obs_mags_bulge,
+        obs_mags_disk=obs_mags_disk,
+        obs_mags_knots=obs_mags_knots,
         diffstar_params=diffstar_params,
         mc_sfh_type=mc_sfh_type,
         burst_params=burst_params,

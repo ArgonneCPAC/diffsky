@@ -117,8 +117,8 @@ def test_mc_diffsky_seds_flat_u_params():
     assert np.all(sed_info["obs_mags"] <= sed_info["obs_mags_knots"])
 
 
-@pytest.mark.xfail
 def test_mc_diffsky_phot_flat_u_params():
+    """Enforce _mc_diffsky_seds_dbk_flat_u_params is consistent with _mc_diffsky_phot_flat_u_params"""
     ran_key = jran.key(0)
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
 
@@ -143,4 +143,5 @@ def test_mc_diffsky_phot_flat_u_params():
 
     assert sed_info["obs_mags"].shape == phot_info["obs_mags_bulge"].shape
 
-    # assert not np.allclose(sed_info["obs_mags"], phot_info["obs_mags_bulge"], rtol=1e-4)
+    for key in ("obs_mags", "obs_mags_bulge", "obs_mags_disk", "obs_mags_knots"):
+        assert np.allclose(sed_info[key], phot_info[key], rtol=1e-4)
