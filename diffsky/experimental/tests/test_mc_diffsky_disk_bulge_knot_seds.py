@@ -87,6 +87,17 @@ def test_mc_diffsky_seds_flat_u_params():
     # The original SED, after all, is not strictly decomposed into components
     # This rarely happens anyway, except for ~2% of galaxies
     # and even then only for UV wavelengths
-    assert np.all(sed_info["rest_sed_knot"] < sed_info["rest_sed"] * 1.5)
+    msk_uv_wave = lc_data.ssp_data.ssp_wave < 2_000
+    msk_optical_wave = lc_data.ssp_data.ssp_wave > 4_000
+    n_gals = sed_info["rest_sed"].shape[0]
+    for igal in range(n_gals):
+        assert np.all(
+            sed_info["rest_sed_knot"][igal, :][msk_optical_wave]
+            < sed_info["rest_sed"][igal, :][msk_optical_wave] * 1.1
+        )
+        assert np.all(
+            sed_info["rest_sed_knot"][igal, :][msk_uv_wave]
+            < sed_info["rest_sed"][igal, :][msk_uv_wave] * 1.5
+        )
 
     # _check_sed_info(sed_info, lc_data, tcurves)
