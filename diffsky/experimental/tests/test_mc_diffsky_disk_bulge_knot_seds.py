@@ -104,8 +104,17 @@ def test_mc_diffsky_seds_flat_u_params():
     # _check_sed_info(sed_info, lc_data, tcurves)
 
     assert np.all(np.isfinite(sed_info["obs_mags_bulge"]))
+    assert np.all(np.isfinite(sed_info["obs_mags_disk"]))
+    assert np.all(np.isfinite(sed_info["obs_mags_knots"]))
+
     assert not np.allclose(sed_info["obs_mags"], sed_info["obs_mags_bulge"], rtol=1e-4)
     assert np.all(sed_info["obs_mags"] <= sed_info["obs_mags_bulge"])
+
+    assert not np.allclose(sed_info["obs_mags"], sed_info["obs_mags_disk"], rtol=1e-4)
+    assert np.all(sed_info["obs_mags"] <= sed_info["obs_mags_disk"])
+
+    assert not np.allclose(sed_info["obs_mags"], sed_info["obs_mags_knots"], rtol=1e-4)
+    assert np.all(sed_info["obs_mags"] <= sed_info["obs_mags_knots"])
 
 
 @pytest.mark.xfail

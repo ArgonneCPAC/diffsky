@@ -340,6 +340,7 @@ def _mc_diffsky_seds_kern(
     # ssp_weights.shape = (n_gals, n_met, n_age)
 
     n_wave = ssp_data.ssp_wave.size
+    # ftrans_sed.shape = (n_gals, n_wave, n_age)
     ftrans_sed = _get_ftrans_sed(
         z_obs,
         mc_sfh_type,

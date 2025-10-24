@@ -37,6 +37,8 @@ DBK_PHOT_INFO_KEYS = (
     "sfh_table",
     "obs_mags",
     "obs_mags_bulge",
+    "obs_mags_disk",
+    "obs_mags_knots",
     "diffstar_params",
     "mc_sfh_type",
     "burst_params",
@@ -310,6 +312,7 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
     # ssp_weights.shape = (n_gals, n_met, n_age)
 
     n_wave = ssp_data.ssp_wave.size
+    # ftrans_sed.shape = (n_gals, n_wave, n_age)
     ftrans_sed = mcsed._get_ftrans_sed(
         z_obs,
         mc_sfh_type,
@@ -446,15 +449,26 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
     sed_integrand_knot = flux_table * weights_knot * ftrans_sed * frac_ssp_err
     rest_sed_knot = jnp.sum(sed_integrand_knot, axis=(1, 2)) * mstar_obs_knot
 
-    # Compute apparent magnitudes of bulge
-    _w_bulge = ssp_weights_bulge.reshape((n_gals, 1, n_met, n_age))
+    # Compute apparent magnitudes of disk/bulge/knots
     _mc_q = mc_q.reshape((n_gals, 1, 1, 1))
     _ftrans = jnp.where(_mc_q, _ftrans_q, _ftrans_ms)
     _ferr_ssp = jnp.where(_mc_q, _ferr_ssp_q, _ferr_ssp_ms)
 
+    _w_bulge = ssp_weights_bulge.reshape((n_gals, 1, n_met, n_age))
+    _w_dd = ssp_weights_dd.reshape((n_gals, 1, n_met, n_age))
+    _w_knot = ssp_weights_knot.reshape((n_gals, 1, n_met, n_age))
+
     integrand_bulge = ssp_photflux_table * _w_bulge * _ftrans * _ferr_ssp
     photflux_galpop_bulge = jnp.sum(integrand_bulge, axis=(2, 3)) * mstar_obs_bulge
     obs_mags_bulge = -2.5 * jnp.log10(photflux_galpop_bulge)
+
+    integrand_dd = ssp_photflux_table * _w_dd * _ftrans * _ferr_ssp
+    photflux_galpop_dd = jnp.sum(integrand_dd, axis=(2, 3)) * mstar_obs_dd
+    obs_mags_disk = -2.5 * jnp.log10(photflux_galpop_dd)
+
+    integrand_knot = ssp_photflux_table * _w_knot * _ftrans * _ferr_ssp
+    photflux_galpop_knot = jnp.sum(integrand_knot, axis=(2, 3)) * mstar_obs_knot
+    obs_mags_knots = -2.5 * jnp.log10(photflux_galpop_knot)
 
     sed_info = DBK_SEDINFO_EMPTY._replace(
         rest_sed_disk=rest_sed_dd,
@@ -467,6 +481,8 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
         sfh_table=sfh_table,
         obs_mags=obs_mags,
         obs_mags_bulge=obs_mags_bulge,
+        obs_mags_disk=obs_mags_disk,
+        obs_mags_knots=obs_mags_knots,
         diffstar_params=diffstar_params,
         mc_sfh_type=mc_sfh_type,
         burst_params=burst_params,
