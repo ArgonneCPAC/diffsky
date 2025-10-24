@@ -1,6 +1,7 @@
 """"""
 
 import numpy as np
+import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
@@ -101,3 +102,36 @@ def test_mc_diffsky_seds_flat_u_params():
         )
 
     # _check_sed_info(sed_info, lc_data, tcurves)
+
+    assert np.all(np.isfinite(sed_info["obs_mags_bulge"]))
+    assert not np.allclose(sed_info["obs_mags"], sed_info["obs_mags_bulge"], rtol=1e-4)
+    assert np.all(sed_info["obs_mags"] <= sed_info["obs_mags_bulge"])
+
+
+@pytest.mark.xfail
+def test_mc_diffsky_phot_flat_u_params():
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+
+    n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
+    assert lc_data.z_phot_table.shape == (n_z_table,)
+    assert lc_data.ssp_data.ssp_lgmet.shape == (n_met,)
+    assert lc_data.ssp_data.ssp_lg_age_gyr.shape == (n_age,)
+
+    u_param_collection = dpw.get_u_param_collection_from_param_collection(
+        *dpw.DEFAULT_PARAM_COLLECTION
+    )
+    u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
+
+    sed_info = mcsed_dbk._mc_diffsky_seds_dbk_flat_u_params(
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+    )
+    phot_info = mcsed_dbk._mc_diffsky_phot_flat_u_params(
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+    )
+
+    assert np.allclose(sed_info["obs_mags"], phot_info["obs_mags"], rtol=1e-4)
+
+    assert sed_info["obs_mags"].shape == phot_info["obs_mags_bulge"].shape
+
+    # assert not np.allclose(sed_info["obs_mags"], phot_info["obs_mags_bulge"], rtol=1e-4)
