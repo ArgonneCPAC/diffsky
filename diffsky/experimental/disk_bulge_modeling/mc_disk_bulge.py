@@ -31,8 +31,18 @@ DEFAULT_FBULGE_PDICT = OrderedDict(
 Fbulge2dParams = namedtuple("Fbulge2dParams", DEFAULT_FBULGE_PDICT.keys())
 DEFAULT_FBULGE_2dSIGMOID_PARAMS = Fbulge2dParams(**DEFAULT_FBULGE_PDICT)
 
+_DB = (
+    "fbulge_params",
+    "mstar_history",
+    "eff_bulge_history",
+    "sfh_bulge",
+    "smh_bulge",
+    "bulge_to_total_history",
+)
+DiskBulgeHistory = namedtuple("DiskBulgeSFH", _DB)
 
-def mc_disk_bulge(
+
+def decompose_sfh_into_disk_bulge_sfh(
     tarr,
     sfh_pop,
     fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS,
@@ -53,15 +63,13 @@ def mc_disk_bulge(
 
     Returns
     -------
-    fbulge_params : ndarray, shape (n_gals, 3)
-        tcrit_bulge = fbulge_params[:, 0]
-        fbulge_early = fbulge_params[:, 1]
-        fbulge_late = fbulge_params[:, 2]
+    fbulge_params : namedtuple of arrays with shape (n_gals, )
+        fbulge_params._fields = ('fbulge_tcrit', 'fbulge_early', 'fbulge_late')
 
-    smh : ndarray, shape (n_gals, n_t)
+    mstar_history : ndarray, shape (n_gals, n_t)
         Stellar mass history of galaxy in units of Msun
 
-    eff_bulge : ndarray, shape (n_gals, n_t)
+    eff_bulge_history : ndarray, shape (n_gals, n_t)
         History of in-situ bulge growth efficiency for every galaxy
 
     sfh_bulge : ndarray, shape (n_gals, n_t)
@@ -70,7 +78,7 @@ def mc_disk_bulge(
     smh_bulge : ndarray, shape (n_gals, n_t)
         Stellar mass history of bulge in units of Msun
 
-    bth : ndarray, shape (n_gals, n_t)
+    bulge_to_total_history : ndarray, shape (n_gals, n_t)
         History of bulge-to-total mass ratio of every galaxy
 
     """
@@ -88,7 +96,7 @@ def mc_disk_bulge(
 
     _res = dbk._bulge_sfh_vmap(tarr, sfh_pop, fbulge_params)
     smh, eff_bulge, sfh_bulge, smh_bulge, bth = _res
-    return fbulge_params, smh, eff_bulge, sfh_bulge, smh_bulge, bth
+    return DiskBulgeHistory(fbulge_params, smh, eff_bulge, sfh_bulge, smh_bulge, bth)
 
 
 def generate_fbulge_parameters_2d_sigmoid(logsm0, logssfr0, t10, t90, f_bulge_params):

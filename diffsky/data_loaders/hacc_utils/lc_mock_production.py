@@ -24,7 +24,9 @@ from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ...experimental.disk_bulge_modeling.mc_disk_bulge import mc_disk_bulge
+from ...experimental.disk_bulge_modeling.mc_disk_bulge import (
+    decompose_sfh_into_disk_bulge_sfh,
+)
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
@@ -265,16 +267,24 @@ def add_sed_quantities_to_mock(
 
 
 def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
-    _res = mc_disk_bulge(diffsky_data["t_table"], phot_info["sfh_table"])
-    fbulge_params = _res[0]
-    gen = zip(fbulge_params._fields, fbulge_params)
+    disk_bulge_history = decompose_sfh_into_disk_bulge_sfh(
+        diffsky_data["t_table"], phot_info["sfh_table"]
+    )
+    gen = zip(
+        disk_bulge_history.fbulge_params._fields, disk_bulge_history.fbulge_params
+    )
     for pname, pval in gen:
         diffsky_data[pname] = pval
 
-    bulge_to_total_history = _res[-1]
     diffsky_data["bulge_to_total"] = interp_vmap(
-        lc_data["t_obs"], diffsky_data["t_table"], bulge_to_total_history
+        lc_data["t_obs"],
+        diffsky_data["t_table"],
+        disk_bulge_history.bulge_to_total_history,
     )
+
+    diffsky_data["sfh_bulge"] = disk_bulge_history.sfh_bulge
+    diffsky_data["sfh_disk"] = phot_info["sfh_table"] - diffsky_data["sfh_bulge"]
+
     return diffsky_data
 
 

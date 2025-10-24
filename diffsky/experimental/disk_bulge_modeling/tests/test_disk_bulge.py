@@ -6,7 +6,7 @@ from dsps.sfh.diffburst import (
 )
 
 from ...disk_bulge_modeling.disk_knots import FKNOT_MAX
-from ...disk_bulge_modeling.mc_disk_bulge import mc_disk_bulge
+from ...disk_bulge_modeling.mc_disk_bulge import decompose_sfh_into_disk_bulge_sfh
 from ..disk_bulge_kernels import (
     DEFAULT_FBULGE_PARAMS,
     FBULGE_MAX,
@@ -105,7 +105,7 @@ def test_decompose_sfh_into_bulge_disk_knots():
         assert np.allclose(gal_burst_age_weights, age_weights_burstpop, rtol=0.001)
 
         gal_fknot = np.random.uniform(0, FKNOT_MAX, n_gals)
-        gal_fbulge_params = mc_disk_bulge(gal_t_table, gal_sfh)[0]
+        gal_fbulge_params = decompose_sfh_into_disk_bulge_sfh(gal_t_table, gal_sfh)[0]
 
         args = (
             gal_fbulge_params,
@@ -250,7 +250,7 @@ def test_decompose_sfh_singlegal_into_bulge_disk_knots_agrees_with_vmap():
     assert np.allclose(gal_burst_age_weights, age_weights_burstpop, rtol=0.001)
 
     gal_fknot = np.random.uniform(0, FKNOT_MAX, n_gals)
-    gal_fbulge_params = mc_disk_bulge(gal_t_table, gal_sfh)[0]
+    gal_fbulge_params = decompose_sfh_into_disk_bulge_sfh(gal_t_table, gal_sfh)[0]
 
     args = (
         gal_fbulge_params,

@@ -5,7 +5,10 @@ from dsps.cosmology.flat_wcdm import age_at_z
 from jax import random as jran
 
 from ...mc_diffsky import mc_diffstar_cenpop, mc_diffstar_galpop
-from .mc_disk_bulge import DEFAULT_FBULGE_2dSIGMOID_PARAMS, mc_disk_bulge
+from .mc_disk_bulge import (
+    DEFAULT_FBULGE_2dSIGMOID_PARAMS,
+    decompose_sfh_into_disk_bulge_sfh,
+)
 
 ran_key = jran.key(0)
 halo_key, ran_key = jran.split(ran_key, 2)
@@ -56,7 +59,7 @@ def get_bulge_disk_test_sample(
 def get_bulge_disk_decomposition(
     diffstar, fbulge_2d_params=DEFAULT_FBULGE_2dSIGMOID_PARAMS
 ):
-    _res = mc_disk_bulge(
+    _res = decompose_sfh_into_disk_bulge_sfh(
         diffstar["t_table"],
         diffstar["sfh"],
         fbulge_2d_params=fbulge_2d_params,

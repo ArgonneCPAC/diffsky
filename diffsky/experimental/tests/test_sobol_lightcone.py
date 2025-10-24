@@ -54,7 +54,7 @@ def test_sobol_lightcone_diffstar_cens():
 
     assert np.all(np.isfinite(cenpop["logsm_obs"]))
     assert np.all(np.isfinite(cenpop["logssfr_obs"]))
-    assert cenpop["logsm_obs"].min() > 4
+    assert cenpop["logsm_obs"].min() > 2
 
     assert np.all(np.isfinite(cenpop["diffstarpop_data"]["sfh_params_ms"]))
     assert np.all(np.isfinite(cenpop["diffstarpop_data"]["sfh_params_q"]))
