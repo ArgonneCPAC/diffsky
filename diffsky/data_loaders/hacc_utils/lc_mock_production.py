@@ -56,6 +56,8 @@ LC_DATA_KEYS_OUT = (
     "dec_nfw",
     "redshift_true",
     "snapnum",
+    "stepnum",
+    "lc_patch",
 )
 
 DIFFSKY_DATA_KEYS_OUT = (
