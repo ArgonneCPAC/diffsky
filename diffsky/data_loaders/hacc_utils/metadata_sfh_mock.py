@@ -12,6 +12,9 @@ column_metadata["core_tag"] = ("None", "ID of the simulated core")
 column_metadata["ra"] = ("degrees", "right ascension")
 column_metadata["dec"] = ("degrees", "declination")
 
+column_metadata["stepnum"] = ("None", "Simulation snapshot number")
+column_metadata["lc_patch"] = ("None", "Lightcone patch number")
+
 column_metadata["early_index"] = ("None", "Diffmah parameter for halo mass assembly")
 column_metadata["late_index"] = ("None", "Diffmah parameter for halo mass assembly")
 column_metadata["logm0"] = ("None", "Diffmah parameter for halo mass assembly")

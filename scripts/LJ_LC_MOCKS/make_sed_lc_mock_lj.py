@@ -151,7 +151,7 @@ if __name__ == "__main__":
     if itest == 1:
         lc_patch_list = [0, 1]
     elif roman_hltds == 1:
-        lc_patch_list = np.array(ROMAN_HLTDS_PATCHES)
+        lc_patch_list = np.array(ROMAN_HLTDS_PATCHES).astype(int)
         print("Making all lightcone patches for Roman HLTDS")
     else:
         lc_patch_list = np.arange(istart, iend).astype(int)
@@ -211,7 +211,7 @@ if __name__ == "__main__":
         start = time()
         for indx_step in indx_all_steps[::-1]:
             fn_lc_diffsky = fn_list_lc_patch[indx_step]
-            stepnum = lc_patch_info_list[indx_step][0]
+            stepnum = int(lc_patch_info_list[indx_step][0])
             print(f"Working on={os.path.basename(fn_lc_diffsky)}")
             print(f"stepnum={stepnum}")
 
@@ -226,6 +226,10 @@ if __name__ == "__main__":
                 lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(
                     fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
                 )
+
+            n_gals = len(lc_data["core_tag"])
+            lc_data["stepnum"] = np.zeros(n_gals).astype(int) + stepnum
+            lc_data["lc_patch"] = np.zeros(n_gals).astype(int) + lc_patch
 
             # Define redshift table used for magnitude interpolation
             _EPS = 1e-3
