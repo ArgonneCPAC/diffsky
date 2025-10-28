@@ -55,7 +55,6 @@ LC_DATA_KEYS_OUT = (
     "ra_nfw",
     "dec_nfw",
     "redshift_true",
-    "snapnum",
     "stepnum",
     "lc_patch",
 )

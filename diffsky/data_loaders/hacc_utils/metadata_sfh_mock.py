@@ -12,7 +12,10 @@ column_metadata["core_tag"] = ("None", "ID of the simulated core")
 column_metadata["ra"] = ("degrees", "right ascension")
 column_metadata["dec"] = ("degrees", "declination")
 
-column_metadata["stepnum"] = ("None", "Simulation snapshot number")
+column_metadata["stepnum"] = (
+    "None",
+    "Timestep of the simulation. Varies between 0 and 499 for HACC gravity-only N-body simulations.",
+)
 column_metadata["lc_patch"] = ("None", "Lightcone patch number")
 
 column_metadata["early_index"] = ("None", "Diffmah parameter for halo mass assembly")
@@ -22,7 +25,6 @@ column_metadata["logtc"] = ("None", "Diffmah parameter for halo mass assembly")
 column_metadata["t_peak"] = ("None", "Diffmah parameter for halo mass assembly")
 
 column_metadata["has_diffmah_fit"] = ("None", "1 if core has a diffmah fit, 0 if not")
-column_metadata["snapnum"] = ("None", "Timestep of the simulation")
 
 column_metadata["lgmcrit"] = ("None", "Diffstar parameter for galaxy SFH")
 column_metadata["lgy_at_mcrit"] = ("None", "Diffstar parameter for galaxy SFH")
