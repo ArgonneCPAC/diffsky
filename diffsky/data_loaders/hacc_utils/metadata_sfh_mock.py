@@ -156,13 +156,38 @@ column_metadata["lgyr_peak"] = (
     "Burstiness parameter. Specifies burst recency.",
 )
 
-column_metadata["lsst_u"] = ("None", "Apparent magnitude")
-column_metadata["lsst_g"] = ("None", "Apparent magnitude")
-column_metadata["lsst_r"] = ("None", "Apparent magnitude")
-column_metadata["lsst_i"] = ("None", "Apparent magnitude")
-column_metadata["lsst_z"] = ("None", "Apparent magnitude")
-column_metadata["lsst_y"] = ("None", "Apparent magnitude")
+column_metadata["lsst_u"] = ("None", "Apparent magnitude of composite galaxy")
+column_metadata["lsst_g"] = ("None", "Apparent magnitude of composite galaxy")
+column_metadata["lsst_r"] = ("None", "Apparent magnitude of composite galaxy")
+column_metadata["lsst_i"] = ("None", "Apparent magnitude of composite galaxy")
+column_metadata["lsst_z"] = ("None", "Apparent magnitude of composite galaxy")
+column_metadata["lsst_y"] = ("None", "Apparent magnitude of composite galaxy")
 
+column_metadata["lsst_u_bulge"] = ("None", "Apparent magnitude of bulge component")
+column_metadata["lsst_g_bulge"] = ("None", "Apparent magnitude of bulge component")
+column_metadata["lsst_r_bulge"] = ("None", "Apparent magnitude of bulge component")
+column_metadata["lsst_i_bulge"] = ("None", "Apparent magnitude of bulge component")
+column_metadata["lsst_z_bulge"] = ("None", "Apparent magnitude of bulge component")
+column_metadata["lsst_y_bulge"] = ("None", "Apparent magnitude of bulge component")
+
+column_metadata["lsst_u_disk"] = ("None", "Apparent magnitude of disk component")
+column_metadata["lsst_g_disk"] = ("None", "Apparent magnitude of disk component")
+column_metadata["lsst_r_disk"] = ("None", "Apparent magnitude of disk component")
+column_metadata["lsst_i_disk"] = ("None", "Apparent magnitude of disk component")
+column_metadata["lsst_z_disk"] = ("None", "Apparent magnitude of disk component")
+column_metadata["lsst_y_disk"] = ("None", "Apparent magnitude of disk component")
+
+column_metadata["lsst_u_knot"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_g_knot"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_r_knot"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_i_knot"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_z_knot"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_y_knot"] = ("None", "Apparent magnitude of knot component")
+
+column_metadata["fknot"] = (
+    "None",
+    "Fraction of disk mass contained in star-forming knots",
+)
 
 column_metadata["mc_sfh_type"] = (
     "None",

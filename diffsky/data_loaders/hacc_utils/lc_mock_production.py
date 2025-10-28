@@ -140,6 +140,20 @@ def write_lc_sed_mock_to_disk(
             hdf_out["data"][name] = diffsky_data[name]
 
 
+def write_lc_dbk_sed_mock_to_disk(
+    fnout, phot_info, lc_data, diffsky_data, filter_nicknames
+):
+    write_lc_sed_mock_to_disk(fnout, phot_info, lc_data, diffsky_data, filter_nicknames)
+
+    with h5py.File(fnout, "a") as hdf_out:
+        for iband, name in enumerate(filter_nicknames):
+            hdf_out["data"][name + "_bulge"] = phot_info["obs_mags_bulge"][:, iband]
+            hdf_out["data"][name + "_disk"] = phot_info["obs_mags_disk"][:, iband]
+            hdf_out["data"][name + "_knot"] = phot_info["obs_mags_knot"][:, iband]
+         hdf_out["data"]["fknot"] = phot_info["fknot"]
+
+
+
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     lc_data["t_obs"] = flat_wcdm.age_at_z(
         lc_data["redshift_true"], *sim_info.cosmo_params

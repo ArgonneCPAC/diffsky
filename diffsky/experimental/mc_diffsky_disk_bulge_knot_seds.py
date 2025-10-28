@@ -54,6 +54,7 @@ DBK_PHOT_INFO_KEYS = (
     "logssfr_obs_q",
     "delta_scatter_ms",
     "delta_scatter_q",
+    "fknot",
 )
 DBK_SED_INFO_KEYS = [
     "rest_sed_disk",
@@ -63,7 +64,6 @@ DBK_SED_INFO_KEYS = [
     *DBK_PHOT_INFO_KEYS,
     "frac_ssp_err_sed",
     "ftrans_sed",
-    "fknot",
 ]
 
 DBK_SedInfo = namedtuple("DBK_SedInfo", DBK_SED_INFO_KEYS)
@@ -498,9 +498,9 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
         logssfr_obs_q=diffstar_galpop.logssfr_obs_q,
         delta_scatter_ms=delta_scatter_ms,
         delta_scatter_q=delta_scatter_q,
+        fknot=fknot,
         frac_ssp_err_sed=frac_ssp_err_sed,
         ftrans_sed=ftrans_sed,
-        fknot=fknot,
     )
 
     return sed_info._asdict()
@@ -871,6 +871,7 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         logssfr_obs_q=diffstar_galpop.logssfr_obs_q,
         delta_scatter_ms=delta_scatter_ms,
         delta_scatter_q=delta_scatter_q,
+        fknot=fknot,
     )
 
     return phot_info._asdict()

@@ -280,7 +280,7 @@ if __name__ == "__main__":
 
             bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
             fn_out = os.path.join(drn_out, bn_out)
-            lcmp.write_lc_sed_mock_to_disk(
+            lcmp.write_lc_dbk_sed_mock_to_disk(
                 fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
             )
             metadata_sfh_mock.append_metadata(fn_out, sim_name)
