@@ -17,6 +17,7 @@ from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
+from ...experimental import mc_diffsky_disk_bulge_knot_seds as mc_dbk_sed
 from ...experimental import mc_diffsky_seds
 from ...experimental.black_hole_modeling import black_hole_mass as bhm
 from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
@@ -267,12 +268,61 @@ def add_sed_quantities_to_mock(
     return phot_info, lc_data, diffsky_data
 
 
-def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
-    disk_bulge_history = decompose_sfh_into_disk_bulge_sfh(
-        diffsky_data["t_table"], phot_info["sfh_table"]
+def add_dbk_sed_quantities_to_mock(
+    sim_info,
+    lc_data,
+    diffsky_data,
+    ssp_data,
+    param_collection,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    ran_key,
+):
+    (
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+    ) = param_collection
+
+    n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
+
+    ran_key, sfh_key = jran.split(ran_key, 2)
+    lc_data, diffsky_data = add_sfh_quantities_to_mock(
+        sim_info, lc_data, diffsky_data, sfh_key
     )
+    n_gals = diffsky_data["logsm_obs"].size
+
+    ran_key, sed_key = jran.split(ran_key, 2)
+    args = (
+        sed_key,
+        lc_data["redshift_true"],
+        lc_data["t_obs"],
+        diffsky_data["mah_params"],
+        diffsky_data["logmp0"],
+        diffsky_data["t_table"],
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        sim_info.cosmo_params,
+    )
+    phot_info = mc_dbk_sed._mc_diffsky_disk_bulge_knot_phot_kern(*args)
+
+    return phot_info, lc_data, diffsky_data
+
+
+def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
     gen = zip(
-        disk_bulge_history.fbulge_params._fields, disk_bulge_history.fbulge_params
+        phot_info.disk_bulge_history.fbulge_params._fields,
+        phot_info.disk_bulge_history.fbulge_params,
     )
     for pname, pval in gen:
         diffsky_data[pname] = pval
@@ -280,10 +330,10 @@ def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
     diffsky_data["bulge_to_total"] = interp_vmap(
         lc_data["t_obs"],
         diffsky_data["t_table"],
-        disk_bulge_history.bulge_to_total_history,
+        phot_info.disk_bulge_history.bulge_to_total_history,
     )
 
-    diffsky_data["sfh_bulge"] = disk_bulge_history.sfh_bulge
+    diffsky_data["sfh_bulge"] = phot_info.disk_bulge_history.sfh_bulge
     diffsky_data["sfh_disk"] = phot_info["sfh_table"] - diffsky_data["sfh_bulge"]
 
     return diffsky_data
