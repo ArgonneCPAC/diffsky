@@ -177,12 +177,12 @@ column_metadata["lsst_i_disk"] = ("None", "Apparent magnitude of disk component"
 column_metadata["lsst_z_disk"] = ("None", "Apparent magnitude of disk component")
 column_metadata["lsst_y_disk"] = ("None", "Apparent magnitude of disk component")
 
-column_metadata["lsst_u_knot"] = ("None", "Apparent magnitude of knot component")
-column_metadata["lsst_g_knot"] = ("None", "Apparent magnitude of knot component")
-column_metadata["lsst_r_knot"] = ("None", "Apparent magnitude of knot component")
-column_metadata["lsst_i_knot"] = ("None", "Apparent magnitude of knot component")
-column_metadata["lsst_z_knot"] = ("None", "Apparent magnitude of knot component")
-column_metadata["lsst_y_knot"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_u_knots"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_g_knots"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_r_knots"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_i_knots"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_z_knots"] = ("None", "Apparent magnitude of knot component")
+column_metadata["lsst_y_knots"] = ("None", "Apparent magnitude of knot component")
 
 column_metadata["fknot"] = (
     "None",

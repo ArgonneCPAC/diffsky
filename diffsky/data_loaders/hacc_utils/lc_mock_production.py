@@ -149,7 +149,7 @@ def write_lc_dbk_sed_mock_to_disk(
         for iband, name in enumerate(filter_nicknames):
             hdf_out["data"][name + "_bulge"] = phot_info["obs_mags_bulge"][:, iband]
             hdf_out["data"][name + "_disk"] = phot_info["obs_mags_disk"][:, iband]
-            hdf_out["data"][name + "_knot"] = phot_info["obs_mags_knot"][:, iband]
+            hdf_out["data"][name + "_knots"] = phot_info["obs_mags_knots"][:, iband]
         hdf_out["data"]["fknot"] = phot_info["fknot"]
 
 
