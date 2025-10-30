@@ -177,6 +177,7 @@ def read_lc_ra_dec_patch_decomposition(fn):
     Parameters
     ----------
     fname : string
+        Path to lc_cores-decomposition.txt
 
     Returns
     -------
@@ -531,4 +532,60 @@ def get_a_range_of_lc_cores_file(bname_lc_cores, sim_name):
     a_min_expected, a_max_expected = aarr[indx_step], aarr[indx_step + 1]
 
     return a_min_expected, a_max_expected
-    return a_min_expected, a_max_expected
+
+
+def get_matching_lc_patches(fn, field_info):
+    """
+
+    Parameters
+    ----------
+    fname : string
+        Path to lc_cores-decomposition.txt
+
+    field_info : tuple
+        (ra_min, ra_max, dec_min, dec_max)
+
+    Returns
+    -------
+    lc_patches : list
+        List of all lightcone patches that intersect the input field
+
+    """
+    patch_decomposition = read_lc_ra_dec_patch_decomposition(fn)[0]
+    lc_patches = list(_generate_matching_patches(patch_decomposition, *field_info))
+    return lc_patches
+
+
+def _get_ra_dec_bounds(patch_theta_lo, patch_theta_hi, patch_phi_lo, patch_phi_hi):
+    patch_ra_lo = np.degrees(patch_phi_lo)
+    patch_ra_hi = np.degrees(patch_phi_hi)
+
+    patch_dec_lo = 90.0 - np.degrees(patch_theta_hi)
+    patch_dec_hi = 90.0 - np.degrees(patch_theta_lo)
+
+    return patch_ra_lo, patch_ra_hi, patch_dec_lo, patch_dec_hi
+
+
+def _generate_matching_patches(
+    patch_decomposition, field_ra_min, field_ra_max, field_dec_min, field_dec_max
+):
+    """"""
+    for patch in patch_decomposition:
+
+        patch_ra_dec_bounds = _get_ra_dec_bounds(*patch[1:])
+        patch_ra_lo, patch_ra_hi, patch_dec_lo, patch_dec_hi = patch_ra_dec_bounds
+
+        if (patch_ra_hi < field_ra_min) | (patch_ra_lo > field_ra_max):
+            ra_overlaps = False
+        else:
+            ra_overlaps = True
+
+        if (patch_dec_hi < field_dec_min) | (patch_dec_lo > field_dec_max):
+            dec_overlaps = False
+        else:
+            dec_overlaps = True
+
+        patch_overlaps = ra_overlaps & dec_overlaps
+        if patch_overlaps:
+            ipatch = patch[0]
+            yield int(ipatch)

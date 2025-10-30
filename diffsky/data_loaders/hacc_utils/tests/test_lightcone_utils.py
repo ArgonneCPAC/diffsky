@@ -144,3 +144,21 @@ def test_compute_redshift_agrees_with_haccytrees():
 
     assert np.allclose(redshift, redshift_recomputed, atol=0.001)
     assert np.allclose(redshift, redshift_recomputed, atol=0.001)
+
+
+def test_get_matching_lc_patches():
+    fn = os.path.join(DRN_TESTING_DATA, "lc_cores-decomposition.txt")
+
+    ran_key = jran.key(0)
+    n_tests = 10
+    for __ in range(n_tests):
+        ran_key, ra_key, dec_key = jran.split(ran_key, 3)
+        ra_min, ra_max = sorted(
+            jran.uniform(ra_key, minval=0.0, maxval=360.0, shape=(2,))
+        )
+        dec_min, dec_max = sorted(
+            jran.uniform(dec_key, minval=-90.0, maxval=90.0, shape=(2,))
+        )
+        field_info = ra_min, ra_max, dec_min, dec_max
+        lc_patches = hlu.get_matching_lc_patches(fn, field_info)
+        assert len(lc_patches) > 0
