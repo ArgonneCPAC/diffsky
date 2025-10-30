@@ -1,9 +1,8 @@
 """
 Empirical model fits for starforming and quiescent galaxies from
 Mowla et al. 2019 ApJ...880...57 https://iopscience.iop.org/article/10.3847/1538-4357/ab290a/pdf
-Kawinwanichakij et al. 2021 ApJ...921...38 https://iopscience.iop.org/article/10.3847/1538-4357/ac1f21/pdf 
+Kawinwanichakij et al. 2021 ApJ...921...38 https://iopscience.iop.org/article/10.3847/1538-4357/ac1f21/pdf
 George, A. et al. 2024 MNRAS.528.4797 https://arxiv.org/pdf/2401.06842
-
 """
 
 from collections import namedtuple
