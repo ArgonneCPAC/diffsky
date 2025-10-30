@@ -22,6 +22,18 @@ DEG_PER_RAD = 180 / np.pi
 SQDEG_PER_STER = DEG_PER_RAD**2
 SQDEG_OF_SPHERE = SQDEG_PER_STER * 4 * np.pi
 
+# taken from https://survey-strategy.lsst.io/baseline/ddf.html
+LSST_DDF_FIELDS = dict(
+    ELAISS1=(9.45, -44.02),
+    XMM_LSS=(35.57, -4.82),
+    ECDFS=(52.98, -28.12),
+    COSMOS=(150.11, 2.23),
+    EDFS_a=(58.9, -49.32),
+    EDFS_b=(63.6, -47.6),
+)
+LSST_DDF_RADIUS = 5.0  # deg^2
+
+
 TOP_HOST_MAH_KEYS = ["top_host_" + key for key in DEFAULT_MAH_PARAMS._fields]
 SECONDARY_HOST_MAH_KEYS = ["sec_host_" + key for key in DEFAULT_MAH_PARAMS._fields]
 
@@ -589,3 +601,33 @@ def _generate_matching_patches(
         if patch_overlaps:
             ipatch = patch[0]
             yield int(ipatch)
+
+
+def get_lsst_ddf_patches(fn, lsst_ddf_fields=LSST_DDF_FIELDS, rad_deg=LSST_DDF_RADIUS):
+    """Get overlapping lightcone patches for each LSST DDF field
+
+    Parameters
+    ----------
+    fname : string
+        Path to lc_cores-decomposition.txt
+
+    Returns
+    -------
+    lsst_ddf_patches : dict
+        keys: ('ELAISS1', 'XMM_LSS', 'ECDFS', 'COSMOS', 'EDFS_a', 'EDFS_b')
+        values: list storing the lightcone patches that overlap with the field
+
+    Notes
+    -----
+    Field info taken from https://survey-strategy.lsst.io/baseline/ddf.html
+
+    """
+    lsst_ddf_patches = dict()
+    for field_name, field_info in lsst_ddf_fields.items():
+        ra_mid, dec_mid = lsst_ddf_fields[field_name]
+        ra_min, ra_max = ra_mid - rad_deg, ra_mid + rad_deg
+        dec_min, dec_max = dec_mid - rad_deg, dec_mid + rad_deg
+        field_info = ra_min, ra_max, dec_min, dec_max
+        lc_patches = get_matching_lc_patches(fn, field_info)
+        lsst_ddf_patches[field_name] = lc_patches
+    return lsst_ddf_patches

@@ -162,3 +162,11 @@ def test_get_matching_lc_patches():
         field_info = ra_min, ra_max, dec_min, dec_max
         lc_patches = hlu.get_matching_lc_patches(fn, field_info)
         assert len(lc_patches) > 0
+
+
+def test_get_lsst_ddf_patches():
+    fn = os.path.join(DRN_TESTING_DATA, "lc_cores-decomposition.txt")
+    ddf_patches = hlu.get_lsst_ddf_patches(fn)
+    assert len(ddf_patches) == len(hlu.LSST_DDF_FIELDS)
+    for field_name, lc_patches in ddf_patches.items():
+        assert len(lc_patches) > 0
