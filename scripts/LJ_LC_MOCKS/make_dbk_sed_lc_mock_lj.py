@@ -69,6 +69,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--ddf", action="store_true", help="Include LSST DDF sky patches"
+    )
+
+    parser.add_argument(
         "-fn_u_params",
         help="Best-fit diffsky parameters. Set to `sfh_model` to use a few specific calibrations",
         default="",
@@ -153,6 +157,12 @@ if __name__ == "__main__":
     elif roman_hltds == 1:
         lc_patch_list = np.array(ROMAN_HLTDS_PATCHES).astype(int)
         print("Making all lightcone patches for Roman HLTDS")
+    elif args.ddf:
+        fn_lc_decomp = os.path.join(indir_lc_data, "lc_cores-decomposition.txt")
+        lc_patch_dict = hlu.get_lsst_ddf_patches(fn_lc_decomp)
+        lc_patch_list = np.unique(
+            np.concatenate([arr for arr in lc_patch_dict.values()])
+        )
     else:
         lc_patch_list = np.arange(istart, iend).astype(int)
 
