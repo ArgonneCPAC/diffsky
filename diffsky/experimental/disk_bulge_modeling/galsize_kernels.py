@@ -51,7 +51,7 @@ def mc_r50_bulge(mstar, redshift, ran_key):
 def _r50_disk_kern(mstar, redshift):
     r50_z0 = _r50_vs_mstar_disk(mstar)
     shrinking_factor = _redshift_shrinking_factor(redshift)
-    r50 = r50_z0 * shrinking_factor
+    r50 = r50_z0 / shrinking_factor
     r50 = jnp.clip(r50, R50_MIN, R50_MAX)
     return r50
 
@@ -60,7 +60,7 @@ def _r50_disk_kern(mstar, redshift):
 def _r50_bulge_kern(mstar, redshift):
     r50_z0 = _r50_vs_mstar_bulge(mstar)
     shrinking_factor = _redshift_shrinking_factor(redshift)
-    r50 = r50_z0 * shrinking_factor
+    r50 = r50_z0 / shrinking_factor
     r50 = jnp.clip(r50, R50_MIN, R50_MAX)
     return r50
 
