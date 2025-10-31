@@ -46,10 +46,7 @@ beta_bulge = LinearParameters(0.71, 0.055)
 logmp_bulge = LinearParameters(10.0, 0.40)
 
 BULGE_SIZE_PARAMETERS = BulgeSizeParameters(
-    rp_bulge,
-    alpha_bulge,
-    beta_bulge,
-    logmp_bulge,
+    rp_bulge, alpha_bulge, beta_bulge, logmp_bulge
 )
 
 
@@ -73,22 +70,18 @@ R50_SCATTER = 0.2
 
 
 @jjit
-def _get_parameter_zevolution_disk(
-    redshift, parameters=DISK_SIZE_PARAMETERS, evoln_function=_sigmoid
-):
+def _get_parameter_zevolution_disk(redshift, parameters=DISK_SIZE_PARAMETERS):
     par_names = [par for par in parameters._fields]
     func_pars = [getattr(parameters, name) for name in par_names]
-    evolved_parameters = [evoln_function(redshift, *fpar) for fpar in func_pars]
+    evolved_parameters = [_sigmoid(redshift, *fpar) for fpar in func_pars]
     return evolved_parameters
 
 
 @jjit
-def _get_parameter_zevolution_bulge(
-    redshift, parameters=BULGE_SIZE_PARAMETERS, evoln_function=_linear
-):
+def _get_parameter_zevolution_bulge(redshift, parameters=BULGE_SIZE_PARAMETERS):
     par_names = [par for par in parameters._fields]
     func_pars = [getattr(parameters, name) for name in par_names]
-    evolved_parameters = [evoln_function(redshift, *fpar) for fpar in func_pars]
+    evolved_parameters = [_linear(redshift, *fpar) for fpar in func_pars]
     return evolved_parameters
 
 
