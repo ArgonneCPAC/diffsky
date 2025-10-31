@@ -68,8 +68,6 @@ def median_r50_vs_mstar2(mstar, rp, alpha, beta, logmp, delta=6):
     return r50_med
 
 
-DISK_FIT_FUNCTION = median_r50_vs_mstar
-BULGE_FIT_FUNCTION = median_r50_vs_mstar2
 R50_MIN, R50_MAX = 0.1, 40.0
 R50_SCATTER = 0.2
 
@@ -95,16 +93,16 @@ def _get_parameter_zevolution_bulge(
 
 
 @jjit
-def _disk_median_r50(mstar, redshift, fit_func=DISK_FIT_FUNCTION):
+def _disk_median_r50(mstar, redshift):
     evolved_parameters = _get_parameter_zevolution_disk(redshift)
-    r50 = fit_func(mstar, *evolved_parameters)
+    r50 = median_r50_vs_mstar(mstar, *evolved_parameters)
     return r50
 
 
 @jjit
-def _bulge_median_r50(mstar, redshift, fit_func=BULGE_FIT_FUNCTION):
+def _bulge_median_r50(mstar, redshift):
     par_values = _get_parameter_zevolution_bulge(redshift)
-    r50 = fit_func(mstar, *par_values)
+    r50 = median_r50_vs_mstar2(mstar, *par_values)
     return r50
 
 
