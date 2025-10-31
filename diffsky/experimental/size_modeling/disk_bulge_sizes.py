@@ -11,11 +11,7 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 
-
-@jjit
-def _sigmoid(x, x0, k, ymin, ymax):
-    height_diff = ymax - ymin
-    return ymin + height_diff / (1 + jnp.exp(-k * (x - x0)))
+from ...utils.utility_funcs import _sigmoid
 
 
 @jjit
