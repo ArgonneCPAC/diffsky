@@ -62,12 +62,9 @@ def median_r50_vs_mstar(mstar, a, alpha, m0=5e10):
 @jjit
 def median_r50_vs_mstar2(mstar, rp, alpha, beta, logmp, delta=6):
     mp = jnp.power(10, logmp)
-    r50_med = (
-        rp
-        * jnp.power(mstar / mp, alpha)
-        * 0.5
-        * jnp.power((1 + jnp.power(mstar / mp, delta)), (beta - alpha) / delta)
-    )
+    term1 = rp * jnp.power(mstar / mp, alpha)
+    term2 = 0.5 * jnp.power((1 + jnp.power(mstar / mp, delta)), (beta - alpha) / delta)
+    r50_med = term1 * term2
     return r50_med
 
 
