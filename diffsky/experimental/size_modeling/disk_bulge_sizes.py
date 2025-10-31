@@ -63,8 +63,10 @@ def median_r50_vs_mstar(mstar, a, alpha, m0=5e10):
 def median_r50_vs_mstar2(mstar, rp, alpha, beta, logmp, delta=6):
     mp = jnp.power(10, logmp)
     r50_med = (
-        rp * jnp.power(mstar / mp, alpha) * 0.5 * jnp.power((1 + jnp.power(mstar / mp, delta)),
-                                                            (beta - alpha) / delta)
+        rp
+        * jnp.power(mstar / mp, alpha)
+        * 0.5
+        * jnp.power((1 + jnp.power(mstar / mp, delta)), (beta - alpha) / delta)
     )
     return r50_med
 
@@ -76,8 +78,9 @@ R50_SCATTER = 0.2
 
 
 @jjit
-def _get_parameter_zevolution_disk(redshift, parameters=DISK_SIZE_PARAMETERS,
-                                   evoln_function=_sigmoid):
+def _get_parameter_zevolution_disk(
+    redshift, parameters=DISK_SIZE_PARAMETERS, evoln_function=_sigmoid
+):
     par_names = [par for par in parameters._fields]
     func_pars = [getattr(parameters, name) for name in par_names]
     evolved_parameters = [evoln_function(redshift, *fpar) for fpar in func_pars]
@@ -85,8 +88,9 @@ def _get_parameter_zevolution_disk(redshift, parameters=DISK_SIZE_PARAMETERS,
 
 
 @jjit
-def _get_parameter_zevolution_bulge(redshift, parameters=BULGE_SIZE_PARAMETERS,
-                                    evoln_function=_linear):
+def _get_parameter_zevolution_bulge(
+    redshift, parameters=BULGE_SIZE_PARAMETERS, evoln_function=_linear
+):
     par_names = [par for par in parameters._fields]
     func_pars = [getattr(parameters, name) for name in par_names]
     evolved_parameters = [evoln_function(redshift, *fpar) for fpar in func_pars]
