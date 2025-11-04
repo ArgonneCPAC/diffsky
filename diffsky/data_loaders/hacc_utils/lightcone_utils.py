@@ -33,6 +33,7 @@ LSST_DDF_FIELDS = dict(
 )
 LSST_DDF_RADIUS = 5.0  # deg^2
 
+MAX_LJ_LC_TIMESTEP = 487
 
 TOP_HOST_MAH_KEYS = ["top_host_" + key for key in DEFAULT_MAH_PARAMS._fields]
 SECONDARY_HOST_MAH_KEYS = ["sec_host_" + key for key in DEFAULT_MAH_PARAMS._fields]
@@ -445,6 +446,26 @@ def get_lc_patches_in_zrange(sim_name, lc_xdict, z_min, z_max, patch_list=None):
             else:
                 if patchnum in patch_list:
                     lc_patches.append(patch_info)
+
+    return lc_patches
+
+
+def get_all_lc_patches_in_zrange(
+    sim_name, patch_list, z_min, z_max, max_timestep=MAX_LJ_LC_TIMESTEP
+):
+    _res = hcu.get_timestep_range_from_z_range(sim_name, z_min, z_max)
+    timestep_min, timestep_max = _res[2:]
+    timestep_max = min(timestep_max, max_timestep)
+    sim = HACCSim.simulations[sim_name]
+    all_timesteps = np.array(sim.cosmotools_steps)
+    msk = (all_timesteps >= timestep_min) & (all_timesteps <= timestep_max)
+    timesteps = all_timesteps[msk]
+
+    lc_patches = []
+    for lc_patch in patch_list:
+        for stepnum in timesteps:
+            patch_info = stepnum, lc_patch
+            lc_patches.append(patch_info)
 
     return lc_patches
 

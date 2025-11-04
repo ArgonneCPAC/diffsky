@@ -134,3 +134,11 @@ if __name__ == "__main__":
 
     incompl_jobs, bad_jobs, bad_example = check_o_logs(drn)
     bad_job_collector, bad_example = check_e_logs(drn)
+
+    all_pass = (
+        (len(incompl_jobs) == 0) & (len(bad_jobs) == 0) & (len(bad_job_collector) == 0)
+    )
+    if all_pass:
+        print("Every job terminated without raising an exception")
+    else:
+        print("Some scripts failed")
