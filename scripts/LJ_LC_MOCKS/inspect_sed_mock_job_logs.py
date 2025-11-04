@@ -140,3 +140,5 @@ if __name__ == "__main__":
     )
     if all_pass:
         print("Every job terminated without raising an exception")
+    else:
+        print("Some scripts failed")
