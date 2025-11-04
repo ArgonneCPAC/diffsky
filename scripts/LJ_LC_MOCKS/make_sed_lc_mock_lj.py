@@ -193,9 +193,7 @@ if __name__ == "__main__":
         ran_key, patch_key, shuffle_key = jran.split(ran_key, 3)
 
         lc_patch_info_list = sorted(
-            hlu.get_lc_patches_in_zrange(
-                sim_name, lc_xdict, z_min, z_max, patch_list=[lc_patch]
-            )
+            hlu.get_all_lc_patches_in_zrange(sim_name, lc_patch_list, z_min, z_max)
         )
         fn_list_lc_patch = [
             os.path.join(indir_lc_diffsky, lcmp.LC_CF_BNPAT.format(*patch_info))

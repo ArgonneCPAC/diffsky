@@ -449,6 +449,23 @@ def get_lc_patches_in_zrange(sim_name, lc_xdict, z_min, z_max, patch_list=None):
     return lc_patches
 
 
+def get_all_lc_patches_in_zrange(sim_name, patch_list, z_min, z_max):
+    _res = hcu.get_timestep_range_from_z_range(sim_name, z_min, z_max)
+    timestep_min, timestep_max = _res[2:]
+    sim = HACCSim.simulations[sim_name]
+    all_timesteps = np.array(sim.cosmotools_steps)
+    msk = (all_timesteps >= timestep_min) & (all_timesteps <= timestep_max)
+    timesteps = all_timesteps[msk]
+
+    lc_patches = []
+    for lc_patch in patch_list:
+        for stepnum in timesteps:
+            patch_info = stepnum, lc_patch
+            lc_patches.append(patch_info)
+
+    return lc_patches
+
+
 def check_lc_cores_diffsky_data(fn):
     report = dict()
     data = load_flat_hdf5(fn)

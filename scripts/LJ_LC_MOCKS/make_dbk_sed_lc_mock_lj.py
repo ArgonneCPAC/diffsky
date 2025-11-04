@@ -8,9 +8,6 @@ from time import time
 
 import jax
 import numpy as np
-from dsps.data_loaders import load_ssp_templates, load_transmission_curve
-from jax import random as jran
-
 from diffsky import phot_utils
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
@@ -22,6 +19,8 @@ from diffsky.experimental.sfh_model_calibrations import (
     load_diffsky_sfh_model_calibrations as ldup,
 )
 from diffsky.param_utils import diffsky_param_wrapper as dpw
+from dsps.data_loaders import load_ssp_templates, load_transmission_curve
+from jax import random as jran
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -203,10 +202,9 @@ if __name__ == "__main__":
         ran_key, patch_key, shuffle_key = jran.split(ran_key, 3)
 
         lc_patch_info_list = sorted(
-            hlu.get_lc_patches_in_zrange(
-                sim_name, lc_xdict, z_min, z_max, patch_list=[lc_patch]
-            )
+            hlu.get_all_lc_patches_in_zrange(sim_name, lc_patch_list, z_min, z_max)
         )
+
         fn_list_lc_patch = [
             os.path.join(indir_lc_diffsky, lcmp.LC_CF_BNPAT.format(*patch_info))
             for patch_info in lc_patch_info_list
