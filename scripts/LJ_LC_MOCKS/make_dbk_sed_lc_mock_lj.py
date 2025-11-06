@@ -8,6 +8,9 @@ from time import time
 
 import jax
 import numpy as np
+from dsps.data_loaders import load_ssp_templates, load_transmission_curve
+from jax import random as jran
+
 from diffsky import phot_utils
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
@@ -19,8 +22,6 @@ from diffsky.experimental.sfh_model_calibrations import (
     load_diffsky_sfh_model_calibrations as ldup,
 )
 from diffsky.param_utils import diffsky_param_wrapper as dpw
-from dsps.data_loaders import load_ssp_templates, load_transmission_curve
-from jax import random as jran
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -223,78 +224,81 @@ if __name__ == "__main__":
             print(f"Working on={os.path.basename(fn_lc_diffsky)}")
             print(f"stepnum={stepnum}")
 
-            if synthetic_cores == 0:
-                lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
-                    fn_lc_diffsky, indir_lc_data
-                )
-            else:
-                bn_in = os.path.basename(fn_lc_diffsky)
-                bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
-                fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
-                lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(
-                    fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
-                )
+            # if synthetic_cores == 0:
+            #     lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
+            #         fn_lc_diffsky, indir_lc_data
+            #     )
+            # else:
+            #     bn_in = os.path.basename(fn_lc_diffsky)
+            #     bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
+            #     fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
+            #     lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(
+            #         fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
+            #     )
 
-            n_gals = len(lc_data["core_tag"])
-            lc_data["stepnum"] = np.zeros(n_gals).astype(int) + stepnum
-            lc_data["lc_patch"] = np.zeros(n_gals).astype(int) + lc_patch
+            # n_gals = len(lc_data["core_tag"])
+            # lc_data["stepnum"] = np.zeros(n_gals).astype(int) + stepnum
+            # lc_data["lc_patch"] = np.zeros(n_gals).astype(int) + lc_patch
 
-            # Define redshift table used for magnitude interpolation
-            _EPS = 1e-3
-            z_max = lc_data["redshift_true"].max() + _EPS
+            # # Define redshift table used for magnitude interpolation
+            # _EPS = 1e-3
+            # z_max = lc_data["redshift_true"].max() + _EPS
 
-            z_min_shell = lc_data["redshift_true"].min()
-            z_min = z_min_shell - _EPS
-            z_min_cutoff = 1e-3
-            if z_min < z_min_cutoff:
-                z_min = z_min_shell / 2
-            z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+            # z_min_shell = lc_data["redshift_true"].min()
+            # z_min = z_min_shell - _EPS
+            # z_min_cutoff = 1e-3
+            # if z_min < z_min_cutoff:
+            #     z_min = z_min_shell / 2
+            # z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
 
-            # Precompute photometry at each element of the redshift table
-            wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
+            # # Precompute photometry at each element of the redshift table
+            # wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
 
-            precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-                tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
-            )
+            # precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+            #     tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
+            # )
 
-            patch_key, sed_key = jran.split(patch_key, 2)
-            args = (
-                sim_info,
-                lc_data,
-                diffsky_data,
-                ssp_data,
-                param_collection,
-                precomputed_ssp_mag_table,
-                z_phot_table,
-                wave_eff_table,
-                sed_key,
-            )
-            phot_info, lc_data, diffsky_data = lcmp.add_dbk_sed_quantities_to_mock(
-                *args
-            )
+            # patch_key, sed_key = jran.split(patch_key, 2)
+            # args = (
+            #     sim_info,
+            #     lc_data,
+            #     diffsky_data,
+            #     ssp_data,
+            #     param_collection,
+            #     precomputed_ssp_mag_table,
+            #     z_phot_table,
+            #     wave_eff_table,
+            #     sed_key,
+            # )
+            # phot_info, lc_data, diffsky_data = lcmp.add_dbk_sed_quantities_to_mock(
+            #     *args
+            # )
 
-            diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
-                phot_info, lc_data, diffsky_data
-            )
+            # diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
+            #     phot_info, lc_data, diffsky_data
+            # )
 
-            diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
-                lc_data, diffsky_data
-            )
+            # diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
+            #     lc_data, diffsky_data
+            # )
 
-            patch_key, nfw_key = jran.split(patch_key, 2)
-            lc_data, diffsky_data = lcmp.reposition_satellites(
-                sim_info, lc_data, diffsky_data, nfw_key
-            )
+            # patch_key, nfw_key = jran.split(patch_key, 2)
+            # lc_data, diffsky_data = lcmp.reposition_satellites(
+            #     sim_info, lc_data, diffsky_data, nfw_key
+            # )
 
             bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
+            bn_out = bn_out.replace(".hdf5", "")
             fn_out = os.path.join(drn_out, bn_out)
-            lcmp.write_lc_dbk_sed_mock_to_disk(
-                fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
-            )
-            metadata_sfh_mock.append_metadata(fn_out, sim_name)
+            dummy_arr = np.arange(100)
+            np.save(fn_out, dummy_arr)
+            # lcmp.write_lc_dbk_sed_mock_to_disk(
+            #     fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
+            # )
+            # metadata_sfh_mock.append_metadata(fn_out, sim_name)
 
-            del lc_data
-            del diffsky_data
+            # del lc_data
+            # del diffsky_data
             gc.collect()
             jax.clear_caches()
 
