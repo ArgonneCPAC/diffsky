@@ -290,7 +290,7 @@ if __name__ == "__main__":
             bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
             bn_out = bn_out.replace(".hdf5", "")
             fn_out = os.path.join(drn_out, bn_out)
-            dummy_arr = np.arange(100)
+            dummy_arr = np.arange(5)
             np.save(fn_out, dummy_arr)
             # lcmp.write_lc_dbk_sed_mock_to_disk(
             #     fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
