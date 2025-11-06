@@ -17,6 +17,7 @@ import jax
 import numpy as np
 from dsps.data_loaders import load_ssp_templates, load_transmission_curve
 from jax import random as jran
+from mpi4py import MPI
 
 from diffsky import phot_utils
 from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
@@ -54,6 +55,9 @@ ROMAN_HLTDS_PATCHES = [157, 158, 118, 119]
 
 
 if __name__ == "__main__":
+    COMM = MPI.COMM_WORLD
+    rank, nranks = COMM.Get_rank(), COMM.Get_size()
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -170,6 +174,8 @@ if __name__ == "__main__":
         )
     else:
         lc_patch_list = np.arange(istart, iend).astype(int)
+
+    lc_patch_list = np.array_split(lc_patch_list, nranks)[rank]
 
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
