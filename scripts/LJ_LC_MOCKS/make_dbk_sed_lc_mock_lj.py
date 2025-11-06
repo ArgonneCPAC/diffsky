@@ -166,6 +166,8 @@ if __name__ == "__main__":
     else:
         lc_patch_list = np.arange(istart, iend).astype(int)
 
+    output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
+
     ssp_data = load_ssp_templates()
 
     #  Load diffsky model parameters
@@ -202,25 +204,21 @@ if __name__ == "__main__":
 
         ran_key, patch_key, shuffle_key = jran.split(ran_key, 3)
 
-        lc_patch_info_list = sorted(
-            hlu.get_all_lc_patches_in_zrange(sim_name, lc_patch_list, z_min, z_max)
-        )
+        # fn_list_lc_patch = [
+        #     os.path.join(indir_lc_diffsky, lcmp.LC_CF_BNPAT.format(*patch_info))
+        #     for patch_info in lc_patch_info_list
+        # ]
+        # bn_list_lc_patch = [os.path.basename(fn) for fn in fn_list_lc_patch]
 
-        fn_list_lc_patch = [
-            os.path.join(indir_lc_diffsky, lcmp.LC_CF_BNPAT.format(*patch_info))
-            for patch_info in lc_patch_info_list
-        ]
-        bn_list_lc_patch = [os.path.basename(fn) for fn in fn_list_lc_patch]
+        # indx_all_steps = np.arange(len(lc_patch_info_list)).astype(int)
 
-        indx_all_steps = np.arange(len(lc_patch_info_list)).astype(int)
-
-        print(f"lc_patch_info_list={lc_patch_info_list}")
-        print(f"bn_list_lc_patch={bn_list_lc_patch}")
+        # print(f"lc_patch_info_list={lc_patch_info_list}")
+        # print(f"bn_list_lc_patch={bn_list_lc_patch}")
 
         start = time()
-        for indx_step in indx_all_steps[::-1]:
-            fn_lc_diffsky = fn_list_lc_patch[indx_step]
-            stepnum = int(lc_patch_info_list[indx_step][0])
+        for stepnum in output_timesteps:
+            bn_lc_diffsky = lcmp.LC_CF_BNPAT.format(stepnum, lc_patch)
+            fn_lc_diffsky = os.path.join(indir_lc_diffsky, bn_lc_diffsky)
             print(f"Working on={os.path.basename(fn_lc_diffsky)}")
             print(f"stepnum={stepnum}")
 
