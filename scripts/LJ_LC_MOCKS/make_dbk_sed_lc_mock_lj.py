@@ -17,6 +17,7 @@ from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
 from diffsky.data_loaders.hacc_utils import metadata_sfh_mock
+from diffsky.data_loaders.mock_utils import get_mock_version_name
 from diffsky.experimental import precompute_ssp_phot as psspp
 from diffsky.experimental.sfh_model_calibrations import (
     load_diffsky_sfh_model_calibrations as ldup,
@@ -60,6 +61,8 @@ if __name__ == "__main__":
     parser.add_argument("iend", help="Last sky patch", type=int)
 
     parser.add_argument("drn_out", help="Output directory")
+    parser.add_argument("mock_nickname", help="Nickname of the mock")
+
     parser.add_argument(
         "-roman_hltds",
         help="Use all patches overlapping with Roman HLTDS. Overrides istart and iend",
@@ -112,6 +115,7 @@ if __name__ == "__main__":
     iend = args.iend
     sfh_model = args.sfh_model
     drn_out = args.drn_out
+    mock_nickname = args.mock_nickname
 
     roman_hltds = args.roman_hltds
     fn_u_params = args.fn_u_params
@@ -120,6 +124,8 @@ if __name__ == "__main__":
     synthetic_cores = args.synthetic_cores
     lgmp_min = args.lgmp_min
     lgmp_max = args.lgmp_max
+
+    mock_version_name = get_mock_version_name(mock_nickname)
 
     if synthetic_cores == 1:
         drn_out = os.path.join(drn_out, "synthetic_cores")
@@ -279,7 +285,7 @@ if __name__ == "__main__":
             lcmp.write_lc_dbk_sed_mock_to_disk(
                 fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
             )
-            metadata_sfh_mock.append_metadata(fn_out, sim_name)
+            metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
 
             del lc_data
             del diffsky_data
