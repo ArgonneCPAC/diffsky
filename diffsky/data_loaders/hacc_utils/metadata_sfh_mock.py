@@ -312,10 +312,11 @@ Contact: ahearin@anl.gov for questions.
 """
 
 
-def append_metadata(fnout, sim_name):
+def append_metadata(fnout, sim_name, mock_version_name):
     with h5py.File(fnout, "r+") as hdf_out:
         hdf_out.require_group("metadata")
         hdf_out.attrs["metadata/creation_date"] = str(datetime.now())
+        hdf_out.attrs["metadata/mock_version_name"] = mock_version_name
 
         hdf_out.attrs["metadata/header"] = HEADER_COMMENT
 
