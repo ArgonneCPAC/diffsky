@@ -14,13 +14,10 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
 
     sim_info = llcf.get_diffsky_info_from_hacc_sim(sim_name)
 
-    drn_lc_cores = os.path.dirname(fn_lc_cores)
     bname_lc_cores = os.path.basename(fn_lc_cores)
     stepnum, lc_patch = hlu.get_stepnum_and_skypatch_from_lc_bname(bname_lc_cores)
 
-    _res = hlu.read_lc_ra_dec_patch_decomposition(
-        os.path.join(drn_lc_cores, "lc_cores-decomposition.txt")
-    )
+    _res = hlu.read_hacc_lc_patch_decomposition(sim_name)
     patch_decomposition, sky_frac, solid_angles = _res
     sky_area_degsq = solid_angles[lc_patch]
 

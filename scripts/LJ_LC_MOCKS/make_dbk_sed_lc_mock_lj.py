@@ -3,7 +3,6 @@
 import argparse
 import gc
 import os
-import pickle
 from time import time
 
 import jax
