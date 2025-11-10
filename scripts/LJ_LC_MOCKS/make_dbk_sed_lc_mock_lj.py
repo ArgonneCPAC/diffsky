@@ -180,6 +180,14 @@ if __name__ == "__main__":
         param_collection = dpw.get_param_collection_from_u_param_collection(
             *u_param_collection
         )
+        if True:  # always do this for now
+            print("Ignoring pre-computed fit of SPS parameters")
+            diffstarpop_sfh_model = param_collection[0]
+            param_collection = (
+                diffstarpop_sfh_model,
+                *dpw.DEFAULT_PARAM_COLLECTION[1:],
+            )
+
     else:
         print(f"Reading diffsky parameter array from disk. Filename = {fn_u_params}")
         u_param_arr = np.loadtxt(fn_u_params)
