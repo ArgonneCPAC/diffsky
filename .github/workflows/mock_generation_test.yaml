@@ -45,6 +45,7 @@ jobs:
             matplotlib \
             astropy \
             h5py
+          pip install git+https://github.com/ArgonneCPAC/HACCyTrees.git
           pip uninstall diffmah --yes
           pip uninstall diffstar --yes
           pip uninstall dsps --yes
