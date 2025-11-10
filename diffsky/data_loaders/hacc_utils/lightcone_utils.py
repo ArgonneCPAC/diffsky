@@ -184,6 +184,14 @@ def get_redshift_from_xyz(x_mpch, y_mpch, z_mpch, cosmo_params):
     return redshift
 
 
+def read_hacc_lc_patch_decomposition(sim_name):
+    """Read and parse 'lc_cores-decomposition.txt' for a recognized HACC sim"""
+    _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
+    drn = os.path.join(_THIS_DRNAME, "data", sim_name)
+    fn = os.path.join(drn, "lc_cores-decomposition.txt")
+    return read_lc_ra_dec_patch_decomposition(fn)
+
+
 def read_lc_ra_dec_patch_decomposition(fn):
     """Read and parse 'lc_cores-decomposition.txt'
 

@@ -23,7 +23,6 @@ from diffsky.data_loaders.hacc_utils import get_diffsky_info_from_hacc_sim
 from diffsky.mass_functions import hmf_model
 from diffsky.mass_functions.fitting_utils import fit_hmf_model
 
-# Number of subvolumes provided by haccytrees for this simulation
 DEFAULT_NCHUNKS = 10
 
 
