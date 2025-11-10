@@ -53,7 +53,19 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
 
     diffsky_data.pop("mah_params")
 
-    for key in ("x", "y", "z", "x_host", "y_host", "z_host", "ra", "dec"):
+    for key in (
+        "x",
+        "y",
+        "z",
+        "vx",
+        "vy",
+        "vz",
+        "x_host",
+        "y_host",
+        "z_host",
+        "ra",
+        "dec",
+    ):
         diffsky_data[key] = np.zeros(len(diffsky_data["redshift_true"])) - 1.0
 
     ZZ = np.zeros(len(diffsky_data["redshift_true"]))
