@@ -33,11 +33,8 @@ DRN_LJ_LC_LCRC = (
 DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc_cores"
 
 DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-cf-diffsky"
-DRN_LC_CF_XDATA_LCRC = os.path.join(DRN_LJ_CROSSX_OUT_LCRC, "LC_CF_XDATA")
 DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
-DRN_LC_CF_XDATA_POBOY = os.path.join(DRN_LJ_CROSSX_OUT_POBOY, "LC_CF_XDATA")
 
-LC_XDICT_BNAME = "lc_xdict.pickle"
 
 SIM_NAME = "LastJourney"
 DIFFSTARPOP_CALIBRATIONS = [
@@ -145,14 +142,9 @@ if __name__ == "__main__":
     if machine == "poboy":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_POBOY
         indir_lc_data = DRN_LJ_CROSSX_OUT_POBOY
-        fn_lc_xdict = os.path.join(DRN_LC_CF_XDATA_POBOY, LC_XDICT_BNAME)
     elif machine == "lcrc":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
-        fn_lc_xdict = os.path.join(DRN_LC_CF_XDATA_LCRC, LC_XDICT_BNAME)
-
-    with open(fn_lc_xdict, "rb") as handle:
-        lc_xdict = pickle.load(handle)
 
     ran_key = jran.key(0)
 
