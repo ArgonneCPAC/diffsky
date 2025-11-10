@@ -53,18 +53,21 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
 
     diffsky_data.pop("mah_params")
 
+    posvel_collector = ("x", "y", "z", "vx", "vy", "vz")
+
+    eigh_pat = "top_host_infall_fof_halo_eigS{0}{1}"
+    eigh_collector = []
+    for n in (1, 2, 3):
+        for s in ("X", "Y", "Z"):
+            eigh_collector.append(eigh_pat.format(n, s))
     for key in (
-        "x",
-        "y",
-        "z",
-        "vx",
-        "vy",
-        "vz",
+        *posvel_collector,
         "x_host",
         "y_host",
         "z_host",
         "ra",
         "dec",
+        *eigh_collector,
     ):
         diffsky_data[key] = np.zeros(len(diffsky_data["redshift_true"])) - 1.0
 
