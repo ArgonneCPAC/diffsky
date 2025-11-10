@@ -12,7 +12,6 @@ from diffsky.data_loaders.hacc_utils import get_diffsky_info_from_hacc_sim
 from diffsky.data_loaders.hacc_utils import load_hacc_cores as lhc
 from diffsky.mass_functions.measure_hmf import measure_cuml_hmf_target_data_counts
 
-# Number of subvolumes provided by haccytrees for this simulation
 DEFAULT_NCHUNKS = 10
 
 # default directories
