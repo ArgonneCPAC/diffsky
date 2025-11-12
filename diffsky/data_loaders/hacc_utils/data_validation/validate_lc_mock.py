@@ -7,6 +7,15 @@ import numpy as np
 
 from .. import load_flat_hdf5
 
+REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
+REQUIRED_SOFTWARE_VERSION_INFO = (
+    "diffmah",
+    "diffsky",
+    "diffstar",
+    "dsps",
+    "jax",
+    "numpy",
+)
 BNPAT_LC_MOCK = "data-{0}.{1}.diffsky_gals.hdf5"
 
 HLINE = "----------"
@@ -23,6 +32,10 @@ def get_lc_mock_data_report(fn_lc_mock):
     msg = check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["nfw_host_distance"] = msg
+
+    msg = check_metadata(fn_lc_mock)
+    if len(msg) > 0:
+        report["metadata"] = msg
 
     msg = check_all_data_columns_have_metadata(fn_lc_mock)
     if len(msg) > 0:
@@ -71,6 +84,55 @@ def check_all_data_columns_have_metadata(fn_lc_mock):
             except (KeyError, AssertionError):
                 s = f"{key} is missing metadata"
                 msg.append(s)
+    return msg
+
+
+def check_metadata(fn_lc_mock):
+
+    msg = []
+    with h5py.File(fn_lc_mock, "r") as hdf:
+        try:
+            # Check all scalar metadata
+            avail_medata_attrs = list(hdf["metadata"].attrs.keys())
+            assert set(avail_medata_attrs) >= set(REQUIRED_METADATA_ATTRS)
+
+            creation_date = hdf["metadata"].attrs["creation_date"]
+            assert len(creation_date) > 0
+            mock_version_name = hdf["metadata"].attrs["mock_version_name"]
+            assert len(mock_version_name.split("_")) > 1
+            README = hdf["metadata"].attrs["README"]
+            assert "This file contains diffsky" in README
+
+            # Check cosmology metadata
+            Om0 = hdf["metadata/cosmology"].attrs["Om0"]
+            assert 0 < Om0 < 1
+            all_hacc_cosmo_params = ("Ob0", "Om0", "h", "ns", "sigma8", "w0", "wa")
+            assert set(all_hacc_cosmo_params) == set(
+                hdf["metadata/cosmology"].attrs.keys()
+            )
+
+            # Check nbody_info metadata
+            expected_info = ("Lbox", "n_particles", "particle_mass", "sim_name")
+            assert set(expected_info) == set(hdf["metadata/nbody_info"].attrs.keys())
+            Lbox = hdf["metadata/nbody_info"].attrs["Lbox"]
+            assert Lbox > 0
+            n_particles = hdf["metadata/nbody_info"].attrs["n_particles"]
+            assert n_particles > 0
+            particle_mass = hdf["metadata/nbody_info"].attrs["particle_mass"]
+            assert particle_mass > 0
+            sim_name = hdf["metadata/nbody_info"].attrs["sim_name"]
+            assert len(sim_name) > 0
+
+            # Check software_version_info metadata
+            avail_software_versions = list(
+                hdf["metadata/software_version_info"].attrs.keys()
+            )
+            assert set(avail_software_versions) == set(REQUIRED_SOFTWARE_VERSION_INFO)
+
+        except:  # noqa
+            s = "metadata is incorrect"
+            msg.append(s)
+
     return msg
 
 

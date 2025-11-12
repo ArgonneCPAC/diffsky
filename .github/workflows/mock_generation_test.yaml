@@ -83,7 +83,7 @@ jobs:
           # Create output directory
           mkdir -p ci_test_output
 
-          # Run script in test mode with minimal parameters
+          # Run mock production script
           python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py \
             poboy \
             0.01 \
@@ -102,3 +102,9 @@ jobs:
         shell: bash -l {0}
         run: |
           echo "Mock generation script completed successfully"
+
+      - name: validate mock
+        shell: bash -l {0}
+        run: |
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
+
