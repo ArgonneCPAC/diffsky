@@ -45,6 +45,9 @@ BULGE_SIZE_PARAMETERS = BulgeSizeParameters(
     rp_bulge, alpha_bulge, beta_bulge, logmp_bulge
 )
 
+R50_MIN, R50_MAX = 0.1, 40.0
+R50_SCATTER = 0.2
+
 
 @jjit
 def median_r50_vs_mstar(mstar, a, alpha, m0=5e10):
@@ -59,10 +62,6 @@ def median_r50_vs_mstar2(mstar, rp, alpha, beta, logmp, delta=6):
     term2 = 0.5 * jnp.power((1 + jnp.power(mstar / mp, delta)), (beta - alpha) / delta)
     r50_med = term1 * term2
     return r50_med
-
-
-R50_MIN, R50_MAX = 0.1, 40.0
-R50_SCATTER = 0.2
 
 
 @jjit
@@ -97,29 +96,53 @@ def _bulge_median_r50(mstar, redshift):
 
 @jjit
 def mc_r50_disk_size(mstar, redshift, ran_key):
-    """
-    mstar: array of length (Ngals), stellar masses of galaxies in units of Msun
-    redshift: array of length Ngals, redshift of galaxies
-    returns
+    """Size--mass relation for disks
+
+    Parameters
+    ----------
+    mstar: array of length (Ngals)
+        stellar masses of galaxies in units of Msun
+
+    redshift: array of length Ngals,
+        redshift of galaxies
+
+    Returns
+    -------
     r50: array length (Ngals), size in kpc
+
+    zscore: array length (Ngals), gaussian random used in MC realization
+
     """
     logr50_med = jnp.log10(_disk_median_r50(mstar, redshift))
-    logr50 = jran.normal(ran_key, shape=logr50_med.shape) * R50_SCATTER + logr50_med
+    zscore = jran.normal(ran_key, shape=logr50_med.shape)
+    logr50 = zscore * R50_SCATTER + logr50_med
     r50 = 10**logr50
     r50 = jnp.clip(r50, R50_MIN, R50_MAX)
-    return r50
+    return r50, zscore
 
 
 @jjit
 def mc_r50_bulge_size(mstar, redshift, ran_key):
-    """
-    mstar: array of length (Ngals), stellar masses of galaxies in units of Msun
-    redshift: array of length Ngals, redshift of galaxies
-    returns
+    """Size--mass relation for bulges
+
+    Parameters
+    ----------
+    mstar: array of length (Ngals)
+        stellar masses of galaxies in units of Msun
+
+    redshift: array of length Ngals,
+        redshift of galaxies
+
+    Returns
+    -------
     r50: array length (Ngals), size in kpc
+
+    zscore: array length (Ngals), gaussian random used in MC realization
+
     """
     logr50_med = jnp.log10(_bulge_median_r50(mstar, redshift))
-    logr50 = jran.normal(ran_key, shape=logr50_med.shape) * R50_SCATTER + logr50_med
+    zscore = jran.normal(ran_key, shape=logr50_med.shape)
+    logr50 = zscore * R50_SCATTER + logr50_med
     r50 = 10**logr50
     r50 = jnp.clip(r50, R50_MIN, R50_MAX)
-    return r50
+    return r50, zscore

@@ -1,4 +1,12 @@
-"""Script to make an SED mock to populate a Last Journey lightcone"""
+"""Script to make an SED mock to populate a Last Journey lightcone
+
+To run a unit test of this script:
+
+python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py  poboy 0.01 0.05 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.0 -lgmp_max 13.0
+
+python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
+
+"""  # noqa
 
 import argparse
 import gc
@@ -207,7 +215,7 @@ if __name__ == "__main__":
         gc.collect()
         print(f"Working on lc_patch={lc_patch}")
 
-        ran_key, patch_key, shuffle_key = jran.split(ran_key, 3)
+        ran_key, patch_key = jran.split(ran_key, 2)
 
         start = time()
         for stepnum in output_timesteps:
@@ -224,8 +232,9 @@ if __name__ == "__main__":
                 bn_in = os.path.basename(fn_lc_diffsky)
                 bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
                 fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
+                patch_key, synthetic_lc_key = jran.split(patch_key, 2)
                 lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(
-                    fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
+                    fn_lc_cores, sim_name, synthetic_lc_key, lgmp_min, lgmp_max
                 )
 
             n_gals = len(lc_data["core_tag"])
@@ -266,8 +275,9 @@ if __name__ == "__main__":
                 *args
             )
 
+            patch_key, morph_key = jran.split(patch_key, 2)
             diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
-                phot_info, lc_data, diffsky_data
+                phot_info, lc_data, diffsky_data, morph_key
             )
 
             diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(

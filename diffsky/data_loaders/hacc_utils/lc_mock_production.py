@@ -17,6 +17,7 @@ from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
+from ...ellipsoidal_shapes import bulge_shapes, disk_shapes, ellipse_proj_kernels
 from ...experimental import mc_diffsky_disk_bulge_knot_seds as mc_dbk_sed
 from ...experimental import mc_diffsky_seds
 from ...experimental.black_hole_modeling import black_hole_mass as bhm
@@ -25,9 +26,7 @@ from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ...experimental.disk_bulge_modeling.mc_disk_bulge import (
-    decompose_sfh_into_disk_bulge_sfh,
-)
+from ...experimental.size_modeling import disk_bulge_sizes as dbs
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
@@ -60,6 +59,22 @@ LC_DATA_KEYS_OUT = (
     "lc_patch",
 )
 
+SIZE_KEYS = ("r50_disk", "r50_bulge", "zscore_r50_disk", "zscore_r50_bulge")
+_ORIEN_PATS = (
+    "b_over_a_{}",
+    "c_over_a_{}",
+    "beta_{}",
+    "alpha_{}",
+    "ellipticity_{}",
+    "psi_{}",
+    "e_beta_x_{}",
+    "e_beta_y_{}",
+    "e_alpha_x_{}",
+    "e_alpha_y_{}",
+)
+ORIENTATION_KEYS = [pat.format("disk") for pat in _ORIEN_PATS]
+ORIENTATION_KEYS.extend([pat.format("bulge") for pat in _ORIEN_PATS])
+
 DIFFSKY_DATA_KEYS_OUT = (
     "x_host",
     "y_host",
@@ -76,6 +91,8 @@ DIFFSKY_DATA_KEYS_OUT = (
     *TOP_HOST_SHAPE_KEYS,
     *DEFAULT_MAH_PARAMS._fields,
     *DEFAULT_DIFFSTAR_PARAMS._fields,
+    *SIZE_KEYS,
+    *ORIENTATION_KEYS,
 )
 
 PHOT_INFO_KEYS_OUT = (
@@ -332,7 +349,9 @@ def add_dbk_sed_quantities_to_mock(
     return phot_info, lc_data, diffsky_data
 
 
-def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
+def add_morphology_quantities_to_diffsky_data(
+    phot_info, lc_data, diffsky_data, morph_key
+):
     gen = zip(
         phot_info["disk_bulge_history"].fbulge_params._fields,
         phot_info["disk_bulge_history"].fbulge_params,
@@ -348,6 +367,64 @@ def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
 
     diffsky_data["sfh_bulge"] = phot_info["disk_bulge_history"].sfh_bulge
     diffsky_data["sfh_disk"] = phot_info["sfh_table"] - diffsky_data["sfh_bulge"]
+
+    morph_key, disk_size_key, bulge_size_key = jran.split(morph_key, 3)
+    r50_disk, zscore_disk = dbs.mc_r50_disk_size(
+        10 ** diffsky_data["logsm_obs"], diffsky_data["redshift_true"], disk_size_key
+    )
+    r50_bulge, zscore_bulge = dbs.mc_r50_bulge_size(
+        10 ** diffsky_data["logsm_obs"], diffsky_data["redshift_true"], bulge_size_key
+    )
+
+    diffsky_data["r50_disk"] = r50_disk
+    diffsky_data["r50_bulge"] = r50_bulge
+    diffsky_data["zscore_r50_disk"] = zscore_disk
+    diffsky_data["zscore_r50_bulge"] = zscore_bulge
+
+    morph_key, disk_shape_key, bulge_shape_key = jran.split(morph_key, 3)
+    n = diffsky_data["r50_disk"].size
+    disk_axis_ratios = disk_shapes.sample_disk_axis_ratios(disk_shape_key, n)
+    bulge_axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_shape_key, n)
+
+    diffsky_data["b_over_a_disk"] = disk_axis_ratios.b_over_a
+    diffsky_data["c_over_a_disk"] = disk_axis_ratios.c_over_a
+
+    diffsky_data["b_over_a_bulge"] = bulge_axis_ratios.b_over_a
+    diffsky_data["c_over_a_bulge"] = bulge_axis_ratios.c_over_a
+
+    morph_key, disk_orientation_key, bulge_orientation_key = jran.split(morph_key, 3)
+    ellipse2d_disk = ellipse_proj_kernels.mc_ellipsoid_params(
+        diffsky_data["r50_disk"],
+        diffsky_data["b_over_a_disk"],
+        diffsky_data["c_over_a_disk"],
+        disk_orientation_key,
+    )
+    ellipse2d_bulge = ellipse_proj_kernels.mc_ellipsoid_params(
+        diffsky_data["r50_bulge"],
+        diffsky_data["b_over_a_bulge"],
+        diffsky_data["c_over_a_bulge"],
+        bulge_orientation_key,
+    )
+
+    diffsky_data["beta_disk"] = ellipse2d_disk.beta
+    diffsky_data["alpha_disk"] = ellipse2d_disk.alpha
+    diffsky_data["ellipticity_disk"] = ellipse2d_disk.ellipticity
+    diffsky_data["psi_disk"] = ellipse2d_disk.psi
+
+    diffsky_data["e_beta_x_disk"] = ellipse2d_disk.e_beta[:, 0]
+    diffsky_data["e_beta_y_disk"] = ellipse2d_disk.e_beta[:, 1]
+    diffsky_data["e_alpha_x_disk"] = ellipse2d_disk.e_alpha[:, 0]
+    diffsky_data["e_alpha_y_disk"] = ellipse2d_disk.e_alpha[:, 1]
+
+    diffsky_data["beta_bulge"] = ellipse2d_bulge.beta
+    diffsky_data["alpha_bulge"] = ellipse2d_bulge.alpha
+    diffsky_data["ellipticity_bulge"] = ellipse2d_bulge.ellipticity
+    diffsky_data["psi_bulge"] = ellipse2d_bulge.psi
+
+    diffsky_data["e_beta_x_bulge"] = ellipse2d_bulge.e_beta[:, 0]
+    diffsky_data["e_beta_y_bulge"] = ellipse2d_bulge.e_beta[:, 1]
+    diffsky_data["e_alpha_x_bulge"] = ellipse2d_bulge.e_alpha[:, 0]
+    diffsky_data["e_alpha_y_bulge"] = ellipse2d_bulge.e_alpha[:, 1]
 
     return diffsky_data
 
