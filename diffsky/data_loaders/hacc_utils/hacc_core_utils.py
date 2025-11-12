@@ -51,7 +51,7 @@ def get_timestep_range_from_z_range(sim_name, z_min, z_max):
 
     Parameters
     ----------
-    sim_name : HACCSim name
+    sim_name : HACC simulation name
 
     z_min, z_max : floats
 
@@ -65,7 +65,7 @@ def get_timestep_range_from_z_range(sim_name, z_min, z_max):
 
     Notes
     -----
-    sim = HACCSim.simulations[sim_name]
+    sim = haccsims.simulations[sim_name]
     timesteps = np.array(sim.cosmotools_steps)
     timestep_min = timesteps[idx_step_min]
     timestep_max = timesteps[idx_step_max]
