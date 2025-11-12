@@ -2,6 +2,7 @@ diffsky/_version.py
 
 Untitled*.ipynb
 *.h5
+*.hdf5
 *.pdf
 *.npy
 *.png

@@ -314,16 +314,16 @@ Contact: ahearin@anl.gov for questions.
 
 def append_metadata(fnout, sim_name, mock_version_name):
     with h5py.File(fnout, "r+") as hdf_out:
-        hdf_out.require_group("metadata")
-        hdf_out.attrs["metadata/creation_date"] = str(datetime.now())
-        hdf_out.attrs["metadata/mock_version_name"] = mock_version_name
+        metadata_group = hdf_out.require_group("metadata")
 
-        hdf_out.attrs["metadata/header"] = HEADER_COMMENT
+        metadata_group.attrs["creation_date"] = str(datetime.now())
+        metadata_group.attrs["mock_version_name"] = mock_version_name
+        metadata_group.attrs["header"] = HEADER_COMMENT
 
         sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
 
         # Nbody simulation info
-        nbody_group = hdf_out.require_group("metadata/nbody_info")
+        nbody_group = metadata_group.require_group("nbody_info")
         nbody_group.attrs["sim_name"] = sim_name
         nbody_group.attrs["n_particles"] = sim_info.sim.np**3
         nbody_group.attrs["Lbox"] = sim_info.sim.rl / sim_info.cosmo_params.h
@@ -332,7 +332,7 @@ def append_metadata(fnout, sim_name, mock_version_name):
         nbody_group.attrs["particle_mass"] = mp
 
         # Cosmology info
-        cosmo_group = hdf_out.require_group("metadata/cosmology")
+        cosmo_group = metadata_group.require_group("cosmology")
         cosmo_group.attrs["Om0"] = sim_info.sim.cosmo.Omega_m
         cosmo_group.attrs["w0"] = sim_info.sim.cosmo.w0
         cosmo_group.attrs["wa"] = sim_info.sim.cosmo.wa
@@ -342,7 +342,7 @@ def append_metadata(fnout, sim_name, mock_version_name):
         cosmo_group.attrs["ns"] = sim_info.sim.cosmo.ns
 
         # Software version info
-        version_info_group = hdf_out.require_group("metadata/version_info")
+        version_info_group = metadata_group.require_group("version_info")
         version_info = get_dependency_versions()
         for libname, version in version_info.items():
             version_info_group.attrs[libname] = version
