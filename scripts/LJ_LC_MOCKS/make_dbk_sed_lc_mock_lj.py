@@ -207,7 +207,7 @@ if __name__ == "__main__":
         gc.collect()
         print(f"Working on lc_patch={lc_patch}")
 
-        ran_key, patch_key, shuffle_key = jran.split(ran_key, 3)
+        ran_key, patch_key = jran.split(ran_key, 2)
 
         start = time()
         for stepnum in output_timesteps:
@@ -224,8 +224,9 @@ if __name__ == "__main__":
                 bn_in = os.path.basename(fn_lc_diffsky)
                 bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
                 fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
+                patch_key, synthetic_lc_key = jran.split(patch_key, 2)
                 lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(
-                    fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
+                    fn_lc_cores, sim_name, synthetic_lc_key, lgmp_min, lgmp_max
                 )
 
             n_gals = len(lc_data["core_tag"])
