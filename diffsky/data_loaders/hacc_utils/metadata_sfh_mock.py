@@ -304,6 +304,18 @@ column_metadata["mc_sfh_type"] = (
 )
 
 
+column_metadata["r50_disk"] = ("kpc", "Half-mass radius of disk")
+column_metadata["r50_bulge"] = ("kpc", "Half-mass radius of bulge")
+column_metadata["zscore_r50_disk"] = (
+    "None",
+    "Gaussian random used to add scatter to disk radius",
+)
+column_metadata["zscore_r50_bulge"] = (
+    "None",
+    "Gaussian random used to add scatter to bulge radius",
+)
+
+
 HEADER_COMMENT = """
 This file contains diffsky galaxy data.
 Each file stores mock galaxies in a thin redshift shell of a small patch of sky.

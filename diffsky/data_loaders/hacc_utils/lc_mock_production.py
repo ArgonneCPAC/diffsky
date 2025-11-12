@@ -25,9 +25,7 @@ from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ...experimental.disk_bulge_modeling.mc_disk_bulge import (
-    decompose_sfh_into_disk_bulge_sfh,
-)
+from ...experimental.size_modeling import disk_bulge_sizes as dbs
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
@@ -332,7 +330,9 @@ def add_dbk_sed_quantities_to_mock(
     return phot_info, lc_data, diffsky_data
 
 
-def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
+def add_morphology_quantities_to_diffsky_data(
+    phot_info, lc_data, diffsky_data, size_key
+):
     gen = zip(
         phot_info["disk_bulge_history"].fbulge_params._fields,
         phot_info["disk_bulge_history"].fbulge_params,
@@ -348,6 +348,19 @@ def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
 
     diffsky_data["sfh_bulge"] = phot_info["disk_bulge_history"].sfh_bulge
     diffsky_data["sfh_disk"] = phot_info["sfh_table"] - diffsky_data["sfh_bulge"]
+
+    disk_key, bulge_key = jran.split(size_key, 2)
+    r50_disk, zscore_disk = dbs.mc_r50_disk_size(
+        10 ** diffsky_data["logsm_obs"], diffsky_data["redshift_true"], disk_key
+    )
+    r50_bulge, zscore_bulge = dbs.mc_r50_bulge_size(
+        10 ** diffsky_data["logsm_obs"], diffsky_data["redshift_true"], bulge_key
+    )
+
+    diffsky_data["r50_disk"] = r50_disk
+    diffsky_data["r50_bulge"] = r50_bulge
+    diffsky_data["zscore_r50_disk"] = zscore_disk
+    diffsky_data["zscore_r50_bulge"] = zscore_bulge
 
     return diffsky_data
 
