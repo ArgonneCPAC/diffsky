@@ -58,6 +58,7 @@ LC_DATA_KEYS_OUT = (
     "lc_patch",
 )
 
+SIZE_KEYS = ("r50_disk", "r50_bulge", "zscore_r50_disk", "zscore_r50_bulge")
 DIFFSKY_DATA_KEYS_OUT = (
     "x_host",
     "y_host",
@@ -74,6 +75,7 @@ DIFFSKY_DATA_KEYS_OUT = (
     *TOP_HOST_SHAPE_KEYS,
     *DEFAULT_MAH_PARAMS._fields,
     *DEFAULT_DIFFSTAR_PARAMS._fields,
+    *SIZE_KEYS,
 )
 
 PHOT_INFO_KEYS_OUT = (
