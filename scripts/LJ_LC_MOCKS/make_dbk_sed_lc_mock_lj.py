@@ -275,9 +275,9 @@ if __name__ == "__main__":
                 *args
             )
 
-            patch_key, size_key = jran.split(patch_key, 2)
+            patch_key, morph_key = jran.split(patch_key, 2)
             diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
-                phot_info, lc_data, diffsky_data, size_key
+                phot_info, lc_data, diffsky_data, morph_key
             )
 
             diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(

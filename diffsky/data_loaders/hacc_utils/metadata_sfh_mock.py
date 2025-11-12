@@ -315,6 +315,79 @@ column_metadata["zscore_r50_bulge"] = (
     "Gaussian random used to add scatter to bulge radius",
 )
 
+column_metadata["b_over_a_disk"] = ("None", "3d axis ratio b/a, where 0 < b/a < 1")
+column_metadata["c_over_a_disk"] = ("None", "3d axis ratio c/a, where 0 < c/a < 1")
+column_metadata["b_over_a_bulge"] = ("None", "3d axis ratio b/a, where 0 < b/a < 1")
+column_metadata["c_over_a_bulge"] = ("None", "3d axis ratio c/a, where 0 < c/a < 1")
+
+column_metadata["beta_disk"] = (
+    "kpc",
+    "2d projected size of the semi-major axis of the disk",
+)
+column_metadata["alpha_disk"] = (
+    "kpc",
+    "2d projected size of the semi-minor axis of the disk",
+)
+column_metadata["ellipticity_disk"] = (
+    "None",
+    "2d projected size of the semi-major axis of the disk",
+)
+column_metadata["psi_disk"] = (
+    "None",
+    "Angular coordinate of projected semi-major axis of the disk, where 0<ψ<2π",
+)
+
+column_metadata["beta_bulge"] = (
+    "kpc",
+    "2d projected size of the semi-major axis of the bulge",
+)
+column_metadata["alpha_bulge"] = (
+    "kpc",
+    "2d projected size of the semi-minor axis of the bulge",
+)
+column_metadata["ellipticity_bulge"] = (
+    "None",
+    "2d projected size of the semi-major axis of the bulge",
+)
+column_metadata["psi_bulge"] = (
+    "None",
+    "Angular coordinate of projected semi-major axis of the bulge, where 0<ψ<2π",
+)
+
+column_metadata["e_beta_x_disk"] = (
+    "None",
+    "x-coord of unit-normalized semi-major axis of the disk",
+)
+column_metadata["e_beta_y_disk"] = (
+    "None",
+    "y-coord of unit-normalized semi-major axis of the disk",
+)
+column_metadata["e_alpha_x_disk"] = (
+    "None",
+    "x-coord of unit-normalized semi-minor axis of the disk",
+)
+column_metadata["e_alpha_y_disk"] = (
+    "None",
+    "y-coord of unit-normalized semi-minor axis of the disk",
+)
+
+column_metadata["e_beta_x_bulge"] = (
+    "None",
+    "x-coord of unit-normalized semi-major axis of the bulge",
+)
+column_metadata["e_beta_y_bulge"] = (
+    "None",
+    "y-coord of unit-normalized semi-major axis of the bulge",
+)
+column_metadata["e_alpha_x_bulge"] = (
+    "None",
+    "x-coord of unit-normalized semi-minor axis of the bulge",
+)
+column_metadata["e_alpha_y_bulge"] = (
+    "None",
+    "y-coord of unit-normalized semi-minor axis of the bulge",
+)
+
 
 HEADER_COMMENT = """
 This file contains diffsky galaxy data.

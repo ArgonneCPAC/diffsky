@@ -9,6 +9,7 @@ from collections import namedtuple
 
 from jax import jit as jjit
 from jax import numpy as jnp
+from jax import random as jran
 
 Ellipse2DParams = namedtuple(
     "Ellipse2DParams",
@@ -25,6 +26,23 @@ Ellipse2DParams = namedtuple(
         "Delta",
     ),
 )
+
+
+def mc_mu_phi(n, ran_key):
+    mu_key, phi_key = jran.split(ran_key, 2)
+    mu_ran = jran.uniform(mu_key, minval=-1, maxval=1, shape=(n,))
+    phi_ran = jran.uniform(phi_key, minval=0, maxval=2 * jnp.pi, shape=(n,))
+    return mu_ran, phi_ran
+
+
+def mc_ellipsoid_params(r50, b_over_a, c_over_a, ran_key):
+    """"""
+    mu_ran, phi_ran = mc_mu_phi(r50.size, ran_key)
+    a = r50
+    b = b_over_a * a
+    c = c_over_a * a
+    ellipse2d = compute_ellipse2d(a, b, c, mu_ran, phi_ran)
+    return ellipse2d
 
 
 @jjit

@@ -15,7 +15,7 @@ DEFAULT_DISK_PARAMS = DiskAxisRatioParams(ba_min=0.8, ba_max=1.0, c_min=0.2, c_m
 
 
 @partial(jjit, static_argnames=["n_samples"])
-def sample_disk_axis_ratios(ran_key, n_samples, disk_params):
+def sample_disk_axis_ratios(ran_key, n_samples, disk_params=DEFAULT_DISK_PARAMS):
     """Draw samples of axis ratios for disks"""
     ran_key_b, ran_key_c = jran.split(ran_key, 2)
 
