@@ -342,10 +342,12 @@ def append_metadata(fnout, sim_name, mock_version_name):
         cosmo_group.attrs["ns"] = sim_info.sim.cosmo.ns
 
         # Software version info
-        version_info_group = metadata_group.require_group("version_info")
-        version_info = get_dependency_versions()
-        for libname, version in version_info.items():
-            version_info_group.attrs[libname] = version
+        software_version_info_group = metadata_group.require_group(
+            "software_version_info"
+        )
+        software_version_info = get_dependency_versions()
+        for libname, version in software_version_info.items():
+            software_version_info_group.attrs[libname] = version
 
         # Column metadata
         for key, val in column_metadata.items():
@@ -358,7 +360,7 @@ def append_metadata(fnout, sim_name, mock_version_name):
 
 
 def get_dependency_versions():
-    version_info = dict()
+    software_version_info = dict()
     import diffmah  # noqa
     import diffstar  # noqa
     import dsps  # noqa
@@ -367,11 +369,11 @@ def get_dependency_versions():
 
     import diffsky  # noqa
 
-    version_info["diffmah"] = str(diffmah.__version__)
-    version_info["diffsky"] = str(diffsky.__version__)
-    version_info["diffstar"] = str(diffstar.__version__)
-    version_info["dsps"] = str(dsps.__version__)
-    version_info["jax"] = str(jax.__version__)
-    version_info["numpy"] = str(numpy.__version__)
+    software_version_info["diffmah"] = str(diffmah.__version__)
+    software_version_info["diffsky"] = str(diffsky.__version__)
+    software_version_info["diffstar"] = str(diffstar.__version__)
+    software_version_info["dsps"] = str(dsps.__version__)
+    software_version_info["jax"] = str(jax.__version__)
+    software_version_info["numpy"] = str(numpy.__version__)
 
-    return version_info
+    return software_version_info

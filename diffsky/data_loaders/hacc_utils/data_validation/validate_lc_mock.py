@@ -123,8 +123,10 @@ def check_metadata(fn_lc_mock):
             sim_name = hdf["metadata/nbody_info"].attrs["sim_name"]
             assert len(sim_name) > 0
 
-            # Check version_info metadata
-            avail_software_versions = list(hdf["metadata/version_info"].attrs.keys())
+            # Check software_version_info metadata
+            avail_software_versions = list(
+                hdf["metadata/software_version_info"].attrs.keys()
+            )
             assert set(avail_software_versions) == set(REQUIRED_SOFTWARE_VERSION_INFO)
 
         except:  # noqa
