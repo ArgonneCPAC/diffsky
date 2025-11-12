@@ -5,7 +5,9 @@ from collections import namedtuple
 
 import numpy as np
 
-CosmoParams = namedtuple("CosmoParams", ("Omega_m", "w0", "wa", "h", "Omega_b"))
+CosmoParams = namedtuple(
+    "CosmoParams", ("Omega_m", "w0", "wa", "h", "Omega_b", "s8", "ns")
+)
 SimSpecs = namedtuple("SimSpecs", ("rl", "np", "particle_mass"))
 
 _THIS_DRN = os.path.dirname(os.path.abspath(__file__))
@@ -18,31 +20,38 @@ class HACCSim(object):
     def __init__(self, sim_name):
         self._cosmotools_steps = None
         self._cosmo = None
+        self._scale_factors = None
+
         self._drn_simdata = os.path.join(_THIS_DRN, "data", sim_name)
 
         sim_info = SIM_INFO[sim_name]
         for key, val in zip(sim_info._fields, sim_info):
             setattr(self, key, val)
 
-    @classmethod
+    @property
     def cosmotools_steps(self):
         if self._cosmotools_steps is None:
             fn = os.path.join(self._drn_simdata, "cosmotools_steps.txt")
             self._cosmotools_steps = np.loadtxt(fn)
         return self._cosmotools_steps
 
-    @classmethod
+    @property
     def cosmo(self):
         if self._cosmo is None:
             fn = os.path.join(self._drn_simdata, "cosmo.txt")
             self._cosmo = CosmoParams(*np.loadtxt(fn))
         return self._cosmo
 
-    def step2z(self):
-        raise NotImplementedError()
+    @property
+    def scale_factors(self):
+        if self._scale_factors is None:
+            fn = os.path.join(self._drn_simdata, "cosmotools_steps_a.txt")
+            self._scale_factors = np.loadtxt(fn)
+        return self._scale_factors
 
-    def step2a(self):
-        raise NotImplementedError()
+    @property
+    def redshifts(self):
+        return 1.0 / self.scale_factors - 1.0
 
 
 simulations = dict()
