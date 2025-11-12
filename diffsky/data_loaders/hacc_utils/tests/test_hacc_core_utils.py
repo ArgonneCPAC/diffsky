@@ -1,7 +1,6 @@
 """ """
 
 import numpy as np
-import pytest
 from jax import random as jran
 
 from .. import hacc_core_utils as hcu

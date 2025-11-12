@@ -15,6 +15,7 @@ from jax import vmap
 
 from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
+from . import haccsims
 from . import load_hacc_cores as lhc
 from .defaults import DIFFMAH_MASS_COLNAME
 
@@ -72,8 +73,6 @@ LC_PATCH_DIFFSKY_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_PATCH_BNPAT = "lc_cores-{0}.{1}.hdf5"
 
 BNPAT_LC_CFG = "lc_patch_list_{0}_to_{1}.cfg"
-
-from . import haccsims
 
 
 @jjit
