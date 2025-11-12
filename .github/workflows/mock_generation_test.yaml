@@ -106,5 +106,5 @@ jobs:
       - name: validate mock
         shell: bash -l {0}
         run: |
-          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
 

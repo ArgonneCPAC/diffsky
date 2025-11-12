@@ -6,6 +6,7 @@ Untitled*.ipynb
 *.pdf
 *.npy
 *.png
+*.txt
 
 scripts/*.cfg
 scripts/*.cfg~
