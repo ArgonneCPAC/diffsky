@@ -1,11 +1,21 @@
 """ """
 
 import numpy as np
+import pytest
 
 from .. import haccsims
 
+try:
+    from haccytrees import Simulation as HACCSim
 
-def test_last_journey():
+    HAS_HACCYTREES = True
+except ImportError:
+    HAS_HACCYTREES = False
+
+NO_HACC_MSG = "Must have haccytrees installed to run this test"
+
+
+def test_last_journey_hard_coded():
     sim = haccsims.simulations["LastJourney"]
     assert sim.rl == 3400
     assert np.allclose(sim.particle_mass, 10**9.434, rtol=0.01)
@@ -27,6 +37,14 @@ def test_last_journey():
     assert np.allclose(1.0 / (1.0 + sim.redshifts), sim.scale_factors, rtol=1e-4)
 
     assert np.allclose(sim.redshifts[-1], 0.0, atol=1e-4)
+
+
+@pytest.mark.skipif(not HAS_HACCYTREES, reason=NO_HACC_MSG)
+def test_last_journey_agrees_with_haccytrees():
+    sim = HACCSim.simulations["LastJourney"]
+    sim2 = haccsims.simulations["LastJourney"]
+    for pname, pval in zip(sim2.cosmo._fields, sim2.cosmo):
+        assert np.allclose(pval, getattr(sim.cosmo, pname), rtol=1e-3)
 
 
 def test_available_sims():
