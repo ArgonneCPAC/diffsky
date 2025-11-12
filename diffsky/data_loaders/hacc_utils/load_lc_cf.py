@@ -13,25 +13,26 @@ from jax import random as jran
 
 from ...data_loaders import load_flat_hdf5
 from . import defaults as hacc_defaults
+from . import haccsims
+
+SIM_INFO_KEYS = ("sim", "cosmo_params", "z_sim", "t_sim", "lgt0", "fb", "num_subvols")
+DiffskySimInfo = namedtuple("DiffskySimInfo", SIM_INFO_KEYS)
 
 try:
-    from haccytrees import Simulation as HACCSim
+    import haccytrees  # noqa
 
     HAS_HACCYTREES = True
 except ImportError:
     HAS_HACCYTREES = False
 
-SIM_INFO_KEYS = ("sim", "cosmo_params", "z_sim", "t_sim", "lgt0", "fb", "num_subvols")
-DiffskySimInfo = namedtuple("DiffskySimInfo", SIM_INFO_KEYS)
-
 
 def get_diffsky_info_from_hacc_sim(sim_name):
-    sim = HACCSim.simulations[sim_name]
+    sim = haccsims.simulations[sim_name]
 
     cosmo_params = flat_wcdm.CosmoParams(
         *(sim.cosmo.Omega_m, sim.cosmo.w0, sim.cosmo.wa, sim.cosmo.h)
     )
-    z_sim = np.array(sim.step2z(np.array(sim.cosmotools_steps)))
+    z_sim = sim.redshifts
     t_sim = flat_wcdm.age_at_z(z_sim, *cosmo_params)
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)

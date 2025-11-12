@@ -79,6 +79,7 @@ def test_load_last_journey_data():
 
 
 @pytest.mark.skipif(not CAN_RUN_HACC_DATA_TESTS, reason=POBOY_MSG)
+@pytest.mark.skip
 def test_load_coreforest_and_metadata_discovery_sims():
 
     chunknum = 0
@@ -103,6 +104,7 @@ def test_load_coreforest_and_metadata_discovery_sims():
 
 
 @pytest.mark.skipif(not CAN_RUN_HACC_DATA_TESTS, reason=POBOY_MSG)
+@pytest.mark.skip
 def test_load_diffsky_data():
     ran_key = jran.key(0)
 

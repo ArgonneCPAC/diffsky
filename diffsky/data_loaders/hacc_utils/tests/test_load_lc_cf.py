@@ -9,6 +9,7 @@ from .. import load_lc_cf
 
 DRN_CF_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LC_CF_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
+DRN_LC_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-6"
 
 HAS_HACCY_TREES = load_lc_cf.HAS_HACCYTREES
 NO_HACCY_TREES_MSG = "Must have haccytrees installed to run this test"
@@ -33,5 +34,7 @@ def test_get_diffsky_info_from_hacc_sim():
 def test_collect_lc_diffsky_data():
     bn_list = ["lc_cores-131.0.diffsky_data.hdf5", "lc_cores-213.0.diffsky_data.hdf5"]
     fn_list = [os.path.join(DRN_LC_CF_LJ_POBOY, bn) for bn in bn_list]
-    lc_data, diffsky_data = load_lc_cf.collect_lc_diffsky_data(fn_list)
+    lc_data, diffsky_data = load_lc_cf.collect_lc_diffsky_data(
+        fn_list, drn_lc_data=DRN_LC_LJ_POBOY
+    )
     assert len(lc_data["redshift_true"]) == len(diffsky_data["early_index"])
