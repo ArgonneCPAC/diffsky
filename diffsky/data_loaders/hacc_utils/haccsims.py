@@ -12,7 +12,11 @@ SimSpecs = namedtuple("SimSpecs", ("rl", "np", "particle_mass"))
 
 _THIS_DRN = os.path.dirname(os.path.abspath(__file__))
 
-SIM_INFO = dict(LastJourney=SimSpecs(3400, 10752, 2717395894.4894614))
+SIM_INFO = dict(
+    LastJourney=SimSpecs(3400, 10752, 2717395894.4894614),
+    DiscoveryLCDM=SimSpecs(1019.55, 6720, 297466442.6322133),
+    DiscoveryW0WA=SimSpecs(969.9, 6720, 286943385.1781562),
+)
 
 
 class HACCSim(object):

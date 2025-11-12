@@ -41,8 +41,9 @@ def test_last_journey_hard_coded():
 
 @pytest.mark.skipif(not HAS_HACCYTREES, reason=NO_HACC_MSG)
 def test_last_journey_agrees_with_haccytrees():
-    sim = HACCSim.simulations["LastJourney"]
-    sim2 = haccsims.simulations["LastJourney"]
+    sim_name = "LastJourney"
+    sim = HACCSim.simulations[sim_name]
+    sim2 = haccsims.simulations[sim_name]
     for pname, pval in zip(sim2.cosmo._fields, sim2.cosmo):
         assert np.allclose(pval, getattr(sim.cosmo, pname), rtol=1e-3)
 
@@ -54,5 +55,25 @@ def test_last_journey_agrees_with_haccytrees():
     assert np.allclose(haccytrees_redshifts, sim2.redshifts, rtol=1e-4)
 
 
+@pytest.mark.skipif(not HAS_HACCYTREES, reason=NO_HACC_MSG)
+def test_discovery_sims_agree_with_haccytrees():
+    for sim_name in ("DiscoveryLCDM", "DiscoveryW0WA"):
+        sim = HACCSim.simulations[sim_name]
+        sim2 = haccsims.simulations[sim_name]
+        for pname, pval in zip(sim2.cosmo._fields, sim2.cosmo):
+            assert np.allclose(pval, getattr(sim.cosmo, pname), rtol=1e-3)
+
+        assert np.allclose(sim.cosmotools_steps, sim2.cosmotools_steps)
+        haccytrees_scale_factors = sim.step2a(np.array(sim.cosmotools_steps))
+        assert np.allclose(haccytrees_scale_factors, sim2.scale_factors, rtol=1e-4)
+
+        haccytrees_redshifts = sim.step2z(np.array(sim.cosmotools_steps))
+        assert np.allclose(haccytrees_redshifts, sim2.redshifts, rtol=1e-4)
+
+
 def test_available_sims():
-    assert tuple(haccsims.simulations.keys()) == ("LastJourney",)
+    assert tuple(haccsims.simulations.keys()) == (
+        "LastJourney",
+        "DiscoveryLCDM",
+        "DiscoveryW0WA",
+    )
