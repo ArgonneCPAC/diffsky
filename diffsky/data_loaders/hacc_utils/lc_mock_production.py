@@ -370,10 +370,10 @@ def add_morphology_quantities_to_diffsky_data(
 
     morph_key, disk_size_key, bulge_size_key = jran.split(morph_key, 3)
     r50_disk, zscore_disk = dbs.mc_r50_disk_size(
-        10 ** diffsky_data["logsm_obs"], diffsky_data["redshift_true"], disk_size_key
+        10 ** diffsky_data["logsm_obs"], lc_data["redshift_true"], disk_size_key
     )
     r50_bulge, zscore_bulge = dbs.mc_r50_bulge_size(
-        10 ** diffsky_data["logsm_obs"], diffsky_data["redshift_true"], bulge_size_key
+        10 ** diffsky_data["logsm_obs"], lc_data["redshift_true"], bulge_size_key
     )
 
     diffsky_data["r50_disk"] = r50_disk
