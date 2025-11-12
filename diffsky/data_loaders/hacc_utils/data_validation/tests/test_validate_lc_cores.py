@@ -7,14 +7,7 @@ import pytest
 
 from .. import validate_lc_cores as vlcc
 
-DRN_LC_CORES_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc_cores"
-
-try:
-    from haccytrees import Simulation as HACCSim  # noqa
-
-    HAS_HACCYTREES = True
-except ImportError:
-    HAS_HACCYTREES = False
+DRN_LC_CORES_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-6"
 
 
 try:
@@ -22,8 +15,8 @@ try:
     CAN_RUN_LJ_DATA_TESTS = True
 except AssertionError:
     CAN_RUN_LJ_DATA_TESTS = False
-CAN_RUN_LJ_DATA_TESTS = CAN_RUN_LJ_DATA_TESTS & HAS_HACCYTREES
-POBOY_MSG = "This test only runs on poboy machine with haccytrees installed"
+CAN_RUN_LJ_DATA_TESTS = CAN_RUN_LJ_DATA_TESTS
+POBOY_MSG = "This test only runs on poboy machine"
 
 
 @pytest.mark.skipif(not CAN_RUN_LJ_DATA_TESTS, reason=POBOY_MSG)

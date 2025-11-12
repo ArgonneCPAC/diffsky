@@ -3,20 +3,11 @@
 import os
 
 import numpy as np
-import pytest
 from dsps.cosmology import flat_wcdm
 from jax import random as jran
 
+from .. import haccsims
 from .. import lightcone_utils as hlu
-
-try:
-    from haccytrees import Simulation as HACCSim
-
-    HAS_HACCYTREES = True
-except ImportError:
-    HAS_HACCYTREES = False
-NO_HACC_MSG = "Must have haccytrees installed to run this test"
-
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 DRN_TESTING_DATA = os.path.join(_THIS_DRNAME, "testing_data")
@@ -124,7 +115,6 @@ def test_theta_phi_range():
         assert np.all(phi < 2 * np.pi)
 
 
-@pytest.mark.skipif(not HAS_HACCYTREES, reason=NO_HACC_MSG)
 def test_compute_redshift_agrees_with_haccytrees():
     """Small dataset taken from LastJourney/lc_cores-266.0.hdf5"""
     # haccytrees coords are in mpc/h
@@ -136,7 +126,7 @@ def test_compute_redshift_agrees_with_haccytrees():
         os.path.join(DRN_TESTING_DATA, "redshift_haccytrees_tdata.txt")
     )
 
-    sim = HACCSim.simulations["LastJourney"]
+    sim = haccsims.simulations["LastJourney"]
     cosmo_params = flat_wcdm.CosmoParams(
         *(sim.cosmo.Omega_m, sim.cosmo.w0, sim.cosmo.wa, sim.cosmo.h)
     )

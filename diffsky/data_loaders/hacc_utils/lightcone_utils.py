@@ -15,6 +15,7 @@ from jax import vmap
 
 from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
+from . import haccsims
 from . import load_hacc_cores as lhc
 from .defaults import DIFFMAH_MASS_COLNAME
 
@@ -72,13 +73,6 @@ LC_PATCH_DIFFSKY_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_PATCH_BNPAT = "lc_cores-{0}.{1}.hdf5"
 
 BNPAT_LC_CFG = "lc_patch_list_{0}_to_{1}.cfg"
-
-try:
-    from haccytrees import Simulation as HACCSim
-
-    HAS_HACCYTREES = True
-except ImportError:
-    HAS_HACCYTREES = False
 
 
 @jjit
@@ -462,7 +456,7 @@ def get_timesteps_in_zrange(sim_name, z_min, z_max, max_timestep=MAX_LJ_LC_TIMES
     _res = hcu.get_timestep_range_from_z_range(sim_name, z_min, z_max)
     timestep_min, timestep_max = _res[2:]
     timestep_max = min(timestep_max, max_timestep)
-    sim = HACCSim.simulations[sim_name]
+    sim = haccsims.simulations[sim_name]
     all_timesteps = np.array(sim.cosmotools_steps)
     msk = (all_timesteps >= timestep_min) & (all_timesteps <= timestep_max)
     timesteps = all_timesteps[msk]
@@ -555,9 +549,9 @@ def make_cfg_file(i, j, drn=""):
 
 def get_a_range_of_lc_cores_file(bname_lc_cores, sim_name):
     """Get range of scale factor spanned by data in bname_lc_cores"""
-    sim = HACCSim.simulations[sim_name]
+    sim = haccsims.simulations[sim_name]
     steps = np.array(sim.cosmotools_steps)
-    aarr = sim.step2a(steps)
+    aarr = sim.scale_factors
 
     stepnum, lc_patch = [int(s) for s in bname_lc_cores.split("-")[1].split(".")[:-1]]
     indx_step = np.searchsorted(steps, stepnum)

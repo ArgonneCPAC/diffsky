@@ -1,21 +1,12 @@
 """ """
 
 import numpy as np
-import pytest
 from jax import random as jran
 
 from .. import hacc_core_utils as hcu
-
-try:
-    from haccytrees import Simulation as HACCSim
-
-    HAS_HACCYTREES = True
-except ImportError:
-    HAS_HACCYTREES = False
-NO_HACC_MSG = "Must have haccytrees installed to run this test"
+from .. import haccsims
 
 
-@pytest.mark.skipif(not HAS_HACCYTREES, reason=NO_HACC_MSG)
 def test_get_diffstar_cosmo_quantities():
     sim_name = "LastJourney"
     fb, lgt0 = hcu.get_diffstar_cosmo_quantities(sim_name)
@@ -23,12 +14,10 @@ def test_get_diffstar_cosmo_quantities():
     assert 1.1 < lgt0 < 1.2
 
 
-@pytest.mark.skipif(not HAS_HACCYTREES, reason=NO_HACC_MSG)
 def test_get_timestep_range_from_z_range():
     sim_name = "LastJourney"
-    sim = HACCSim.simulations[sim_name]
-    timesteps = np.array(sim.cosmotools_steps)
-    z_arr = sim.step2z(timesteps)
+    sim = haccsims.simulations[sim_name]
+    z_arr = sim.redshifts
 
     Z_MIN, Z_MAX = z_arr.min() + 0.02, z_arr.max() - 0.02
 
@@ -59,12 +48,11 @@ def test_get_timestep_range_from_z_range():
             assert z_max > z_arr[idx_step_min + 1]
 
 
-@pytest.mark.skipif(not HAS_HACCYTREES, reason=NO_HACC_MSG)
 def test_get_timestep_range_from_z_range_edge_cases():
     sim_name = "LastJourney"
-    sim = HACCSim.simulations[sim_name]
+    sim = haccsims.simulations[sim_name]
     timesteps = np.array(sim.cosmotools_steps)
-    z_arr = sim.step2z(timesteps)
+    z_arr = sim.redshifts
 
     # z_min = 0.0
     z_min, z_max = 0.0, 3.0

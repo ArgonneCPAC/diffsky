@@ -26,8 +26,9 @@ try:
 except ImportError:
     MPI = COMM = None
 
+from . import haccsims
+
 try:
-    from haccytrees import Simulation as HACCSim
     from haccytrees import coretrees
 
     HAS_HACCYTREES = True
@@ -109,7 +110,7 @@ def load_diffsky_data_per_rank(
 
     diffsky_data["tarr"] = comm.bcast(diffsky_data["tarr"], root=0)
     diffsky_data["zarr"] = comm.bcast(diffsky_data["zarr"], root=0)
-    diffsky_data["sim"] = HACCSim.simulations[sim_name]
+    diffsky_data["sim"] = haccsims.simulations[sim_name]
     diffsky_data["subcat"] = hcu.scatter_subcat(diffsky_data["subcat"], comm)
 
     return diffsky_data
@@ -263,8 +264,8 @@ def load_diffsky_data(
 def load_coreforest_and_metadata(
     fn_cores, sim_name, chunknum, nchunks, include_fields=()
 ):
-    sim = HACCSim.simulations[sim_name]
-    zarr = sim.step2z(np.array(sim.cosmotools_steps))
+    sim = haccsims.simulations[sim_name]
+    zarr = sim.redshifts
 
     forest_matrices = coretrees.corematrix_reader(
         fn_cores,
