@@ -46,6 +46,13 @@ def test_last_journey_agrees_with_haccytrees():
     for pname, pval in zip(sim2.cosmo._fields, sim2.cosmo):
         assert np.allclose(pval, getattr(sim.cosmo, pname), rtol=1e-3)
 
+    assert np.allclose(sim.cosmotools_steps, sim2.cosmotools_steps)
+    haccytrees_scale_factors = sim.step2a(np.array(sim.cosmotools_steps))
+    assert np.allclose(haccytrees_scale_factors, sim2.scale_factors, rtol=1e-4)
+
+    haccytrees_redshifts = sim.step2z(np.array(sim.cosmotools_steps))
+    assert np.allclose(haccytrees_redshifts, sim2.redshifts, rtol=1e-4)
+
 
 def test_available_sims():
     assert tuple(haccsims.simulations.keys()) == ("LastJourney",)
