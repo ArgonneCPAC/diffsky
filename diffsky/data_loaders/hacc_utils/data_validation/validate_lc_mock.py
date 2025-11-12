@@ -7,8 +7,15 @@ import numpy as np
 
 from .. import load_flat_hdf5
 
-REQUIRED_METADATA_ATTRS = ("creation_date", "header", "mock_version_name")
-
+REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
+REQUIRED_SOFTWARE_VERSION_INFO = (
+    "diffmah",
+    "diffsky",
+    "diffstar",
+    "dsps",
+    "jax",
+    "numpy",
+)
 BNPAT_LC_MOCK = "data-{0}.{1}.diffsky_gals.hdf5"
 
 HLINE = "----------"
@@ -93,8 +100,8 @@ def check_metadata(fn_lc_mock):
             assert len(creation_date) > 0
             mock_version_name = hdf["metadata"].attrs["mock_version_name"]
             assert len(mock_version_name.split("_")) > 1
-            header = hdf["metadata"].attrs["header"]
-            assert "This file contains diffsky" in header
+            README = hdf["metadata"].attrs["README"]
+            assert "This file contains diffsky" in README
 
             # Check cosmology metadata
             Om0 = hdf["metadata/cosmology"].attrs["Om0"]
@@ -115,6 +122,10 @@ def check_metadata(fn_lc_mock):
             assert particle_mass > 0
             sim_name = hdf["metadata/nbody_info"].attrs["sim_name"]
             assert len(sim_name) > 0
+
+            # Check version_info metadata
+            avail_software_versions = list(hdf["metadata/version_info"].attrs.keys())
+            assert set(avail_software_versions) == set(REQUIRED_SOFTWARE_VERSION_INFO)
 
         except:  # noqa
             s = "metadata is incorrect"

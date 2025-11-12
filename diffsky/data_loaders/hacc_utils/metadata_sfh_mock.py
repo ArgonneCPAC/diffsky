@@ -318,7 +318,7 @@ def append_metadata(fnout, sim_name, mock_version_name):
 
         metadata_group.attrs["creation_date"] = str(datetime.now())
         metadata_group.attrs["mock_version_name"] = mock_version_name
-        metadata_group.attrs["header"] = HEADER_COMMENT
+        metadata_group.attrs["README"] = HEADER_COMMENT
 
         sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
 
