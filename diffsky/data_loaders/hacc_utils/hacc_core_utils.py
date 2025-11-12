@@ -12,12 +12,7 @@ try:
 except ImportError:
     MPI = COMM = None
 
-try:
-    from haccytrees import Simulation as HACCSim
-
-    HAS_HACCYTREES = True
-except ImportError:
-    HAS_HACCYTREES = False
+from . import haccsims
 
 
 def scatter_subcat(subcat, comm):
@@ -39,7 +34,7 @@ def scatter_mah_params(mah_params, comm):
 
 
 def get_diffstar_cosmo_quantities(sim_name):
-    sim = HACCSim.simulations[sim_name]
+    sim = haccsims.simulations[sim_name]
     fb = sim.cosmo.Omega_b / sim.cosmo.Omega_m
 
     cosmo_dsps = flat_wcdm.CosmoParams(
@@ -76,13 +71,13 @@ def get_timestep_range_from_z_range(sim_name, z_min, z_max):
     timestep_max = timesteps[idx_step_max]
 
     """
-    sim = HACCSim.simulations[sim_name]
+    sim = haccsims.simulations[sim_name]
     timesteps = np.array(sim.cosmotools_steps)
-    z_arr = sim.step2z(timesteps)
+    z_arr = sim.redshifts
 
     a_max = 1 / (1 + z_min)
     a_min = 1 / (1 + z_max)
-    a_arr = sim.step2a(timesteps)
+    a_arr = sim.scale_factors
 
     if a_min < a_arr[0]:
         idx_step_min = 0
