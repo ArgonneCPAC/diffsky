@@ -32,7 +32,7 @@ class HACCSim(object):
     def cosmotools_steps(self):
         if self._cosmotools_steps is None:
             fn = os.path.join(self._drn_simdata, "cosmotools_steps.txt")
-            self._cosmotools_steps = np.loadtxt(fn)
+            self._cosmotools_steps = np.loadtxt(fn).astype(int)
         return self._cosmotools_steps
 
     @property
