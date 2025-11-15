@@ -298,45 +298,45 @@ if __name__ == "__main__":
             tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
         )
 
-        # n_batches = n_gals // batch_size
-        # print(f"{n_gals} total galaxies")
-        # print(f"Batch size = {batch_size}")
-        # print(f"Looping over {n_batches} batches of data\n")
-        # # Loop over batches of data
-        # batch_collector = []
-        # for istart in range(0, n_gals, batch_size):
-        #     iend = min(istart + batch_size, n_gals)
-        #     ran_key, batch_key = jran.split(ran_key)
+        n_batches = n_gals // batch_size
+        print(f"{n_gals} total galaxies")
+        print(f"Batch size = {batch_size}")
+        print(f"Looping over {n_batches} batches of data\n")
+        # Loop over batches of data
+        batch_collector = []
+        for istart in range(0, n_gals, batch_size):
+            iend = min(istart + batch_size, n_gals)
+            ran_key, batch_key = jran.split(ran_key)
 
-        #     lc_data_batch = dict()
-        #     for key in lc_data.keys():
-        #         lc_data_batch[key] = lc_data[key][istart:iend]
+            lc_data_batch = dict()
+            for key in lc_data.keys():
+                lc_data_batch[key] = lc_data[key][istart:iend]
 
-        #     diffsky_data_batch = dict()
-        #     for key in diffsky_data.keys():
-        #         diffsky_data_batch[key] = diffsky_data[key][istart:iend]
+            diffsky_data_batch = dict()
+            for key in diffsky_data.keys():
+                diffsky_data_batch[key] = diffsky_data[key][istart:iend]
 
-        #     patch_key, sed_key = jran.split(patch_key, 2)
-        #     args = (
-        #         sim_info,
-        #         lc_data_batch,
-        #         diffsky_data_batch,
-        #         ssp_data,
-        #         param_collection,
-        #         precomputed_ssp_mag_table,
-        #         z_phot_table,
-        #         wave_eff_table,
-        #         sed_key,
-        #     )
-        #     phot_info_batch = lcmp.add_dbk_sed_quantities_to_mock(*args)[0]
-        #     batch_collector.append(phot_info_batch)
+            patch_key, sed_key = jran.split(patch_key, 2)
+            args = (
+                sim_info,
+                lc_data_batch,
+                diffsky_data_batch,
+                ssp_data,
+                param_collection,
+                precomputed_ssp_mag_table,
+                z_phot_table,
+                wave_eff_table,
+                sed_key,
+            )
+            phot_info_batch = lcmp.add_dbk_sed_quantities_to_mock(*args)[0]
+            batch_collector.append(phot_info_batch)
 
-        # phot_info = dict()
-        # for key in phot_info_batch.keys():
-        #     phot_info[key] = np.concatenate([x[key] for x in batch_collector])
-        # del batch_collector
-        # gc.collect()
-        # jax.clear_caches()
+        phot_info = dict()
+        for key in phot_info_batch.keys():
+            phot_info[key] = np.concatenate([x[key] for x in batch_collector])
+        del batch_collector
+        gc.collect()
+        jax.clear_caches()
 
         # patch_key, morph_key = jran.split(patch_key, 2)
         # diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
