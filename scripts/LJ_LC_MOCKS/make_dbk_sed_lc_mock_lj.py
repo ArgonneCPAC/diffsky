@@ -338,26 +338,26 @@ if __name__ == "__main__":
         gc.collect()
         jax.clear_caches()
 
-        # patch_key, morph_key = jran.split(patch_key, 2)
-        # diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
-        #     phot_info, lc_data, diffsky_data, morph_key
-        # )
+        patch_key, morph_key = jran.split(patch_key, 2)
+        diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
+            phot_info, lc_data, diffsky_data, morph_key
+        )
 
-        # diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
-        #     lc_data, diffsky_data
-        # )
+        diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
+            lc_data, diffsky_data
+        )
 
-        # patch_key, nfw_key = jran.split(patch_key, 2)
-        # lc_data, diffsky_data = lcmp.reposition_satellites(
-        #     sim_info, lc_data, diffsky_data, nfw_key
-        # )
+        patch_key, nfw_key = jran.split(patch_key, 2)
+        lc_data, diffsky_data = lcmp.reposition_satellites(
+            sim_info, lc_data, diffsky_data, nfw_key
+        )
 
-        # bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
-        # fn_out = os.path.join(drn_out, bn_out)
-        # lcmp.write_lc_dbk_sed_mock_to_disk(
-        #     fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
-        # )
-        # metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
+        bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
+        fn_out = os.path.join(drn_out, bn_out)
+        lcmp.write_lc_dbk_sed_mock_to_disk(
+            fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
+        )
+        metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
 
         del lc_data
         del diffsky_data
