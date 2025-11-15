@@ -7,10 +7,6 @@ from glob import glob
 import numpy as np
 
 from diffsky.data_loaders.hacc_utils import hacc_core_utils as hcu
-from diffsky.data_loaders.hacc_utils.lightcone_utils import (
-    check_lc_cores_diffsky_data,
-    write_lc_cores_diffsky_data_report_to_disk,
-)
 
 BN_GLOBPAT_LC_CORES = "lc_cores-{0}.{1}.hdf5"
 BN_GLOBPAT_LC_CF = "lc_cores-{0}.{1}.diffsky_data.hdf5"
