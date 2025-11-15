@@ -330,6 +330,7 @@ if __name__ == "__main__":
     end_script = time()
     n_patches = len(lc_patch_list)
     runtime = (end_script - start_script) / 60.0
+    comm.Barrier()
     msg = f"Total runtime for {n_patches} patches = {runtime:.1f} minutes"
     if rank == 0:
         print(msg)
