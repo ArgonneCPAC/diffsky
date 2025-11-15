@@ -352,7 +352,7 @@ def add_dbk_sed_quantities_to_mock(
 def add_morphology_quantities_to_diffsky_data(
     phot_info, lc_data, diffsky_data, morph_key
 ):
-    for pname in dbk.DEFAULT_FBULGE_PARAMS:
+    for pname in dbk.DEFAULT_FBULGE_PARAMS._fields:
         diffsky_data[pname] = phot_info[pname]
 
     diffsky_data["bulge_to_total"] = interp_vmap(
