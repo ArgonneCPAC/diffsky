@@ -300,7 +300,7 @@ if __name__ == "__main__":
 
         n_batches = n_gals // batch_size
         print(f"{n_gals} total galaxies")
-        print(f"Batch size = {batch_size}")
+        print(f"Batch size = {batch_size:_}")
         print(f"Looping over {n_batches} batches of data\n")
         # Loop over batches of data
         phot_batches = []
