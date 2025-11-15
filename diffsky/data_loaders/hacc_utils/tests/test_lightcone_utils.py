@@ -163,18 +163,10 @@ def test_get_lsst_ddf_patches():
 
 
 def test_estimate_nhalos_sky_patch():
-    stepnum = 200
-    lgmp_min = 10.0
-
-    for stepnum in (200, 250, 300, 350, 400):
-        nhalos1 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum, lgmp_min)
+    stepnums = (150, 200, 250, 300, 350, 400)
+    for stepnum, stepnum2 in zip(stepnums[:-1], stepnums[1:]):
+        nhalos1 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum)
         assert nhalos1 > 0
 
-        nhalos2 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum, lgmp_min - 0.1)
-        assert nhalos2 > nhalos1
-
-        nhalos2 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum, lgmp_min + 0.1)
-        assert nhalos2 < nhalos1
-
-        nhalos2 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum + 10, lgmp_min)
-        assert nhalos2 < nhalos1
+        nhalos2 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum2)
+        assert nhalos2 < nhalos1, stepnum

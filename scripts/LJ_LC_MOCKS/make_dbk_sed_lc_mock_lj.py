@@ -236,7 +236,7 @@ if __name__ == "__main__":
         for fn in fn_lc_list:
             bn = os.path.basename(fn)
             stepnum, lc_patch = [int(x) for x in bn.split("-")[1].split(".")[:2]]
-            fn_size = hlu._estimate_nhalos_sky_patch(sim_name, stepnum, 10)
+            fn_size = hlu._estimate_nhalos_sky_patch(sim_name, stepnum)
             fn_sizes.append(fn_size)
     rank_assignments, __ = mpi_utils.distribute_files_by_size(fn_sizes, nranks)
     fn_lc_list_for_rank = [fn_lc_list[i] for i in rank_assignments[rank]]

@@ -650,23 +650,14 @@ def get_lsst_ddf_patches(fn, lsst_ddf_fields=LSST_DDF_FIELDS, rad_deg=LSST_DDF_R
     return lsst_ddf_patches
 
 
-def _estimate_nhalos_sky_patch(sim_name, stepnum, lgmp_min):
+def _estimate_nhalos_sky_patch(sim_name, stepnum):
     diffsky_info = get_diffsky_info_from_hacc_sim(sim_name)
     dstep = np.abs(diffsky_info.sim.cosmotools_steps - stepnum)
     indx_step = np.argmin(dstep)
     z_obs = diffsky_info.z_sim[indx_step]
 
-    fsky = read_hacc_lc_patch_decomposition(sim_name)[1].mean()
-
     z_grid = np.linspace(0.001, 10.0, 100)
-    vol_shell_grid_mpc = fsky * spherical_shell_comoving_volume(
-        z_grid, DEFAULT_COSMOLOGY
-    )
+    vol_shell_grid_mpc = spherical_shell_comoving_volume(z_grid, DEFAULT_COSMOLOGY)
 
-    # At each grid point, compute <Nhalos> for the shell volume
-    mean_nhalos_grid = mc_hosts._compute_nhalos_tot(
-        mc_hosts.DEFAULT_HMF_PARAMS, lgmp_min, z_grid, vol_shell_grid_mpc
-    )
-
-    nhalos = np.interp(z_obs, z_grid, mean_nhalos_grid)
-    return nhalos
+    vol_at_z = np.interp(z_obs, z_grid, vol_shell_grid_mpc)
+    return vol_at_z
