@@ -8,16 +8,19 @@ from collections import namedtuple
 
 import numpy as np
 from diffmah import logmh_at_t_obs
+from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import age_at_z0
 from dsps.metallicity import umzr
 from dsps.sfh import diffburst
+from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
 from ..burstpop import freqburst_mono
+from ..dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
@@ -43,10 +46,10 @@ DBK_PHOT_INFO_KEYS = (
     "obs_mags_knots",
     *dbk.FbulgeParams._fields,
     *mcdb.DiskBulgeHistory._fields[1:],
-    "diffstar_params",
+    *DEFAULT_DIFFSTAR_PARAMS._fields,
     "mc_sfh_type",
-    "burst_params",
-    "dust_params",
+    *DEFAULT_BURST_PARAMS._fields,
+    *DEFAULT_DUST_PARAMS._fields,
     "ssp_weights",
     "uran_av",
     "uran_delta",
@@ -487,10 +490,10 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
         obs_mags_bulge=obs_mags_bulge,
         obs_mags_disk=obs_mags_disk,
         obs_mags_knots=obs_mags_knots,
-        diffstar_params=diffstar_params,
+        **diffstar_params._asdict(),
         mc_sfh_type=mc_sfh_type,
-        burst_params=burst_params,
-        dust_params=dust_params,
+        **burst_params._asdict(),
+        **dust_params._asdict(),
         ssp_weights=ssp_weights,
         uran_av=uran_av,
         uran_delta=uran_delta,
@@ -867,10 +870,10 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         sfh_bulge=disk_bulge_history.sfh_bulge,
         smh_bulge=disk_bulge_history.smh_bulge,
         bulge_to_total_history=disk_bulge_history.bulge_to_total_history,
-        diffstar_params=diffstar_params,
+        **diffstar_params._asdict(),
         mc_sfh_type=mc_sfh_type,
-        burst_params=burst_params,
-        dust_params=dust_params,
+        **burst_params._asdict(),
+        **dust_params._asdict(),
         ssp_weights=ssp_weights,
         uran_av=uran_av,
         uran_delta=uran_delta,
