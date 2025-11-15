@@ -160,3 +160,21 @@ def test_get_lsst_ddf_patches():
     assert len(ddf_patches) == len(hlu.LSST_DDF_FIELDS)
     for field_name, lc_patches in ddf_patches.items():
         assert len(lc_patches) > 0
+
+
+def test_estimate_nhalos_sky_patch():
+    stepnum = 200
+    lgmp_min = 10.0
+
+    for stepnum in (200, 250, 300, 350, 400):
+        nhalos1 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum, lgmp_min)
+        assert nhalos1 > 0
+
+        nhalos2 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum, lgmp_min - 0.1)
+        assert nhalos2 > nhalos1
+
+        nhalos2 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum, lgmp_min + 0.1)
+        assert nhalos2 < nhalos1
+
+        nhalos2 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum + 10, lgmp_min)
+        assert nhalos2 < nhalos1
