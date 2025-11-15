@@ -303,7 +303,7 @@ if __name__ == "__main__":
         print(f"Batch size = {batch_size}")
         print(f"Looping over {n_batches} batches of data\n")
         # Loop over batches of data
-        batch_collector = []
+        phot_batches = []
         for istart in range(0, n_gals, batch_size):
             iend = min(istart + batch_size, n_gals)
             ran_key, batch_key = jran.split(ran_key)
@@ -328,13 +328,12 @@ if __name__ == "__main__":
                 wave_eff_table,
                 sed_key,
             )
-            phot_info_batch = lcmp.add_dbk_sed_quantities_to_mock(*args)[0]
-            batch_collector.append(phot_info_batch)
+            _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
+            phot_info_batch, lc_data_batch, diffsky_data_batch = _res
+            phot_batches.append(_res)
 
-        phot_info = dict()
-        for key in phot_info_batch.keys():
-            phot_info[key] = np.concatenate([x[key] for x in batch_collector])
-        del batch_collector
+        _cats = lcmp.concatenate_batched_phot_data(phot_batches)
+        phot_info, lc_data, diffsky_data = _cats
         gc.collect()
         jax.clear_caches()
 

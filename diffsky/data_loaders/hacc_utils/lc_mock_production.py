@@ -482,3 +482,9 @@ def get_patch_info_from_mock_basename(bn):
     stepnum = int(stepnum)
     patchnum = int(patchnum)
     return stepnum, patchnum
+
+
+def concatenate_batched_phot_data(phot_batches):
+    for batch in phot_batches:
+        phot_info_batch, lc_data_batch, diffsky_data_batch = batch
+    raise NotImplementedError()
