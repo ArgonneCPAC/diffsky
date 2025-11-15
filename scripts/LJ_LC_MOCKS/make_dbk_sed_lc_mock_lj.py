@@ -233,10 +233,8 @@ if __name__ == "__main__":
     rank_assignments, __ = mpi_utils.distribute_files_by_size(fn_sizes, nranks)
     fn_lc_list_for_rank = [fn_lc_list[i] for i in rank_assignments[rank]]
 
-    if rank in (0, 1):
-        print(f"For rank = {rank}:")
-        print(fn_lc_list_for_rank)
-    comm.Barrier()
+    print(f"For rank = {rank}:")
+    print(fn_lc_list_for_rank)
 
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
