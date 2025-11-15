@@ -73,6 +73,10 @@ if __name__ == "__main__":
     parser.add_argument("mock_nickname", help="Nickname of the mock")
 
     parser.add_argument(
+        "-batch_size", help="Size of photometry batches", type=int, default=100_000
+    )
+
+    parser.add_argument(
         "-roman_hltds",
         help="Use all patches overlapping with Roman HLTDS. Overrides istart and iend",
         default=0,
@@ -133,6 +137,7 @@ if __name__ == "__main__":
     synthetic_cores = args.synthetic_cores
     lgmp_min = args.lgmp_min
     lgmp_max = args.lgmp_max
+    batch_size = args.batch_size
 
     mock_version_name = get_mock_version_name(mock_nickname)
 
@@ -292,40 +297,52 @@ if __name__ == "__main__":
             tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
         )
 
-        patch_key, sed_key = jran.split(patch_key, 2)
-        args = (
-            sim_info,
-            lc_data,
-            diffsky_data,
-            ssp_data,
-            param_collection,
-            precomputed_ssp_mag_table,
-            z_phot_table,
-            wave_eff_table,
-            sed_key,
-        )
-        phot_info, lc_data, diffsky_data = lcmp.add_dbk_sed_quantities_to_mock(*args)
+        for istart in range(0, n_gals, batch_size):
+            iend = min(istart + batch_size, n_gals)
+            ran_key, batch_key = jran.split(ran_key)
 
-        patch_key, morph_key = jran.split(patch_key, 2)
-        diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
-            phot_info, lc_data, diffsky_data, morph_key
-        )
+            lc_data_batch = dict()
+            for key in lc_data.keys():
+                lc_data_batch[key] = lc_data[key][istart:iend]
 
-        diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
-            lc_data, diffsky_data
-        )
+            diffsky_data_batch = dict()
+            for key in lc_data.keys():
+                diffsky_data_batch[key] = diffsky_data[key][istart:iend]
 
-        patch_key, nfw_key = jran.split(patch_key, 2)
-        lc_data, diffsky_data = lcmp.reposition_satellites(
-            sim_info, lc_data, diffsky_data, nfw_key
-        )
+        # patch_key, sed_key = jran.split(patch_key, 2)
+        # args = (
+        #     sim_info,
+        #     lc_data,
+        #     diffsky_data,
+        #     ssp_data,
+        #     param_collection,
+        #     precomputed_ssp_mag_table,
+        #     z_phot_table,
+        #     wave_eff_table,
+        #     sed_key,
+        # )
+        # phot_info, lc_data, diffsky_data = lcmp.add_dbk_sed_quantities_to_mock(*args)
 
-        bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
-        fn_out = os.path.join(drn_out, bn_out)
-        lcmp.write_lc_dbk_sed_mock_to_disk(
-            fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
-        )
-        metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
+        # patch_key, morph_key = jran.split(patch_key, 2)
+        # diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
+        #     phot_info, lc_data, diffsky_data, morph_key
+        # )
+
+        # diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
+        #     lc_data, diffsky_data
+        # )
+
+        # patch_key, nfw_key = jran.split(patch_key, 2)
+        # lc_data, diffsky_data = lcmp.reposition_satellites(
+        #     sim_info, lc_data, diffsky_data, nfw_key
+        # )
+
+        # bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
+        # fn_out = os.path.join(drn_out, bn_out)
+        # lcmp.write_lc_dbk_sed_mock_to_disk(
+        #     fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
+        # )
+        # metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
 
         del lc_data
         del diffsky_data
