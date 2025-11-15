@@ -313,7 +313,7 @@ if __name__ == "__main__":
                 lc_data_batch[key] = lc_data[key][istart:iend]
 
             diffsky_data_batch = dict()
-            for key in lc_data.keys():
+            for key in diffsky_data.keys():
                 diffsky_data_batch[key] = diffsky_data[key][istart:iend]
 
             patch_key, sed_key = jran.split(patch_key, 2)
