@@ -56,8 +56,8 @@ ROMAN_HLTDS_PATCHES = [157, 158, 118, 119]
 
 
 if __name__ == "__main__":
-    COMM = MPI.COMM_WORLD
-    rank, nranks = COMM.Get_rank(), COMM.Get_size()
+    comm = MPI.COMM_WORLD
+    rank, nranks = comm.Get_rank(), comm.Get_size()
 
     parser = argparse.ArgumentParser()
 
@@ -236,9 +236,11 @@ if __name__ == "__main__":
     if rank in (0, 1):
         print(f"For rank = {rank}:")
         print(fn_lc_list_for_rank)
+    comm.Barrier()
 
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
+        comm.Barrier()
         gc.collect()
 
         bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
