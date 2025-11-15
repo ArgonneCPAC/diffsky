@@ -331,7 +331,10 @@ if __name__ == "__main__":
             phot_info_batch = lcmp.add_dbk_sed_quantities_to_mock(*args)[0]
             batch_collector.append(phot_info_batch)
 
-        # del batch_collector
+        phot_info = dict()
+        for key in phot_info_batch.keys():
+            phot_info[key] = np.concatenate([x[key] for x in batch_collector])
+        del batch_collector
         gc.collect()
         jax.clear_caches()
 
