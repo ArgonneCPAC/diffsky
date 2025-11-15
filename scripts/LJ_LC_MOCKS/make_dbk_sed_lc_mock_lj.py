@@ -331,6 +331,10 @@ if __name__ == "__main__":
             phot_info_batch = lcmp.add_dbk_sed_quantities_to_mock(*args)[0]
             batch_collector.append(phot_info_batch)
 
+        # del batch_collector
+        gc.collect()
+        jax.clear_caches()
+
         # patch_key, morph_key = jran.split(patch_key, 2)
         # diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
         #     phot_info, lc_data, diffsky_data, morph_key
