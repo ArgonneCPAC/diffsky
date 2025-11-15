@@ -240,6 +240,9 @@ if __name__ == "__main__":
 
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
+        bn_lc_diffsky = os.path.join(fn_lc_diffsky)
+        lc_patch, stepnum = [int(x) for x in bn_lc_diffsky.split("-")[1].split(".")[:2]]
+
         gc.collect()
 
         if rank == 0:
