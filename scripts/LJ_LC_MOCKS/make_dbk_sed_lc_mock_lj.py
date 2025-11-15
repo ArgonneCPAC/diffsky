@@ -228,8 +228,11 @@ if __name__ == "__main__":
             bn_lc_diffsky = lcmp.LC_CF_BNPAT.format(stepnum, lc_patch)
             fn_lc_diffsky = os.path.join(indir_lc_diffsky, bn_lc_diffsky)
             fn_lc_list.append(fn_lc_diffsky)
-    fn_sizes = [os.path.getsize(fn) for fn in fn_lc_list]
 
+    if synthetic_cores == 0:
+        fn_sizes = [os.path.getsize(fn) for fn in fn_lc_list]
+    else:
+        fn_sizes = hlu._estimate_nhalos_sky_patch(sim_name, stepnum, lgmp_min)
     rank_assignments, __ = mpi_utils.distribute_files_by_size(fn_sizes, nranks)
     fn_lc_list_for_rank = [fn_lc_list[i] for i in rank_assignments[rank]]
 
