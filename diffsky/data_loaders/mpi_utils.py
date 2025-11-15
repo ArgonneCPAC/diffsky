@@ -44,3 +44,26 @@ def get_mpi_rank_info(comm):
     comm.Barrier()
 
     return rankinfo, sorted_infolist
+
+
+def distribute_files_by_size(file_sizes, nranks):
+    """
+    Distribute files across ranks using a greedy algorithm to balance total size.
+
+    Returns rank_assignments, a list of sublists.
+    Each sublist contains the filenames assigned to that rank.
+
+    """
+    # Sort files by size (largest first)
+    sorted_indices = np.argsort(file_sizes)[::-1]
+
+    rank_assignments = [[] for _ in range(nranks)]
+    rank_totals = np.zeros(nranks)
+
+    # Give each file to the rank with smallest current total
+    for idx in sorted_indices:
+        min_rank = np.argmin(rank_totals)
+        rank_assignments[min_rank].append(idx)
+        rank_totals[min_rank] += file_sizes[idx]
+
+    return rank_assignments, rank_totals

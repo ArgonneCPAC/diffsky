@@ -8,16 +8,18 @@ from glob import glob
 import h5py
 import numpy as np
 from diffmah.defaults import DEFAULT_MAH_PARAMS
-from dsps.cosmology import flat_wcdm
+from dsps.cosmology import DEFAULT_COSMOLOGY, flat_wcdm
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
 
+from ...experimental.lc_utils import spherical_shell_comoving_volume
 from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
 from . import haccsims
 from . import load_hacc_cores as lhc
 from .defaults import DIFFMAH_MASS_COLNAME
+from .load_lc_cf import get_diffsky_info_from_hacc_sim
 
 DEG_PER_RAD = 180 / np.pi
 SQDEG_PER_STER = DEG_PER_RAD**2
@@ -645,3 +647,16 @@ def get_lsst_ddf_patches(fn, lsst_ddf_fields=LSST_DDF_FIELDS, rad_deg=LSST_DDF_R
         lc_patches = get_matching_lc_patches(fn, field_info)
         lsst_ddf_patches[field_name] = lc_patches
     return lsst_ddf_patches
+
+
+def _estimate_nhalos_sky_patch(sim_name, stepnum):
+    diffsky_info = get_diffsky_info_from_hacc_sim(sim_name)
+    dstep = np.abs(diffsky_info.sim.cosmotools_steps - stepnum)
+    indx_step = np.argmin(dstep)
+    z_obs = diffsky_info.z_sim[indx_step]
+
+    z_grid = np.linspace(0.001, 10.0, 100)
+    vol_shell_grid_mpc = spherical_shell_comoving_volume(z_grid, DEFAULT_COSMOLOGY)
+
+    vol_at_z = np.interp(z_obs, z_grid, vol_shell_grid_mpc)
+    return vol_at_z

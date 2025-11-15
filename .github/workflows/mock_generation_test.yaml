@@ -44,7 +44,8 @@ jobs:
             "setuptools_scm>=7,<8" \
             matplotlib \
             astropy \
-            h5py
+            h5py \
+            mpi4py
           pip install git+https://github.com/ArgonneCPAC/HACCyTrees.git
           pip uninstall diffmah --yes
           pip uninstall diffstar --yes
@@ -84,7 +85,7 @@ jobs:
           mkdir -p ci_test_output
 
           # Run mock production script
-          python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py \
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py \
             poboy \
             0.01 \
             0.25 \
