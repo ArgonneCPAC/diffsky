@@ -6,6 +6,7 @@ config.update("jax_enable_x64", True)
 
 from collections import namedtuple
 
+import numpy as np
 from diffmah import logmh_at_t_obs
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import age_at_z0
@@ -895,3 +896,25 @@ def _mc_diffsky_phot_dbk_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_para
         ran_key, *lc_data[1:], *param_collection, cosmo_params
     )
     return phot_data
+
+
+def concatenate_phot_info(phot_info_batches):
+    phot_info_batch = phot_info_batches[0]
+
+    diffstar_collector = []
+    for pname in phot_info_batch.diffstar_params._fields:
+        seq = [getattr(x.diffstar_params, pname) for x in phot_info_batches]
+        diffstar_collector.append(np.array(seq))
+    diffstar_params = phot_info_batch.diffstar_params._make(diffstar_collector)
+
+    burst_collector = dict()
+    for pname in phot_info_batch.burst_params._fields:
+        seq = [getattr(x.burst_params, pname) for x in phot_info_batches]
+        burst_collector.append(np.array(seq))
+    burst_params = phot_info_batch.burst_params._make(burst_collector)
+
+    dust_collector = dict()
+    for pname in phot_info_batch.dust_params._fields:
+        seq = [getattr(x.dust_params, pname) for x in phot_info_batches]
+        dust_collector.append(np.array(seq))
+    dust_params = phot_info_batch.dust_params._make(dust_collector)
