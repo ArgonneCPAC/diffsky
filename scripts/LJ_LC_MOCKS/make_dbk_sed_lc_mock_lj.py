@@ -259,7 +259,7 @@ if __name__ == "__main__":
         stepnum, lc_patch = [int(x) for x in bn_lc_diffsky.split("-")[1].split(".")[:2]]
 
         if rank == 0:
-            print(f"Working on={os.path.basename(fn_lc_diffsky)}")
+            print(f"...working on {os.path.basename(fn_lc_diffsky)}")
 
         ran_key, patch_key = jran.split(ran_key, 2)
 
