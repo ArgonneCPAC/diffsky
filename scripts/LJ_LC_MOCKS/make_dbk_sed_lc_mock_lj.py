@@ -233,7 +233,7 @@ if __name__ == "__main__":
     fn_sizes = [os.path.getsize(fn) for fn in fn_lc_list]
 
     rank_assignments, __ = mpi_utils.distribute_files_by_size(fn_sizes, nranks)
-    fn_lc_list_for_rank = [fn_lc_list[i] for i in rank_assignments[rank]][::-1]
+    fn_lc_list_for_rank = [fn_lc_list[i] for i in rank_assignments[rank]]
 
     if rank == 0:
         print(fn_lc_list_for_rank)
