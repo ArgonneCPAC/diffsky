@@ -22,6 +22,7 @@ from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffsky_seds as mcsed
 from . import photometry_interpolation as photerp
+from .disk_bulge_modeling import disk_bulge_kernels as dbk
 from .disk_bulge_modeling import disk_knots
 from .disk_bulge_modeling import mc_disk_bulge as mcdb
 
@@ -39,7 +40,8 @@ DBK_PHOT_INFO_KEYS = (
     "obs_mags_bulge",
     "obs_mags_disk",
     "obs_mags_knots",
-    "disk_bulge_history",
+    *dbk.FbulgeParams._fields,
+    *mcdb.DiskBulgeHistory._fields[1:],
     "diffstar_params",
     "mc_sfh_type",
     "burst_params",
@@ -856,7 +858,13 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         obs_mags_bulge=obs_mags_bulge,
         obs_mags_disk=obs_mags_disk,
         obs_mags_knots=obs_mags_knots,
-        disk_bulge_history=disk_bulge_history,
+        fbulge_tcrit=disk_bulge_history.fbulge_params.fbulge_tcrit,
+        fbulge_early=disk_bulge_history.fbulge_params.fbulge_early,
+        fbulge_late=disk_bulge_history.fbulge_params.fbulge_late,
+        eff_bulge_history=disk_bulge_history.eff_bulge_history,
+        sfh_bulge=disk_bulge_history.sfh_bulge,
+        smh_bulge=disk_bulge_history.smh_bulge,
+        bulge_to_total_history=disk_bulge_history.bulge_to_total_history,
         diffstar_params=diffstar_params,
         mc_sfh_type=mc_sfh_type,
         burst_params=burst_params,
