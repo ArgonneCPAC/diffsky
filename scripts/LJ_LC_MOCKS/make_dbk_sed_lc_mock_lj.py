@@ -359,8 +359,8 @@ if __name__ == "__main__":
         # )
         # metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
 
-        del lc_data
-        del diffsky_data
+        # del lc_data
+        # del diffsky_data
         gc.collect()
         jax.clear_caches()
 
