@@ -177,8 +177,6 @@ if __name__ == "__main__":
     else:
         lc_patch_list = np.arange(istart, iend).astype(int)
 
-    lc_patch_list = np.array_split(lc_patch_list, nranks)[rank]
-
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
     ssp_data = load_ssp_templates()
