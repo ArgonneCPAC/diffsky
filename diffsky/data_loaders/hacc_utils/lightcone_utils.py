@@ -14,7 +14,6 @@ from jax import numpy as jnp
 from jax import vmap
 
 from ...experimental.lc_utils import spherical_shell_comoving_volume
-from ...mass_functions import mc_hosts
 from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
 from . import haccsims

@@ -32,7 +32,12 @@ jobs:
             flake8 \
             flake8-pyproject
 
-      - name: lint
+      - name: lint source code
         shell: bash -l {0}
         run: |
           flake8 diffsky
+
+      - name: lint scripts
+        shell: bash -l {0}
+        run: |
+          flake8 scripts
