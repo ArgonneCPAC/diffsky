@@ -861,6 +861,7 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         fbulge_tcrit=disk_bulge_history.fbulge_params.fbulge_tcrit,
         fbulge_early=disk_bulge_history.fbulge_params.fbulge_early,
         fbulge_late=disk_bulge_history.fbulge_params.fbulge_late,
+        mstar_history=disk_bulge_history.mstar_history,
         eff_bulge_history=disk_bulge_history.eff_bulge_history,
         sfh_bulge=disk_bulge_history.sfh_bulge,
         smh_bulge=disk_bulge_history.smh_bulge,
