@@ -166,7 +166,8 @@ if __name__ == "__main__":
         lc_patch_list = [0, 1]
     elif roman_hltds == 1:
         lc_patch_list = np.array(ROMAN_HLTDS_PATCHES).astype(int)
-        print("Making all lightcone patches for Roman HLTDS")
+        if rank == 0:
+            print("Making all lightcone patches for Roman HLTDS")
     elif args.ddf:
         fn_lc_decomp = os.path.join(indir_lc_data, "lc_cores-decomposition.txt")
         lc_patch_dict = hlu.get_lsst_ddf_patches(fn_lc_decomp)
@@ -185,10 +186,11 @@ if __name__ == "__main__":
     #  Load diffsky model parameters
     if fn_u_params == "":
         param_collection = dpw.DEFAULT_PARAM_COLLECTION
-        print(
-            "No input params detected. "
-            "Using default diffsky model parameters DEFAULT_PARAM_COLLECTION"
-        )
+        if rank == 0:
+            print(
+                "No input params detected. "
+                "Using default diffsky model parameters DEFAULT_PARAM_COLLECTION"
+            )
     elif fn_u_params == "sfh_model":
         u_param_arr = ldup.load_diffsky_u_params_for_sfh_model(sfh_model)
         u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
@@ -196,7 +198,8 @@ if __name__ == "__main__":
             *u_param_collection
         )
         if True:  # always do this for now
-            print("Ignoring pre-computed fit of SPS parameters")
+            if rank == 0:
+                print("Ignoring pre-computed fit of SPS parameters")
             diffstarpop_sfh_model = param_collection[0]
             param_collection = (
                 diffstarpop_sfh_model,
@@ -204,7 +207,10 @@ if __name__ == "__main__":
             )
 
     else:
-        print(f"Reading diffsky parameter array from disk. Filename = {fn_u_params}")
+        if rank == 0:
+            print(
+                f"Reading diffsky parameter array from disk. Filename = {fn_u_params}"
+            )
         u_param_arr = np.loadtxt(fn_u_params)
         u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
         param_collection = dpw.get_param_collection_from_u_param_collection(
