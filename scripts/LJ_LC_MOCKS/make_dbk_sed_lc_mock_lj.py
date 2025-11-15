@@ -248,6 +248,7 @@ if __name__ == "__main__":
 
     print(f"For rank = {rank}:")
     print(fn_lc_list_for_rank)
+    print("\n\n")
 
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
@@ -298,7 +299,9 @@ if __name__ == "__main__":
         )
 
         n_batches = n_gals // batch_size
-        print(f"Looping over {n_batches} batches of data")
+        print(f"{n_gals} total galaxies")
+        print(f"Batch size = {batch_size}")
+        print(f"Looping over {n_batches} batches of data\n")
         # Loop over batches of data
         batch_collector = []
         for istart in range(0, n_gals, batch_size):
