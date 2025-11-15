@@ -352,20 +352,16 @@ def add_dbk_sed_quantities_to_mock(
 def add_morphology_quantities_to_diffsky_data(
     phot_info, lc_data, diffsky_data, morph_key
 ):
-    gen = zip(
-        phot_info["disk_bulge_history"].fbulge_params._fields,
-        phot_info["disk_bulge_history"].fbulge_params,
-    )
-    for pname, pval in gen:
-        diffsky_data[pname] = pval
+    for pname in dbk.DEFAULT_FBULGE_PARAMS:
+        diffsky_data[pname] = phot_info[pname]
 
     diffsky_data["bulge_to_total"] = interp_vmap(
         lc_data["t_obs"],
         diffsky_data["t_table"],
-        phot_info["disk_bulge_history"].bulge_to_total_history,
+        phot_info["bulge_to_total_history"],
     )
 
-    diffsky_data["sfh_bulge"] = phot_info["disk_bulge_history"].sfh_bulge
+    diffsky_data["sfh_bulge"] = phot_info["sfh_bulge"]
     diffsky_data["sfh_disk"] = phot_info["sfh_table"] - diffsky_data["sfh_bulge"]
 
     morph_key, disk_size_key, bulge_size_key = jran.split(morph_key, 3)
