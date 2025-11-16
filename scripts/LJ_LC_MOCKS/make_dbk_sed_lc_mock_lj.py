@@ -11,6 +11,7 @@ python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smd
 import argparse
 import gc
 import os
+import sys
 from time import sleep, time
 
 import jax
@@ -252,6 +253,8 @@ if __name__ == "__main__":
 
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
+        sys.stdout.flush()
+        sys.stderr.flush()
         sleep(1)
         comm.Barrier()
         gc.collect()
@@ -359,12 +362,17 @@ if __name__ == "__main__":
         )
         metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
 
+        if rank == 0:
+            print("All ranks completing file operations...", flush=True)
+
+        sys.stdout.flush()
+        sys.stderr.flush()
         sleep(1)
         comm.Barrier()
-        del phot_info
-        del lc_data
-        del diffsky_data
-        del phot_batches
+        # del phot_info
+        # del lc_data
+        # del diffsky_data
+        # del phot_batches
         gc.collect()
         jax.clear_caches()
 
@@ -374,6 +382,10 @@ if __name__ == "__main__":
     end_script = time()
     n_patches = len(lc_patch_list)
     runtime = (end_script - start_script) / 60.0
+    if rank == 0:
+        print("All ranks completing file operations...", flush=True)
+    sys.stdout.flush()
+    sys.stderr.flush()
     sleep(1)
     comm.Barrier()
     msg = f"Total runtime for {n_patches} patches = {runtime:.1f} minutes"
