@@ -74,7 +74,7 @@ if __name__ == "__main__":
     parser.add_argument("mock_nickname", help="Nickname of the mock")
 
     parser.add_argument(
-        "-batch_size", help="Size of photometry batches", type=int, default=20_000
+        "-batch_size", help="Size of photometry batches", type=int, default=50_000
     )
 
     parser.add_argument(
