@@ -128,6 +128,10 @@ column_metadata["delta_scatter_q"] = (
     "Array for adding noise to SSP SED errors",
 )
 
+column_metadata["av"] = ("None", "Dust attenuation curve parameter")
+column_metadata["delta"] = ("None", "Dust attenuation curve parameter")
+column_metadata["funo"] = ("None", "Dust attenuation curve parameter")
+
 column_metadata["bulge_to_total"] = ("None", "Bulge-to-total mass ratio")
 column_metadata["fbulge_tcrit"] = ("None", "Bulge model parameter")
 column_metadata["fbulge_early"] = ("None", "Bulge model parameter")

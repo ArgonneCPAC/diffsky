@@ -11,7 +11,8 @@ python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smd
 import argparse
 import gc
 import os
-from time import time
+import sys
+from time import sleep, time
 
 import jax
 import numpy as np
@@ -71,6 +72,10 @@ if __name__ == "__main__":
 
     parser.add_argument("drn_out", help="Output directory")
     parser.add_argument("mock_nickname", help="Nickname of the mock")
+
+    parser.add_argument(
+        "-batch_size", help="Size of photometry batches", type=int, default=20_000
+    )
 
     parser.add_argument(
         "-roman_hltds",
@@ -133,6 +138,7 @@ if __name__ == "__main__":
     synthetic_cores = args.synthetic_cores
     lgmp_min = args.lgmp_min
     lgmp_max = args.lgmp_max
+    batch_size = args.batch_size
 
     mock_version_name = get_mock_version_name(mock_nickname)
 
@@ -241,19 +247,19 @@ if __name__ == "__main__":
     rank_assignments, __ = mpi_utils.distribute_files_by_size(fn_sizes, nranks)
     fn_lc_list_for_rank = [fn_lc_list[i] for i in rank_assignments[rank]]
 
-    print(f"For rank = {rank}:")
+    print(f"\nFor rank = {rank}:")
     print(fn_lc_list_for_rank)
+    print("\n")
 
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
-        comm.Barrier()
         gc.collect()
 
         bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
         stepnum, lc_patch = [int(x) for x in bn_lc_diffsky.split("-")[1].split(".")[:2]]
 
         if rank == 0:
-            print(f"Working on={os.path.basename(fn_lc_diffsky)}")
+            print(f"...working on {os.path.basename(fn_lc_diffsky)}")
 
         ran_key, patch_key = jran.split(ran_key, 2)
 
@@ -292,23 +298,63 @@ if __name__ == "__main__":
             tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
         )
 
-        patch_key, sed_key = jran.split(patch_key, 2)
-        args = (
-            sim_info,
-            lc_data,
-            diffsky_data,
-            ssp_data,
-            param_collection,
-            precomputed_ssp_mag_table,
-            z_phot_table,
-            wave_eff_table,
-            sed_key,
-        )
-        phot_info, lc_data, diffsky_data = lcmp.add_dbk_sed_quantities_to_mock(*args)
+        n_gals_orig = len(lc_data["core_tag"])
+
+        n_batches = n_gals // batch_size
+        print(f"{n_gals} total galaxies")
+        print(f"Batch size = {batch_size:_}")
+        print(f"Looping over {n_batches} batches of data\n")
+        # Loop over batches of data
+        phot_batches = []
+        for istart in range(0, n_gals, batch_size):
+            iend = min(istart + batch_size, n_gals)
+            ran_key, batch_key = jran.split(ran_key)
+
+            lc_data_batch = dict()
+            for key in lc_data.keys():
+                lc_data_batch[key] = lc_data[key][istart:iend]
+
+            diffsky_data_batch = dict()
+            for key in diffsky_data.keys():
+                diffsky_data_batch[key] = diffsky_data[key][istart:iend]
+
+            patch_key, sed_key = jran.split(patch_key, 2)
+            args = (
+                sim_info,
+                lc_data_batch,
+                diffsky_data_batch,
+                ssp_data,
+                param_collection,
+                precomputed_ssp_mag_table,
+                z_phot_table,
+                wave_eff_table,
+                sed_key,
+            )
+            _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
+            phot_info_batch, lc_data_batch, diffsky_data_batch = _res
+            phot_batches.append(_res)
+
+        _cats = lcmp.concatenate_batched_phot_data(phot_batches)
+        phot_info, lc_data, diffsky_data = _cats
+
+        n_gals_check = len(lc_data["core_tag"])
+        assert n_gals_orig == n_gals_check, "mismatch between orig and new lengths"
+        print(f"Rank {rank}: Validating {n_gals_check} galaxies after batching")
+
+        # Check every array has correct length
+        for key, val in {**lc_data, **diffsky_data, **phot_info}.items():
+            if val.shape[0] != n_gals_check:
+                raise ValueError(
+                    f"Array length mismatch: {key} has shape {val.shape}, "
+                    f"expected first dim = {n_gals_check}"
+                )
+
+        gc.collect()
+        jax.clear_caches()
 
         patch_key, morph_key = jran.split(patch_key, 2)
         diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
-            phot_info, lc_data, diffsky_data, morph_key
+            sim_info, phot_info, lc_data, diffsky_data, morph_key
         )
 
         diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
@@ -327,8 +373,9 @@ if __name__ == "__main__":
         )
         metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
 
-        del lc_data
-        del diffsky_data
+        if rank == 0:
+            print("All ranks completing file operations...", flush=True)
+
         gc.collect()
         jax.clear_caches()
 
@@ -338,6 +385,11 @@ if __name__ == "__main__":
     end_script = time()
     n_patches = len(lc_patch_list)
     runtime = (end_script - start_script) / 60.0
+    if rank == 0:
+        print("All ranks completing script...", flush=True)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    sleep(1)
     comm.Barrier()
     msg = f"Total runtime for {n_patches} patches = {runtime:.1f} minutes"
     if rank == 0:

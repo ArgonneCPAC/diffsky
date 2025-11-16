@@ -6,22 +6,27 @@ config.update("jax_enable_x64", True)
 
 from collections import namedtuple
 
+import numpy as np
 from diffmah import logmh_at_t_obs
+from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import age_at_z0
 from dsps.metallicity import umzr
 from dsps.sfh import diffburst
+from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
 from ..burstpop import freqburst_mono
+from ..dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffsky_seds as mcsed
 from . import photometry_interpolation as photerp
+from .disk_bulge_modeling import disk_bulge_kernels as dbk
 from .disk_bulge_modeling import disk_knots
 from .disk_bulge_modeling import mc_disk_bulge as mcdb
 
@@ -39,11 +44,12 @@ DBK_PHOT_INFO_KEYS = (
     "obs_mags_bulge",
     "obs_mags_disk",
     "obs_mags_knots",
-    "disk_bulge_history",
-    "diffstar_params",
+    *dbk.FbulgeParams._fields,
+    *mcdb.DiskBulgeHistory._fields[1:],
+    *DEFAULT_DIFFSTAR_PARAMS._fields,
     "mc_sfh_type",
-    "burst_params",
-    "dust_params",
+    *DEFAULT_BURST_PARAMS._fields,
+    *DEFAULT_DUST_PARAMS._fields,
     "ssp_weights",
     "uran_av",
     "uran_delta",
@@ -484,10 +490,10 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
         obs_mags_bulge=obs_mags_bulge,
         obs_mags_disk=obs_mags_disk,
         obs_mags_knots=obs_mags_knots,
-        diffstar_params=diffstar_params,
+        **diffstar_params._asdict(),
         mc_sfh_type=mc_sfh_type,
-        burst_params=burst_params,
-        dust_params=dust_params,
+        **burst_params._asdict(),
+        **dust_params._asdict(),
         ssp_weights=ssp_weights,
         uran_av=uran_av,
         uran_delta=uran_delta,
@@ -856,11 +862,18 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         obs_mags_bulge=obs_mags_bulge,
         obs_mags_disk=obs_mags_disk,
         obs_mags_knots=obs_mags_knots,
-        disk_bulge_history=disk_bulge_history,
-        diffstar_params=diffstar_params,
+        fbulge_tcrit=disk_bulge_history.fbulge_params.fbulge_tcrit,
+        fbulge_early=disk_bulge_history.fbulge_params.fbulge_early,
+        fbulge_late=disk_bulge_history.fbulge_params.fbulge_late,
+        mstar_history=disk_bulge_history.mstar_history,
+        eff_bulge_history=disk_bulge_history.eff_bulge_history,
+        sfh_bulge=disk_bulge_history.sfh_bulge,
+        smh_bulge=disk_bulge_history.smh_bulge,
+        bulge_to_total_history=disk_bulge_history.bulge_to_total_history,
+        **diffstar_params._asdict(),
         mc_sfh_type=mc_sfh_type,
-        burst_params=burst_params,
-        dust_params=dust_params,
+        **burst_params._asdict(),
+        **dust_params._asdict(),
         ssp_weights=ssp_weights,
         uran_av=uran_av,
         uran_delta=uran_delta,
@@ -886,3 +899,25 @@ def _mc_diffsky_phot_dbk_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_para
         ran_key, *lc_data[1:], *param_collection, cosmo_params
     )
     return phot_data
+
+
+def concatenate_phot_info(phot_info_batches):
+    phot_info_batch = phot_info_batches[0]
+
+    diffstar_collector = []
+    for pname in phot_info_batch.diffstar_params._fields:
+        seq = [getattr(x.diffstar_params, pname) for x in phot_info_batches]
+        diffstar_collector.append(np.array(seq))
+    diffstar_params = phot_info_batch.diffstar_params._make(diffstar_collector)
+
+    burst_collector = dict()
+    for pname in phot_info_batch.burst_params._fields:
+        seq = [getattr(x.burst_params, pname) for x in phot_info_batches]
+        burst_collector.append(np.array(seq))
+    burst_params = phot_info_batch.burst_params._make(burst_collector)
+
+    dust_collector = dict()
+    for pname in phot_info_batch.dust_params._fields:
+        seq = [getattr(x.dust_params, pname) for x in phot_info_batches]
+        dust_collector.append(np.array(seq))
+    dust_params = phot_info_batch.dust_params._make(dust_collector)
