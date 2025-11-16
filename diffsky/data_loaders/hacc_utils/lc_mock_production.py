@@ -496,6 +496,17 @@ def get_patch_info_from_mock_basename(bn):
 
 
 def concatenate_batched_phot_data(phot_batches):
-    for batch in phot_batches:
-        phot_info_batch, lc_data_batch, diffsky_data_batch = batch
-    raise NotImplementedError()
+
+    phot_info = dict()
+    for key in phot_batches[0][0].keys():
+        phot_info[key] = np.concatenate([x[0][key] for x in phot_batches])
+
+    lc_data = dict()
+    for key in phot_batches[0][1].keys():
+        lc_data[key] = np.concatenate([x[1][key] for x in phot_batches])
+
+    diffsky_data = dict()
+    for key in phot_batches[0][1].keys():
+        diffsky_data[key] = np.concatenate([x[2][key] for x in phot_batches])
+
+    return phot_info, lc_data, diffsky_data
