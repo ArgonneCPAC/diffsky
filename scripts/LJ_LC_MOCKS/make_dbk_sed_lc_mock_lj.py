@@ -302,6 +302,8 @@ if __name__ == "__main__":
             tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
         )
 
+        n_gals_orig = len(lc_data["core_tag"])
+
         n_batches = n_gals // batch_size
         print(f"{n_gals} total galaxies")
         print(f"Batch size = {batch_size:_}")
@@ -338,6 +340,19 @@ if __name__ == "__main__":
 
         _cats = lcmp.concatenate_batched_phot_data(phot_batches)
         phot_info, lc_data, diffsky_data = _cats
+
+        n_gals_check = len(lc_data["core_tag"])
+        assert n_gals_orig == n_gals_check, "mismatch between orig and new lengths"
+        print(f"Rank {rank}: Validating {n_gals_check} galaxies after batching")
+
+        # Check every array has correct length
+        for key, val in {**lc_data, **diffsky_data, **phot_info}.items():
+            if val.shape[0] != n_gals_check:
+                raise ValueError(
+                    f"Array length mismatch: {key} has shape {val.shape}, "
+                    f"expected first dim = {n_gals_check}"
+                )
+
         gc.collect()
         jax.clear_caches()
 
@@ -383,7 +398,7 @@ if __name__ == "__main__":
     n_patches = len(lc_patch_list)
     runtime = (end_script - start_script) / 60.0
     if rank == 0:
-        print("All ranks completing file operations...", flush=True)
+        print("All ranks completing script...", flush=True)
     sys.stdout.flush()
     sys.stderr.flush()
     sleep(1)
