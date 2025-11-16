@@ -339,7 +339,7 @@ if __name__ == "__main__":
 
         # patch_key, morph_key = jran.split(patch_key, 2)
         # diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
-        #     phot_info, lc_data, diffsky_data, morph_key
+        #     sim_info, phot_info, lc_data, diffsky_data, morph_key
         # )
 
         # diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
