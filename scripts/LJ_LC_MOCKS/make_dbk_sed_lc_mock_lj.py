@@ -73,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("mock_nickname", help="Nickname of the mock")
 
     parser.add_argument(
-        "-batch_size", help="Size of photometry batches", type=int, default=50_000
+        "-batch_size", help="Size of photometry batches", type=int, default=20_000
     )
 
     parser.add_argument(
@@ -253,6 +253,7 @@ if __name__ == "__main__":
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
         comm.Barrier()
+        time.sleep(0.1)
         gc.collect()
 
         bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
@@ -358,8 +359,12 @@ if __name__ == "__main__":
         )
         metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
 
+        comm.Barrier()
+        time.sleep(0.1)
+        del phot_info
         del lc_data
         del diffsky_data
+        del phot_batches
         gc.collect()
         jax.clear_caches()
 
@@ -370,6 +375,7 @@ if __name__ == "__main__":
     n_patches = len(lc_patch_list)
     runtime = (end_script - start_script) / 60.0
     comm.Barrier()
+    time.sleep(0.1)
     msg = f"Total runtime for {n_patches} patches = {runtime:.1f} minutes"
     if rank == 0:
         print(msg)
