@@ -11,7 +11,7 @@ python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smd
 import argparse
 import gc
 import os
-from time import time
+from time import sleep, time
 
 import jax
 import numpy as np
@@ -252,8 +252,8 @@ if __name__ == "__main__":
 
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
+        sleep(1)
         comm.Barrier()
-        time.sleep(0.1)
         gc.collect()
 
         bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
@@ -359,8 +359,8 @@ if __name__ == "__main__":
         )
         metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
 
+        sleep(1)
         comm.Barrier()
-        time.sleep(0.1)
         del phot_info
         del lc_data
         del diffsky_data
@@ -374,8 +374,8 @@ if __name__ == "__main__":
     end_script = time()
     n_patches = len(lc_patch_list)
     runtime = (end_script - start_script) / 60.0
+    sleep(1)
     comm.Barrier()
-    time.sleep(0.1)
     msg = f"Total runtime for {n_patches} patches = {runtime:.1f} minutes"
     if rank == 0:
         print(msg)
