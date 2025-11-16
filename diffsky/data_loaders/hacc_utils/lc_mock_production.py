@@ -13,11 +13,13 @@ from diffstar.diffstarpop import mc_diffstar_sfh_galpop
 from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
+from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
+from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...ellipsoidal_shapes import bulge_shapes, disk_shapes, ellipse_proj_kernels
 from ...experimental import mc_diffsky_disk_bulge_knot_seds as mc_dbk_sed
 from ...experimental import mc_diffsky_seds
@@ -144,9 +146,11 @@ def write_lc_sed_mock_to_disk(
         for iband, name in enumerate(filter_nicknames):
             hdf_out["data"][name] = phot_info["obs_mags"][:, iband]
 
-        gen = zip(phot_info["burst_params"]._fields, phot_info["burst_params"])
-        for name, parr in gen:
-            hdf_out["data"][name] = parr
+        for burst_pname in DEFAULT_BURST_PARAMS._fields:
+            hdf_out["data"][burst_pname] = phot_info[burst_pname]
+
+        for dust_pname in DEFAULT_DUST_PARAMS._fields:
+            hdf_out["data"][dust_pname] = phot_info[dust_pname]
 
         hdf_out["data"]["mc_sfh_type"] = phot_info["mc_sfh_type"]
 
