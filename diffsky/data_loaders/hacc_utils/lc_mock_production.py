@@ -506,7 +506,7 @@ def concatenate_batched_phot_data(phot_batches):
         lc_data[key] = np.concatenate([x[1][key] for x in phot_batches])
 
     diffsky_data = dict()
-    for key in phot_batches[0][1].keys():
+    for key in phot_batches[0][2].keys():
         diffsky_data[key] = np.concatenate([x[2][key] for x in phot_batches])
 
     return phot_info, lc_data, diffsky_data
