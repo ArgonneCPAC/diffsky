@@ -253,10 +253,6 @@ if __name__ == "__main__":
 
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
-        sys.stdout.flush()
-        sys.stderr.flush()
-        sleep(1)
-        comm.Barrier()
         gc.collect()
 
         bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
@@ -380,14 +376,6 @@ if __name__ == "__main__":
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
 
-        sys.stdout.flush()
-        sys.stderr.flush()
-        sleep(1)
-        comm.Barrier()
-        # del phot_info
-        # del lc_data
-        # del diffsky_data
-        # del phot_batches
         gc.collect()
         jax.clear_caches()
 
