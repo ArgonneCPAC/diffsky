@@ -14,13 +14,10 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
 
     sim_info = llcf.get_diffsky_info_from_hacc_sim(sim_name)
 
-    drn_lc_cores = os.path.dirname(fn_lc_cores)
     bname_lc_cores = os.path.basename(fn_lc_cores)
     stepnum, lc_patch = hlu.get_stepnum_and_skypatch_from_lc_bname(bname_lc_cores)
 
-    _res = hlu.read_lc_ra_dec_patch_decomposition(
-        os.path.join(drn_lc_cores, "lc_cores-decomposition.txt")
-    )
+    _res = hlu.read_hacc_lc_patch_decomposition(sim_name)
     patch_decomposition, sky_frac, solid_angles = _res
     sky_area_degsq = solid_angles[lc_patch]
 
@@ -56,7 +53,22 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
 
     diffsky_data.pop("mah_params")
 
-    for key in ("x", "y", "z", "x_host", "y_host", "z_host", "ra", "dec"):
+    posvel_collector = ("x", "y", "z", "vx", "vy", "vz")
+
+    eigh_pat = "top_host_infall_fof_halo_eigS{0}{1}"
+    eigh_collector = []
+    for n in (1, 2, 3):
+        for s in ("X", "Y", "Z"):
+            eigh_collector.append(eigh_pat.format(n, s))
+    for key in (
+        *posvel_collector,
+        "x_host",
+        "y_host",
+        "z_host",
+        "ra",
+        "dec",
+        *eigh_collector,
+    ):
         diffsky_data[key] = np.zeros(len(diffsky_data["redshift_true"])) - 1.0
 
     ZZ = np.zeros(len(diffsky_data["redshift_true"]))

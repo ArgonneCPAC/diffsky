@@ -19,11 +19,11 @@ DEFAULT_BULGE_PARAMS = BulgeAxisRatioParams(
 
 
 @partial(jjit, static_argnames=["n_samples"])
-def sample_bulge_axis_ratios(ran_key, n_samples, bulge_params):
+def sample_bulge_axis_ratios(ran_key, n_samples, bulge_params=DEFAULT_BULGE_PARAMS):
     """Draw samples of axis ratios for bulges"""
     ran_key_b, ran_key_c = jran.split(ran_key, 2)
 
-    b_over_a = truncated_normal_sample(
+    b_over_a, zscore = truncated_normal_sample(
         ran_key_b,
         (n_samples,),
         bulge_params.ba_peak,

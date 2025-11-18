@@ -8,15 +8,19 @@ import h5py
 import numpy as np
 from diffmah import DEFAULT_MAH_PARAMS, logmh_at_t_obs
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
+from diffstar.defaults import T_TABLE_MIN
 from diffstar.diffstarpop import mc_diffstar_sfh_galpop
 from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import flat_wcdm
+from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
+from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
+from ...ellipsoidal_shapes import bulge_shapes, disk_shapes, ellipse_proj_kernels
 from ...experimental import mc_diffsky_disk_bulge_knot_seds as mc_dbk_sed
 from ...experimental import mc_diffsky_seds
 from ...experimental.black_hole_modeling import black_hole_mass as bhm
@@ -25,14 +29,14 @@ from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ...experimental.disk_bulge_modeling.mc_disk_bulge import (
-    decompose_sfh_into_disk_bulge_sfh,
-)
+from ...experimental.size_modeling import disk_bulge_sizes as dbs
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
 from . import lightcone_utils as hlu
 from . import load_lc_cf
+
+N_T_TABLE = 100
 
 LC_CF_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_MOCK_BNPAT = LC_CF_BNPAT.replace("diffsky_data", "diffsky_gals")
@@ -60,6 +64,22 @@ LC_DATA_KEYS_OUT = (
     "lc_patch",
 )
 
+SIZE_KEYS = ("r50_disk", "r50_bulge", "zscore_r50_disk", "zscore_r50_bulge")
+_ORIEN_PATS = (
+    "b_over_a_{}",
+    "c_over_a_{}",
+    "beta_{}",
+    "alpha_{}",
+    "ellipticity_{}",
+    "psi_{}",
+    "e_beta_x_{}",
+    "e_beta_y_{}",
+    "e_alpha_x_{}",
+    "e_alpha_y_{}",
+)
+ORIENTATION_KEYS = [pat.format("disk") for pat in _ORIEN_PATS]
+ORIENTATION_KEYS.extend([pat.format("bulge") for pat in _ORIEN_PATS])
+
 DIFFSKY_DATA_KEYS_OUT = (
     "x_host",
     "y_host",
@@ -76,6 +96,8 @@ DIFFSKY_DATA_KEYS_OUT = (
     *TOP_HOST_SHAPE_KEYS,
     *DEFAULT_MAH_PARAMS._fields,
     *DEFAULT_DIFFSTAR_PARAMS._fields,
+    *SIZE_KEYS,
+    *ORIENTATION_KEYS,
 )
 
 PHOT_INFO_KEYS_OUT = (
@@ -124,9 +146,11 @@ def write_lc_sed_mock_to_disk(
         for iband, name in enumerate(filter_nicknames):
             hdf_out["data"][name] = phot_info["obs_mags"][:, iband]
 
-        gen = zip(phot_info["burst_params"]._fields, phot_info["burst_params"])
-        for name, parr in gen:
-            hdf_out["data"][name] = parr
+        for burst_pname in DEFAULT_BURST_PARAMS._fields:
+            hdf_out["data"][burst_pname] = phot_info[burst_pname]
+
+        for dust_pname in DEFAULT_DUST_PARAMS._fields:
+            hdf_out["data"][dust_pname] = phot_info[dust_pname]
 
         hdf_out["data"]["mc_sfh_type"] = phot_info["mc_sfh_type"]
 
@@ -164,7 +188,6 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     for pname, pval in zip(mah_params._fields, mah_params):
         diffsky_data[pname] = pval
     diffsky_data["has_diffmah_fit"] = msk_has_diffmah_fit
-    diffsky_data["mah_params"] = mah_params
 
     logmp0 = logmh_at_t_obs(
         mah_params, np.zeros(mah_params.logm0.size) + 10**sim_info.lgt0, sim_info.lgt0
@@ -181,7 +204,7 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     gyr_since_infall = np.zeros_like(logmp0)
     upids = np.where(lc_data["central"] == 1, -1, 0)
 
-    diffsky_data["t_table"] = np.linspace(0.1, 10**sim_info.lgt0, 100)
+    t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
 
     args = (
         DEFAULT_DIFFSTARPOP_PARAMS,
@@ -192,7 +215,7 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
         logmhost_infall,
         gyr_since_infall,
         ran_key,
-        diffsky_data["t_table"],
+        t_table,
     )
 
     _res = mc_diffstar_sfh_galpop(*args)
@@ -211,19 +234,19 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
         diffsky_data[key] = getattr(sfh_params, key)
 
     logsm_obs, logssfr_obs = get_logsm_logssfr_at_t_obs(
-        lc_data["t_obs"], diffsky_data["t_table"], diffsky_data["sfh_table"]
+        lc_data["t_obs"], t_table, diffsky_data["sfh_table"]
     )
     diffsky_data["logsm_obs"] = logsm_obs
     diffsky_data["logssfr_obs"] = logssfr_obs
 
     logsm_obs_ms, logssfr_obs_ms = get_logsm_logssfr_at_t_obs(
-        lc_data["t_obs"], diffsky_data["t_table"], diffsky_data["sfh_table_ms"]
+        lc_data["t_obs"], t_table, diffsky_data["sfh_table_ms"]
     )
     diffsky_data["logsm_obs_ms"] = logsm_obs_ms
     diffsky_data["logssfr_obs_ms"] = logssfr_obs_ms
 
     logsm_obs_q, logssfr_obs_q = get_logsm_logssfr_at_t_obs(
-        lc_data["t_obs"], diffsky_data["t_table"], diffsky_data["sfh_table_q"]
+        lc_data["t_obs"], t_table, diffsky_data["sfh_table_q"]
     )
     diffsky_data["logsm_obs_q"] = logsm_obs_q
     diffsky_data["logssfr_obs_q"] = logssfr_obs_q
@@ -258,6 +281,8 @@ def add_sed_quantities_to_mock(
     )
     n_gals = diffsky_data["logsm_obs"].size
 
+    t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
+
     ran_key, sed_key = jran.split(ran_key, 2)
     args = (
         sed_key,
@@ -265,7 +290,7 @@ def add_sed_quantities_to_mock(
         lc_data["t_obs"],
         diffsky_data["mah_params"],
         diffsky_data["logmp0"],
-        diffsky_data["t_table"],
+        t_table,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -308,14 +333,19 @@ def add_dbk_sed_quantities_to_mock(
     )
     n_gals = diffsky_data["logsm_obs"].size
 
+    t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
+
+    mah_params = DEFAULT_MAH_PARAMS._make(
+        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+    )
     ran_key, sed_key = jran.split(ran_key, 2)
     args = (
         sed_key,
         lc_data["redshift_true"],
         lc_data["t_obs"],
-        diffsky_data["mah_params"],
+        mah_params,
         diffsky_data["logmp0"],
-        diffsky_data["t_table"],
+        t_table,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -332,22 +362,80 @@ def add_dbk_sed_quantities_to_mock(
     return phot_info, lc_data, diffsky_data
 
 
-def add_morphology_quantities_to_diffsky_data(phot_info, lc_data, diffsky_data):
-    gen = zip(
-        phot_info["disk_bulge_history"].fbulge_params._fields,
-        phot_info["disk_bulge_history"].fbulge_params,
-    )
-    for pname, pval in gen:
-        diffsky_data[pname] = pval
+def add_morphology_quantities_to_diffsky_data(
+    sim_info, phot_info, lc_data, diffsky_data, morph_key
+):
+    for pname in dbk.DEFAULT_FBULGE_PARAMS._fields:
+        diffsky_data[pname] = phot_info[pname]
+
+    t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
 
     diffsky_data["bulge_to_total"] = interp_vmap(
         lc_data["t_obs"],
-        diffsky_data["t_table"],
-        phot_info["disk_bulge_history"].bulge_to_total_history,
+        t_table,
+        phot_info["bulge_to_total_history"],
     )
 
-    diffsky_data["sfh_bulge"] = phot_info["disk_bulge_history"].sfh_bulge
+    diffsky_data["sfh_bulge"] = phot_info["sfh_bulge"]
     diffsky_data["sfh_disk"] = phot_info["sfh_table"] - diffsky_data["sfh_bulge"]
+
+    morph_key, disk_size_key, bulge_size_key = jran.split(morph_key, 3)
+    r50_disk, zscore_disk = dbs.mc_r50_disk_size(
+        10 ** diffsky_data["logsm_obs"], lc_data["redshift_true"], disk_size_key
+    )
+    r50_bulge, zscore_bulge = dbs.mc_r50_bulge_size(
+        10 ** diffsky_data["logsm_obs"], lc_data["redshift_true"], bulge_size_key
+    )
+
+    diffsky_data["r50_disk"] = r50_disk
+    diffsky_data["r50_bulge"] = r50_bulge
+    diffsky_data["zscore_r50_disk"] = zscore_disk
+    diffsky_data["zscore_r50_bulge"] = zscore_bulge
+
+    morph_key, disk_shape_key, bulge_shape_key = jran.split(morph_key, 3)
+    n = diffsky_data["r50_disk"].size
+    disk_axis_ratios = disk_shapes.sample_disk_axis_ratios(disk_shape_key, n)
+    bulge_axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_shape_key, n)
+
+    diffsky_data["b_over_a_disk"] = disk_axis_ratios.b_over_a
+    diffsky_data["c_over_a_disk"] = disk_axis_ratios.c_over_a
+
+    diffsky_data["b_over_a_bulge"] = bulge_axis_ratios.b_over_a
+    diffsky_data["c_over_a_bulge"] = bulge_axis_ratios.c_over_a
+
+    morph_key, disk_orientation_key, bulge_orientation_key = jran.split(morph_key, 3)
+    ellipse2d_disk = ellipse_proj_kernels.mc_ellipsoid_params(
+        diffsky_data["r50_disk"],
+        diffsky_data["b_over_a_disk"],
+        diffsky_data["c_over_a_disk"],
+        disk_orientation_key,
+    )
+    ellipse2d_bulge = ellipse_proj_kernels.mc_ellipsoid_params(
+        diffsky_data["r50_bulge"],
+        diffsky_data["b_over_a_bulge"],
+        diffsky_data["c_over_a_bulge"],
+        bulge_orientation_key,
+    )
+
+    diffsky_data["beta_disk"] = ellipse2d_disk.beta
+    diffsky_data["alpha_disk"] = ellipse2d_disk.alpha
+    diffsky_data["ellipticity_disk"] = ellipse2d_disk.ellipticity
+    diffsky_data["psi_disk"] = ellipse2d_disk.psi
+
+    diffsky_data["e_beta_x_disk"] = ellipse2d_disk.e_beta[:, 0]
+    diffsky_data["e_beta_y_disk"] = ellipse2d_disk.e_beta[:, 1]
+    diffsky_data["e_alpha_x_disk"] = ellipse2d_disk.e_alpha[:, 0]
+    diffsky_data["e_alpha_y_disk"] = ellipse2d_disk.e_alpha[:, 1]
+
+    diffsky_data["beta_bulge"] = ellipse2d_bulge.beta
+    diffsky_data["alpha_bulge"] = ellipse2d_bulge.alpha
+    diffsky_data["ellipticity_bulge"] = ellipse2d_bulge.ellipticity
+    diffsky_data["psi_bulge"] = ellipse2d_bulge.psi
+
+    diffsky_data["e_beta_x_bulge"] = ellipse2d_bulge.e_beta[:, 0]
+    diffsky_data["e_beta_y_bulge"] = ellipse2d_bulge.e_beta[:, 1]
+    diffsky_data["e_alpha_x_bulge"] = ellipse2d_bulge.e_alpha[:, 0]
+    diffsky_data["e_alpha_y_bulge"] = ellipse2d_bulge.e_alpha[:, 1]
 
     return diffsky_data
 
@@ -409,3 +497,20 @@ def get_patch_info_from_mock_basename(bn):
     stepnum = int(stepnum)
     patchnum = int(patchnum)
     return stepnum, patchnum
+
+
+def concatenate_batched_phot_data(phot_batches):
+
+    phot_info = dict()
+    for key in phot_batches[0][0].keys():
+        phot_info[key] = np.concatenate([x[0][key] for x in phot_batches])
+
+    lc_data = dict()
+    for key in phot_batches[0][1].keys():
+        lc_data[key] = np.concatenate([x[1][key] for x in phot_batches])
+
+    diffsky_data = dict()
+    for key in phot_batches[0][2].keys():
+        diffsky_data[key] = np.concatenate([x[2][key] for x in phot_batches])
+
+    return phot_info, lc_data, diffsky_data

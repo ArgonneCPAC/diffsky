@@ -128,6 +128,10 @@ column_metadata["delta_scatter_q"] = (
     "Array for adding noise to SSP SED errors",
 )
 
+column_metadata["av"] = ("None", "Dust attenuation curve parameter")
+column_metadata["delta"] = ("None", "Dust attenuation curve parameter")
+column_metadata["funo"] = ("None", "Dust attenuation curve parameter")
+
 column_metadata["bulge_to_total"] = ("None", "Bulge-to-total mass ratio")
 column_metadata["fbulge_tcrit"] = ("None", "Bulge model parameter")
 column_metadata["fbulge_early"] = ("None", "Bulge model parameter")
@@ -304,6 +308,91 @@ column_metadata["mc_sfh_type"] = (
 )
 
 
+column_metadata["r50_disk"] = ("kpc", "Half-mass radius of disk")
+column_metadata["r50_bulge"] = ("kpc", "Half-mass radius of bulge")
+column_metadata["zscore_r50_disk"] = (
+    "None",
+    "Gaussian random used to add scatter to disk radius",
+)
+column_metadata["zscore_r50_bulge"] = (
+    "None",
+    "Gaussian random used to add scatter to bulge radius",
+)
+
+column_metadata["b_over_a_disk"] = ("None", "3d axis ratio b/a, where 0 < b/a < 1")
+column_metadata["c_over_a_disk"] = ("None", "3d axis ratio c/a, where 0 < c/a < 1")
+column_metadata["b_over_a_bulge"] = ("None", "3d axis ratio b/a, where 0 < b/a < 1")
+column_metadata["c_over_a_bulge"] = ("None", "3d axis ratio c/a, where 0 < c/a < 1")
+
+column_metadata["beta_disk"] = (
+    "kpc",
+    "2d projected size of the semi-major axis of the disk",
+)
+column_metadata["alpha_disk"] = (
+    "kpc",
+    "2d projected size of the semi-minor axis of the disk",
+)
+column_metadata["ellipticity_disk"] = (
+    "None",
+    "2d projected size of the semi-major axis of the disk",
+)
+column_metadata["psi_disk"] = (
+    "None",
+    "Angular coordinate of projected semi-major axis of the disk, where 0<ψ<2π",
+)
+
+column_metadata["beta_bulge"] = (
+    "kpc",
+    "2d projected size of the semi-major axis of the bulge",
+)
+column_metadata["alpha_bulge"] = (
+    "kpc",
+    "2d projected size of the semi-minor axis of the bulge",
+)
+column_metadata["ellipticity_bulge"] = (
+    "None",
+    "2d projected size of the semi-major axis of the bulge",
+)
+column_metadata["psi_bulge"] = (
+    "None",
+    "Angular coordinate of projected semi-major axis of the bulge, where 0<ψ<2π",
+)
+
+column_metadata["e_beta_x_disk"] = (
+    "None",
+    "x-coord of unit-normalized semi-major axis of the disk",
+)
+column_metadata["e_beta_y_disk"] = (
+    "None",
+    "y-coord of unit-normalized semi-major axis of the disk",
+)
+column_metadata["e_alpha_x_disk"] = (
+    "None",
+    "x-coord of unit-normalized semi-minor axis of the disk",
+)
+column_metadata["e_alpha_y_disk"] = (
+    "None",
+    "y-coord of unit-normalized semi-minor axis of the disk",
+)
+
+column_metadata["e_beta_x_bulge"] = (
+    "None",
+    "x-coord of unit-normalized semi-major axis of the bulge",
+)
+column_metadata["e_beta_y_bulge"] = (
+    "None",
+    "y-coord of unit-normalized semi-major axis of the bulge",
+)
+column_metadata["e_alpha_x_bulge"] = (
+    "None",
+    "x-coord of unit-normalized semi-minor axis of the bulge",
+)
+column_metadata["e_alpha_y_bulge"] = (
+    "None",
+    "y-coord of unit-normalized semi-minor axis of the bulge",
+)
+
+
 HEADER_COMMENT = """
 This file contains diffsky galaxy data.
 Each file stores mock galaxies in a thin redshift shell of a small patch of sky.
@@ -312,17 +401,18 @@ Contact: ahearin@anl.gov for questions.
 """
 
 
-def append_metadata(fnout, sim_name):
+def append_metadata(fnout, sim_name, mock_version_name):
     with h5py.File(fnout, "r+") as hdf_out:
-        hdf_out.require_group("metadata")
-        hdf_out.attrs["metadata/creation_date"] = str(datetime.now())
+        metadata_group = hdf_out.require_group("metadata")
 
-        hdf_out.attrs["metadata/header"] = HEADER_COMMENT
+        metadata_group.attrs["creation_date"] = str(datetime.now())
+        metadata_group.attrs["mock_version_name"] = mock_version_name
+        metadata_group.attrs["README"] = HEADER_COMMENT
 
         sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
 
         # Nbody simulation info
-        nbody_group = hdf_out.require_group("metadata/nbody_info")
+        nbody_group = metadata_group.require_group("nbody_info")
         nbody_group.attrs["sim_name"] = sim_name
         nbody_group.attrs["n_particles"] = sim_info.sim.np**3
         nbody_group.attrs["Lbox"] = sim_info.sim.rl / sim_info.cosmo_params.h
@@ -331,7 +421,7 @@ def append_metadata(fnout, sim_name):
         nbody_group.attrs["particle_mass"] = mp
 
         # Cosmology info
-        cosmo_group = hdf_out.require_group("metadata/cosmology")
+        cosmo_group = metadata_group.require_group("cosmology")
         cosmo_group.attrs["Om0"] = sim_info.sim.cosmo.Omega_m
         cosmo_group.attrs["w0"] = sim_info.sim.cosmo.w0
         cosmo_group.attrs["wa"] = sim_info.sim.cosmo.wa
@@ -341,10 +431,12 @@ def append_metadata(fnout, sim_name):
         cosmo_group.attrs["ns"] = sim_info.sim.cosmo.ns
 
         # Software version info
-        version_info_group = hdf_out.require_group("metadata/version_info")
-        version_info = get_dependency_versions()
-        for libname, version in version_info.items():
-            version_info_group.attrs[libname] = version
+        software_version_info_group = metadata_group.require_group(
+            "software_version_info"
+        )
+        software_version_info = get_dependency_versions()
+        for libname, version in software_version_info.items():
+            software_version_info_group.attrs[libname] = version
 
         # Column metadata
         for key, val in column_metadata.items():
@@ -357,7 +449,7 @@ def append_metadata(fnout, sim_name):
 
 
 def get_dependency_versions():
-    version_info = dict()
+    software_version_info = dict()
     import diffmah  # noqa
     import diffstar  # noqa
     import dsps  # noqa
@@ -366,11 +458,11 @@ def get_dependency_versions():
 
     import diffsky  # noqa
 
-    version_info["diffmah"] = str(diffmah.__version__)
-    version_info["diffsky"] = str(diffsky.__version__)
-    version_info["diffstar"] = str(diffstar.__version__)
-    version_info["dsps"] = str(dsps.__version__)
-    version_info["jax"] = str(jax.__version__)
-    version_info["numpy"] = str(numpy.__version__)
+    software_version_info["diffmah"] = str(diffmah.__version__)
+    software_version_info["diffsky"] = str(diffsky.__version__)
+    software_version_info["diffstar"] = str(diffstar.__version__)
+    software_version_info["dsps"] = str(dsps.__version__)
+    software_version_info["jax"] = str(jax.__version__)
+    software_version_info["numpy"] = str(numpy.__version__)
 
-    return version_info
+    return software_version_info

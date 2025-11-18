@@ -27,4 +27,4 @@ def truncated_normal_sample(ran_key, shape, mu, sigma, x_min, x_max):
     # Clamp to bounds for numerical safety
     x_sample = jnp.clip(x_sample, x_min, x_max)
 
-    return x_sample
+    return x_sample, uran

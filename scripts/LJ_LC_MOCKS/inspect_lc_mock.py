@@ -21,7 +21,10 @@ if __name__ == "__main__":
     bnpat = args.bnpat
     drn_report = args.drn_report
 
-    fn_lc_mock_list = glob(os.path.join(drn_mock, bnpat))
+    fn_pat = os.path.join(drn_mock, bnpat)
+    fn_lc_mock_list = glob(fn_pat)
+    msg_no_mocks = f"No mocks detected with filename pattern {fn_pat}"
+    assert len(fn_lc_mock_list) > 0, msg_no_mocks
 
     all_good = True
     failure_collector = []

@@ -8,15 +8,18 @@ from glob import glob
 import h5py
 import numpy as np
 from diffmah.defaults import DEFAULT_MAH_PARAMS
-from dsps.cosmology import flat_wcdm
+from dsps.cosmology import DEFAULT_COSMOLOGY, flat_wcdm
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
 
+from ...experimental.lc_utils import spherical_shell_comoving_volume
 from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
+from . import haccsims
 from . import load_hacc_cores as lhc
 from .defaults import DIFFMAH_MASS_COLNAME
+from .load_lc_cf import get_diffsky_info_from_hacc_sim
 
 DEG_PER_RAD = 180 / np.pi
 SQDEG_PER_STER = DEG_PER_RAD**2
@@ -72,13 +75,6 @@ LC_PATCH_DIFFSKY_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_PATCH_BNPAT = "lc_cores-{0}.{1}.hdf5"
 
 BNPAT_LC_CFG = "lc_patch_list_{0}_to_{1}.cfg"
-
-try:
-    from haccytrees import Simulation as HACCSim
-
-    HAS_HACCYTREES = True
-except ImportError:
-    HAS_HACCYTREES = False
 
 
 @jjit
@@ -182,6 +178,14 @@ def get_redshift_from_xyz(x_mpch, y_mpch, z_mpch, cosmo_params):
     redshift = jnp.interp(d_mpc, d_table, z_table)
 
     return redshift
+
+
+def read_hacc_lc_patch_decomposition(sim_name):
+    """Read and parse 'lc_cores-decomposition.txt' for a recognized HACC sim"""
+    _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
+    drn = os.path.join(_THIS_DRNAME, "data", sim_name)
+    fn = os.path.join(drn, "lc_cores-decomposition.txt")
+    return read_lc_ra_dec_patch_decomposition(fn)
 
 
 def read_lc_ra_dec_patch_decomposition(fn):
@@ -454,7 +458,7 @@ def get_timesteps_in_zrange(sim_name, z_min, z_max, max_timestep=MAX_LJ_LC_TIMES
     _res = hcu.get_timestep_range_from_z_range(sim_name, z_min, z_max)
     timestep_min, timestep_max = _res[2:]
     timestep_max = min(timestep_max, max_timestep)
-    sim = HACCSim.simulations[sim_name]
+    sim = haccsims.simulations[sim_name]
     all_timesteps = np.array(sim.cosmotools_steps)
     msk = (all_timesteps >= timestep_min) & (all_timesteps <= timestep_max)
     timesteps = all_timesteps[msk]
@@ -547,9 +551,9 @@ def make_cfg_file(i, j, drn=""):
 
 def get_a_range_of_lc_cores_file(bname_lc_cores, sim_name):
     """Get range of scale factor spanned by data in bname_lc_cores"""
-    sim = HACCSim.simulations[sim_name]
+    sim = haccsims.simulations[sim_name]
     steps = np.array(sim.cosmotools_steps)
-    aarr = sim.step2a(steps)
+    aarr = sim.scale_factors
 
     stepnum, lc_patch = [int(s) for s in bname_lc_cores.split("-")[1].split(".")[:-1]]
     indx_step = np.searchsorted(steps, stepnum)
@@ -643,3 +647,16 @@ def get_lsst_ddf_patches(fn, lsst_ddf_fields=LSST_DDF_FIELDS, rad_deg=LSST_DDF_R
         lc_patches = get_matching_lc_patches(fn, field_info)
         lsst_ddf_patches[field_name] = lc_patches
     return lsst_ddf_patches
+
+
+def _estimate_nhalos_sky_patch(sim_name, stepnum):
+    diffsky_info = get_diffsky_info_from_hacc_sim(sim_name)
+    dstep = np.abs(diffsky_info.sim.cosmotools_steps - stepnum)
+    indx_step = np.argmin(dstep)
+    z_obs = diffsky_info.z_sim[indx_step]
+
+    z_grid = np.linspace(0.001, 10.0, 100)
+    vol_shell_grid_mpc = spherical_shell_comoving_volume(z_grid, DEFAULT_COSMOLOGY)
+
+    vol_at_z = np.interp(z_obs, z_grid, vol_shell_grid_mpc)
+    return vol_at_z
