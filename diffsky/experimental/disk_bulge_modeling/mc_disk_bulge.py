@@ -5,7 +5,6 @@ Generate disk-bulge decomposition
 from collections import OrderedDict, namedtuple
 
 import jax.numpy as jnp
-import numpy as np
 from diffstar.utils import cumulative_mstar_formed_galpop
 from dsps.constants import SFR_MIN
 
