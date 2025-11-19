@@ -887,7 +887,7 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         fknot=fknot,
     )
 
-    return phot_info._asdict()
+    return phot_info._asdict(), mstar_obs_knot
 
 
 def _mc_diffsky_phot_dbk_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params):

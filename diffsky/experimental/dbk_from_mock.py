@@ -273,4 +273,4 @@ def _disk_bulge_knot_phot_from_mock(
         ssp_weights=ssp_weights,
     )
 
-    return phot_info._asdict()
+    return phot_info._asdict(), mstar_obs_knot
