@@ -109,3 +109,22 @@ def test_disk_bulge_knot_phot_from_mock():
     assert np.allclose(
         dbk_phot_info["obs_mags"], dbk_phot_info_from_mock["obs_mags"], rtol=1e-3
     )
+
+    assert np.allclose(
+        dbk_phot_info["obs_mags_bulge"],
+        dbk_phot_info_from_mock["obs_mags_bulge"],
+        rtol=0.001,
+    )
+
+    assert np.allclose(
+        dbk_phot_info["obs_mags_disk"],
+        dbk_phot_info_from_mock["obs_mags_disk"],
+        rtol=0.01,
+    )
+    return dbk_phot_info, dbk_phot_info_from_mock
+
+    assert np.allclose(
+        dbk_phot_info["obs_mags_knots"],
+        dbk_phot_info_from_mock["obs_mags_knots"],
+        atol=0.1,
+    )
