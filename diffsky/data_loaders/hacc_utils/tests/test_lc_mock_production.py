@@ -17,6 +17,7 @@ from diffsky.param_utils import diffsky_param_wrapper as dpw
 
 from ....experimental import precompute_ssp_phot as psspp
 from ....experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
+from ....experimental.disk_bulge_modeling import mc_disk_bulge as mcdb
 from ....experimental.lc_phot_kern import get_wave_eff_table
 from ....experimental.tests import test_lc_phot_kern as tlcphk
 from .. import lc_mock_production as lcmp
@@ -100,6 +101,7 @@ def test_add_dbk_sed_quantities_to_mock():
     )
     _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
     phot_info, lc_data, diffsky_data = _res
+    assert np.allclose(phot_info["sfh_table"], diffsky_data["sfh_table"], rtol=0.01)
 
     fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(
         (phot_info["fbulge_tcrit"], phot_info["fbulge_early"], phot_info["fbulge_late"])
@@ -114,3 +116,14 @@ def test_add_dbk_sed_quantities_to_mock():
         t_obs, t_table, phot_info["bulge_to_total_history"]
     )
     assert np.allclose(bulge_to_total_recomputed, bulge_to_total_recomputed2, rtol=0.01)
+
+    disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
+        t_table, diffsky_data["sfh_table"]
+    )
+
+    for pname in disk_bulge_history.fbulge_params._fields:
+        assert np.allclose(
+            getattr(disk_bulge_history.fbulge_params, pname),
+            getattr(fbulge_params, pname),
+            rtol=0.01,
+        )
