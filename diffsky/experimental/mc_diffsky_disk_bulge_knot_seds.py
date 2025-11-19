@@ -792,7 +792,7 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         knot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
     )
 
-    _res = disk_knots._disk_knot_vmap(
+    _dk_args = (
         t_table,
         t_obs,
         sfh_table,
@@ -802,7 +802,8 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         age_weights_pureburst,
         ssp_data.ssp_lg_age_gyr,
     )
-    mstar_tot, mburst, mdd, mknot, age_weights_dd, age_weights_knot = _res
+    _dk_res = disk_knots._disk_knot_vmap(*_dk_args)
+    mstar_tot, mburst, mdd, mknot, age_weights_dd, age_weights_knot = _dk_res
     mstar_obs_dd = mdd.reshape((n_gals, 1))
     mstar_obs_knot = mknot.reshape((n_gals, 1))
 
@@ -887,7 +888,7 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         fknot=fknot,
     )
 
-    return phot_info._asdict(), mstar_obs_knot
+    return phot_info._asdict(), _dk_args, _dk_res
 
 
 def _mc_diffsky_phot_dbk_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params):

@@ -196,7 +196,7 @@ def _disk_bulge_knot_phot_from_mock(
         ssp_lg_age_yr, burst_params.lgyr_peak, burst_params.lgyr_max
     )
 
-    _res = disk_knots._disk_knot_vmap(
+    _dk_args = (
         t_table,
         t_obs,
         sfh_table,
@@ -206,7 +206,8 @@ def _disk_bulge_knot_phot_from_mock(
         age_weights_pureburst,
         ssp_data.ssp_lg_age_gyr,
     )
-    mstar_tot, mburst, mdd, mknot, age_weights_dd, age_weights_knot = _res
+    _dk_res = disk_knots._disk_knot_vmap(*_dk_args)
+    mstar_tot, mburst, mdd, mknot, age_weights_dd, age_weights_knot = _dk_res
     mstar_obs_dd = mdd.reshape((n_gals, 1))
     mstar_obs_knot = mknot.reshape((n_gals, 1))
 
@@ -273,4 +274,4 @@ def _disk_bulge_knot_phot_from_mock(
         ssp_weights=ssp_weights,
     )
 
-    return phot_info._asdict(), mstar_obs_knot
+    return phot_info._asdict(), _dk_args, _dk_res
