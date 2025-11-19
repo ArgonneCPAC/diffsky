@@ -121,10 +121,15 @@ def test_disk_bulge_knot_phot_from_mock():
         dbk_phot_info_from_mock["obs_mags_disk"],
         rtol=0.01,
     )
-    return dbk_phot_info, dbk_phot_info_from_mock
 
     assert np.allclose(
-        dbk_phot_info["obs_mags_knots"],
-        dbk_phot_info_from_mock["obs_mags_knots"],
-        atol=0.1,
+        dbk_phot_info["bulge_to_total_history"],
+        dbk_phot_info_from_mock["bulge_to_total_history"],
+        rtol=0.01,
     )
+
+    # assert np.allclose(
+    #     dbk_phot_info["obs_mags_knots"],
+    #     dbk_phot_info_from_mock["obs_mags_knots"],
+    #     atol=0.1,
+    # )
