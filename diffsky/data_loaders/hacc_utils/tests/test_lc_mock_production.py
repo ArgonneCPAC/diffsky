@@ -5,16 +5,24 @@ import os
 import numpy as np
 import pytest
 from diffmah import DEFAULT_MAH_PARAMS
+from dsps.constants import T_TABLE_MIN
+from dsps.cosmology.flat_wcdm import age_at_z, age_at_z0
 from dsps.data_loaders import load_ssp_templates
+from jax import jit as jjit
+from jax import numpy as jnp
 from jax import random as jran
+from jax import vmap
 
 from diffsky.param_utils import diffsky_param_wrapper as dpw
 
 from ....experimental import precompute_ssp_phot as psspp
+from ....experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
 from ....experimental.lc_phot_kern import get_wave_eff_table
 from ....experimental.tests import test_lc_phot_kern as tlcphk
 from .. import lc_mock_production as lcmp
 from .. import load_lc_cf
+
+vmap_interp = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
 DRN_CF_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LC_CF_LJ_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
@@ -71,6 +79,8 @@ def test_add_dbk_sed_quantities_to_mock():
     lc_data, diffsky_data, tcurves = _prepare_input_catalogs()
 
     z_phot_table = np.linspace(lc_data["z_obs"].min(), lc_data["z_obs"].max(), 15)
+    t0 = age_at_z0(*diffsky_info.cosmo_params)
+    t_table = np.linspace(T_TABLE_MIN, t0, 100)
 
     precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
         tcurves, ssp_data, z_phot_table, diffsky_info.cosmo_params
@@ -90,3 +100,17 @@ def test_add_dbk_sed_quantities_to_mock():
     )
     _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
     phot_info, lc_data, diffsky_data = _res
+
+    fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(
+        (phot_info["fbulge_tcrit"], phot_info["fbulge_early"], phot_info["fbulge_late"])
+    )
+
+    t_obs = age_at_z(lc_data["redshift_true"], *diffsky_info.cosmo_params)
+
+    _res = dbk._bulge_sfh_vmap(t_table, phot_info["sfh_table"], fbulge_params)
+    bth = _res[-1]
+    bulge_to_total_recomputed = vmap_interp(t_obs, t_table, bth)
+    bulge_to_total_recomputed2 = vmap_interp(
+        t_obs, t_table, phot_info["bulge_to_total_history"]
+    )
+    assert np.allclose(bulge_to_total_recomputed, bulge_to_total_recomputed2, rtol=0.01)
