@@ -131,30 +131,29 @@ def test_add_dbk_sed_quantities_to_mock():
         diffsky_data_with_sfh["sfh_table"], diffsky_data["sfh_table"], rtol=0.01
     )
 
-    return phot_info, diffsky_data, t_table
     assert np.allclose(phot_info["sfh_table"], diffsky_data["sfh_table"], rtol=0.01)
 
-    # fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(
-    #     (phot_info["fbulge_tcrit"], phot_info["fbulge_early"], phot_info["fbulge_late"])
-    # )
+    fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(
+        (phot_info["fbulge_tcrit"], phot_info["fbulge_early"], phot_info["fbulge_late"])
+    )
 
-    # t_obs = age_at_z(lc_data["redshift_true"], *diffsky_info.cosmo_params)
+    t_obs = age_at_z(lc_data["redshift_true"], *diffsky_info.cosmo_params)
 
-    # _res = dbk._bulge_sfh_vmap(t_table, phot_info["sfh_table"], fbulge_params)
-    # bth = _res[-1]
-    # bulge_to_total_recomputed = vmap_interp(t_obs, t_table, bth)
-    # bulge_to_total_recomputed2 = vmap_interp(
-    #     t_obs, t_table, phot_info["bulge_to_total_history"]
-    # )
-    # assert np.allclose(bulge_to_total_recomputed, bulge_to_total_recomputed2, rtol=0.01)
+    _res = dbk._bulge_sfh_vmap(t_table, phot_info["sfh_table"], fbulge_params)
+    bth = _res[-1]
+    bulge_to_total_recomputed = vmap_interp(t_obs, t_table, bth)
+    bulge_to_total_recomputed2 = vmap_interp(
+        t_obs, t_table, phot_info["bulge_to_total_history"]
+    )
+    assert np.allclose(bulge_to_total_recomputed, bulge_to_total_recomputed2, rtol=0.01)
 
-    # disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
-    #     t_table, diffsky_data["sfh_table"]
-    # )
+    disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
+        t_table, diffsky_data["sfh_table"]
+    )
 
-    # for pname in disk_bulge_history.fbulge_params._fields:
-    #     assert np.allclose(
-    #         getattr(disk_bulge_history.fbulge_params, pname),
-    #         getattr(fbulge_params, pname),
-    #         rtol=0.01,
-    #     )
+    for pname in disk_bulge_history.fbulge_params._fields:
+        assert np.allclose(
+            getattr(disk_bulge_history.fbulge_params, pname),
+            getattr(fbulge_params, pname),
+            rtol=0.01,
+        )
