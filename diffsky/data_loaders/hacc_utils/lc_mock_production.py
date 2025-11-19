@@ -91,16 +91,16 @@ DIFFSKY_DATA_KEYS_OUT = (
     "has_diffmah_fit",
     "logmp0",
     "logmp_obs",
-    "logsm_obs",
-    "logssfr_obs",
     *TOP_HOST_SHAPE_KEYS,
     *DEFAULT_MAH_PARAMS._fields,
-    *DEFAULT_DIFFSTAR_PARAMS._fields,
     *SIZE_KEYS,
     *ORIENTATION_KEYS,
 )
 
 PHOT_INFO_KEYS_OUT = (
+    *DEFAULT_DIFFSTAR_PARAMS._fields,
+    "logsm_obs",
+    "logssfr_obs",
     "uran_av",
     "uran_delta",
     "uran_funo",
@@ -327,22 +327,13 @@ def add_dbk_sed_quantities_to_mock(
         ssp_err_pop_params,
     ) = param_collection
 
-    n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
-
-    ran_key, sfh_key = jran.split(ran_key, 2)
-    lc_data, diffsky_data = add_sfh_quantities_to_mock(
-        sim_info, lc_data, diffsky_data, sfh_key
-    )
-    n_gals = diffsky_data["logsm_obs"].size
-
     t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
 
     mah_params = DEFAULT_MAH_PARAMS._make(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
-    ran_key, sed_key = jran.split(ran_key, 2)
     args = (
-        sed_key,
+        ran_key,
         lc_data["redshift_true"],
         lc_data["t_obs"],
         mah_params,
@@ -383,10 +374,10 @@ def add_morphology_quantities_to_diffsky_data(
 
     morph_key, disk_size_key, bulge_size_key = jran.split(morph_key, 3)
     r50_disk, zscore_disk = dbs.mc_r50_disk_size(
-        10 ** diffsky_data["logsm_obs"], lc_data["redshift_true"], disk_size_key
+        10 ** phot_info["logsm_obs"], lc_data["redshift_true"], disk_size_key
     )
     r50_bulge, zscore_bulge = dbs.mc_r50_bulge_size(
-        10 ** diffsky_data["logsm_obs"], lc_data["redshift_true"], bulge_size_key
+        10 ** phot_info["logsm_obs"], lc_data["redshift_true"], bulge_size_key
     )
 
     diffsky_data["r50_disk"] = r50_disk
@@ -442,11 +433,11 @@ def add_morphology_quantities_to_diffsky_data(
     return diffsky_data
 
 
-def add_black_hole_quantities_to_diffsky_data(lc_data, diffsky_data):
-    bulge_mass = diffsky_data["bulge_to_total"] * 10 ** diffsky_data["logsm_obs"]
+def add_black_hole_quantities_to_diffsky_data(lc_data, diffsky_data, phot_info):
+    bulge_mass = diffsky_data["bulge_to_total"] * 10 ** phot_info["logsm_obs"]
     diffsky_data["black_hole_mass"] = bhm.bh_mass_from_bulge_mass(bulge_mass)
 
-    p_ssfr = approximate_ssfr_percentile(diffsky_data["logssfr_obs"])
+    p_ssfr = approximate_ssfr_percentile(phot_info["logssfr_obs"])
     z = lc_data["redshift_true"].mean()
     _res = monte_carlo_bh_acc_rate(z, diffsky_data["black_hole_mass"], p_ssfr)
     diffsky_data["black_hole_eddington_ratio"] = _res[0]

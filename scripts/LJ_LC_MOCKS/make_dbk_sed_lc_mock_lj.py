@@ -357,7 +357,7 @@ if __name__ == "__main__":
         )
 
         diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
-            lc_data, diffsky_data
+            lc_data, diffsky_data, phot_info
         )
 
         patch_key, nfw_key = jran.split(patch_key, 2)
