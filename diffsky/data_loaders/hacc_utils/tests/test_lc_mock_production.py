@@ -1,6 +1,7 @@
 """ """
 
 import os
+from copy import deepcopy
 
 import numpy as np
 import pytest
@@ -88,12 +89,18 @@ def test_add_sfh_quantities_to_mock():
 
 
 def test_add_dbk_sed_quantities_to_mock():
-    ran_key = jran.key(0)
     diffsky_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
 
     ssp_data = load_ssp_templates()
 
     lc_data, diffsky_data, tcurves = _prepare_input_catalogs()
+    diffsky_data_orig = deepcopy(diffsky_data)
+
+    __, sfh_key = jran.split(jran.key(0), 2)
+    lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
+        diffsky_info, deepcopy(lc_data), deepcopy(diffsky_data), sfh_key
+    )
+    diffsky_data_with_sfh = deepcopy(diffsky_data)
 
     z_phot_table = np.linspace(lc_data["z_obs"].min(), lc_data["z_obs"].max(), 15)
     t0 = age_at_z0(*diffsky_info.cosmo_params)
@@ -104,6 +111,7 @@ def test_add_dbk_sed_quantities_to_mock():
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
+    ran_key = jran.key(0)
     args = (
         diffsky_info,
         lc_data,
@@ -115,12 +123,13 @@ def test_add_dbk_sed_quantities_to_mock():
         wave_eff_table,
         ran_key,
     )
-    assert "sfh_table" not in diffsky_data.keys()
 
     _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
     phot_info, lc_data, diffsky_data = _res
 
-    assert np.allclose(phot_info["sfh_table"], diffsky_data["sfh_table"], rtol=0.01)
+    assert np.allclose(
+        diffsky_data_with_sfh["sfh_table"], diffsky_data["sfh_table"], rtol=0.01
+    )
 
     fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(
         (phot_info["fbulge_tcrit"], phot_info["fbulge_early"], phot_info["fbulge_late"])
