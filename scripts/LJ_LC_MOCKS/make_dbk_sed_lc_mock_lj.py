@@ -318,7 +318,6 @@ if __name__ == "__main__":
             for key in diffsky_data.keys():
                 diffsky_data_batch[key] = diffsky_data[key][istart:iend]
 
-            patch_key, sed_key = jran.split(patch_key, 2)
             args = (
                 sim_info,
                 lc_data_batch,
@@ -328,7 +327,7 @@ if __name__ == "__main__":
                 precomputed_ssp_mag_table,
                 z_phot_table,
                 wave_eff_table,
-                sed_key,
+                batch_key,
             )
             _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
             phot_info_batch, lc_data_batch, diffsky_data_batch = _res
