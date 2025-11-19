@@ -2,7 +2,7 @@
 
 To run a unit test of this script:
 
-python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py  poboy 0.01 0.05 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.0 -lgmp_max 13.0
+python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py  poboy 0.2 0.21 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.0 -lgmp_max 13.0
 
 python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
 
@@ -318,7 +318,6 @@ if __name__ == "__main__":
             for key in diffsky_data.keys():
                 diffsky_data_batch[key] = diffsky_data[key][istart:iend]
 
-            patch_key, sed_key = jran.split(patch_key, 2)
             args = (
                 sim_info,
                 lc_data_batch,
@@ -328,7 +327,7 @@ if __name__ == "__main__":
                 precomputed_ssp_mag_table,
                 z_phot_table,
                 wave_eff_table,
-                sed_key,
+                batch_key,
             )
             _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
             phot_info_batch, lc_data_batch, diffsky_data_batch = _res

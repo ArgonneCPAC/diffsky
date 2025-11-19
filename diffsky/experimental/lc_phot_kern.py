@@ -130,15 +130,8 @@ def diffstarpop_lc_cen_wrapper(
     _res = mc_diffstar_sfh_galpop(*args)
     diffstar_params_ms, diffstar_params_q, sfh_ms, sfh_q, frac_q, mc_is_q = _res
 
-    logsmh_table_ms = jnp.log10(cumulative_mstar_formed_galpop(t_table, sfh_ms))
-    logsm_obs_ms = interp_vmap(t_obs, t_table, logsmh_table_ms)
-    logsfr_obs_ms = interp_vmap(t_obs, t_table, jnp.log10(sfh_ms))
-    logssfr_obs_ms = logsfr_obs_ms - logsm_obs_ms
-
-    logsmh_table_q = jnp.log10(cumulative_mstar_formed_galpop(t_table, sfh_q))
-    logsm_obs_q = interp_vmap(t_obs, t_table, logsmh_table_q)
-    logsfr_obs_q = interp_vmap(t_obs, t_table, jnp.log10(sfh_q))
-    logssfr_obs_q = logsfr_obs_q - logsm_obs_q
+    logsm_obs_ms, logssfr_obs_ms = _get_sfh_info_at_t_obs(t_table, sfh_ms, t_obs)
+    logsm_obs_q, logssfr_obs_q = _get_sfh_info_at_t_obs(t_table, sfh_q, t_obs)
 
     diffstar_galpop = DPQ_EMPTY._replace(
         frac_q=frac_q,
@@ -153,6 +146,15 @@ def diffstarpop_lc_cen_wrapper(
     )
 
     return diffstar_galpop
+
+
+@jjit
+def _get_sfh_info_at_t_obs(t_table, sfh_table, t_obs):
+    logsmh_table = jnp.log10(cumulative_mstar_formed_galpop(t_table, sfh_table))
+    logsm_obs = interp_vmap(t_obs, t_table, logsmh_table)
+    logsfr_obs = interp_vmap(t_obs, t_table, jnp.log10(sfh_table))
+    logssfr_obs = logsfr_obs - logsm_obs
+    return logsm_obs, logssfr_obs
 
 
 @jjit
