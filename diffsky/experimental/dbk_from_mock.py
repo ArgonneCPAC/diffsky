@@ -45,6 +45,7 @@ DBK_PHOT_INFO_KEYS = (
 DBK_PhotInfo = namedtuple("DBK_PhotInfo", DBK_PHOT_INFO_KEYS)
 
 
+@jjit
 def _disk_bulge_knot_phot_from_mock(
     z_obs,
     t_obs,

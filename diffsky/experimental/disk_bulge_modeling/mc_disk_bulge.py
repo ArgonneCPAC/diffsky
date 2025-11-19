@@ -82,7 +82,7 @@ def decompose_sfh_into_disk_bulge_sfh(
         History of bulge-to-total mass ratio of every galaxy
 
     """
-    sfh_pop = np.where(sfh_pop < SFR_MIN, SFR_MIN, sfh_pop)
+    sfh_pop = jnp.where(sfh_pop < SFR_MIN, SFR_MIN, sfh_pop)
     smh_pop = cumulative_mstar_formed_galpop(tarr, sfh_pop)
     t10 = dbk.calc_tform_pop(tarr, smh_pop, 0.1)
     t90 = dbk.calc_tform_pop(tarr, smh_pop, 0.9)
