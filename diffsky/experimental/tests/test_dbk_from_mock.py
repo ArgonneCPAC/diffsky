@@ -46,9 +46,10 @@ def test_disk_bulge_knot_phot_from_mock():
         ssp_err_pop_params,
         DEFAULT_COSMOLOGY,
     )
-    dbk_phot_info, _dk_args, _dk_res = mc_dbk_sed._mc_diffsky_disk_bulge_knot_phot_kern(
-        *mc_args
-    )
+    # dbk_phot_info, _dk_args, _dk_res = mc_dbk_sed._mc_diffsky_disk_bulge_knot_phot_kern(
+    #     *mc_args
+    # )
+    dbk_phot_info = mc_dbk_sed._mc_diffsky_disk_bulge_knot_phot_kern(*mc_args)
 
     logsm_obs, logssfr_obs = lc_phot_kern._get_sfh_info_at_t_obs(
         lc_data.t_table, dbk_phot_info["sfh_table"], lc_data.t_obs
@@ -106,12 +107,21 @@ def test_disk_bulge_knot_phot_from_mock():
         dbk_phot_info["mc_sfh_type"],
         dbk_phot_info["fknot"],
     )
-    dbk_phot_info_from_mock, _dk_args2, _dk_res2 = (
-        dbk_from_mock._disk_bulge_knot_phot_from_mock(*mock_args)
-    )
-    return _dk_args, _dk_res, _dk_args2, _dk_res2, lc_data
+    # dbk_phot_info_from_mock, _dk_args2, _dk_res2 = (
+    #     dbk_from_mock._disk_bulge_knot_phot_from_mock(*mock_args)
+    # )
+    dbk_phot_info_from_mock = dbk_from_mock._disk_bulge_knot_phot_from_mock(*mock_args)
+    # return (
+    #     _dk_args,
+    #     _dk_res,
+    #     _dk_args2,
+    #     _dk_res2,
+    #     lc_data,
+    #     dbk_phot_info,
+    #     dbk_phot_info_from_mock,
+    # )
 
-    assert np.allclose(mk1, mk2, rtol=0.01)
+    # assert np.allclose(mk1, mk2, rtol=0.01)
 
     assert np.allclose(
         dbk_phot_info["obs_mags"], dbk_phot_info_from_mock["obs_mags"], rtol=1e-3
@@ -135,8 +145,8 @@ def test_disk_bulge_knot_phot_from_mock():
         rtol=0.01,
     )
 
-    # assert np.allclose(
-    #     dbk_phot_info["obs_mags_knots"],
-    #     dbk_phot_info_from_mock["obs_mags_knots"],
-    #     atol=0.1,
-    # )
+    assert np.allclose(
+        dbk_phot_info["obs_mags_knots"],
+        dbk_phot_info_from_mock["obs_mags_knots"],
+        atol=0.1,
+    )
