@@ -40,7 +40,7 @@ POBOY_MSG = "This test only runs on poboy machine with haccytrees installed"
 
 
 @pytest.mark.skipif(not CAN_RUN_LJ_DATA_TESTS, reason=POBOY_MSG)
-def test_add_sfh_quantities_to_mock():
+def test_add_sfh_quantities_to_mock_last_journey():
     ran_key = jran.key(0)
     sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
 
@@ -71,6 +71,22 @@ def _prepare_input_catalogs(n_gals=500):
     return lc_data, diffsky_data, tcurves
 
 
+def test_add_sfh_quantities_to_mock():
+    ran_key = jran.key(0)
+    diffsky_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
+    lc_data, diffsky_data, tcurves = _prepare_input_catalogs()
+    lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
+        diffsky_info, lc_data, diffsky_data, ran_key
+    )
+
+    sfh_table_recomputed = np.where(
+        diffsky_data["mc_is_q"].reshape((-1, 1)),
+        diffsky_data["sfh_table_q"],
+        diffsky_data["sfh_table_ms"],
+    )
+    assert np.allclose(diffsky_data["sfh_table"], sfh_table_recomputed, rtol=0.01)
+
+
 def test_add_dbk_sed_quantities_to_mock():
     ran_key = jran.key(0)
     diffsky_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
@@ -99,8 +115,11 @@ def test_add_dbk_sed_quantities_to_mock():
         wave_eff_table,
         ran_key,
     )
+    assert "sfh_table" not in diffsky_data.keys()
+
     _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
     phot_info, lc_data, diffsky_data = _res
+
     assert np.allclose(phot_info["sfh_table"], diffsky_data["sfh_table"], rtol=0.01)
 
     fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(
