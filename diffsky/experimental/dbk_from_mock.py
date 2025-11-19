@@ -196,12 +196,13 @@ def _disk_bulge_knot_phot_from_mock(
         ssp_lg_age_yr, burst_params.lgyr_peak, burst_params.lgyr_max
     )
 
+    fburst = jnp.where(mc_sfh_type == 0, 0.0, 10**burst_params.lgfburst)
     _dk_args = (
         t_table,
         t_obs,
         sfh_table,
         sfh_table - disk_bulge_history.sfh_bulge,
-        10**burst_params.lgfburst,
+        fburst,
         fknot,
         age_weights_pureburst,
         ssp_data.ssp_lg_age_gyr,

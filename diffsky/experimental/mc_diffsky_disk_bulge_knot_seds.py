@@ -792,12 +792,13 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         knot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
     )
 
+    fburst = jnp.where(msk_q, 0.0, 10**burst_params.lgfburst)
     _dk_args = (
         t_table,
         t_obs,
         sfh_table,
         sfh_table - disk_bulge_history.sfh_bulge,
-        10**burst_params.lgfburst,
+        fburst,
         fknot,
         age_weights_pureburst,
         ssp_data.ssp_lg_age_gyr,
