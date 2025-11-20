@@ -8,7 +8,7 @@ import pytest
 from diffmah import DEFAULT_MAH_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology.flat_wcdm import age_at_z, age_at_z0
-from dsps.data_loaders import load_ssp_templates
+from dsps.data_loaders.retrieve_fake_fsps_data import load_fake_ssp_data
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -91,7 +91,7 @@ def test_add_sfh_quantities_to_mock():
 def test_add_dbk_sed_quantities_to_mock():
     diffsky_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
 
-    ssp_data = load_ssp_templates()
+    ssp_data = load_fake_ssp_data()
 
     lc_data, diffsky_data, tcurves = _prepare_input_catalogs()
 
