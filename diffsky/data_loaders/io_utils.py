@@ -1,6 +1,9 @@
 """Utility functions for reading and writing data"""
 
+from collections import namedtuple
+
 import h5py
+import numpy as np
 
 
 def load_flat_hdf5(fn, istart=0, iend=None, keys=None, dataset=None):
@@ -54,3 +57,23 @@ def load_flat_hdf5(fn, istart=0, iend=None, keys=None, dataset=None):
                 data[key_out] = hdf[key_in][istart:iend]
 
     return data
+
+
+def write_namedtuple_to_hdf5(named_params, fn_out):
+    """"""
+    with h5py.File(fn_out, "w") as hdf:
+        for pname, pval in zip(named_params._fields, named_params):
+            hdf[pname] = pval
+        hdf.attrs["_fields"] = np.array(named_params._fields, dtype="S")
+
+
+def load_namedtuple_from_hdf5(fn):
+    """"""
+    with h5py.File(fn, "r") as hdf:
+        pnames = [
+            f.decode() if isinstance(f, bytes) else f for f in hdf.attrs["_fields"]
+        ]
+        values = [hdf[pname][()] for pname in pnames]
+    Params = namedtuple("Params", pnames)
+    params = Params(*values)
+    return params
