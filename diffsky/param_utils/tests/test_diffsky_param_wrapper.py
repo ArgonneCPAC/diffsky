@@ -1,6 +1,7 @@
 """ """
 
 # flake8: noqa
+from copy import deepcopy
 
 import numpy as np
 
@@ -21,6 +22,47 @@ def test_default_param_collection_fields():
         "ssperr_params",
     )
     assert dpw.DEFAULT_PARAM_COLLECTION._fields == pnames
+
+
+def test_get_param_collection_from_flat_array():
+    """Enforce agreement when we roll up a flat array and then repack it"""
+    default_param_collection = deepcopy(dpw.DEFAULT_PARAM_COLLECTION)
+
+    all_params_flat = dpw.unroll_param_collection_into_flat_array(
+        *default_param_collection
+    )
+    param_collection = dpw.get_param_collection_from_flat_array(all_params_flat)
+
+    assert np.allclose(param_collection[0], default_param_collection[0])
+    assert np.allclose(param_collection[1], default_param_collection[1])
+    assert np.allclose(
+        param_collection[2].burstpop_params.freqburst_params,
+        default_param_collection[2].burstpop_params.freqburst_params,
+    )
+    assert np.allclose(
+        param_collection[2].burstpop_params.fburstpop_params,
+        default_param_collection[2].burstpop_params.fburstpop_params,
+    )
+    assert np.allclose(
+        param_collection[2].burstpop_params.tburstpop_params,
+        default_param_collection[2].burstpop_params.tburstpop_params,
+    )
+
+    assert np.allclose(
+        param_collection[2].dustpop_params.avpop_params,
+        default_param_collection[2].dustpop_params.avpop_params,
+    )
+    assert np.allclose(
+        param_collection[2].dustpop_params.deltapop_params,
+        default_param_collection[2].dustpop_params.deltapop_params,
+    )
+    assert np.allclose(
+        param_collection[2].dustpop_params.funopop_params,
+        default_param_collection[2].dustpop_params.funopop_params,
+    )
+
+    assert np.allclose(param_collection[3], default_param_collection[3])
+    assert np.allclose(param_collection[4], default_param_collection[4])
 
 
 def test_unroll_u_param_collection_into_flat_array():

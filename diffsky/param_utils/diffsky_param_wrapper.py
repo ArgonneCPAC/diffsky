@@ -98,6 +98,85 @@ def unroll_param_collection_into_flat_array(
 
 
 @jjit
+def get_param_collection_from_flat_array(all_params_flat):
+    all_pnames_flat = get_flat_param_names()
+    DiffskyParams = namedtuple("DiffskyParams", all_pnames_flat)
+    named_params = DiffskyParams(*all_params_flat)
+
+    diffstarpop_params = [
+        getattr(named_params, pname) for pname in DEFAULT_DIFFSTARPOP_PARAMS._fields
+    ]
+    mzr_params = [
+        getattr(named_params, pname) for pname in umzr.DEFAULT_MZR_PARAMS._fields
+    ]
+
+    freqburst_params = spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.freqburst_params._make(
+        [
+            getattr(named_params, pname)
+            for pname in spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.freqburst_params._fields
+        ]
+    )
+    fburstpop_params = spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.fburstpop_params._make(
+        [
+            getattr(named_params, pname)
+            for pname in spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.fburstpop_params._fields
+        ]
+    )
+    tburstpop_params = spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.tburstpop_params._make(
+        [
+            getattr(named_params, pname)
+            for pname in spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.tburstpop_params._fields
+        ]
+    )
+    burstpop_params = spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params._make(
+        (freqburst_params, fburstpop_params, tburstpop_params)
+    )
+
+    avpop_params = spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.avpop_params._make(
+        [
+            getattr(named_params, pname)
+            for pname in spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.avpop_params._fields
+        ]
+    )
+
+    deltapop_params = spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.deltapop_params._make(
+        [
+            getattr(named_params, pname)
+            for pname in spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.deltapop_params._fields
+        ]
+    )
+
+    funopop_params = spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.funopop_params._make(
+        [
+            getattr(named_params, pname)
+            for pname in spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params.funopop_params._fields
+        ]
+    )
+    dustpop_params = spspu.DEFAULT_SPSPOP_PARAMS.dustpop_params._make(
+        (avpop_params, deltapop_params, funopop_params)
+    )
+    spspop_params = spspu.DEFAULT_SPSPOP_PARAMS._make((burstpop_params, dustpop_params))
+
+    scatter_params = [
+        getattr(named_params, pname) for pname in DEFAULT_SCATTER_PARAMS._fields
+    ]
+    ssp_err_params = [
+        getattr(named_params, pname)
+        for pname in ssp_err_model.DEFAULT_SSPERR_PARAMS._fields
+    ]
+
+    param_collection = (
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_params,
+    )
+
+    return param_collection
+
+
+@jjit
 def unroll_u_param_collection_into_flat_array(
     diffstarpop_u_params,
     mzr_u_params,
