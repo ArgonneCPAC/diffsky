@@ -41,6 +41,10 @@ def get_lc_mock_data_report(fn_lc_mock):
     if len(msg) > 0:
         report["column_metadata"] = msg
 
+    msg = check_consistent_disk_bulge_knot_luminosities(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["disk_bulge_knot_inconsistency"] = msg
+
     return report
 
 
@@ -168,4 +172,23 @@ def check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=None):
         s = f"std(dist_sat)={std_sat_dist:.2f} Mpc/h is unexpectedly large"
         msg.append(s)
 
+    return msg
+
+
+def check_consistent_disk_bulge_knot_luminosities(
+    fn_lc_mock, data=None, filter_nickname="lsst_u"
+):
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    # Enforce that luminosity of disk+bulge+knots equals composite luminosity
+    a = 10 ** (-0.4 * data[f"{filter_nickname}_bulge"])
+    b = 10 ** (-0.4 * data[f"{filter_nickname}_disk"])
+    c = 10 ** (-0.4 * data[f"{filter_nickname}_knots"])
+    mtot = -2.5 * np.log10(a + b + c)
+
+    msg = []
+    if not np.allclose(mtot, data["lsst_u"], atol=0.01):
+        s = "disk/bulge/knot luminosities inconsistent with total"
+        msg.append(s)
     return msg
