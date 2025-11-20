@@ -99,7 +99,6 @@ def test_add_dbk_sed_quantities_to_mock():
     lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
         diffsky_info, deepcopy(lc_data), deepcopy(diffsky_data), ran_key
     )
-    diffsky_data_with_sfh = deepcopy(diffsky_data)
 
     z_phot_table = np.linspace(lc_data["z_obs"].min(), lc_data["z_obs"].max(), 15)
     t0 = age_at_z0(*diffsky_info.cosmo_params)
@@ -125,14 +124,6 @@ def test_add_dbk_sed_quantities_to_mock():
 
     _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
     phot_info, lc_data, diffsky_data = _res
-
-    # assert np.allclose(
-    #     diffsky_data_with_sfh["sfh_table"], diffsky_data["sfh_table"], rtol=0.01
-    # )
-
-    # assert np.allclose(
-    #     phot_info["sfh_table"], diffsky_data_with_sfh["sfh_table"], rtol=0.01
-    # )
 
     fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(
         (phot_info["fbulge_tcrit"], phot_info["fbulge_early"], phot_info["fbulge_late"])
