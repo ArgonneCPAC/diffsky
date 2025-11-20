@@ -12,6 +12,7 @@ from . import test_lc_phot_kern as tlcphk
 
 
 def test_disk_bulge_knot_phot_from_mock():
+    """Enforce that recomputed mock photometry agrees with original"""
     ran_key = jran.key(0)
 
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(num_halos=500)
