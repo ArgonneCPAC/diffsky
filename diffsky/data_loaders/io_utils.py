@@ -60,7 +60,7 @@ def load_flat_hdf5(fn, istart=0, iend=None, keys=None, dataset=None):
 
 
 def write_namedtuple_to_hdf5(named_params, fn_out):
-    """"""
+    """Write an hdf5 file to a namedtuple"""
     with h5py.File(fn_out, "w") as hdf:
         for pname, pval in zip(named_params._fields, named_params):
             hdf[pname] = pval
@@ -68,7 +68,7 @@ def write_namedtuple_to_hdf5(named_params, fn_out):
 
 
 def load_namedtuple_from_hdf5(fn):
-    """"""
+    """Load an hdf5 file storing a namedtuple"""
     with h5py.File(fn, "r") as hdf:
         pnames = [
             f.decode() if isinstance(f, bytes) else f for f in hdf.attrs["_fields"]
