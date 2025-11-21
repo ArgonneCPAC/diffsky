@@ -1,6 +1,7 @@
 """ """
 
 import os
+from collections import namedtuple
 from copy import deepcopy
 
 import numpy as np
@@ -21,6 +22,7 @@ from ....experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
 from ....experimental.disk_bulge_modeling import mc_disk_bulge as mcdb
 from ....experimental.lc_phot_kern import get_wave_eff_table
 from ....experimental.tests import test_lc_phot_kern as tlcphk
+from ... import io_utils as iou
 from .. import lc_mock_production as lcmp
 from .. import load_lc_cf
 
@@ -38,6 +40,24 @@ except AssertionError:
     CAN_RUN_LJ_DATA_TESTS = False
 CAN_RUN_LJ_DATA_TESTS = CAN_RUN_LJ_DATA_TESTS & HAS_HACCY_TREES
 POBOY_MSG = "This test only runs on poboy machine with haccytrees installed"
+
+
+def test_load_diffsky_param_collection():
+    all_params_flat = dpw.unroll_param_collection_into_flat_array(
+        *dpw.DEFAULT_PARAM_COLLECTION
+    )
+    all_pnames = dpw.get_flat_param_names()
+
+    Params = namedtuple("Params", all_pnames)
+    all_named_params = Params(*all_params_flat)
+
+    fn = "diffsky_unit_testing_params.hdf5"
+    iou.write_namedtuple_to_hdf5(all_named_params, fn)
+
+    param_collection = lcmp.load_diffsky_param_collection(fn)
+    all_params_flat2 = dpw.unroll_param_collection_into_flat_array(*param_collection)
+
+    assert np.allclose(all_params_flat, all_params_flat2, rtol=1e-5)
 
 
 @pytest.mark.skipif(not CAN_RUN_LJ_DATA_TESTS, reason=POBOY_MSG)

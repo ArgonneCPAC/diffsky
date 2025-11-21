@@ -10,7 +10,6 @@ from diffstar.diffstarpop import (
 )
 from dsps.metallicity import umzr
 from jax import jit as jjit
-from jax import numpy as jnp
 
 from ..experimental.scatter import (
     DEFAULT_SCATTER_PARAMS,
@@ -37,6 +36,16 @@ DEFAULT_PARAM_COLLECTION = ParamCollection(
     spspu.DEFAULT_SPSPOP_PARAMS,
     DEFAULT_SCATTER_PARAMS,
     ssp_err_model.DEFAULT_SSPERR_PARAMS,
+)
+UParamCollection = namedtuple(
+    "UParamCollection",
+    (
+        "diffstarpop_u_params",
+        "mzr_u_params",
+        "spspop_u_params",
+        "scatter_u_params",
+        "ssperr_u_params",
+    ),
 )
 
 
@@ -87,14 +96,14 @@ def unroll_param_collection_into_flat_array(
     )
     spspop_params_flat = (*burstpop_params_flat, *dustpop_params_flat)
 
-    all_params_flat = (
+    diffsky_params_flat = DiffskyParamsFlat(
         *diffstarpop_params_flat,
         *mzr_params,
         *spspop_params_flat,
         *scatter_params,
         *ssp_err_pop_params,
     )
-    return jnp.array(all_params_flat)
+    return diffsky_params_flat
 
 
 @jjit
@@ -109,6 +118,7 @@ def get_param_collection_from_flat_array(all_params_flat):
     mzr_params = [
         getattr(named_params, pname) for pname in umzr.DEFAULT_MZR_PARAMS._fields
     ]
+    mzr_params = umzr.DEFAULT_MZR_PARAMS._make(mzr_params)
 
     freqburst_params = spspu.DEFAULT_SPSPOP_PARAMS.burstpop_params.freqburst_params._make(
         [
@@ -160,12 +170,15 @@ def get_param_collection_from_flat_array(all_params_flat):
     scatter_params = [
         getattr(named_params, pname) for pname in DEFAULT_SCATTER_PARAMS._fields
     ]
+    scatter_params = DEFAULT_SCATTER_PARAMS._make(scatter_params)
+
     ssp_err_params = [
         getattr(named_params, pname)
         for pname in ssp_err_model.DEFAULT_SSPERR_PARAMS._fields
     ]
+    ssp_err_params = ssp_err_model.DEFAULT_SSPERR_PARAMS._make(ssp_err_params)
 
-    param_collection = (
+    param_collection = ParamCollection(
         diffstarpop_params,
         mzr_params,
         spspop_params,
@@ -198,14 +211,14 @@ def unroll_u_param_collection_into_flat_array(
     )
     spspop_u_params_flat = (*burstpop_params_flat, *dustpop_params_flat)
 
-    all_u_params_flat = (
+    diffsky_u_params_flat = DiffskyUParamsFlat(
         *diffstarpop_u_params_flat,
         *mzr_u_params,
         *spspop_u_params_flat,
         *scatter_u_params,
         *ssp_err_pop_u_params,
     )
-    return jnp.array(all_u_params_flat)
+    return diffsky_u_params_flat
 
 
 @jjit
@@ -222,7 +235,7 @@ def get_u_param_collection_from_param_collection(
     scatter_u_params = get_unbounded_scatter_params(scatter_params)
     ssp_err_pop_u_params = ssp_err_model.get_unbounded_ssperr_params(ssp_err_pop_params)
 
-    u_param_collection = (
+    u_param_collection = UParamCollection(
         diffstarpop_u_params,
         mzr_u_params,
         spspop_u_params,
@@ -246,7 +259,7 @@ def get_param_collection_from_u_param_collection(
     scatter_params = get_bounded_scatter_params(scatter_u_params)
     ssp_err_pop_params = ssp_err_model.get_bounded_ssperr_params(ssp_err_pop_u_params)
 
-    param_collection = (
+    param_collection = ParamCollection(
         diffstarpop_params,
         mzr_params,
         spspop_params,
@@ -258,7 +271,7 @@ def get_param_collection_from_u_param_collection(
 
 @jjit
 def get_u_param_collection_from_u_param_array(u_param_arr):
-    u_params = UParamsFlat(*u_param_arr)
+    u_params = DiffskyUParamsFlat(*u_param_arr)
 
     diffstarpop_u_params = DEFAULT_DIFFSTARPOP_U_PARAMS._make(
         [getattr(u_params, name) for name in DEFAULT_DIFFSTARPOP_U_PARAMS._fields]
@@ -351,7 +364,7 @@ def get_u_param_collection_from_u_param_array(u_param_arr):
         ssp_err_pop_u_params
     )
 
-    u_param_collection = (
+    u_param_collection = UParamCollection(
         diffstarpop_u_params,
         u_mzr_params,
         spspop_u_params,
@@ -362,6 +375,6 @@ def get_u_param_collection_from_u_param_array(u_param_arr):
 
 
 PNAMES_FLAT = get_flat_param_names()
-ParamsFlat = namedtuple("ParamsFlat", PNAMES_FLAT)
+DiffskyParamsFlat = namedtuple("DiffskyParamsFlat", PNAMES_FLAT)
 U_PNAMES_FLAT = ["u_" + name for name in PNAMES_FLAT]
-UParamsFlat = namedtuple("UParamsFlat", U_PNAMES_FLAT)
+DiffskyUParamsFlat = namedtuple("DiffskyUParamsFlat", U_PNAMES_FLAT)

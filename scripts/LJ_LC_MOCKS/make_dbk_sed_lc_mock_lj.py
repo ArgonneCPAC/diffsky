@@ -33,7 +33,6 @@ from diffsky.experimental.sfh_model_calibrations import (
     load_diffsky_sfh_model_calibrations as ldup,
 )
 from diffsky.param_utils import diffsky_param_wrapper as dpw
-from diffsky.param_utils import param_loader
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -382,10 +381,8 @@ if __name__ == "__main__":
             drn_out, mock_version_name, tcurves, filter_nicknames
         )
 
-        bn_param_collection = f"diffsky_{mock_version_name}_param_collection.hdf5"
-        fn_param_collection = os.path.join(drn_out, bn_param_collection)
-        param_loader.write_diffsky_param_collection(
-            fn_param_collection, param_collection
+        lcmp.write_diffsky_param_collection(
+            drn_out, mock_version_name, param_collection
         )
 
         lcmp.write_diffsky_t_table(drn_out, mock_version_name, sim_info)

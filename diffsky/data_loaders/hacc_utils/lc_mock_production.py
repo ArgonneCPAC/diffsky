@@ -9,6 +9,9 @@ from dsps.data_loaders import load_transmission_curve
 from dsps.data_loaders.load_filter_data import TransmissionCurve
 from dsps.data_loaders.load_ssp_data import SSPData
 
+from ...param_utils import diffsky_param_wrapper as dpw
+from .. import io_utils as iou
+
 jax.config.update("jax_enable_x64", True)
 import h5py
 import numpy as np
@@ -128,6 +131,7 @@ interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
 BNPAT_TCURVES = "diffsky_{0}_transmission_curves.hdf5"
 BNPAT_SSP_DATA = "diffsky_{0}_ssp_data.hdf5"
+BNPAT_PARAM_COLLECTION = "diffsky_{0}_param_collection.hdf5"
 
 
 def write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data):
@@ -181,6 +185,33 @@ def load_diffsky_tcurves(drn_mock, mock_version_name):
     return tcurves
 
 
+def load_diffsky_param_collection(drn_mock, mock_version_name):
+    """"""
+    bn = BNPAT_PARAM_COLLECTION.format(mock_version_name)
+    fn = os.path.join(drn_mock, bn)
+    flat_diffsky_params = iou.load_namedtuple_from_hdf5(fn)
+    param_collection = dpw.get_param_collection_from_flat_array(flat_diffsky_params)
+    return param_collection
+
+
+def write_diffsky_param_collection(drn_mock, mock_version_name, param_collection):
+    """"""
+    bn = BNPAT_PARAM_COLLECTION.format(mock_version_name)
+    fn_out = os.path.join(drn_mock, bn)
+    flat_diffsky_params = dpw.unroll_param_collection_into_flat_array(*param_collection)
+    DiffskyParams = namedtuple("DiffskyParams", dpw.get_flat_param_names())
+    flat_diffsky_params = DiffskyParams(*flat_diffsky_params)
+
+    iou.write_namedtuple_to_hdf5(flat_diffsky_params, fn_out)
+
+
+def load_diffsky_sim_info(fn_mock):
+    with h5py.File(fn_mock, "r") as hdf:
+        sim_name = hdf["metadata/nbody_info"].attrs["sim_name"]
+    sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
+    return sim_info
+
+
 def get_dsps_transmission_curves(filter_nicknames, drn=None):
     bn_pat_list = [name + "*" for name in filter_nicknames]
     TCurves = namedtuple("TCurves", filter_nicknames)
@@ -205,6 +236,12 @@ def load_diffsky_t_table(drn_mock, mock_version_name):
     with h5py.File(fn_t_table, "r") as hdf:
         t_table = hdf["t_table"][:]
     return t_table
+
+
+def load_diffsky_z_phot_table(fn_mock):
+    with h5py.File(fn_mock, "r") as hdf:
+        z_phot_table = hdf["metadata/z_phot_table"][:]
+    return z_phot_table
 
 
 def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):

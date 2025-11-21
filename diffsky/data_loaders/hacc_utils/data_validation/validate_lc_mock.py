@@ -4,9 +4,14 @@ import os
 
 import h5py
 import numpy as np
+from diffmah import DEFAULT_MAH_PARAMS
+from diffstar import DEFAULT_DIFFSTAR_PARAMS
+from dsps.cosmology.flat_wcdm import age_at_z
 
+from .... import phot_utils
+from ....experimental import dbk_from_mock
+from ....experimental import precompute_ssp_phot as psspp
 from ....param_utils import diffsky_param_wrapper as dpw
-from ....param_utils import param_loader
 from .. import lc_mock_production as lcmp
 from .. import load_flat_hdf5, load_lc_cf
 
@@ -137,7 +142,7 @@ def check_metadata(fn_lc_mock):
             assert set(avail_software_versions) == set(REQUIRED_SOFTWARE_VERSION_INFO)
 
             # Check z_phot_table is reasonable
-            z_phot_table = hdf["metadata/z_phot_table"][:]
+            z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
             assert z_phot_table.size >= 2
             assert np.all(z_phot_table > -1)
             assert np.all(z_phot_table < 100)
@@ -148,12 +153,13 @@ def check_metadata(fn_lc_mock):
             check_has_transmission_curves(drn_mock, mock_version_name)
 
             # Check has param_collection
-            bn_param_collection = f"diffsky_{mock_version_name}_param_collection.hdf5"
-            fn_param_collection = os.path.join(drn_mock, bn_param_collection)
-            check_has_param_collection(fn_param_collection)
+            check_has_param_collection(drn_mock, mock_version_name)
 
             # Check has t_table used to tabulate sfh_table
             check_has_t_table(drn_mock, mock_version_name, sim_name)
+
+            # Check photometry in mock agrees with recomputed results
+            check_recomputed_photometry(fn_lc_mock)
 
         except:  # noqa
             s = "metadata is incorrect"
@@ -206,8 +212,8 @@ def check_has_t_table(drn_mock, mock_version_name, sim_name):
     assert np.allclose(t_table[-1], 10**sim_info.lgt0, rtol=1e-3)
 
 
-def check_has_param_collection(fn):
-    param_collection = param_loader.load_diffsky_param_collection(fn)
+def check_has_param_collection(drn_mock, mock_version_name):
+    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
     assert len(param_collection) > 0
     param_arr = dpw.unroll_param_collection_into_flat_array(*param_collection)
     pnames = dpw.get_flat_param_names()
@@ -257,3 +263,58 @@ def check_recomputed_photometry(fn_lc_mock):
     tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
     t_table = lcmp.load_diffsky_t_table(drn_mock, mock_version_name)
     ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
+    sim_info = lcmp.load_diffsky_sim_info(fn_lc_mock)
+
+    mock = load_flat_hdf5(fn_lc_mock, dataset="data")
+    n_gals = mock["redshift_true"].size
+
+    mah_params = DEFAULT_MAH_PARAMS._make(
+        [mock[key] for key in DEFAULT_MAH_PARAMS._fields]
+    )
+    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
+        [mock[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+    )
+    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
+    t_obs = age_at_z(mock["redshift_true"], *sim_info.cosmo_params)
+
+    _msk_q = mock["mc_sfh_type"].reshape((n_gals, 1))
+    delta_scatter = np.where(
+        _msk_q == 0, mock["delta_scatter_q"], mock["delta_scatter_ms"]
+    )
+
+    # Precompute photometry at each element of the redshift table
+    z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
+    wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
+    )
+
+    args = (
+        mock["redshift_true"],
+        t_obs,
+        mah_params,
+        mock["logmp0"],
+        t_table,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        sfh_params,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        sim_info.cosmo_params,
+        sim_info.fb,
+        mock["uran_av"],
+        mock["uran_delta"],
+        mock["uran_funo"],
+        delta_scatter,
+        mock["mc_sfh_type"],
+        mock["fknot"],
+    )
+    phot_info = dbk_from_mock._disk_bulge_knot_phot_from_mock(*args)
+
+    for i, tcurve_name in enumerate(tcurves._fields):
+        assert np.allclose(mock[tcurve_name], phot_info["obs_mags"][:, i], rtol=0.01)
