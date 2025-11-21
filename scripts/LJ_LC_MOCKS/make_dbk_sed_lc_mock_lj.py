@@ -376,7 +376,11 @@ if __name__ == "__main__":
 
         bn_ssp_data = f"diffsky_{mock_version_name}_ssp_data.hdf5"
         fn_out_ssp_data = os.path.join(drn_out, bn_ssp_data)
-        lcmp.write_lc_ssp_data_to_disk(drn_out, mock_version_name, tcurves, ssp_data)
+        lcmp.write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
+
+        lcmp.write_diffsky_tcurves_to_disk(
+            drn_out, mock_version_name, tcurves, filter_nicknames
+        )
 
         bn_param_collection = f"diffsky_{mock_version_name}_param_collection.hdf5"
         fn_param_collection = os.path.join(drn_out, bn_param_collection)

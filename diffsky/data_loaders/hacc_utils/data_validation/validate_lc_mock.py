@@ -145,6 +145,7 @@ def check_metadata(fn_lc_mock):
             # Check has ssp_data
             drn_mock = os.path.dirname(fn_lc_mock)
             check_has_ssp_data(drn_mock, mock_version_name)
+            check_has_transmission_curves(drn_mock, mock_version_name)
 
             # Check has param_collection
             bn_param_collection = f"diffsky_{mock_version_name}_param_collection.hdf5"
@@ -202,7 +203,6 @@ def check_has_param_collection(fn):
 
 
 def check_has_ssp_data(drn_mock, mock_version_name):
-    fn_tcurves = os.path.join(drn_mock, lcmp.BNPAT_TCURVES.format(mock_version_name))
     fn_ssp_data = os.path.join(drn_mock, lcmp.BNPAT_SSP_DATA.format(mock_version_name))
 
     with h5py.File(fn_ssp_data, "r") as hdf:
@@ -211,11 +211,14 @@ def check_has_ssp_data(drn_mock, mock_version_name):
             ssp_data[key] = hdf[key][:]
     assert len(ssp_data) > 0
 
-    with h5py.File(fn_tcurves, "r") as hdf:
-        tcurves = dict()
-        for key in hdf.keys():
-            tcurves[key] = hdf[key][:]
-    assert len(tcurves) > 0
+
+def check_has_transmission_curves(drn_mock, mock_version_name):
+    tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
+    assert len(tcurves._fields) > 0
+    for tcurve in tcurves:
+        assert tcurve.wave.shape == tcurve.transmission.shape
+        assert np.all(tcurve.transmission >= 0)
+        assert np.all(tcurve.transmission <= 1)
 
 
 def check_consistent_disk_bulge_knot_luminosities(
