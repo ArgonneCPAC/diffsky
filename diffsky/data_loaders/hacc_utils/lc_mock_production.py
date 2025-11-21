@@ -1,7 +1,11 @@
 # flake8: noqa: E402
 """Kernels used to produce the SFH mock lightcone"""
 
+import os
+from collections import namedtuple
+
 import jax
+from dsps.data_loaders import load_transmission_curve
 
 jax.config.update("jax_enable_x64", True)
 import h5py
@@ -117,6 +121,28 @@ BLACK_HOLE_KEYS_OUT = (
 
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
+
+
+def write_lc_ssp_data_to_disk(drn_out, mock_version_name, tcurves, ssp_data):
+    """"""
+    bn_tcurves = f"diffsky_{mock_version_name}_transmission_curves.hdf5"
+    with h5py.File(os.path.join(drn_out, bn_tcurves), "w") as hdf_out:
+        for name, arr in zip(tcurves._fields, tcurves):
+            hdf_out[name] = arr
+
+    bn_ssp_data = f"diffsky_{mock_version_name}_ssp_data.hdf5"
+    with h5py.File(os.path.join(drn_out, bn_ssp_data), "w") as hdf_out:
+        for name, arr in zip(ssp_data._fields, ssp_data):
+            hdf_out[name] = arr
+
+
+def get_dsps_transmission_curves(filter_nicknames, drn=None):
+    bn_pat_list = [name + "*" for name in filter_nicknames]
+    TCurves = namedtuple("TCurves", filter_nicknames)
+    tcurves = TCurves(
+        *[load_transmission_curve(bn_pat=bn_pat, drn=drn) for bn_pat in bn_pat_list]
+    )
+    return tcurves
 
 
 def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):

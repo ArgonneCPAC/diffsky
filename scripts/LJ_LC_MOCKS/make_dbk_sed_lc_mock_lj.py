@@ -16,7 +16,7 @@ from time import sleep, time
 
 import jax
 import numpy as np
-from dsps.data_loaders import load_ssp_templates, load_transmission_curve
+from dsps.data_loaders import load_ssp_templates
 from jax import random as jran
 from mpi4py import MPI
 
@@ -224,8 +224,7 @@ if __name__ == "__main__":
     n_z_phot_table = 15
 
     filter_nicknames = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
-    bn_pat_list = [name + "*" for name in filter_nicknames]
-    tcurves = [load_transmission_curve(bn_pat=bn_pat) for bn_pat in bn_pat_list]
+    tcurves = lcmp.get_dsps_transmission_curves(filter_nicknames)
 
     # Get complete list of files to process
     fn_lc_list = []
@@ -371,6 +370,10 @@ if __name__ == "__main__":
             fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
         )
         metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
+
+        bn_ssp_data = f"diffsky_{mock_version_name}_ssp_data.hdf5"
+        fn_out_ssp_data = os.path.join(drn_out, bn_ssp_data)
+        lcmp.write_lc_ssp_data_to_disk(drn_out, mock_version_name, tcurves, ssp_data)
 
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
