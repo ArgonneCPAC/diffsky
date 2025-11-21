@@ -123,14 +123,18 @@ BLACK_HOLE_KEYS_OUT = (
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
 
+BNPAT_TCURVES = "diffsky_{0}_transmission_curves.hdf5"
+BNPAT_SSP_DATA = "diffsky_{0}_ssp_data.hdf5"
+
+
 def write_lc_ssp_data_to_disk(drn_out, mock_version_name, tcurves, ssp_data):
     """"""
-    bn_tcurves = f"diffsky_{mock_version_name}_transmission_curves.hdf5"
+    bn_tcurves = BNPAT_TCURVES.format(mock_version_name)
     with h5py.File(os.path.join(drn_out, bn_tcurves), "w") as hdf_out:
         for name, arr in zip(tcurves._fields, tcurves):
             hdf_out[name] = arr
 
-    bn_ssp_data = f"diffsky_{mock_version_name}_ssp_data.hdf5"
+    bn_ssp_data = BNPAT_SSP_DATA.format(mock_version_name)
     with h5py.File(os.path.join(drn_out, bn_ssp_data), "w") as hdf_out:
         for name, arr in zip(ssp_data._fields, ssp_data):
             hdf_out[name] = arr

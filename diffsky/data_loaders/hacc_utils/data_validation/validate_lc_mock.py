@@ -5,6 +5,7 @@ import os
 import h5py
 import numpy as np
 
+from .. import lc_mock_production as lcmp
 from .. import load_flat_hdf5
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
@@ -139,6 +140,9 @@ def check_metadata(fn_lc_mock):
             assert np.all(z_phot_table > -1)
             assert np.all(z_phot_table < 100)
 
+            drn_mock = os.path.dirname(fn_lc_mock)
+            check_has_ssp_data(drn_mock, mock_version_name)
+
         except:  # noqa
             s = "metadata is incorrect"
             msg.append(s)
@@ -179,6 +183,23 @@ def check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=None):
         msg.append(s)
 
     return msg
+
+
+def check_has_ssp_data(drn_mock, mock_version_name):
+    fn_tcurves = os.path.join(drn_mock, lcmp.BNPAT_TCURVES.format(mock_version_name))
+    fn_ssp_data = os.path.join(drn_mock, lcmp.BNPAT_SSP_DATA.format(mock_version_name))
+
+    with h5py.File(fn_ssp_data, "r") as hdf:
+        ssp_data = dict()
+        for key in hdf.keys():
+            ssp_data[key] = hdf[key][:]
+    assert len(ssp_data) > 0
+
+    with h5py.File(fn_tcurves, "r") as hdf:
+        tcurves = dict()
+        for key in hdf.keys():
+            tcurves[key] = hdf[key][:]
+    assert len(tcurves) > 0
 
 
 def check_consistent_disk_bulge_knot_luminosities(
