@@ -13,7 +13,7 @@ from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import age_at_z0
 from dsps.metallicity import umzr
 from dsps.sfh import diffburst
-from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
+from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS, LGFBURST_MIN
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -29,6 +29,8 @@ from . import photometry_interpolation as photerp
 from .disk_bulge_modeling import disk_bulge_kernels as dbk
 from .disk_bulge_modeling import disk_knots
 from .disk_bulge_modeling import mc_disk_bulge as mcdb
+
+FBURST_MIN = 10 ** (LGFBURST_MIN + 0.01)
 
 _BPOP = (None, 0, 0)
 _pureburst_age_weights_from_params_vmap = jjit(
@@ -434,7 +436,7 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
         knot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
     )
 
-    fburst = jnp.where(msk_q, 0.0, 10**burst_params.lgfburst)
+    fburst = jnp.where(msk_q, FBURST_MIN, 10**burst_params.lgfburst)
     _res = disk_knots._disk_knot_vmap(
         t_table,
         t_obs,
@@ -809,7 +811,7 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         knot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
     )
 
-    fburst = jnp.where(msk_q, 0.0, 10**burst_params.lgfburst)
+    fburst = jnp.where(msk_q, FBURST_MIN, 10**burst_params.lgfburst)
     _dk_args = (
         t_table,
         t_obs,
