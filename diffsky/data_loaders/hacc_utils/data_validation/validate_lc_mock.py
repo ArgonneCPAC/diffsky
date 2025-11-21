@@ -255,19 +255,18 @@ def check_consistent_disk_bulge_knot_luminosities(
     return msg
 
 
-def check_recomputed_photometry(fn_lc_mock):
+def check_recomputed_photometry(fn_lc_mock, n_test=50, return_results=False):
     """Recompute first N_TEST=50 galaxies photometry and enforce agreement"""
     with h5py.File(fn_lc_mock, "r") as hdf:
         mock_version_name = hdf["metadata"].attrs["mock_version_name"]
 
-    N_TEST = 50
     drn_mock = os.path.dirname(fn_lc_mock)
     tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
     t_table = lcmp.load_diffsky_t_table(drn_mock, mock_version_name)
     ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
     sim_info = lcmp.load_diffsky_sim_info(fn_lc_mock)
 
-    mock = load_flat_hdf5(fn_lc_mock, dataset="data", iend=N_TEST)
+    mock = load_flat_hdf5(fn_lc_mock, dataset="data", iend=n_test)
     n_gals = mock["redshift_true"].size
 
     mah_params = DEFAULT_MAH_PARAMS._make(
@@ -318,7 +317,10 @@ def check_recomputed_photometry(fn_lc_mock):
     )
     phot_info = dbk_from_mock._disk_bulge_knot_phot_from_mock(*args)
 
-    RTOL = 1e-2
+    if return_results:
+        return mock, phot_info, tcurves
+
+    RTOL = 0.01
     ATOL = 0.1
     for i, tcurve_name in enumerate(tcurves._fields):
         assert np.allclose(mock[tcurve_name], phot_info["obs_mags"][:, i], rtol=RTOL)
