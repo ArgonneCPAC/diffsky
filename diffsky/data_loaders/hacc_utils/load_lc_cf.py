@@ -99,7 +99,7 @@ def collect_lc_diffsky_data(fn_list, drn_lc_data=None):
     return lc_data, diffsky_data
 
 
-def get_imputed_mah_params(ran_key, diffsky_data, lc_data, lgt0):
+def get_imputed_mah_params(ran_key, diffsky_data, lgt0):
     msk_has_diffmah_fit = get_diffmah_has_fit_mask(diffsky_data)
     msk_nofit = ~msk_has_diffmah_fit
 
