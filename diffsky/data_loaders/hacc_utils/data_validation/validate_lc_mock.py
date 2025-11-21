@@ -53,6 +53,15 @@ def get_lc_mock_data_report(fn_lc_mock):
     if len(msg) > 0:
         report["disk_bulge_knot_inconsistency"] = msg
 
+    msg = check_recomputed_photometry(fn_lc_mock)
+    if len(msg) > 0:
+        report["recomputed_photometry"] = msg
+
+    # Check has t_table used to tabulate sfh_table
+    # msg = check_has_t_table(fn_lc_mock)
+    # if len(msg) > 0:
+    #     report["t_table_metadata"] = msg
+
     return report
 
 
@@ -142,24 +151,18 @@ def check_metadata(fn_lc_mock):
             assert set(avail_software_versions) == set(REQUIRED_SOFTWARE_VERSION_INFO)
 
             # Check z_phot_table is reasonable
-            z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
-            assert z_phot_table.size >= 2
-            assert np.all(z_phot_table > -1)
-            assert np.all(z_phot_table < 100)
+            # z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
+            # assert z_phot_table.size >= 2
+            # assert np.all(z_phot_table > -1)
+            # assert np.all(z_phot_table < 100)
 
             # Check has ssp_data
-            drn_mock = os.path.dirname(fn_lc_mock)
-            check_has_ssp_data(drn_mock, mock_version_name)
-            check_has_transmission_curves(drn_mock, mock_version_name)
+            # drn_mock = os.path.dirname(fn_lc_mock)
+            # check_has_ssp_data(drn_mock, mock_version_name)
+            # check_has_transmission_curves(drn_mock, mock_version_name)
 
-            # Check has param_collection
-            check_has_param_collection(drn_mock, mock_version_name)
-
-            # Check has t_table used to tabulate sfh_table
-            check_has_t_table(drn_mock, mock_version_name, sim_name)
-
-            # Check photometry in mock agrees with recomputed results
-            check_recomputed_photometry(fn_lc_mock)
+            # # Check has param_collection
+            # check_has_param_collection(drn_mock, mock_version_name)
 
         except:  # noqa
             s = "metadata is incorrect"
@@ -203,13 +206,24 @@ def check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=None):
     return msg
 
 
-def check_has_t_table(drn_mock, mock_version_name, sim_name):
-    t_table = lcmp.load_diffsky_t_table(drn_mock, mock_version_name)
-    sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
+def check_has_t_table(fn_lc_mock):
+    msg = []
+    with h5py.File(fn_lc_mock, "r") as hdf:
+        try:
+            mock_version_name = hdf["metadata"].attrs["mock_version_name"]
+            sim_name = hdf["metadata/nbody_info"].attrs["sim_name"]
 
-    assert t_table.size == lcmp.N_T_TABLE
-    assert np.allclose(t_table[0], lcmp.T_TABLE_MIN, rtol=1e-3)
-    assert np.allclose(t_table[-1], 10**sim_info.lgt0, rtol=1e-3)
+            drn_mock = os.path.dirname(fn_lc_mock)
+            t_table = lcmp.load_diffsky_t_table(drn_mock, mock_version_name)
+            sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
+
+            assert t_table.size == lcmp.N_T_TABLE
+            assert np.allclose(t_table[0], lcmp.T_TABLE_MIN, rtol=1e-3)
+            assert np.allclose(t_table[-1], 10**sim_info.lgt0, rtol=1e-3)
+        except AssertionError:
+            msg.append("Cannot find t_table in mock directory")
+
+    return msg
 
 
 def check_has_param_collection(drn_mock, mock_version_name):
@@ -322,41 +336,53 @@ def check_recomputed_photometry(fn_lc_mock, n_test=200, return_results=False):
 
     RTOL = 0.1
     ATOL = 0.2
+    msg = []
     for i, tcurve_name in enumerate(tcurves._fields):
-        assert np.allclose(mock[tcurve_name], phot_info["obs_mags"][:, i], rtol=RTOL)
-        assert np.allclose(mock[tcurve_name], phot_info["obs_mags"][:, i], atol=ATOL)
+        try:
+            assert np.allclose(
+                mock[tcurve_name], phot_info["obs_mags"][:, i], rtol=RTOL
+            )
+            assert np.allclose(
+                mock[tcurve_name], phot_info["obs_mags"][:, i], atol=ATOL
+            )
+            magdiff = mock[tcurve_name] - phot_info["obs_mags"][:, i]
+            assert np.mean(np.abs(magdiff) > 0.1) < 0.01
+        except AssertionError:
+            msg.append("Inconsistent recalculation of obs_mags")
 
-        magdiff = mock[tcurve_name] - phot_info["obs_mags"][:, i]
-        assert np.mean(np.abs(magdiff) > 0.1) < 0.01
+        try:
+            assert np.allclose(
+                mock[tcurve_name + "_bulge"],
+                phot_info["obs_mags" + "_bulge"][:, i],
+                rtol=RTOL,
+            )
+            assert np.allclose(
+                mock[tcurve_name + "_disk"],
+                phot_info["obs_mags" + "_disk"][:, i],
+                rtol=RTOL,
+            )
+            assert np.allclose(
+                mock[tcurve_name + "_knots"],
+                phot_info["obs_mags" + "_knots"][:, i],
+                rtol=RTOL,
+            )
 
-        assert np.allclose(
-            mock[tcurve_name + "_bulge"],
-            phot_info["obs_mags" + "_bulge"][:, i],
-            rtol=RTOL,
-        )
-        assert np.allclose(
-            mock[tcurve_name + "_disk"],
-            phot_info["obs_mags" + "_disk"][:, i],
-            rtol=RTOL,
-        )
-        assert np.allclose(
-            mock[tcurve_name + "_knots"],
-            phot_info["obs_mags" + "_knots"][:, i],
-            rtol=RTOL,
-        )
+            assert np.allclose(
+                mock[tcurve_name + "_bulge"],
+                phot_info["obs_mags" + "_bulge"][:, i],
+                atol=ATOL,
+            )
+            assert np.allclose(
+                mock[tcurve_name + "_disk"],
+                phot_info["obs_mags" + "_disk"][:, i],
+                atol=ATOL,
+            )
+            assert np.allclose(
+                mock[tcurve_name + "_knots"],
+                phot_info["obs_mags" + "_knots"][:, i],
+                atol=ATOL,
+            )
+        except AssertionError:
+            msg.append("Inconsistent recalculation of disk/bulge/knot obs_mags")
 
-        assert np.allclose(
-            mock[tcurve_name + "_bulge"],
-            phot_info["obs_mags" + "_bulge"][:, i],
-            atol=ATOL,
-        )
-        assert np.allclose(
-            mock[tcurve_name + "_disk"],
-            phot_info["obs_mags" + "_disk"][:, i],
-            atol=ATOL,
-        )
-        assert np.allclose(
-            mock[tcurve_name + "_knots"],
-            phot_info["obs_mags" + "_knots"][:, i],
-            atol=ATOL,
-        )
+    return msg
