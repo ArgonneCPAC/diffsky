@@ -99,7 +99,7 @@ def collect_lc_diffsky_data(fn_list, drn_lc_data=None):
     return lc_data, diffsky_data
 
 
-def get_imputed_mah_params(ran_key, diffsky_data, lc_data, lgt0):
+def get_imputed_mah_params(ran_key, diffsky_data, lgt0):
     msk_has_diffmah_fit = get_diffmah_has_fit_mask(diffsky_data)
     msk_nofit = ~msk_has_diffmah_fit
 
@@ -108,7 +108,7 @@ def get_imputed_mah_params(ran_key, diffsky_data, lc_data, lgt0):
         mah_params = [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
         mah_params = DEFAULT_MAH_PARAMS._make(mah_params)
     else:
-        t_obs_nofit = lc_data["t_obs"][msk_nofit]
+        t_obs_nofit = diffsky_data["t_obs"][msk_nofit]
         lgmp_obs_nofit = np.log10(diffsky_data["mp0"][msk_nofit])
         is_central = np.ones(msk_nofit.sum()).astype(int)
 

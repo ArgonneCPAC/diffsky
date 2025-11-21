@@ -4,6 +4,8 @@ To run a unit test of this script:
 
 python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py  poboy 0.01 0.5 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 11.5 -lgmp_max 13.5
 
+python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
+
 python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
 
 """  # noqa
