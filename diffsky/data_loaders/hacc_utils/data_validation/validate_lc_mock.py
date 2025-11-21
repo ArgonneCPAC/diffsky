@@ -5,6 +5,8 @@ import os
 import h5py
 import numpy as np
 
+from ....param_utils import diffsky_param_wrapper as dpw
+from ....param_utils import param_loader
 from .. import lc_mock_production as lcmp
 from .. import load_flat_hdf5
 
@@ -140,8 +142,14 @@ def check_metadata(fn_lc_mock):
             assert np.all(z_phot_table > -1)
             assert np.all(z_phot_table < 100)
 
+            # Check has ssp_data
             drn_mock = os.path.dirname(fn_lc_mock)
             check_has_ssp_data(drn_mock, mock_version_name)
+
+            # Check has param_collection
+            bn_param_collection = f"diffsky_{mock_version_name}_param_collection.hdf5"
+            fn_param_collection = os.path.join(drn_mock, bn_param_collection)
+            check_has_param_collection(fn_param_collection)
 
         except:  # noqa
             s = "metadata is incorrect"
@@ -183,6 +191,14 @@ def check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=None):
         msg.append(s)
 
     return msg
+
+
+def check_has_param_collection(fn):
+    param_collection = param_loader.load_diffsky_param_collection(fn)
+    assert len(param_collection) > 0
+    param_arr = dpw.unroll_param_collection_into_flat_array(*param_collection)
+    pnames = dpw.get_flat_param_names()
+    assert len(pnames) == len(param_arr)
 
 
 def check_has_ssp_data(drn_mock, mock_version_name):
