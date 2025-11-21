@@ -57,10 +57,9 @@ def get_lc_mock_data_report(fn_lc_mock):
     if len(msg) > 0:
         report["recomputed_photometry"] = msg
 
-    # Check has t_table used to tabulate sfh_table
-    # msg = check_has_t_table(fn_lc_mock)
-    # if len(msg) > 0:
-    #     report["t_table_metadata"] = msg
+    msg = check_has_t_table(fn_lc_mock)
+    if len(msg) > 0:
+        report["t_table_metadata"] = msg
 
     return report
 
@@ -262,7 +261,7 @@ def check_consistent_disk_bulge_knot_luminosities(
 
     msg = []
     mean_diff_tol = 0.05
-    mean_diff = np.mean(mtot - data["lsst_u"])
+    mean_diff = np.mean(mtot - data[filter_nickname])
     if mean_diff > mean_diff_tol:
         s = "disk/bulge/knot luminosities inconsistent with total"
         msg.append(s)
