@@ -261,7 +261,7 @@ def check_consistent_disk_bulge_knot_luminosities(
 
     msg = []
     mean_diff_tol = 0.05
-    mean_diff = np.mean(mtot - data[filter_nickname])
+    mean_diff = np.abs(np.mean(mtot - data[filter_nickname]))
     if mean_diff > mean_diff_tol:
         s = "disk/bulge/knot luminosities inconsistent with total"
         msg.append(s)
