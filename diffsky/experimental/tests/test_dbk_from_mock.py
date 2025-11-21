@@ -12,6 +12,7 @@ from . import test_lc_phot_kern as tlcphk
 
 
 def test_disk_bulge_knot_phot_from_mock():
+    """Enforce that recomputed mock photometry agrees with original"""
     ran_key = jran.key(0)
 
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(num_halos=500)
@@ -27,7 +28,7 @@ def test_disk_bulge_knot_phot_from_mock():
     ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
     n_gals = lc_data.z_obs.size
-
+    fb = 0.156
     mc_args = (
         ran_key,
         lc_data.z_obs,
@@ -45,6 +46,7 @@ def test_disk_bulge_knot_phot_from_mock():
         scatter_params,
         ssp_err_pop_params,
         DEFAULT_COSMOLOGY,
+        fb,
     )
 
     dbk_phot_info = mc_dbk_sed._mc_diffsky_disk_bulge_knot_phot_kern(*mc_args)

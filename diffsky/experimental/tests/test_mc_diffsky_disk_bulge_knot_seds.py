@@ -30,11 +30,12 @@ def test_mc_diffsky_seds_flat_u_params():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
+    fb = 0.156
     sed_info = mcsed_dbk._mc_diffsky_seds_dbk_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
     lc_phot_orig = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
-        u_param_arr, ran_key, lc_data
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
     msk_q = sed_info["mc_sfh_type"] == 0
     assert np.allclose(lc_phot_orig.obs_mags_q[msk_q], sed_info["obs_mags"][msk_q])
@@ -132,11 +133,12 @@ def test_mc_diffsky_phot_dbk_flat_u_params():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
+    fb = 0.18
     sed_info = mcsed_dbk._mc_diffsky_seds_dbk_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
     phot_info = mcsed_dbk._mc_diffsky_phot_dbk_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
 
     assert np.allclose(sed_info["obs_mags"], phot_info["obs_mags"], rtol=1e-4)

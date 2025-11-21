@@ -4,8 +4,16 @@ import os
 
 import h5py
 import numpy as np
+from diffmah import DEFAULT_MAH_PARAMS
+from diffstar import DEFAULT_DIFFSTAR_PARAMS
+from dsps.cosmology.flat_wcdm import age_at_z
 
-from .. import load_flat_hdf5
+from .... import phot_utils
+from ....experimental import dbk_from_mock
+from ....experimental import precompute_ssp_phot as psspp
+from ....param_utils import diffsky_param_wrapper as dpw
+from .. import lc_mock_production as lcmp
+from .. import load_flat_hdf5, load_lc_cf
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
 REQUIRED_SOFTWARE_VERSION_INFO = (
@@ -40,6 +48,10 @@ def get_lc_mock_data_report(fn_lc_mock):
     msg = check_all_data_columns_have_metadata(fn_lc_mock)
     if len(msg) > 0:
         report["column_metadata"] = msg
+
+    msg = check_consistent_disk_bulge_knot_luminosities(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["disk_bulge_knot_inconsistency"] = msg
 
     return report
 
@@ -129,6 +141,26 @@ def check_metadata(fn_lc_mock):
             )
             assert set(avail_software_versions) == set(REQUIRED_SOFTWARE_VERSION_INFO)
 
+            # Check z_phot_table is reasonable
+            z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
+            assert z_phot_table.size >= 2
+            assert np.all(z_phot_table > -1)
+            assert np.all(z_phot_table < 100)
+
+            # Check has ssp_data
+            drn_mock = os.path.dirname(fn_lc_mock)
+            check_has_ssp_data(drn_mock, mock_version_name)
+            check_has_transmission_curves(drn_mock, mock_version_name)
+
+            # Check has param_collection
+            check_has_param_collection(drn_mock, mock_version_name)
+
+            # Check has t_table used to tabulate sfh_table
+            check_has_t_table(drn_mock, mock_version_name, sim_name)
+
+            # Check photometry in mock agrees with recomputed results
+            check_recomputed_photometry(fn_lc_mock)
+
         except:  # noqa
             s = "metadata is incorrect"
             msg.append(s)
@@ -169,3 +201,162 @@ def check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=None):
         msg.append(s)
 
     return msg
+
+
+def check_has_t_table(drn_mock, mock_version_name, sim_name):
+    t_table = lcmp.load_diffsky_t_table(drn_mock, mock_version_name)
+    sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
+
+    assert t_table.size == lcmp.N_T_TABLE
+    assert np.allclose(t_table[0], lcmp.T_TABLE_MIN, rtol=1e-3)
+    assert np.allclose(t_table[-1], 10**sim_info.lgt0, rtol=1e-3)
+
+
+def check_has_param_collection(drn_mock, mock_version_name):
+    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
+    assert len(param_collection) > 0
+    param_arr = dpw.unroll_param_collection_into_flat_array(*param_collection)
+    pnames = dpw.get_flat_param_names()
+    assert len(pnames) == len(param_arr)
+
+
+def check_has_ssp_data(drn_mock, mock_version_name):
+    ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
+    assert np.all(np.isfinite(ssp_data.ssp_wave))
+
+
+def check_has_transmission_curves(drn_mock, mock_version_name):
+    tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
+    assert len(tcurves._fields) > 0
+    for tcurve in tcurves:
+        assert tcurve.wave.shape == tcurve.transmission.shape
+        assert np.all(tcurve.transmission >= 0)
+        assert np.all(tcurve.transmission <= 1)
+
+
+def check_consistent_disk_bulge_knot_luminosities(
+    fn_lc_mock, data=None, filter_nickname="lsst_u"
+):
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    # Enforce that luminosity of disk+bulge+knots equals composite luminosity
+    a = 10 ** (-0.4 * data[f"{filter_nickname}_bulge"])
+    b = 10 ** (-0.4 * data[f"{filter_nickname}_disk"])
+    c = 10 ** (-0.4 * data[f"{filter_nickname}_knots"])
+    mtot = -2.5 * np.log10(a + b + c)
+
+    msg = []
+    mean_diff_tol = 0.05
+    mean_diff = np.mean(mtot - data["lsst_u"])
+    if mean_diff > mean_diff_tol:
+        s = "disk/bulge/knot luminosities inconsistent with total"
+        msg.append(s)
+    return msg
+
+
+def check_recomputed_photometry(fn_lc_mock, n_test=200, return_results=False):
+    """Recompute first N_TEST=50 galaxies photometry and enforce agreement"""
+    with h5py.File(fn_lc_mock, "r") as hdf:
+        mock_version_name = hdf["metadata"].attrs["mock_version_name"]
+
+    drn_mock = os.path.dirname(fn_lc_mock)
+    tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
+    t_table = lcmp.load_diffsky_t_table(drn_mock, mock_version_name)
+    ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
+    sim_info = lcmp.load_diffsky_sim_info(fn_lc_mock)
+
+    mock = load_flat_hdf5(fn_lc_mock, dataset="data", iend=n_test)
+    n_gals = mock["redshift_true"].size
+
+    mah_params = DEFAULT_MAH_PARAMS._make(
+        [mock[key] for key in DEFAULT_MAH_PARAMS._fields]
+    )
+    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
+        [mock[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+    )
+    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
+    t_obs = age_at_z(mock["redshift_true"], *sim_info.cosmo_params)
+
+    _msk_q = mock["mc_sfh_type"].reshape((n_gals, 1))
+    delta_scatter = np.where(
+        _msk_q == 0, mock["delta_scatter_q"], mock["delta_scatter_ms"]
+    )
+
+    # Precompute photometry at each element of the redshift table
+    z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
+    wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
+    )
+
+    args = (
+        mock["redshift_true"],
+        t_obs,
+        mah_params,
+        mock["logmp0"],
+        t_table,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        sfh_params,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        sim_info.cosmo_params,
+        sim_info.fb,
+        mock["uran_av"],
+        mock["uran_delta"],
+        mock["uran_funo"],
+        delta_scatter,
+        mock["mc_sfh_type"],
+        mock["fknot"],
+    )
+    phot_info = dbk_from_mock._disk_bulge_knot_phot_from_mock(*args)
+
+    if return_results:
+        return mock, phot_info, tcurves
+
+    RTOL = 0.1
+    ATOL = 0.2
+    for i, tcurve_name in enumerate(tcurves._fields):
+        assert np.allclose(mock[tcurve_name], phot_info["obs_mags"][:, i], rtol=RTOL)
+        assert np.allclose(mock[tcurve_name], phot_info["obs_mags"][:, i], atol=ATOL)
+
+        magdiff = mock[tcurve_name] - phot_info["obs_mags"][:, i]
+        assert np.mean(np.abs(magdiff) > 0.1) < 0.01
+
+        assert np.allclose(
+            mock[tcurve_name + "_bulge"],
+            phot_info["obs_mags" + "_bulge"][:, i],
+            rtol=RTOL,
+        )
+        assert np.allclose(
+            mock[tcurve_name + "_disk"],
+            phot_info["obs_mags" + "_disk"][:, i],
+            rtol=RTOL,
+        )
+        assert np.allclose(
+            mock[tcurve_name + "_knots"],
+            phot_info["obs_mags" + "_knots"][:, i],
+            rtol=RTOL,
+        )
+
+        assert np.allclose(
+            mock[tcurve_name + "_bulge"],
+            phot_info["obs_mags" + "_bulge"][:, i],
+            atol=ATOL,
+        )
+        assert np.allclose(
+            mock[tcurve_name + "_disk"],
+            phot_info["obs_mags" + "_disk"][:, i],
+            atol=ATOL,
+        )
+        assert np.allclose(
+            mock[tcurve_name + "_knots"],
+            phot_info["obs_mags" + "_knots"][:, i],
+            atol=ATOL,
+        )

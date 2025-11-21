@@ -62,6 +62,7 @@ def test_multiband_lc_phot_kern():
     spspop_params = spspu.DEFAULT_SPSPOP_PARAMS
     scatter_params = DEFAULT_SCATTER_PARAMS
     ssp_err_pop_params = ssp_err_model.DEFAULT_SSPERR_PARAMS
+    fb = 0.156
 
     args = (
         ran_key,
@@ -79,6 +80,8 @@ def test_multiband_lc_phot_kern():
         spspop_params,
         scatter_params,
         ssp_err_pop_params,
+        DEFAULT_COSMOLOGY,
+        fb,
     )
     lc_phot = lc_phot_kern.multiband_lc_phot_kern(*args)
     for arr in lc_phot:
@@ -137,8 +140,9 @@ def test_multiband_lc_phot_kern_u_param_arr():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
+    fb = 0.156
     lc_phot = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
-        u_param_arr, ran_key, lc_data
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
     for x in lc_phot:
         assert np.all(np.isfinite(x))

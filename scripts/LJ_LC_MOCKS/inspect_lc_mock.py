@@ -46,8 +46,6 @@ if __name__ == "__main__":
             no_report_collector.append(bn_lc_mock)
 
     all_pass = (len(failure_collector) == 0) & (len(no_report_collector) == 0)
-    if all_pass:
-        print("Every lc_mock data file passes all tests")
 
     if len(failure_collector) > 0:
         print("\nSome failures in the following lightcone patches:\n")
@@ -66,3 +64,7 @@ if __name__ == "__main__":
             for no_report_bn in no_report_collector:
                 fn_lc_mock = os.path.join(drn_mock, no_report_bn)
                 fout.write(fn_lc_mock + "\n")
+    if all_pass:
+        print("Every lc_mock data file passes all tests")
+    else:
+        raise ValueError("Some lightcone readiness tests fail")

@@ -2,7 +2,7 @@
 
 To run a unit test of this script:
 
-python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py  poboy 0.2 0.21 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.0 -lgmp_max 13.0
+python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py  poboy 0.01 0.5 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 11.5 -lgmp_max 13.5
 
 python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
 
@@ -16,7 +16,7 @@ from time import sleep, time
 
 import jax
 import numpy as np
-from dsps.data_loaders import load_ssp_templates, load_transmission_curve
+from dsps.data_loaders import load_ssp_templates
 from jax import random as jran
 from mpi4py import MPI
 
@@ -224,8 +224,7 @@ if __name__ == "__main__":
     n_z_phot_table = 15
 
     filter_nicknames = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
-    bn_pat_list = [name + "*" for name in filter_nicknames]
-    tcurves = [load_transmission_curve(bn_pat=bn_pat) for bn_pat in bn_pat_list]
+    tcurves = lcmp.get_dsps_transmission_curves(filter_nicknames)
 
     # Get complete list of files to process
     fn_lc_list = []
@@ -357,7 +356,7 @@ if __name__ == "__main__":
         )
 
         diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
-            lc_data, diffsky_data
+            lc_data, diffsky_data, phot_info
         )
 
         patch_key, nfw_key = jran.split(patch_key, 2)
@@ -370,7 +369,23 @@ if __name__ == "__main__":
         lcmp.write_lc_dbk_sed_mock_to_disk(
             fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
         )
-        metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
+        metadata_sfh_mock.append_metadata(
+            fn_out, sim_name, mock_version_name, z_phot_table
+        )
+
+        bn_ssp_data = f"diffsky_{mock_version_name}_ssp_data.hdf5"
+        fn_out_ssp_data = os.path.join(drn_out, bn_ssp_data)
+        lcmp.write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
+
+        lcmp.write_diffsky_tcurves_to_disk(
+            drn_out, mock_version_name, tcurves, filter_nicknames
+        )
+
+        lcmp.write_diffsky_param_collection(
+            drn_out, mock_version_name, param_collection
+        )
+
+        lcmp.write_diffsky_t_table(drn_out, mock_version_name, sim_info)
 
         if rank == 0:
             print("All ranks completing file operations...", flush=True)

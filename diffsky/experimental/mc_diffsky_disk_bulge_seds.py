@@ -126,6 +126,7 @@ def _mc_diffsky_seds_kern(
     scatter_params,
     ssp_err_pop_params,
     cosmo_params,
+    fb,
 ):
     """Populate the input lightcone with galaxy SEDs"""
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
@@ -139,7 +140,14 @@ def _mc_diffsky_seds_kern(
     # Calculate SFH with diffstarpop
     ran_key, sfh_key = jran.split(ran_key, 2)
     diffstar_galpop = lc_phot_kern.diffstarpop_lc_cen_wrapper(
-        diffstarpop_params, sfh_key, mah_params, logmp0, t_table, t_obs
+        diffstarpop_params,
+        sfh_key,
+        mah_params,
+        logmp0,
+        t_table,
+        t_obs,
+        cosmo_params,
+        fb,
     )
     # diffstar_galpop has separate diffstar params and SFH tables for ms and q
 
@@ -455,6 +463,7 @@ def _mc_diffsky_phot_kern(
     scatter_params,
     ssp_err_pop_params,
     cosmo_params,
+    fb,
 ):
     """Populate the input lightcone with galaxy SEDs"""
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
@@ -468,7 +477,14 @@ def _mc_diffsky_phot_kern(
     # Calculate SFH with diffstarpop
     ran_key, sfh_key = jran.split(ran_key, 2)
     diffstar_galpop = lc_phot_kern.diffstarpop_lc_cen_wrapper(
-        diffstarpop_params, sfh_key, mah_params, logmp0, t_table, t_obs
+        diffstarpop_params,
+        sfh_key,
+        mah_params,
+        logmp0,
+        t_table,
+        t_obs,
+        cosmo_params,
+        fb,
     )
     # diffstar_galpop has separate diffstar params and SFH tables for ms and q
 

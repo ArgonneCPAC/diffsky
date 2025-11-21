@@ -1,7 +1,16 @@
 # flake8: noqa: E402
 """Kernels used to produce the SFH mock lightcone"""
 
+import os
+from collections import namedtuple
+
 import jax
+from dsps.data_loaders import load_transmission_curve
+from dsps.data_loaders.load_filter_data import TransmissionCurve
+from dsps.data_loaders.load_ssp_data import SSPData
+
+from ...param_utils import diffsky_param_wrapper as dpw
+from .. import io_utils as iou
 
 jax.config.update("jax_enable_x64", True)
 import h5py
@@ -33,6 +42,7 @@ from ...experimental.size_modeling import disk_bulge_sizes as dbs
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
+from .. import load_flat_hdf5
 from . import lightcone_utils as hlu
 from . import load_lc_cf
 
@@ -91,16 +101,16 @@ DIFFSKY_DATA_KEYS_OUT = (
     "has_diffmah_fit",
     "logmp0",
     "logmp_obs",
-    "logsm_obs",
-    "logssfr_obs",
     *TOP_HOST_SHAPE_KEYS,
     *DEFAULT_MAH_PARAMS._fields,
-    *DEFAULT_DIFFSTAR_PARAMS._fields,
     *SIZE_KEYS,
     *ORIENTATION_KEYS,
 )
 
 PHOT_INFO_KEYS_OUT = (
+    *DEFAULT_DIFFSTAR_PARAMS._fields,
+    "logsm_obs",
+    "logssfr_obs",
     "uran_av",
     "uran_delta",
     "uran_funo",
@@ -117,6 +127,121 @@ BLACK_HOLE_KEYS_OUT = (
 
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
+
+
+BNPAT_TCURVES = "diffsky_{0}_transmission_curves.hdf5"
+BNPAT_SSP_DATA = "diffsky_{0}_ssp_data.hdf5"
+BNPAT_PARAM_COLLECTION = "diffsky_{0}_param_collection.hdf5"
+
+
+def write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data):
+    """"""
+    bn_ssp_data = BNPAT_SSP_DATA.format(mock_version_name)
+    with h5py.File(os.path.join(drn_out, bn_ssp_data), "w") as hdf_out:
+        for name, arr in zip(ssp_data._fields, ssp_data):
+            hdf_out[name] = arr
+
+
+def load_diffsky_ssp_data(drn_mock, mock_version_name):
+    bn_ssp_data = BNPAT_SSP_DATA.format(mock_version_name)
+    fn_ssp_data = os.path.join(drn_mock, bn_ssp_data)
+    ssp_data_dict = load_flat_hdf5(fn_ssp_data)
+
+    ssp_data = SSPData(*[ssp_data_dict[key] for key in SSPData._fields])
+    return ssp_data
+
+
+def write_diffsky_tcurves_to_disk(
+    drn_out, mock_version_name, tcurves, filter_nicknames
+):
+    """"""
+    bn_tcurves = BNPAT_TCURVES.format(mock_version_name)
+    with h5py.File(os.path.join(drn_out, bn_tcurves), "w") as hdf_out:
+        for tcurve, nickname in zip(tcurves, filter_nicknames):
+            tcurve_group = hdf_out.require_group(nickname)
+            tcurve_group["wave"] = tcurve.wave
+            tcurve_group["transmission"] = tcurve.transmission
+
+        hdf_out.attrs["_fields"] = np.array(filter_nicknames, dtype="S")
+
+
+def load_diffsky_tcurves(drn_mock, mock_version_name):
+    """"""
+    bn_tcurves = BNPAT_TCURVES.format(mock_version_name)
+    fn = os.path.join(drn_mock, bn_tcurves)
+    with h5py.File(fn, "r") as hdf:
+        filter_nicknames = [
+            f.decode() if isinstance(f, bytes) else f for f in hdf.attrs["_fields"]
+        ]
+        tcurves = []
+        for nickname in filter_nicknames:
+            tcurve = TransmissionCurve(
+                hdf[nickname]["wave"][:], hdf[nickname]["transmission"][:]
+            )
+            tcurves.append(tcurve)
+
+        TCurves = namedtuple("TCurves", filter_nicknames)
+        tcurves = TCurves(*tcurves)
+    return tcurves
+
+
+def load_diffsky_param_collection(drn_mock, mock_version_name):
+    """"""
+    bn = BNPAT_PARAM_COLLECTION.format(mock_version_name)
+    fn = os.path.join(drn_mock, bn)
+    flat_diffsky_params = iou.load_namedtuple_from_hdf5(fn)
+    param_collection = dpw.get_param_collection_from_flat_array(flat_diffsky_params)
+    return param_collection
+
+
+def write_diffsky_param_collection(drn_mock, mock_version_name, param_collection):
+    """"""
+    bn = BNPAT_PARAM_COLLECTION.format(mock_version_name)
+    fn_out = os.path.join(drn_mock, bn)
+    flat_diffsky_params = dpw.unroll_param_collection_into_flat_array(*param_collection)
+    DiffskyParams = namedtuple("DiffskyParams", dpw.get_flat_param_names())
+    flat_diffsky_params = DiffskyParams(*flat_diffsky_params)
+
+    iou.write_namedtuple_to_hdf5(flat_diffsky_params, fn_out)
+
+
+def load_diffsky_sim_info(fn_mock):
+    with h5py.File(fn_mock, "r") as hdf:
+        sim_name = hdf["metadata/nbody_info"].attrs["sim_name"]
+    sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
+    return sim_info
+
+
+def get_dsps_transmission_curves(filter_nicknames, drn=None):
+    bn_pat_list = [name + "*" for name in filter_nicknames]
+    TCurves = namedtuple("TCurves", filter_nicknames)
+    tcurves = TCurves(
+        *[load_transmission_curve(bn_pat=bn_pat, drn=drn) for bn_pat in bn_pat_list]
+    )
+    return tcurves
+
+
+def write_diffsky_t_table(drn_mock, mock_version_name, sim_info):
+    t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
+
+    bn_t_table = f"diffsky_{mock_version_name}_t_table.hdf5"
+    fn_t_table = os.path.join(drn_mock, bn_t_table)
+    with h5py.File(fn_t_table, "w") as hdf_out:
+        hdf_out["t_table"] = t_table
+
+
+def load_diffsky_t_table(drn_mock, mock_version_name):
+    bn_t_table = f"diffsky_{mock_version_name}_t_table.hdf5"
+    fn_t_table = os.path.join(drn_mock, bn_t_table)
+    with h5py.File(fn_t_table, "r") as hdf:
+        t_table = hdf["t_table"][:]
+    return t_table
+
+
+def load_diffsky_z_phot_table(fn_mock):
+    with h5py.File(fn_mock, "r") as hdf:
+        z_phot_table = hdf["metadata/z_phot_table"][:]
+    return z_phot_table
 
 
 def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
@@ -178,12 +303,14 @@ def write_lc_dbk_sed_mock_to_disk(
 
 
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
+    mah_key, sfh_key = jran.split(ran_key, 2)
+
     lc_data["t_obs"] = flat_wcdm.age_at_z(
         lc_data["redshift_true"], *sim_info.cosmo_params
     )
 
     mah_params, msk_has_diffmah_fit = load_lc_cf.get_imputed_mah_params(
-        ran_key, diffsky_data, lc_data, sim_info.lgt0
+        mah_key, diffsky_data, lc_data, sim_info.lgt0
     )
     for pname, pval in zip(mah_params._fields, mah_params):
         diffsky_data[pname] = pval
@@ -214,7 +341,7 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
         lgmu_infall,
         logmhost_infall,
         gyr_since_infall,
-        ran_key,
+        sfh_key,
         t_table,
     )
 
@@ -325,22 +452,13 @@ def add_dbk_sed_quantities_to_mock(
         ssp_err_pop_params,
     ) = param_collection
 
-    n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
-
-    ran_key, sfh_key = jran.split(ran_key, 2)
-    lc_data, diffsky_data = add_sfh_quantities_to_mock(
-        sim_info, lc_data, diffsky_data, sfh_key
-    )
-    n_gals = diffsky_data["logsm_obs"].size
-
     t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
 
     mah_params = DEFAULT_MAH_PARAMS._make(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
-    ran_key, sed_key = jran.split(ran_key, 2)
     args = (
-        sed_key,
+        ran_key,
         lc_data["redshift_true"],
         lc_data["t_obs"],
         mah_params,
@@ -356,6 +474,7 @@ def add_dbk_sed_quantities_to_mock(
         scatter_params,
         ssp_err_pop_params,
         sim_info.cosmo_params,
+        sim_info.fb,
     )
     phot_info = mc_dbk_sed._mc_diffsky_disk_bulge_knot_phot_kern(*args)
 
@@ -381,10 +500,10 @@ def add_morphology_quantities_to_diffsky_data(
 
     morph_key, disk_size_key, bulge_size_key = jran.split(morph_key, 3)
     r50_disk, zscore_disk = dbs.mc_r50_disk_size(
-        10 ** diffsky_data["logsm_obs"], lc_data["redshift_true"], disk_size_key
+        10 ** phot_info["logsm_obs"], lc_data["redshift_true"], disk_size_key
     )
     r50_bulge, zscore_bulge = dbs.mc_r50_bulge_size(
-        10 ** diffsky_data["logsm_obs"], lc_data["redshift_true"], bulge_size_key
+        10 ** phot_info["logsm_obs"], lc_data["redshift_true"], bulge_size_key
     )
 
     diffsky_data["r50_disk"] = r50_disk
@@ -440,11 +559,11 @@ def add_morphology_quantities_to_diffsky_data(
     return diffsky_data
 
 
-def add_black_hole_quantities_to_diffsky_data(lc_data, diffsky_data):
-    bulge_mass = diffsky_data["bulge_to_total"] * 10 ** diffsky_data["logsm_obs"]
+def add_black_hole_quantities_to_diffsky_data(lc_data, diffsky_data, phot_info):
+    bulge_mass = diffsky_data["bulge_to_total"] * 10 ** phot_info["logsm_obs"]
     diffsky_data["black_hole_mass"] = bhm.bh_mass_from_bulge_mass(bulge_mass)
 
-    p_ssfr = approximate_ssfr_percentile(diffsky_data["logssfr_obs"])
+    p_ssfr = approximate_ssfr_percentile(phot_info["logssfr_obs"])
     z = lc_data["redshift_true"].mean()
     _res = monte_carlo_bh_acc_rate(z, diffsky_data["black_hole_mass"], p_ssfr)
     diffsky_data["black_hole_eddington_ratio"] = _res[0]
