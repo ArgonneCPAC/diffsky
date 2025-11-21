@@ -474,6 +474,7 @@ def add_dbk_sed_quantities_to_mock(
         scatter_params,
         ssp_err_pop_params,
         sim_info.cosmo_params,
+        sim_info.fb,
     )
     phot_info = mc_dbk_sed._mc_diffsky_disk_bulge_knot_phot_kern(*args)
 

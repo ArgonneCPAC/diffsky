@@ -26,8 +26,9 @@ def test_mc_diffsky_phot_flat_u_params():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
+    fb = 0.156
     phot_info = mcsed._mc_diffsky_phot_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
 
     assert np.allclose(sed_info["obs_mags"], phot_info["obs_mags"], rtol=1e-4)
@@ -50,8 +51,9 @@ def test_recompute_photometry_from_phot_mock():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
+    fb = 0.156
     phot_info = mcsed._mc_diffsky_phot_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
 
     delta_scatter = np.where(
@@ -101,8 +103,9 @@ def test_recompute_sed_from_phot_mock():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
+    fb = 0.156
     phot_info = mcsed._mc_diffsky_phot_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
 
     z_phot_table = np.linspace(0.01, 3, 20)
@@ -169,11 +172,13 @@ def test_mc_diffsky_seds_flat_u_params():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
+    fb = 0.156
+
     sed_info = mcsed._mc_diffsky_seds_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
     lc_phot_orig = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
-        u_param_arr, ran_key, lc_data
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
     msk_q = sed_info["mc_sfh_type"] == 0
     assert np.allclose(lc_phot_orig.obs_mags_q[msk_q], sed_info["obs_mags"][msk_q])

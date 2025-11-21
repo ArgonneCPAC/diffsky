@@ -107,7 +107,7 @@ def get_wave_eff_table(z_phot_table, tcurves):
 
 @jjit
 def diffstarpop_lc_cen_wrapper(
-    diffstarpop_params, ran_key, mah_params, logmp0, t_table, t_obs
+    diffstarpop_params, ran_key, mah_params, logmp0, t_table, t_obs, cosmo_params, fb
 ):
     n_gals = logmp0.size
     upids = jnp.zeros(n_gals).astype(int) - 1
@@ -115,6 +115,7 @@ def diffstarpop_lc_cen_wrapper(
     logmhost_infall = jnp.copy(logmp0)
     lgmu_infall = jnp.zeros(n_gals) - 1.0
     gyr_since_infall = jnp.zeros(n_gals)
+    lgt0 = jnp.log10(flat_wcdm.age_at_z0(*cosmo_params))
 
     args = (
         diffstarpop_params,
@@ -127,7 +128,7 @@ def diffstarpop_lc_cen_wrapper(
         ran_key,
         t_table,
     )
-    _res = mc_diffstar_sfh_galpop(*args)
+    _res = mc_diffstar_sfh_galpop(*args, lgt0=lgt0, fb=fb)
     diffstar_params_ms, diffstar_params_q, sfh_ms, sfh_q, frac_q, mc_is_q = _res
 
     logsm_obs_ms, logssfr_obs_ms = _get_sfh_info_at_t_obs(t_table, sfh_ms, t_obs)
@@ -174,13 +175,22 @@ def multiband_lc_phot_kern(
     spspop_params,
     scatter_params,
     ssp_err_pop_params,
+    cosmo_params,
+    fb,
 ):
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
     n_gals = logmp0.size
 
     ran_key, sfh_key = jran.split(ran_key, 2)
     diffstar_galpop = diffstarpop_lc_cen_wrapper(
-        diffstarpop_params, sfh_key, mah_params, logmp0, t_table, t_obs
+        diffstarpop_params,
+        sfh_key,
+        mah_params,
+        logmp0,
+        t_table,
+        t_obs,
+        cosmo_params,
+        fb,
     )
 
     smooth_age_weights_ms = calc_age_weights_from_sfh_table_vmap(
@@ -331,7 +341,7 @@ def multiband_lc_phot_kern(
 
 
 @jjit
-def multiband_lc_phot_kern_u_param_arr(u_param_arr, ran_key, lc_data):
+def multiband_lc_phot_kern_u_param_arr(u_param_arr, ran_key, lc_data, cosmo_params, fb):
     """Kernel for KDE-based loss of lightcone photometry predictions
 
     Parameters
@@ -360,7 +370,9 @@ def multiband_lc_phot_kern_u_param_arr(u_param_arr, ran_key, lc_data):
     param_collection = dpw.get_param_collection_from_u_param_collection(
         *u_param_collection
     )
-    lc_phot = multiband_lc_phot_kern(ran_key, *lc_data[1:], *param_collection)
+    lc_phot = multiband_lc_phot_kern(
+        ran_key, *lc_data[1:], *param_collection, cosmo_params, fb
+    )
     return lc_phot
 
 
