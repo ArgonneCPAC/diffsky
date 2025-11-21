@@ -388,6 +388,8 @@ if __name__ == "__main__":
             fn_param_collection, param_collection
         )
 
+        lcmp.write_diffsky_t_table(drn_out, mock_version_name, sim_info)
+
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
 

@@ -8,7 +8,7 @@ import numpy as np
 from ....param_utils import diffsky_param_wrapper as dpw
 from ....param_utils import param_loader
 from .. import lc_mock_production as lcmp
-from .. import load_flat_hdf5
+from .. import load_flat_hdf5, load_lc_cf
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
 REQUIRED_SOFTWARE_VERSION_INFO = (
@@ -152,6 +152,9 @@ def check_metadata(fn_lc_mock):
             fn_param_collection = os.path.join(drn_mock, bn_param_collection)
             check_has_param_collection(fn_param_collection)
 
+            # Check has t_table used to tabulate sfh_table
+            check_has_t_table(drn_mock, mock_version_name, sim_name)
+
         except:  # noqa
             s = "metadata is incorrect"
             msg.append(s)
@@ -192,6 +195,15 @@ def check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=None):
         msg.append(s)
 
     return msg
+
+
+def check_has_t_table(drn_mock, mock_version_name, sim_name):
+    t_table = lcmp.load_diffsky_t_table(drn_mock, mock_version_name)
+    sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
+
+    assert t_table.size == lcmp.N_T_TABLE
+    assert np.allclose(t_table[0], lcmp.T_TABLE_MIN, rtol=1e-3)
+    assert np.allclose(t_table[-1], 10**sim_info.lgt0, rtol=1e-3)
 
 
 def check_has_param_collection(fn):
@@ -243,4 +255,5 @@ def check_recomputed_photometry(fn_lc_mock):
 
     drn_mock = os.path.dirname(fn_lc_mock)
     tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
+    t_table = lcmp.load_diffsky_t_table(drn_mock, mock_version_name)
     ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)

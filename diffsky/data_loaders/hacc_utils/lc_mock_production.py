@@ -190,6 +190,23 @@ def get_dsps_transmission_curves(filter_nicknames, drn=None):
     return tcurves
 
 
+def write_diffsky_t_table(drn_mock, mock_version_name, sim_info):
+    t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
+
+    bn_t_table = f"diffsky_{mock_version_name}_t_table.hdf5"
+    fn_t_table = os.path.join(drn_mock, bn_t_table)
+    with h5py.File(fn_t_table, "w") as hdf_out:
+        hdf_out["t_table"] = t_table
+
+
+def load_diffsky_t_table(drn_mock, mock_version_name):
+    bn_t_table = f"diffsky_{mock_version_name}_t_table.hdf5"
+    fn_t_table = os.path.join(drn_mock, bn_t_table)
+    with h5py.File(fn_t_table, "r") as hdf:
+        t_table = hdf["t_table"][:]
+    return t_table
+
+
 def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
     with h5py.File(fnout, "w") as hdf_out:
 
