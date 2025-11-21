@@ -133,6 +133,12 @@ def check_metadata(fn_lc_mock):
             )
             assert set(avail_software_versions) == set(REQUIRED_SOFTWARE_VERSION_INFO)
 
+            # Check z_phot_table is reasonable
+            z_phot_table = hdf["metadata/z_phot_table"][:]
+            assert z_phot_table.size >= 2
+            assert np.all(z_phot_table > -1)
+            assert np.all(z_phot_table < 100)
+
         except:  # noqa
             s = "metadata is incorrect"
             msg.append(s)
