@@ -7,6 +7,7 @@ from collections import namedtuple
 import jax
 from dsps.data_loaders import load_transmission_curve
 from dsps.data_loaders.load_filter_data import TransmissionCurve
+from dsps.data_loaders.load_ssp_data import SSPData
 
 jax.config.update("jax_enable_x64", True)
 import h5py
@@ -38,6 +39,7 @@ from ...experimental.size_modeling import disk_bulge_sizes as dbs
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...utils.sfh_utils import get_logsm_logssfr_at_t_obs
+from .. import load_flat_hdf5
 from . import lightcone_utils as hlu
 from . import load_lc_cf
 
@@ -134,6 +136,15 @@ def write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data):
     with h5py.File(os.path.join(drn_out, bn_ssp_data), "w") as hdf_out:
         for name, arr in zip(ssp_data._fields, ssp_data):
             hdf_out[name] = arr
+
+
+def load_diffsky_ssp_data(drn_mock, mock_version_name):
+    bn_ssp_data = BNPAT_SSP_DATA.format(mock_version_name)
+    fn_ssp_data = os.path.join(drn_mock, bn_ssp_data)
+    ssp_data_dict = load_flat_hdf5(fn_ssp_data)
+
+    ssp_data = SSPData(*[ssp_data_dict[key] for key in SSPData._fields])
+    return ssp_data
 
 
 def write_diffsky_tcurves_to_disk(

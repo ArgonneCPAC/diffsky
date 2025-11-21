@@ -203,13 +203,8 @@ def check_has_param_collection(fn):
 
 
 def check_has_ssp_data(drn_mock, mock_version_name):
-    fn_ssp_data = os.path.join(drn_mock, lcmp.BNPAT_SSP_DATA.format(mock_version_name))
-
-    with h5py.File(fn_ssp_data, "r") as hdf:
-        ssp_data = dict()
-        for key in hdf.keys():
-            ssp_data[key] = hdf[key][:]
-    assert len(ssp_data) > 0
+    ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
+    assert np.all(np.isfinite(ssp_data.ssp_wave))
 
 
 def check_has_transmission_curves(drn_mock, mock_version_name):
@@ -240,3 +235,12 @@ def check_consistent_disk_bulge_knot_luminosities(
         s = "disk/bulge/knot luminosities inconsistent with total"
         msg.append(s)
     return msg
+
+
+def check_recomputed_photometry(fn_lc_mock):
+    with h5py.File(fn_lc_mock, "r") as hdf:
+        mock_version_name = hdf["metadata"].attrs["mock_version_name"]
+
+    drn_mock = os.path.dirname(fn_lc_mock)
+    tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
+    ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
