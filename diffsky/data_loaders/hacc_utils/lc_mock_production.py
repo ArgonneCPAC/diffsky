@@ -462,6 +462,12 @@ def add_dbk_sed_quantities_to_mock(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
+    ran_key, mah_key = jran.split(ran_key, 2)
+    mah_params, msk_has_diffmah_fit = load_lc_cf.get_imputed_mah_params(
+        mah_key, diffsky_data, sim_info.lgt0
+    )
+    diffsky_data["has_diffmah_fit"] = msk_has_diffmah_fit
+
     logmp0 = logmh_at_t_obs(
         mah_params,
         np.zeros(mah_params.logm0.size) + 10**sim_info.lgt0,
@@ -478,8 +484,9 @@ def add_dbk_sed_quantities_to_mock(
 
     t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
 
+    ran_key, phot_key = jran.split(ran_key, 2)
     args = (
-        ran_key,
+        phot_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],
         mah_params,
