@@ -88,7 +88,7 @@ jobs:
           mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py \
             poboy \
             0.01 \
-            0.5 \
+            0.2 \
             0 \
             1 \
             ci_test_output \
@@ -96,8 +96,8 @@ jobs:
             -fn_u_params sfh_model \
             -sfh_model smdpl_dr1 \
             -synthetic_cores 1 \
-            -lgmp_min 11.5 \
-            -lgmp_max 13.5
+            -lgmp_min 12.0 \
+            -lgmp_max 13.0
 
       - name: verify script completed
         shell: bash -l {0}
