@@ -305,12 +305,8 @@ def write_lc_dbk_sed_mock_to_disk(
 def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     mah_key, sfh_key = jran.split(ran_key, 2)
 
-    lc_data["t_obs"] = flat_wcdm.age_at_z(
-        lc_data["redshift_true"], *sim_info.cosmo_params
-    )
-
     mah_params, msk_has_diffmah_fit = load_lc_cf.get_imputed_mah_params(
-        mah_key, diffsky_data, lc_data, sim_info.lgt0
+        mah_key, diffsky_data, sim_info.lgt0
     )
     for pname, pval in zip(mah_params._fields, mah_params):
         diffsky_data[pname] = pval
@@ -322,7 +318,9 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
     diffsky_data["logmp0"] = logmp0
 
     logmp_obs = logmh_at_t_obs(
-        mah_params, np.zeros(mah_params.logm0.size) + lc_data["t_obs"], sim_info.lgt0
+        mah_params,
+        np.zeros(mah_params.logm0.size) + diffsky_data["t_obs"],
+        sim_info.lgt0,
     )
     diffsky_data["logmp_obs"] = logmp_obs
 
@@ -361,19 +359,19 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
         diffsky_data[key] = getattr(sfh_params, key)
 
     logsm_obs, logssfr_obs = get_logsm_logssfr_at_t_obs(
-        lc_data["t_obs"], t_table, diffsky_data["sfh_table"]
+        diffsky_data["t_obs"], t_table, diffsky_data["sfh_table"]
     )
     diffsky_data["logsm_obs"] = logsm_obs
     diffsky_data["logssfr_obs"] = logssfr_obs
 
     logsm_obs_ms, logssfr_obs_ms = get_logsm_logssfr_at_t_obs(
-        lc_data["t_obs"], t_table, diffsky_data["sfh_table_ms"]
+        diffsky_data["t_obs"], t_table, diffsky_data["sfh_table_ms"]
     )
     diffsky_data["logsm_obs_ms"] = logsm_obs_ms
     diffsky_data["logssfr_obs_ms"] = logssfr_obs_ms
 
     logsm_obs_q, logssfr_obs_q = get_logsm_logssfr_at_t_obs(
-        lc_data["t_obs"], t_table, diffsky_data["sfh_table_q"]
+        diffsky_data["t_obs"], t_table, diffsky_data["sfh_table_q"]
     )
     diffsky_data["logsm_obs_q"] = logsm_obs_q
     diffsky_data["logssfr_obs_q"] = logssfr_obs_q
@@ -414,7 +412,7 @@ def add_sed_quantities_to_mock(
     args = (
         sed_key,
         lc_data["redshift_true"],
-        lc_data["t_obs"],
+        diffsky_data["t_obs"],
         diffsky_data["mah_params"],
         diffsky_data["logmp0"],
         t_table,
@@ -460,7 +458,7 @@ def add_dbk_sed_quantities_to_mock(
     args = (
         ran_key,
         lc_data["redshift_true"],
-        lc_data["t_obs"],
+        diffsky_data["t_obs"],
         mah_params,
         diffsky_data["logmp0"],
         t_table,
@@ -490,7 +488,7 @@ def add_morphology_quantities_to_diffsky_data(
     t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
 
     diffsky_data["bulge_to_total"] = interp_vmap(
-        lc_data["t_obs"],
+        diffsky_data["t_obs"],
         t_table,
         phot_info["bulge_to_total_history"],
     )
