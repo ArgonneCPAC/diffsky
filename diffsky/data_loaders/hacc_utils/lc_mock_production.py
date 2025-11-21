@@ -466,21 +466,21 @@ def add_dbk_sed_quantities_to_mock(
     mah_params, msk_has_diffmah_fit = load_lc_cf.get_imputed_mah_params(
         mah_key, diffsky_data, sim_info.lgt0
     )
+    for pname, pval in zip(mah_params._fields, mah_params):
+        diffsky_data[pname] = pval
     diffsky_data["has_diffmah_fit"] = msk_has_diffmah_fit
 
-    logmp0 = logmh_at_t_obs(
+    diffsky_data["logmp0"] = logmh_at_t_obs(
         mah_params,
         np.zeros(mah_params.logm0.size) + 10**sim_info.lgt0,
         sim_info.lgt0,
     )
-    diffsky_data["logmp0"] = logmp0
 
-    logmp_obs = logmh_at_t_obs(
+    diffsky_data["logmp_obs"] = logmh_at_t_obs(
         mah_params,
         np.zeros(mah_params.logm0.size) + diffsky_data["t_obs"],
         sim_info.lgt0,
     )
-    diffsky_data["logmp_obs"] = logmp_obs
 
     t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
 
