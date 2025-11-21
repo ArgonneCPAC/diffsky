@@ -401,8 +401,11 @@ Contact: ahearin@anl.gov for questions.
 """
 
 
-def append_metadata(fnout, sim_name, mock_version_name):
+def append_metadata(fnout, sim_name, mock_version_name, z_phot_table):
     with h5py.File(fnout, "r+") as hdf_out:
+
+        hdf_out["z_phot_table"] = z_phot_table
+
         metadata_group = hdf_out.require_group("metadata")
 
         metadata_group.attrs["creation_date"] = str(datetime.now())

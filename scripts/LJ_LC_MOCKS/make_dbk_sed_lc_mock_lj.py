@@ -369,7 +369,9 @@ if __name__ == "__main__":
         lcmp.write_lc_dbk_sed_mock_to_disk(
             fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
         )
-        metadata_sfh_mock.append_metadata(fn_out, sim_name, mock_version_name)
+        metadata_sfh_mock.append_metadata(
+            fn_out, sim_name, mock_version_name, z_phot_table
+        )
 
         bn_ssp_data = f"diffsky_{mock_version_name}_ssp_data.hdf5"
         fn_out_ssp_data = os.path.join(drn_out, bn_ssp_data)
