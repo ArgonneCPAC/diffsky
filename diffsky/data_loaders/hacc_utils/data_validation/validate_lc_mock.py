@@ -318,3 +318,19 @@ def check_recomputed_photometry(fn_lc_mock):
 
     for i, tcurve_name in enumerate(tcurves._fields):
         assert np.allclose(mock[tcurve_name], phot_info["obs_mags"][:, i], rtol=0.01)
+
+        assert np.allclose(
+            mock[tcurve_name + "_bulge"],
+            phot_info["obs_mags" + "_bulge"][:, i],
+            rtol=0.01,
+        )
+        assert np.allclose(
+            mock[tcurve_name + "_disk"],
+            phot_info["obs_mags" + "_disk"][:, i],
+            rtol=0.01,
+        )
+        assert np.allclose(
+            mock[tcurve_name + "_knots"],
+            phot_info["obs_mags" + "_knots"][:, i],
+            rtol=0.01,
+        )
