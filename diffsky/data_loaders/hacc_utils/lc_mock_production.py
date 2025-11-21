@@ -458,11 +458,26 @@ def add_dbk_sed_quantities_to_mock(
         lc_data["redshift_true"], *sim_info.cosmo_params
     )
 
-    t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
-
     mah_params = DEFAULT_MAH_PARAMS._make(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
+
+    logmp0 = logmh_at_t_obs(
+        mah_params,
+        np.zeros(mah_params.logm0.size) + 10**sim_info.lgt0,
+        sim_info.lgt0,
+    )
+    diffsky_data["logmp0"] = logmp0
+
+    logmp_obs = logmh_at_t_obs(
+        mah_params,
+        np.zeros(mah_params.logm0.size) + diffsky_data["t_obs"],
+        sim_info.lgt0,
+    )
+    diffsky_data["logmp_obs"] = logmp_obs
+
+    t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
+
     args = (
         ran_key,
         lc_data["redshift_true"],
