@@ -51,10 +51,12 @@ def test_load_diffsky_param_collection():
     Params = namedtuple("Params", all_pnames)
     all_named_params = Params(*all_params_flat)
 
-    fn = "diffsky_unit_testing_params.hdf5"
+    drn_mock = ""
+    mock_version_name = "unit_testing"
+    fn = lcmp.BNPAT_PARAM_COLLECTION.format(mock_version_name)
     iou.write_namedtuple_to_hdf5(all_named_params, fn)
 
-    param_collection = lcmp.load_diffsky_param_collection(fn)
+    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
     all_params_flat2 = dpw.unroll_param_collection_into_flat_array(*param_collection)
 
     assert np.allclose(all_params_flat, all_params_flat2, rtol=1e-5)
