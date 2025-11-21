@@ -454,6 +454,10 @@ def add_dbk_sed_quantities_to_mock(
         ssp_err_pop_params,
     ) = param_collection
 
+    diffsky_data["t_obs"] = flat_wcdm.age_at_z(
+        lc_data["redshift_true"], *sim_info.cosmo_params
+    )
+
     t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
 
     mah_params = DEFAULT_MAH_PARAMS._make(
