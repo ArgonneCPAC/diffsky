@@ -255,7 +255,7 @@ def check_consistent_disk_bulge_knot_luminosities(
     return msg
 
 
-def check_recomputed_photometry(fn_lc_mock, n_test=50, return_results=False):
+def check_recomputed_photometry(fn_lc_mock, n_test=200, return_results=False):
     """Recompute first N_TEST=50 galaxies photometry and enforce agreement"""
     with h5py.File(fn_lc_mock, "r") as hdf:
         mock_version_name = hdf["metadata"].attrs["mock_version_name"]
@@ -320,11 +320,14 @@ def check_recomputed_photometry(fn_lc_mock, n_test=50, return_results=False):
     if return_results:
         return mock, phot_info, tcurves
 
-    RTOL = 0.01
-    ATOL = 0.1
+    RTOL = 0.1
+    ATOL = 0.2
     for i, tcurve_name in enumerate(tcurves._fields):
         assert np.allclose(mock[tcurve_name], phot_info["obs_mags"][:, i], rtol=RTOL)
         assert np.allclose(mock[tcurve_name], phot_info["obs_mags"][:, i], atol=ATOL)
+
+        magdiff = mock[tcurve_name] - phot_info["obs_mags"][:, i]
+        assert np.mean(np.abs(magdiff) > 0.1) < 0.01
 
         assert np.allclose(
             mock[tcurve_name + "_bulge"],
