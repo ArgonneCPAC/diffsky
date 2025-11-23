@@ -1,3 +1,18 @@
+0.3.1 (2025-11-23)
+-------------------
+- Update diffsky to be compatible with diffstar v1.0.2 (https://github.com/ArgonneCPAC/diffsky/pull/277)
+- Add new module to recompute photometry from mock (https://github.com/ArgonneCPAC/diffsky/pull/272)
+- Implement mock-production validation test of recomputed photometry (https://github.com/ArgonneCPAC/diffsky/pull/274)
+- Add kernel to decompose SED into Disk/bulge/knot components (https://github.com/ArgonneCPAC/diffsky/pull/248)
+- Fix memory leak in SED mock production script (https://github.com/ArgonneCPAC/diffsky/pull/244)
+- Parallelize mock-production script (https://github.com/ArgonneCPAC/diffsky/pull/267)
+- Compute mock photometry in batches (https://github.com/ArgonneCPAC/diffsky/pull/269)
+- Add size and orientation of disk and bulge to galaxies in SED mock
+    - https://github.com/ArgonneCPAC/diffsky/pull/254
+    - https://github.com/ArgonneCPAC/diffsky/pull/265
+
+
+
 0.3.0 (2025-10-03)
 -------------------
 - Update diffsky to be compatible with diffstar v1.0
