@@ -1,4 +1,4 @@
-name: linting
+name: Flake8 test of source code
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   tests:
-    name: tests
+    name: flake8 diffsky scripts
     runs-on: "ubuntu-latest"
 
     steps:
