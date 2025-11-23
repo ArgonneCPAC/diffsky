@@ -1,4 +1,4 @@
-name: Test against latest diffstuff releases
+name: Test against updated diffstar
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   tests:
-    name: pytest with latest releases on conda-forge
+    name: pytest with diffstar@refs/pull/108/head
     runs-on: "ubuntu-latest"
 
     steps:
@@ -31,7 +31,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.CPAC_PRIVATE_REPO_TOKEN }}
           GITHUB_USER: ${{ secrets.GH_USR_TESTING_TOKEN }}
 
-      # Test against conda-forge for all dependencies except use main branch for dsps
+      # Test against updated diffstar
         run: |
           conda config --set always_yes yes
           conda install --quiet \
@@ -47,6 +47,12 @@ jobs:
             matplotlib \
             astropy \
             python-build
+          pip uninstall diffmah --yes
+          pip uninstall diffstar --yes
+          pip uninstall dsps --yes
+          pip install --no-deps git+https://github.com/ArgonneCPAC/diffmah.git
+          pip install --no-deps git+https://github.com/ArgonneCPAC/diffstar.git@refs/pull/108/head
+          pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
           python -m pip install --no-build-isolation --no-deps -e .
 
       - name: test

@@ -9,6 +9,7 @@ from collections import namedtuple
 import numpy as np
 from diffmah import logmh_at_t_obs
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
+from diffstar.defaults import FB
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import age_at_z0
 from dsps.metallicity import umzr

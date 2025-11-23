@@ -347,7 +347,7 @@ def add_sfh_quantities_to_mock(sim_info, lc_data, diffsky_data, ran_key):
         t_table,
     )
 
-    _res = mc_diffstar_sfh_galpop(*args)
+    _res = mc_diffstar_sfh_galpop(*args, lgt0=sim_info.lgt0, fb=sim_info.fb)
     sfh_params_ms, sfh_params_q, sfh_ms, sfh_q, frac_q, mc_is_q = _res
 
     diffsky_data["sfh_table"] = np.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)

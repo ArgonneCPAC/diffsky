@@ -7,6 +7,7 @@ config.update("jax_enable_x64", True)
 from collections import namedtuple
 
 from diffmah import logmh_at_t_obs
+from diffstar.defaults import FB
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import DEFAULT_COSMOLOGY, age_at_z0
 from dsps.metallicity import umzr
@@ -62,6 +63,7 @@ def mc_weighted_diffsky_lightcone(
     scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
     ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
     cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
 ):
     """Populate the input lightcone with galaxy SEDs
 
@@ -82,29 +84,29 @@ def mc_weighted_diffsky_lightcone(
         (diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params)
     )
     sed_data = _mc_diffsky_seds_kern(
-        ran_key, *lc_data[1:], *param_collection, cosmo_params
+        ran_key, *lc_data[1:], *param_collection, cosmo_params, fb
     )
     return sed_data
 
 
-def _mc_diffsky_seds_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params):
+def _mc_diffsky_seds_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params, fb):
     u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
     param_collection = dpw.get_param_collection_from_u_param_collection(
         *u_param_collection
     )
     sed_data = _mc_diffsky_seds_kern(
-        ran_key, *lc_data[1:], *param_collection, cosmo_params
+        ran_key, *lc_data[1:], *param_collection, cosmo_params, fb
     )
     return sed_data
 
 
-def _mc_diffsky_phot_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params):
+def _mc_diffsky_phot_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params, fb):
     u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
     param_collection = dpw.get_param_collection_from_u_param_collection(
         *u_param_collection
     )
     phot_data = _mc_diffsky_phot_kern(
-        ran_key, *lc_data[1:], *param_collection, cosmo_params
+        ran_key, *lc_data[1:], *param_collection, cosmo_params, fb
     )
     return phot_data
 
