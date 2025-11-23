@@ -3,7 +3,7 @@
 import os
 
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
-from diffstar.defaults import T_TABLE_MIN
+from diffstar.defaults import FB, T_TABLE_MIN
 from diffstar.diffstarpop import mc_diffstar_sfh_galpop
 from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
@@ -35,6 +35,7 @@ def mc_diffstar_galpop(
     volume_com=None,
     hosts_logmh_at_z=None,
     cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     n_t=N_T,
     return_internal_quantities=False,
@@ -104,7 +105,7 @@ def mc_diffstar_galpop(
         t_table,
     )
 
-    _res = mc_diffstar_sfh_galpop(*args)
+    _res = mc_diffstar_sfh_galpop(*args, lgt0=jnp.log10(t0), fb=fb)
     sfh_ms, sfh_q, frac_q, mc_is_q = _res[2:]
     sfh_table = jnp.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     smh_table = cumulative_mstar_formed_galpop(t_table, sfh_table)
@@ -147,6 +148,7 @@ def mc_diffstar_cenpop(
     volume_com=None,
     hosts_logmh_at_z=None,
     cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     n_t=N_T,
     return_internal_quantities=False,
@@ -217,7 +219,7 @@ def mc_diffstar_cenpop(
         t_table,
     )
 
-    _res = mc_diffstar_sfh_galpop(*args)
+    _res = mc_diffstar_sfh_galpop(*args, lgt0=jnp.log10(t0), fb=fb)
     sfh_ms, sfh_q, frac_q, mc_is_q = _res[2:]
     sfh_table = jnp.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
     smh_table = cumulative_mstar_formed_galpop(t_table, sfh_table)

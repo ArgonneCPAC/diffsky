@@ -2,6 +2,7 @@
 
 import numpy as np
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
+from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
@@ -28,7 +29,6 @@ def test_disk_bulge_knot_phot_from_mock():
     ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
     n_gals = lc_data.z_obs.size
-    fb = 0.156
     mc_args = (
         ran_key,
         lc_data.z_obs,
@@ -46,7 +46,7 @@ def test_disk_bulge_knot_phot_from_mock():
         scatter_params,
         ssp_err_pop_params,
         DEFAULT_COSMOLOGY,
-        fb,
+        FB,
     )
 
     dbk_phot_info = mc_dbk_sed._mc_diffsky_disk_bulge_knot_phot_kern(*mc_args)
@@ -77,8 +77,6 @@ def test_disk_bulge_knot_phot_from_mock():
     diffstar_params = [dbk_phot_info[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     diffstar_params = DEFAULT_DIFFSTAR_PARAMS._make(diffstar_params)
 
-    fb = 0.156
-
     mock_args = (
         lc_data.z_obs,
         lc_data.t_obs,
@@ -95,7 +93,7 @@ def test_disk_bulge_knot_phot_from_mock():
         scatter_params,
         ssp_err_pop_params,
         DEFAULT_COSMOLOGY,
-        fb,
+        FB,
         dbk_phot_info["uran_av"],
         dbk_phot_info["uran_delta"],
         dbk_phot_info["uran_funo"],

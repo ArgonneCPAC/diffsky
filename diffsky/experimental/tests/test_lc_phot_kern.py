@@ -1,7 +1,7 @@
 """ """
 
 import numpy as np
-from diffstar.defaults import T_TABLE_MIN
+from diffstar.defaults import FB, T_TABLE_MIN
 from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.cosmology import flat_wcdm
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
@@ -62,7 +62,6 @@ def test_multiband_lc_phot_kern():
     spspop_params = spspu.DEFAULT_SPSPOP_PARAMS
     scatter_params = DEFAULT_SCATTER_PARAMS
     ssp_err_pop_params = ssp_err_model.DEFAULT_SSPERR_PARAMS
-    fb = 0.156
 
     args = (
         ran_key,
@@ -81,7 +80,7 @@ def test_multiband_lc_phot_kern():
         scatter_params,
         ssp_err_pop_params,
         DEFAULT_COSMOLOGY,
-        fb,
+        FB,
     )
     lc_phot = lc_phot_kern.multiband_lc_phot_kern(*args)
     for arr in lc_phot:
@@ -140,9 +139,8 @@ def test_multiband_lc_phot_kern_u_param_arr():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
-    fb = 0.156
     lc_phot = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, FB
     )
     for x in lc_phot:
         assert np.all(np.isfinite(x))

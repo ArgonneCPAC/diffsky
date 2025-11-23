@@ -7,6 +7,7 @@ config.update("jax_enable_x64", True)
 from collections import namedtuple
 
 from diffmah import logmh_at_t_obs
+from diffstar.defaults import FB
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.cosmology import DEFAULT_COSMOLOGY, age_at_z0
 from dsps.metallicity import umzr
@@ -62,7 +63,7 @@ def mc_weighted_diffsky_lightcone(
     scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
     ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
     cosmo_params=DEFAULT_COSMOLOGY,
-    fb=0.156,
+    fb=FB,
 ):
     """Populate the input lightcone with galaxy SEDs
 

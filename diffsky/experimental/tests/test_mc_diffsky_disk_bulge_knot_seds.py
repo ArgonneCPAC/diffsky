@@ -1,6 +1,7 @@
 """"""
 
 import numpy as np
+from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
@@ -30,12 +31,11 @@ def test_mc_diffsky_seds_flat_u_params():
     )
     u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
 
-    fb = 0.156
     sed_info = mcsed_dbk._mc_diffsky_seds_dbk_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, FB
     )
     lc_phot_orig = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
+        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, FB
     )
     msk_q = sed_info["mc_sfh_type"] == 0
     assert np.allclose(lc_phot_orig.obs_mags_q[msk_q], sed_info["obs_mags"][msk_q])

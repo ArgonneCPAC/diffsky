@@ -11,6 +11,7 @@ import numpy as np
 from diffmah.diffmah_kernels import _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
+from diffstar.defaults import FB
 from diffstar.diffstarpop import mc_diffstar_sfh_galpop
 from diffstar.diffstarpop import param_utils as dpu
 from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
@@ -446,6 +447,7 @@ def mc_lightcone_diffstar_cens(
     z_max,
     sky_area_degsq,
     cosmo_params=flat_wcdm.PLANCK15,
+    fb=FB,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
@@ -547,7 +549,7 @@ def mc_lightcone_diffstar_cens(
     )
 
     ddp_fields = "sfh_params_ms", "sfh_params_q", "sfh_ms", "sfh_q", "frac_q", "mc_is_q"
-    ddp_values = mc_diffstar_sfh_galpop(*args)
+    ddp_values = mc_diffstar_sfh_galpop(*args, lgt0=jnp.log10(t0), fb=FB)
     diffstarpop_data = dict()
     for key, value in zip(ddp_fields, ddp_values):
         diffstarpop_data[key] = value
@@ -646,6 +648,7 @@ def sobol_lightcone_diffstar_cens(
     lgmp_max,
     sky_area_degsq,
     cosmo_params=flat_wcdm.PLANCK15,
+    fb=FB,
     hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
     diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
@@ -741,7 +744,7 @@ def sobol_lightcone_diffstar_cens(
     )
 
     ddp_fields = "sfh_params_ms", "sfh_params_q", "sfh_ms", "sfh_q", "frac_q", "mc_is_q"
-    ddp_values = mc_diffstar_sfh_galpop(*args)
+    ddp_values = mc_diffstar_sfh_galpop(*args, lgt0=jnp.log10(t0), fb=fb)
     diffstarpop_data = dict()
     for key, value in zip(ddp_fields, ddp_values):
         diffstarpop_data[key] = value

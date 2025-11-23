@@ -5,6 +5,7 @@ from jax import config
 
 config.update("jax_enable_x64", True)
 
+from diffstar.defaults import FB
 from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.metallicity import umzr
@@ -51,6 +52,7 @@ def mc_diffsky_galpop_lsst_phot(
     volume_com,
     ssp_data,
     cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
     diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
     dustpop_params=tw_dustpop_mono.DEFAULT_DUSTPOP_PARAMS,
     mzr_params=umzr.DEFAULT_MZR_PARAMS,
@@ -69,6 +71,7 @@ def mc_diffsky_galpop_lsst_phot(
         lgmp_min,
         volume_com=volume_com,
         cosmo_params=cosmo_params,
+        fb=fb,
         diffstarpop_params=diffstarpop_params,
         n_t=n_t,
         return_internal_quantities=return_internal_quantities,

@@ -111,7 +111,7 @@ def get_burstiness_delta_mag_quantities(
         ran_key,
         tarr,
     )
-    _res = mc_diffstar_sfh_galpop(*args)
+    _res = mc_diffstar_sfh_galpop(*args, lgt0=logt0, fb=0.156)
     diffstar_params_ms, diffstar_params_q, sfh_ms, sfh_q, frac_q, mc_is_q = _res
 
     sfh_galpop = np.where(mc_is_q.reshape((-1, 1)), sfh_q, sfh_ms)
