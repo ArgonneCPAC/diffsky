@@ -1,4 +1,4 @@
-name: Weekly cron of pytest
+name: Weekly cron testing
 
 on:
   workflow_dispatch: null
