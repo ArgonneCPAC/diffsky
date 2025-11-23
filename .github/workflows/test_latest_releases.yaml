@@ -1,4 +1,4 @@
-name: test-latest-diffstuff-releases
+name: Test against latest diffstuff releases
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   tests:
-    name: test-latest-diffstuff-releases
+    name: pytest with latest releases on conda-forge
     runs-on: "ubuntu-latest"
 
     steps:

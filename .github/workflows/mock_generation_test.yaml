@@ -1,4 +1,4 @@
-name: mock-generation-test
+name: Test mock-production script runs with synthetic halos
 
 on:
   workflow_dispatch: null
@@ -12,7 +12,7 @@ on:
 
 jobs:
   mock-generation:
-    name: mock-generation
+    name: python make_dbk_sed_lc_mock_lj.py -synthetic_cores 1
     runs-on: "ubuntu-latest"
 
     steps:

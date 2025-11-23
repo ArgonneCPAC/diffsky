@@ -1,4 +1,4 @@
-name: test-diffstar-update
+name: Test against updated diffstar
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   tests:
-    name: test-diffstar-update
+    name: pytest with diffstar@refs/pull/108/head
     runs-on: "ubuntu-latest"
 
     steps:
