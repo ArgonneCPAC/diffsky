@@ -1,7 +1,9 @@
 """ """
 
 import numpy as np
+from jax import random as jran
 
+from .. import defaults as ssp_err_defaults
 from .. import ssp_err_model
 
 TOL = 1e-2
@@ -93,12 +95,30 @@ def test_frac_ssp_err_at_z_obs_singlegal():
 
 
 def test_frac_ssp_err_at_z_obs_galpop():
+    ran_key = jran.key(0)
     n_gals = 1_000
     ZZ = np.zeros(n_gals)
     logsm = 10.0 + ZZ
     z_obs = 1.0 + ZZ
-    wave_obs = 2000.0 + ZZ
-    frac_ssp_err_z_obs = ssp_err_model.frac_ssp_err_at_z_obs_singlegal(
-        ssp_err_model.DEFAULT_SSPERR_PARAMS, logsm, z_obs, wave_obs
-    )
-    assert np.all(np.isfinite(frac_ssp_err_z_obs))
+    wave_obs = np.array((2_000, 5_000, 7_000))
+    wave_obs_galpop = np.tile(wave_obs, n_gals).reshape((n_gals, wave_obs.size))
+    assert wave_obs_galpop.shape == (n_gals, wave_obs.size)
+
+    n_tests = 100
+    for __ in range(n_tests):
+        ran_key, test_key = jran.split(ran_key, 2)
+        uran = jran.uniform(test_key, shape=(len(ssp_err_model.DEFAULT_SSPERR_PARAMS),))
+        gen = zip(uran, ssp_err_model.DEFAULT_SSPERR_U_PARAMS)
+        u_params = ssp_err_model.DEFAULT_SSPERR_U_PARAMS._make([x + u for x, u in gen])
+        params = ssp_err_model.get_bounded_ssperr_params(u_params)
+        frac_ssp_err_z_obs = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
+            params, logsm, z_obs, wave_obs_galpop
+        )
+        assert frac_ssp_err_z_obs.shape == (n_gals, 3)
+        assert np.all(np.isfinite(frac_ssp_err_z_obs))
+        assert np.all(frac_ssp_err_z_obs >= 0)
+
+        frac_min = 10 ** (-0.4 * ssp_err_defaults.DMAG_BOUNDS[1])
+        frac_max = 10 ** (-0.4 * ssp_err_defaults.DMAG_BOUNDS[0])
+        assert np.all(frac_ssp_err_z_obs >= frac_min)
+        assert np.all(frac_ssp_err_z_obs <= frac_max)

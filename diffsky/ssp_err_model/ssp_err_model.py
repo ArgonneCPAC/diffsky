@@ -4,6 +4,7 @@ from dsps.utils import _tw_sigmoid
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
+from jax import vmap
 
 from ..utils import _sigmoid, _tw_interp_kern
 from .defaults import (  # noqa
@@ -263,3 +264,10 @@ def frac_ssp_err_lambda_singlegal_scatter(
     return get_noisy_frac_ssp_err(
         ssperr_params, logsm, z_obs, wave_obs, LAMBDA_REST, delta_mags_scatter
     )
+
+
+_G = (None, 0, 0, 0)
+_B = (None, None, None, 0)
+frac_ssp_err_at_z_obs_galpop = jjit(
+    vmap(vmap(frac_ssp_err_at_z_obs_singlegal, in_axes=_B), in_axes=_G)
+)
