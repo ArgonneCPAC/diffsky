@@ -1,31 +1,29 @@
 """ """
 
 import numpy as np
-
 from jax import random as jran
 
 from ..ssp_err_model import (
     DEFAULT_SSPERR_PARAMS,
-    DEFAULT_SSPERR_PDICT,
     DEFAULT_SSPERR_U_PARAMS,
-    SSPERR_PBOUNDS_PDICT,
+    SSPERR_PBOUNDS,
     F_sps_err_lambda_galpop,
+    add_delta_mag_to_photometry,
     compute_delta_mags_all_bands,
+    compute_delta_scatter,
     delta_mag_from_lambda_rest,
     get_bounded_ssperr_params,
     get_unbounded_ssperr_params,
-    add_delta_mag_to_photometry,
     noisy_delta_mag,
-    compute_delta_scatter,
 )
 
 TOL = 1e-2
 
 
 def test_default_params_are_in_bounds():
-    for key in DEFAULT_SSPERR_PDICT.keys():
-        bounds = SSPERR_PBOUNDS_PDICT[key]
-        val = DEFAULT_SSPERR_PDICT[key]
+    for key in DEFAULT_SSPERR_PARAMS._fields:
+        bounds = getattr(SSPERR_PBOUNDS, key)
+        val = getattr(DEFAULT_SSPERR_PARAMS, key)
         assert bounds[0] < val < bounds[1], key
 
 
