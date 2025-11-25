@@ -3,11 +3,36 @@
 import os
 from glob import glob
 
+import h5py
 import numpy as np
 
 from ...data_loaders import load_flat_hdf5
 from . import hacc_core_utils as hcu
 from . import lc_mock_production as lcmp
+
+
+def load_lc_mock_info(fn_mock_data):
+    drn_mock = os.path.dirname(fn_mock_data)
+
+    with h5py.File(fn_mock_data, "r") as hdf:
+        mock_version_name = hdf["metadata"].attrs["mock_version_name"]
+
+    z_phot_table = lcmp.load_diffsky_z_phot_table(fn_mock_data)
+    t_table = lcmp.load_diffsky_t_table(drn_mock, mock_version_name)
+    ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
+    sim_info = lcmp.load_diffsky_sim_info(fn_mock_data)
+    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
+
+    mock_info = dict()
+    # mock_info["mock_version_name"] = mock_version_name
+    mock_info["sim_info"] = sim_info
+    mock_info["ssp_data"] = ssp_data
+    mock_info["param_collection"] = param_collection
+    mock_info["t_table"] = t_table
+    mock_info["z_phot_table"] = z_phot_table
+    mock_info["tcurves"] = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
+
+    return mock_info
 
 
 def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list):
