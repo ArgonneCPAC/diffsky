@@ -4,7 +4,6 @@ from dsps.utils import _tw_sigmoid
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
-from jax import vmap
 
 from ..utils import _sigmoid, _tw_interp_kern
 from .defaults import (  # noqa
@@ -237,34 +236,30 @@ def _tw_wave_interp_kern(wave, y_table, x_table=LAMBDA_REST):
 
 
 @jjit
-def _frac_from_delta_mag(delta_mag):
-    frac = 10 ** (-0.4 * delta_mag)
-    return frac
-
-
-@jjit
-def _delta_mag_from_frac(frac):
-    delta_mag = -2.5 * jnp.log10(frac)
-    return delta_mag
-
-
-@jjit
-def F_sps_err_lambda(ssperr_params, logsm, z_obs, wave_obs, wave_eff_rest):
-
+def frac_ssp_err_at_z_obs_singlegal(ssperr_params, logsm, z_obs, wave_obs):
     delta_mags_rest = compute_delta_mags_all_bands(logsm, z_obs, ssperr_params)
-
-    F_sps_err_wave_eff_rest = _frac_from_delta_mag(delta_mags_rest)
-
-    F_sps_err_z_obs = _tw_wave_interp_kern(
-        wave_obs, F_sps_err_wave_eff_rest, x_table=wave_eff_rest
+    frac_ssp_err_z_obs = _tw_wave_interp_kern(
+        wave_obs, 10 ** (-0.4 * delta_mags_rest), x_table=LAMBDA_REST
     )
-
-    return F_sps_err_z_obs
+    return frac_ssp_err_z_obs
 
 
 @jjit
-def compute_delta_scatter(ran_key, delta_mag):
+def get_noisy_frac_ssp_err(ssperr_params, logsm, z_obs, wave_obs, delta_mags_scatter):
+    delta_mags_rest_nonoise = compute_delta_mags_all_bands(logsm, z_obs, ssperr_params)
+    delta_mags_rest = delta_mags_rest_nonoise + delta_mags_scatter
+    frac_ssp_err_z_obs = _tw_wave_interp_kern(
+        wave_obs, 10 ** (-0.4 * delta_mags_rest), x_table=LAMBDA_REST
+    )
+    return frac_ssp_err_z_obs, delta_mags_scatter
 
-    delta_scatter = jran.normal(ran_key, delta_mag.shape) * SSP_SCATTER
 
-    return delta_scatter
+@jjit
+def frac_ssp_err_lambda_singlegal_scatter(
+    ssperr_params, logsm, z_obs, wave_obs, ran_key
+):
+    _dmag = compute_delta_mags_all_bands(logsm, z_obs, ssperr_params)
+    delta_mags_scatter = jran.normal(ran_key, _dmag.shape) * SSP_SCATTER
+    return get_noisy_frac_ssp_err(
+        ssperr_params, logsm, z_obs, wave_obs, LAMBDA_REST, delta_mags_scatter
+    )
