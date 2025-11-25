@@ -246,24 +246,31 @@ def frac_ssp_err_at_z_obs_singlegal(ssperr_params, logsm, z_obs, wave_obs):
 
 
 @jjit
-def get_noisy_frac_ssp_err(ssperr_params, logsm, z_obs, wave_obs, delta_mags_scatter):
+def get_noisy_frac_ssp_err_singlegal(
+    ssperr_params, logsm, z_obs, wave_obs, delta_rest_mags_scatter
+):
     delta_mags_rest_nonoise = compute_delta_mags_all_bands(logsm, z_obs, ssperr_params)
-    delta_mags_rest = delta_mags_rest_nonoise + delta_mags_scatter
+    delta_mags_rest = delta_mags_rest_nonoise + delta_rest_mags_scatter
     frac_ssp_err_z_obs = _tw_wave_interp_kern(
         wave_obs, 10 ** (-0.4 * delta_mags_rest), x_table=LAMBDA_REST
     )
-    return frac_ssp_err_z_obs, delta_mags_scatter
+    frac_ssp_err_z_obs_no_noise = _tw_wave_interp_kern(
+        wave_obs, 10 ** (-0.4 * delta_mags_rest_nonoise), x_table=LAMBDA_REST
+    )
+    return frac_ssp_err_z_obs, frac_ssp_err_z_obs_no_noise
 
 
 @jjit
-def frac_ssp_err_lambda_singlegal_scatter(
+def frac_ssp_err_lambda_scatter_singlegal(
     ssperr_params, logsm, z_obs, wave_obs, ran_key
 ):
-    _dmag = compute_delta_mags_all_bands(logsm, z_obs, ssperr_params)
-    delta_mags_scatter = jran.normal(ran_key, _dmag.shape) * SSP_SCATTER
-    return get_noisy_frac_ssp_err(
-        ssperr_params, logsm, z_obs, wave_obs, LAMBDA_REST, delta_mags_scatter
+    delta_rest_mags_scatter = (
+        jran.normal(ran_key, shape=LAMBDA_REST.shape) * SSP_SCATTER
     )
+    frac_ssp_err_z_obs, frac_ssp_err_z_obs_no_noise = get_noisy_frac_ssp_err_singlegal(
+        ssperr_params, logsm, z_obs, wave_obs, delta_rest_mags_scatter
+    )
+    return frac_ssp_err_z_obs, frac_ssp_err_z_obs_no_noise, delta_rest_mags_scatter
 
 
 _G = (None, 0, 0, 0)
@@ -271,3 +278,19 @@ _B = (None, None, None, 0)
 frac_ssp_err_at_z_obs_galpop = jjit(
     vmap(vmap(frac_ssp_err_at_z_obs_singlegal, in_axes=_B), in_axes=_G)
 )
+
+_G2 = (None, 0, 0, 0, 0)
+_B2 = (None, None, None, 0, None)
+get_noisy_frac_ssp_err_galpop = jjit(
+    vmap(vmap(get_noisy_frac_ssp_err_singlegal, in_axes=_B2), in_axes=_G2)
+)
+
+
+@jjit
+def frac_ssp_err_lambda_scatter_galpop(ssperr_params, logsm, z_obs, wave_obs, ran_key):
+    n_gals, n_rest = logsm.size, LAMBDA_REST.size
+    delta_rest_mags_scatter = jran.normal(ran_key, shape=(n_gals, n_rest)) * SSP_SCATTER
+    frac_ssp_err_z_obs, frac_ssp_err_z_obs_no_noise = get_noisy_frac_ssp_err_galpop(
+        ssperr_params, logsm, z_obs, wave_obs, delta_rest_mags_scatter
+    )
+    return frac_ssp_err_z_obs, frac_ssp_err_z_obs_no_noise, delta_rest_mags_scatter
