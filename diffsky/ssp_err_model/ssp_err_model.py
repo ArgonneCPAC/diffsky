@@ -259,28 +259,11 @@ def F_sps_err_lambda(ssperr_params, logsm, z_obs, wave_obs, wave_eff_rest):
 
     F_sps_err_wave_eff_rest = F_sps_err_from_delta_mag(delta_mags_rest)
 
-    # F_sps_err_z_obs = jnp.interp(wave_obs, wave_eff_rest, F_sps_err_wave_eff_rest)
     F_sps_err_z_obs = _tw_wave_interp_kern(
-        wave_obs, F_sps_err_wave_eff_rest, wave_eff_rest
+        wave_obs, F_sps_err_wave_eff_rest, x_table=wave_eff_rest
     )
 
     return F_sps_err_z_obs
-
-
-_A = (None, 0, None, None, None)
-F_sps_err_lambda_galpop = jjit(vmap(F_sps_err_lambda, in_axes=_A))
-
-
-@jjit
-def delta_mag_from_lambda_rest(ssperr_params, z_obs, logsm, wave_obs, wave_eff_rest):
-
-    F_sps_err_z_obs = F_sps_err_lambda_galpop(
-        ssperr_params, logsm, z_obs, wave_obs, wave_eff_rest
-    )
-
-    delta_mag_z_obs = delta_mag_from_F_sps_err(F_sps_err_z_obs)
-
-    return delta_mag_z_obs
 
 
 @jjit
@@ -289,57 +272,3 @@ def compute_delta_scatter(ran_key, delta_mag):
     delta_scatter = jran.normal(ran_key, delta_mag.shape) * SSP_SCATTER
 
     return delta_scatter
-
-
-@jjit
-def noisy_delta_mag(
-    ssperr_params,
-    z_obs,
-    logsm,
-    wave_eff_aa_obs,
-    wave_eff_rest,
-    ran_key,
-):
-
-    delta_mag = delta_mag_from_lambda_rest(
-        ssperr_params, z_obs, logsm, wave_eff_aa_obs, wave_eff_rest
-    )
-
-    delta_scatter = compute_delta_scatter(ran_key, delta_mag)
-
-    noisy_delta_mag = delta_scatter + delta_mag
-
-    return noisy_delta_mag
-
-
-@jjit
-def add_delta_mag_to_photometry(
-    ssperr_params,
-    z_obs,
-    logsm_q,
-    logsm_ms,
-    wave_eff_aa_obs,
-    wave_eff_rest,
-    q_key,
-    ms_key,
-    mags_q_smooth,
-    mags_q_bursty,
-    mags_ms_smooth,
-    mags_ms_bursty,
-):
-
-    noisy_delta_mag_q = noisy_delta_mag(
-        ssperr_params, z_obs, logsm_q, wave_eff_aa_obs, wave_eff_rest, q_key
-    )
-
-    noisy_delta_mag_ms = noisy_delta_mag(
-        ssperr_params, z_obs, logsm_ms, wave_eff_aa_obs, wave_eff_rest, ms_key
-    )
-
-    new_mags_q_smooth = mags_q_smooth + noisy_delta_mag_q
-    new_mags_q_bursty = mags_q_bursty + noisy_delta_mag_q
-
-    new_mags_ms_smooth = mags_ms_smooth + noisy_delta_mag_ms
-    new_mags_ms_bursty = mags_ms_bursty + noisy_delta_mag_ms
-
-    return new_mags_q_smooth, new_mags_q_bursty, new_mags_ms_smooth, new_mags_ms_bursty
