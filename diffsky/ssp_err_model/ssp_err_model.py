@@ -237,18 +237,14 @@ def _tw_wave_interp_kern(wave, y_table, x_table=LAMBDA_REST):
 
 
 @jjit
-def F_sps_err_from_delta_mag(delta_mag):
-
-    F_ssp_err = 10 ** (-0.4 * delta_mag)
-
-    return F_ssp_err
+def _frac_from_delta_mag(delta_mag):
+    frac = 10 ** (-0.4 * delta_mag)
+    return frac
 
 
 @jjit
-def delta_mag_from_F_sps_err(F_ssp_err):
-
-    delta_mag = -2.5 * jnp.log10(F_ssp_err)
-
+def _delta_mag_from_frac(frac):
+    delta_mag = -2.5 * jnp.log10(frac)
     return delta_mag
 
 
@@ -257,7 +253,7 @@ def F_sps_err_lambda(ssperr_params, logsm, z_obs, wave_obs, wave_eff_rest):
 
     delta_mags_rest = compute_delta_mags_all_bands(logsm, z_obs, ssperr_params)
 
-    F_sps_err_wave_eff_rest = F_sps_err_from_delta_mag(delta_mags_rest)
+    F_sps_err_wave_eff_rest = _frac_from_delta_mag(delta_mags_rest)
 
     F_sps_err_z_obs = _tw_wave_interp_kern(
         wave_obs, F_sps_err_wave_eff_rest, x_table=wave_eff_rest
