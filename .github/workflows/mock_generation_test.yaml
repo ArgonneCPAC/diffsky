@@ -46,7 +46,7 @@ jobs:
             astropy \
             h5py \
             mpi4py
-          pip install git+https://github.com/ArgonneCPAC/HACCyTrees.git
+          # pip install git+https://github.com/ArgonneCPAC/HACCyTrees.git
           pip uninstall diffmah --yes
           pip uninstall diffstar --yes
           pip uninstall dsps --yes
