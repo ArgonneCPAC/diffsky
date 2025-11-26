@@ -7,6 +7,7 @@ from dsps.sfh.diffburst import LGFBURST_MAX, LGFBURST_MIN, LGYR_PEAK_MAX, LGYR_P
 from jax import random as jran
 from jax import vmap
 
+from ... import phot_utils
 from ...param_utils import diffsky_param_wrapper as dpw
 from .. import lc_phot_kern
 from .. import mc_diffsky_seds as mcsed
@@ -55,14 +56,8 @@ def test_recompute_photometry_from_phot_mock():
     phot_info = mcsed._mc_diffsky_phot_flat_u_params(
         u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
-
-    delta_scatter = np.where(
-        phot_info["mc_sfh_type"].reshape((-1, 1)) == 0,
-        phot_info["delta_scatter_q"],
-        phot_info["delta_scatter_ms"],
-    )
-
-    args = (
+    wave_eff_table_rest = phot_utils.get_wave_eff_from_tcurves(tcurves, 0.0)
+    obs_mags_recomputed = mcsed._recompute_photometry_from_phot_mock(
         lc_data.z_obs,
         lc_data.ssp_data,
         phot_info["logmp_obs"],
@@ -70,18 +65,22 @@ def test_recompute_photometry_from_phot_mock():
         phot_info["uran_av"],
         phot_info["uran_delta"],
         phot_info["uran_funo"],
+        phot_info["mc_sfh_type"],
         phot_info["logsm_obs"],
+        phot_info["logsm_obs_ms"],
+        phot_info["logsm_obs_q"],
         phot_info["logssfr_obs"],
         ssp_err_pop_params,
         spspop_params,
         scatter_params,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
+        wave_eff_table_rest,
         lc_data.precomputed_ssp_mag_table,
-        delta_scatter,
+        phot_info["delta_scatter_q"],
+        phot_info["delta_scatter_ms"],
     )
 
-    obs_mags_recomputed = mcsed._recompute_photometry_from_phot_mock(*args)
     assert np.all(np.isfinite(obs_mags_recomputed))
     assert np.allclose(obs_mags_recomputed, phot_info["obs_mags"], rtol=1e-4)
 
@@ -110,6 +109,7 @@ def test_recompute_sed_from_phot_mock():
 
     z_phot_table = np.linspace(0.01, 3, 20)
     wave_eff_table = lc_phot_kern.get_wave_eff_table(z_phot_table, tcurves)
+
     args = (
         lc_data.z_obs,
         lc_data.ssp_data,
@@ -124,12 +124,13 @@ def test_recompute_sed_from_phot_mock():
         phot_info["logssfr_obs_ms"],
         phot_info["logssfr_obs_q"],
         ssp_err_pop_params,
+        phot_info["delta_scatter_ms"],
+        phot_info["delta_scatter_q"],
         spspop_params,
         scatter_params,
         z_phot_table,
         wave_eff_table,
     )
-
     rest_sed_recomputed = mcsed._recompute_sed_from_phot_mock(*args)
 
     # Enforce agreement between precomputed vs exact magnitudes

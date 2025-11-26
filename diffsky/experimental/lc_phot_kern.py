@@ -50,11 +50,6 @@ interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 _B = (None, None, 1)
 interp_vmap2 = jjit(vmap(jnp.interp, in_axes=_B, out_axes=1))
 
-_F = (None, None, None, 0, None)
-_G = (None, 0, 0, 0, None)
-get_frac_ssp_err_vmap = jjit(
-    vmap(vmap(ssp_err_model.F_sps_err_lambda, in_axes=_F), in_axes=_G)
-)
 
 _D = (None, 0, None, None, None, None, None, None, None, None)
 vmap_kern1 = jjit(
@@ -244,20 +239,24 @@ def multiband_lc_phot_kern(
     wave_eff_galpop = interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
     # Delta mags
-    frac_ssp_err_q = get_frac_ssp_err_vmap(
+    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
+    _res = ssp_err_model.frac_ssp_err_lambda_scatter_galpop(
         ssp_err_pop_params,
-        z_obs,
         diffstar_galpop.logsm_obs_q,
-        wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
-    )
-    frac_ssp_err_ms = get_frac_ssp_err_vmap(
-        ssp_err_pop_params,
         z_obs,
-        diffstar_galpop.logsm_obs_ms,
         wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
+        ssp_q_key,
     )
+    frac_ssp_err_q, frac_ssp_err_q_nonoise, delta_rest_mags_scatter_q = _res
+
+    _res = ssp_err_model.frac_ssp_err_lambda_scatter_galpop(
+        ssp_err_pop_params,
+        diffstar_galpop.logsm_obs_ms,
+        z_obs,
+        wave_eff_galpop,
+        ssp_ms_key,
+    )
+    frac_ssp_err_ms, frac_ssp_err_ms_nonoise, delta_rest_mags_scatter_ms = _res
 
     ran_key, dust_key = jran.split(ran_key, 2)
     av_key, delta_key, funo_key = jran.split(dust_key, 3)
@@ -305,24 +304,20 @@ def multiband_lc_phot_kern(
     _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
     _ferr_ssp_q = frac_ssp_err_q.reshape((n_gals, n_bands, 1, 1))
 
-    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
-    delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_err_q)
-    delta_scatter_ms = ssp_err_model.compute_delta_scatter(ssp_ms_key, frac_ssp_err_ms)
-
     _ftrans_ms = ftrans_ms.reshape((n_gals, n_bands, 1, n_age))
     _ftrans_q = ftrans_q.reshape((n_gals, n_bands, 1, n_age))
 
     integrand_q = ssp_photflux_table * _w_q * _ftrans_q * _ferr_ssp_q
     photflux_galpop_q = jnp.sum(integrand_q, axis=(2, 3)) * _mstar_q
-    obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q) + delta_scatter_q
+    obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q)
 
     integrand_smooth_ms = ssp_photflux_table * _w_smooth_ms * _ftrans_ms * _ferr_ssp_ms
     photflux_galpop_smooth_ms = jnp.sum(integrand_smooth_ms, axis=(2, 3)) * _mstar_ms
-    obs_mags_smooth_ms = -2.5 * jnp.log10(photflux_galpop_smooth_ms) + delta_scatter_ms
+    obs_mags_smooth_ms = -2.5 * jnp.log10(photflux_galpop_smooth_ms)
 
     integrand_bursty_ms = ssp_photflux_table * _w_bursty_ms * _ftrans_ms * _ferr_ssp_ms
     photflux_galpop_bursty_ms = jnp.sum(integrand_bursty_ms, axis=(2, 3)) * _mstar_ms
-    obs_mags_bursty_ms = -2.5 * jnp.log10(photflux_galpop_bursty_ms) + delta_scatter_ms
+    obs_mags_bursty_ms = -2.5 * jnp.log10(photflux_galpop_bursty_ms)
 
     weights_q = diffstar_galpop.frac_q
     weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - p_burst_ms)

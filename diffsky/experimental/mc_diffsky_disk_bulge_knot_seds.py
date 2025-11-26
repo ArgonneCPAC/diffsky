@@ -196,21 +196,25 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
-    frac_ssp_err_ms = lc_phot_kern.get_frac_ssp_err_vmap(
+    # Delta mags
+    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
+    _res = ssp_err_model.frac_ssp_err_lambda_scatter_galpop(
         ssp_err_pop_params,
-        z_obs,
-        diffstar_galpop.logsm_obs_ms,
-        wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
-    )
-    # frac_ssp_err_ms.shape = (n_gals, n_bands)
-    frac_ssp_err_q = lc_phot_kern.get_frac_ssp_err_vmap(
-        ssp_err_pop_params,
-        z_obs,
         diffstar_galpop.logsm_obs_q,
+        z_obs,
         wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
+        ssp_q_key,
     )
+    frac_ssp_err_q, frac_ssp_err_q_nonoise, delta_rest_mags_scatter_q = _res
+
+    _res = ssp_err_model.frac_ssp_err_lambda_scatter_galpop(
+        ssp_err_pop_params,
+        diffstar_galpop.logsm_obs_ms,
+        z_obs,
+        wave_eff_galpop,
+        ssp_ms_key,
+    )
+    frac_ssp_err_ms, frac_ssp_err_ms_nonoise, delta_rest_mags_scatter_ms = _res
 
     # Generate randoms for stochasticity in dust attenuation curves
     ran_key, dust_key = jran.split(ran_key, 2)
@@ -252,15 +256,6 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
     _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_args_ms)
     ftrans_ms = _res[1]
     noisy_dust_params_ms = _res[3]  # fields = ('av', 'delta', 'funo')
-
-    # Calculate stochasticity in fractional changes to SSP fluxes
-    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
-    delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_err_q)
-    delta_scatter_ms = ssp_err_model.compute_delta_scatter(ssp_ms_key, frac_ssp_err_ms)
-
-    # Calculate fractional changes to SSP fluxes
-    frac_ssp_err_ms = frac_ssp_err_ms * 10 ** (-0.4 * delta_scatter_ms)
-    frac_ssp_err_q = frac_ssp_err_q * 10 ** (-0.4 * delta_scatter_q)
 
     # Reshape arrays before calculating galaxy magnitudes
     _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
@@ -343,14 +338,12 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
         scatter_params,
     )
 
-    frac_ssp_err_sed = mcsed._get_frac_ssp_err_sed(
-        ssp_data,
-        z_obs,
+    frac_ssp_err_sed = mcsed._get_frac_ssp_err_interp(
+        ssp_data.ssp_wave,
         mc_sfh_type,
-        diffstar_galpop.logsm_obs_ms,
-        diffstar_galpop.logsm_obs_q,
         wave_eff_galpop,
-        ssp_err_pop_params,
+        frac_ssp_err_ms,
+        frac_ssp_err_q,
     )
 
     # Reshape stellar mass used to normalize SED
@@ -511,8 +504,8 @@ def _mc_diffsky_disk_bulge_knot_seds_kern(
         logsm_obs_q=diffstar_galpop.logsm_obs_q,
         logssfr_obs_ms=diffstar_galpop.logssfr_obs_ms,
         logssfr_obs_q=diffstar_galpop.logssfr_obs_q,
-        delta_scatter_ms=delta_scatter_ms,
-        delta_scatter_q=delta_scatter_q,
+        delta_scatter_ms=delta_rest_mags_scatter_ms,
+        delta_scatter_q=delta_rest_mags_scatter_q,
         fknot=fknot,
         frac_ssp_err_sed=frac_ssp_err_sed,
         ftrans_sed=ftrans_sed,
@@ -627,21 +620,24 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
-    frac_ssp_err_ms = lc_phot_kern.get_frac_ssp_err_vmap(
+    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
+    _res = ssp_err_model.frac_ssp_err_lambda_scatter_galpop(
         ssp_err_pop_params,
-        z_obs,
-        diffstar_galpop.logsm_obs_ms,
-        wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
-    )
-    # frac_ssp_err_ms.shape = (n_gals, n_bands)
-    frac_ssp_err_q = lc_phot_kern.get_frac_ssp_err_vmap(
-        ssp_err_pop_params,
-        z_obs,
         diffstar_galpop.logsm_obs_q,
+        z_obs,
         wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
+        ssp_q_key,
     )
+    frac_ssp_err_q, frac_ssp_err_q_nonoise, delta_rest_mags_scatter_q = _res
+
+    _res = ssp_err_model.frac_ssp_err_lambda_scatter_galpop(
+        ssp_err_pop_params,
+        diffstar_galpop.logsm_obs_ms,
+        z_obs,
+        wave_eff_galpop,
+        ssp_ms_key,
+    )
+    frac_ssp_err_ms, frac_ssp_err_ms_nonoise, delta_rest_mags_scatter_ms = _res
 
     # Generate randoms for stochasticity in dust attenuation curves
     ran_key, dust_key = jran.split(ran_key, 2)
@@ -683,15 +679,6 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
     _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_args_ms)
     ftrans_ms = _res[1]
     noisy_dust_params_ms = _res[3]  # fields = ('av', 'delta', 'funo')
-
-    # Calculate stochasticity in fractional changes to SSP fluxes
-    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
-    delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_err_q)
-    delta_scatter_ms = ssp_err_model.compute_delta_scatter(ssp_ms_key, frac_ssp_err_ms)
-
-    # Calculate fractional changes to SSP fluxes
-    frac_ssp_err_ms = frac_ssp_err_ms * 10 ** (-0.4 * delta_scatter_ms)
-    frac_ssp_err_q = frac_ssp_err_q * 10 ** (-0.4 * delta_scatter_q)
 
     # Reshape arrays before calculating galaxy magnitudes
     _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
@@ -901,8 +888,8 @@ def _mc_diffsky_disk_bulge_knot_phot_kern(
         logsm_obs_q=diffstar_galpop.logsm_obs_q,
         logssfr_obs_ms=diffstar_galpop.logssfr_obs_ms,
         logssfr_obs_q=diffstar_galpop.logssfr_obs_q,
-        delta_scatter_ms=delta_scatter_ms,
-        delta_scatter_q=delta_scatter_q,
+        delta_scatter_ms=delta_rest_mags_scatter_ms,
+        delta_scatter_q=delta_rest_mags_scatter_q,
         fknot=fknot,
     )
 

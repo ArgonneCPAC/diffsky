@@ -144,13 +144,10 @@ def _disk_bulge_knot_phot_from_mock(
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
-    frac_ssp_err = lc_phot_kern.get_frac_ssp_err_vmap(
-        ssp_err_pop_params,
-        z_obs,
-        logsm_obs,
-        wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
+    _res = ssp_err_model.get_noisy_frac_ssp_err_galpop(
+        ssp_err_pop_params, logsm_obs, z_obs, wave_eff_galpop, delta_scatter
     )
+    frac_ssp_err, frac_ssp_err_nonoise = _res
 
     ftrans_args = (
         spspop_params.dustpop_params,
