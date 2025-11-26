@@ -17,6 +17,7 @@ from . import mc_diffstarpop_wrappers as mcdw
 from . import photometry_interpolation as photerp
 from .kernels.ssp_weight_kernels import (
     compute_burstiness,
+    compute_dust_attenuation,
     compute_frac_ssp_errors,
     get_smooth_ssp_weights,
 )
@@ -90,44 +91,15 @@ def _mc_phot_kern(
 
     # Generate randoms for stochasticity in dust attenuation curves
     ran_key, dust_key = jran.split(ran_key, 2)
-    av_key, delta_key, funo_key = jran.split(dust_key, 3)
-    uran_av = jran.uniform(av_key, shape=(n_gals,))
-    uran_delta = jran.uniform(delta_key, shape=(n_gals,))
-    uran_funo = jran.uniform(funo_key, shape=(n_gals,))
-
-    # Calculate fraction of flux transmitted through dust for each galaxy
-    # Note that F_trans(λ_eff, τ_age) varies with stellar age τ_age
-    ftrans_args_q = (
-        spspop_params.dustpop_params,
-        wave_eff_galpop,
-        diffstar_galpop.logsm_obs_q,
-        diffstar_galpop.logssfr_obs_q,
+    dust_att = compute_dust_attenuation(
+        dust_key,
+        diffstar_galpop,
+        ssp_data,
         z_obs,
-        ssp_data.ssp_lg_age_gyr,
-        uran_av,
-        uran_delta,
-        uran_funo,
+        wave_eff_galpop,
+        spspop_params.dustpop_params,
         scatter_params,
     )
-    _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_args_q)
-    ftrans_q = _res[1]  # ftrans_q.shape = (n_gals, n_bands, n_age)
-    noisy_dust_params_q = _res[3]  # fields = ('av', 'delta', 'funo')
-
-    ftrans_args_ms = (
-        spspop_params.dustpop_params,
-        wave_eff_galpop,
-        diffstar_galpop.logsm_obs_ms,
-        diffstar_galpop.logssfr_obs_ms,
-        z_obs,
-        ssp_data.ssp_lg_age_gyr,
-        uran_av,
-        uran_delta,
-        uran_funo,
-        scatter_params,
-    )
-    _res = lc_phot_kern.calc_dust_ftrans_vmap(*ftrans_args_ms)
-    ftrans_ms = _res[1]
-    noisy_dust_params_ms = _res[3]  # fields = ('av', 'delta', 'funo')
 
     # Calculate stochasticity in fractional changes to SSP fluxes
     ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
@@ -144,8 +116,8 @@ def _mc_phot_kern(
     _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
     _ferr_ssp_q = frac_ssp_err_q.reshape((n_gals, n_bands, 1, 1))
 
-    _ftrans_ms = ftrans_ms.reshape((n_gals, n_bands, 1, n_age))
-    _ftrans_q = ftrans_q.reshape((n_gals, n_bands, 1, n_age))
+    _ftrans_ms = dust_att.frac_trans.ms.reshape((n_gals, n_bands, 1, n_age))
+    _ftrans_q = dust_att.frac_trans.q.reshape((n_gals, n_bands, 1, n_age))
 
     _mstar_ms = 10 ** diffstar_galpop.logsm_obs_ms.reshape((n_gals, 1))
     _mstar_q = 10 ** diffstar_galpop.logsm_obs_q.reshape((n_gals, 1))
@@ -230,16 +202,16 @@ def _mc_phot_kern(
     msk_q = mc_sfh_type == 0
     av = jnp.where(
         msk_q.reshape((n_gals, 1)),
-        noisy_dust_params_q.av[:, 0, :],
-        noisy_dust_params_ms.av[:, 0, :],
+        dust_att.dust_params.q.av[:, 0, :],
+        dust_att.dust_params.ms.av[:, 0, :],
     )
     delta = jnp.where(
-        msk_q, noisy_dust_params_q.delta[:, 0], noisy_dust_params_ms.delta[:, 0]
+        msk_q, dust_att.dust_params.q.delta[:, 0], dust_att.dust_params.ms.delta[:, 0]
     )
     funo = jnp.where(
-        msk_q, noisy_dust_params_q.funo[:, 0], noisy_dust_params_ms.funo[:, 0]
+        msk_q, dust_att.dust_params.q.funo[:, 0], dust_att.dust_params.ms.funo[:, 0]
     )
-    dust_params = noisy_dust_params_q._make((av, delta, funo))
+    dust_params = dust_att.dust_params.q._make((av, delta, funo))
 
     phot_info = PhotInfo(
         logmp_obs=diffstar_galpop.logmp_obs,
@@ -252,9 +224,9 @@ def _mc_phot_kern(
         burst_params=burstiness.burst_params,
         dust_params=dust_params,
         ssp_weights=ssp_weights,
-        uran_av=uran_av,
-        uran_delta=uran_delta,
-        uran_funo=uran_funo,
+        uran_av=dust_att.dust_scatter.av,
+        uran_delta=dust_att.dust_scatter.delta,
+        uran_funo=dust_att.dust_scatter.funo,
         logsm_obs_ms=diffstar_galpop.logsm_obs_ms,
         logsm_obs_q=diffstar_galpop.logsm_obs_q,
         logssfr_obs_ms=diffstar_galpop.logssfr_obs_ms,

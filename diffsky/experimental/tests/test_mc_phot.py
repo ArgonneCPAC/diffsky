@@ -41,3 +41,10 @@ def test_mc_phot_kern():
     TOL = 1e-4
     for p, p2 in zip(phot_info["obs_mags"], phot_info2["obs_mags"]):
         assert np.allclose(p, p2, rtol=TOL)
+
+    for p, p2 in zip(phot_info["dust_params"], phot_info2["dust_params"]):
+        assert np.allclose(p, p2, rtol=TOL)
+
+    assert np.allclose(phot_info["uran_av"], phot_info2["uran_av"])
+    assert np.allclose(phot_info["uran_delta"], phot_info2["uran_delta"])
+    assert np.allclose(phot_info["uran_funo"], phot_info2["uran_funo"])

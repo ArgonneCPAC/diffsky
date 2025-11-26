@@ -6,9 +6,11 @@ from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
 from jax import jit as jjit
+from jax import random as jran
 from jax import vmap
 
 from ...burstpop import diffqburstpop_mono, freqburst_mono
+from ...dustpop import tw_dustpop_mono_noise
 from ...ssp_err_model import ssp_err_model
 
 _M = (0, None, None)
@@ -34,11 +36,26 @@ get_frac_ssp_err_vmap = jjit(
     vmap(vmap(ssp_err_model.F_sps_err_lambda, in_axes=_F), in_axes=_G)
 )
 
+_D = (None, 0, None, None, None, None, None, None, None, None)
+vmap_kern1 = jjit(
+    vmap(
+        tw_dustpop_mono_noise.calc_ftrans_singlegal_singlewave_from_dustpop_params,
+        in_axes=_D,
+    )
+)
+_E = (None, 0, 0, 0, 0, None, 0, 0, 0, None)
+calc_dust_ftrans_vmap = jjit(vmap(vmap_kern1, in_axes=_E))
+
+MSQ = namedtuple("MSQ", ("ms", "q"))
 AgeWeights = namedtuple("AgeWeights", ("ms", "q"))
 MetWeights = namedtuple("MetWeights", ("ms", "q"))
 SSPWeights = namedtuple("SSPWeights", ("age_weights", "lgmet_weights"))
 Burstiness = namedtuple("Burstiness", ("age_weights", "burst_params", "p_burst"))
 FracSSPErr = namedtuple("FracSSPErr", ("ms", "q"))
+
+DustAttenuation = namedtuple(
+    "DustAttenuation", ("frac_trans", "dust_params", "dust_scatter")
+)
 
 
 @jjit
@@ -122,3 +139,63 @@ def compute_frac_ssp_errors(
         ssp_err_model.LAMBDA_REST,
     )
     return FracSSPErr(ms=frac_ssp_err_ms, q=frac_ssp_err_q)
+
+
+@jjit
+def compute_dust_attenuation(
+    dust_key,
+    diffstar_galpop,
+    ssp_data,
+    z_obs,
+    wave_eff_galpop,
+    dustpop_params,
+    scatter_params,
+):
+    n_gals = z_obs.size
+    # Generate randoms for stochasticity in dust attenuation curves
+    av_key, delta_key, funo_key = jran.split(dust_key, 3)
+    uran_av = jran.uniform(av_key, shape=(n_gals,))
+    uran_delta = jran.uniform(delta_key, shape=(n_gals,))
+    uran_funo = jran.uniform(funo_key, shape=(n_gals,))
+
+    # Calculate fraction of flux transmitted through dust for each galaxy
+    # Note that F_trans(λ_eff, τ_age) varies with stellar age τ_age
+    ftrans_args_q = (
+        dustpop_params,
+        wave_eff_galpop,
+        diffstar_galpop.logsm_obs_q,
+        diffstar_galpop.logssfr_obs_q,
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        scatter_params,
+    )
+    _res = calc_dust_ftrans_vmap(*ftrans_args_q)
+    ftrans_q = _res[1]  # ftrans_q.shape = (n_gals, n_bands, n_age)
+    noisy_dust_params_q = _res[3]  # fields = ('av', 'delta', 'funo')
+
+    ftrans_args_ms = (
+        dustpop_params,
+        wave_eff_galpop,
+        diffstar_galpop.logsm_obs_ms,
+        diffstar_galpop.logssfr_obs_ms,
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        scatter_params,
+    )
+    _res = calc_dust_ftrans_vmap(*ftrans_args_ms)
+    ftrans_ms = _res[1]
+    noisy_dust_params_ms = _res[3]  # fields = ('av', 'delta', 'funo')
+
+    frac_trans = MSQ(ms=ftrans_ms, q=ftrans_q)
+    dust_params = MSQ(ms=noisy_dust_params_ms, q=noisy_dust_params_q)
+    dust_scatter = dust_params.q._replace(av=uran_av, delta=uran_delta, funo=uran_funo)
+
+    return DustAttenuation(
+        frac_trans=frac_trans, dust_params=dust_params, dust_scatter=dust_scatter
+    )
