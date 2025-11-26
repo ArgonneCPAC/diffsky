@@ -18,6 +18,7 @@ from . import lc_phot_kern
 from . import mc_diffstarpop_wrappers as mcdw
 from . import photometry_interpolation as photerp
 from .kernels.ssp_weight_kernels import get_smooth_ssp_weights
+from .mc_diffstarpop_wrappers import N_T_TABLE
 
 LGMET_SCATTER = 0.2
 
@@ -28,7 +29,6 @@ def _mc_phot_kern(
     z_obs,
     t_obs,
     mah_params,
-    t_table,
     ssp_data,
     precomputed_ssp_mag_table,
     z_phot_table,
@@ -40,6 +40,7 @@ def _mc_phot_kern(
     ssp_err_pop_params,
     cosmo_params,
     fb,
+    n_t_table=N_T_TABLE,
 ):
     """Populate the input lightcone with galaxy SEDs"""
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
@@ -48,7 +49,7 @@ def _mc_phot_kern(
     # Calculate SFH with diffstarpop
     ran_key, sfh_key = jran.split(ran_key, 2)
     args = (diffstarpop_params, sfh_key, mah_params, t_obs, cosmo_params, fb)
-    diffstar_galpop = mcdw.diffstarpop_cen_wrapper(*args)
+    diffstar_galpop = mcdw.diffstarpop_cen_wrapper(*args, n_t_table=n_t_table)
 
     smooth_ssp_weights = get_smooth_ssp_weights(
         diffstar_galpop, ssp_data, t_obs, mzr_params, LGMET_SCATTER

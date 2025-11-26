@@ -14,6 +14,7 @@ from jax import vmap
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
+N_T_TABLE = 100
 
 _DPKEYS = (
     "logmp0",
@@ -43,7 +44,13 @@ def _get_sfh_info_at_t_obs(t_table, sfh_table, t_obs):
 
 @partial(jjit, static_argnames=["n_t_table"])
 def diffstarpop_cen_wrapper(
-    diffstarpop_params, ran_key, mah_params, t_obs, cosmo_params, fb, n_t_table=100
+    diffstarpop_params,
+    ran_key,
+    mah_params,
+    t_obs,
+    cosmo_params,
+    fb,
+    n_t_table=N_T_TABLE,
 ):
     n_gals = mah_params.logm0.size
     t0 = flat_wcdm.age_at_z0(*cosmo_params)

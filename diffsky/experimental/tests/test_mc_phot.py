@@ -29,7 +29,6 @@ def test_mc_phot_kern():
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
-        lc_data.t_table,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
