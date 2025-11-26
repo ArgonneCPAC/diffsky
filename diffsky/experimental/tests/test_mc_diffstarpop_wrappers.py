@@ -5,9 +5,6 @@ from diffstar.defaults import FB, T_TABLE_MIN
 from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from dsps.cosmology import flat_wcdm
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
-from dsps.data_loaders import retrieve_fake_fsps_data
-from dsps.data_loaders.defaults import TransmissionCurve
-from dsps.metallicity import umzr
 from jax import random as jran
 
 from .. import lc_phot_kern

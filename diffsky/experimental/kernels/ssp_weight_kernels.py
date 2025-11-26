@@ -307,7 +307,6 @@ def compute_mc_realization(
     n_gals = diffstar_galpop.logmp_obs.size
 
     weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - burstiness.p_burst)
-    weights_bursty_ms = (1 - diffstar_galpop.frac_q) * burstiness.p_burst
     weights_q = diffstar_galpop.frac_q
 
     # Generate Monte Carlo noise to stochastically select q, or ms-smooth, or ms-bursty
