@@ -42,7 +42,7 @@ def _get_sfh_info_at_t_obs(t_table, sfh_table, t_obs):
 
 
 @partial(jjit, static_argnames=["n_t_table"])
-def diffstarpop_lc_cen_wrapper(
+def diffstarpop_cen_wrapper(
     diffstarpop_params, ran_key, mah_params, t_obs, cosmo_params, fb, n_t_table=100
 ):
     n_gals = mah_params.logm0.size

@@ -48,7 +48,7 @@ def test_diffstarpop_lc_cen_wrapper_agrees_with_lc_phot_kern():
         DEFAULT_COSMOLOGY,
         FB,
     )
-    diffstar_galpop2 = mcdw.diffstarpop_lc_cen_wrapper(*args2, n_t_table=t_table.size)
+    diffstar_galpop2 = mcdw.diffstarpop_cen_wrapper(*args2, n_t_table=t_table.size)
 
     assert np.allclose(diffstar_galpop.frac_q, diffstar_galpop2.frac_q)
     assert np.allclose(diffstar_galpop.sfh_ms, diffstar_galpop2.sfh_ms)
