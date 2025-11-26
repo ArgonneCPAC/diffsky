@@ -162,8 +162,6 @@ def _mc_phot_kern(
     # ssp_weights.shape = (n_gals, n_met, n_age)
 
     # Reshape stellar mass used to normalize SED
-    _mstar_ms = 10 ** diffstar_galpop.logsm_obs_ms.reshape((n_gals, 1))
-    _mstar_q = 10 ** diffstar_galpop.logsm_obs_q.reshape((n_gals, 1))
     logsm_obs = jnp.where(
         mc_sfh_type > 0, diffstar_galpop.logsm_obs_ms, diffstar_galpop.logsm_obs_q
     )
