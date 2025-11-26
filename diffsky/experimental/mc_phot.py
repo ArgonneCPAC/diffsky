@@ -59,18 +59,6 @@ def _mc_phot_kern(
         diffstar_galpop, smooth_ssp_weights, ssp_data, spspop_params.burstpop_params
     )
 
-    # Calculate SSP weights = P_SSP = P_met * P_age
-    _w_age_ms = smooth_ssp_weights.age_weights.ms.reshape((n_gals, 1, n_age))
-    _w_lgmet_ms = smooth_ssp_weights.lgmet_weights.ms.reshape((n_gals, n_met, 1))
-    ssp_weights_smooth_ms = _w_lgmet_ms * _w_age_ms
-
-    _w_age_bursty_ms = burstiness.age_weights.reshape((n_gals, 1, n_age))
-    ssp_weights_bursty_ms = _w_lgmet_ms * _w_age_bursty_ms
-
-    _w_age_q = smooth_ssp_weights.age_weights.q.reshape((n_gals, 1, n_age))
-    _w_lgmet_q = smooth_ssp_weights.lgmet_weights.q.reshape((n_gals, n_met, 1))
-    ssp_weights_q = _w_lgmet_q * _w_age_q  # (n_gals, n_met, n_age)
-
     # Interpolate SSP mag table to z_obs of each galaxy
     photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
         z_obs, z_phot_table, precomputed_ssp_mag_table
@@ -97,6 +85,18 @@ def _mc_phot_kern(
         wave_eff_galpop,
         ssp_err_model.LAMBDA_REST,
     )
+
+    # Calculate SSP weights = P_SSP = P_met * P_age
+    _w_age_ms = smooth_ssp_weights.age_weights.ms.reshape((n_gals, 1, n_age))
+    _w_lgmet_ms = smooth_ssp_weights.lgmet_weights.ms.reshape((n_gals, n_met, 1))
+    ssp_weights_smooth_ms = _w_lgmet_ms * _w_age_ms
+
+    _w_age_bursty_ms = burstiness.age_weights.reshape((n_gals, 1, n_age))
+    ssp_weights_bursty_ms = _w_lgmet_ms * _w_age_bursty_ms
+
+    _w_age_q = smooth_ssp_weights.age_weights.q.reshape((n_gals, 1, n_age))
+    _w_lgmet_q = smooth_ssp_weights.lgmet_weights.q.reshape((n_gals, n_met, 1))
+    ssp_weights_q = _w_lgmet_q * _w_age_q  # (n_gals, n_met, n_age)
 
     # Generate randoms for stochasticity in dust attenuation curves
     ran_key, dust_key = jran.split(ran_key, 2)
