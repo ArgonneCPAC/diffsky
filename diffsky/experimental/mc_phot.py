@@ -23,24 +23,11 @@ from . import photometry_interpolation as photerp
 
 
 @jjit
-def _mc_phot_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params, fb):
-    u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
-    param_collection = dpw.get_param_collection_from_u_param_collection(
-        *u_param_collection
-    )
-    phot_data = _mc_phot_kern(
-        ran_key, *lc_data[1:], *param_collection, cosmo_params, fb
-    )
-    return phot_data
-
-
-@jjit
 def _mc_phot_kern(
     ran_key,
     z_obs,
     t_obs,
     mah_params,
-    logmp0,
     t_table,
     ssp_data,
     precomputed_ssp_mag_table,
@@ -56,7 +43,7 @@ def _mc_phot_kern(
 ):
     """Populate the input lightcone with galaxy SEDs"""
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
-    n_gals = logmp0.size
+    n_gals = z_obs.size
 
     # Calculate SFH with diffstarpop
     ran_key, sfh_key = jran.split(ran_key, 2)

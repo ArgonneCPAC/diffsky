@@ -24,12 +24,19 @@ def test_mc_phot_kern():
         u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
 
-    phot_info = mcsed._mc_diffsky_phot_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
-    )
-
-    phot_info2 = mc_phot._mc_phot_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
+    phot_info2 = mc_phot._mc_phot_kern(
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.t_table,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpw.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
     )
 
     TOL = 1e-4
