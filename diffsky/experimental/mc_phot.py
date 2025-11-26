@@ -13,6 +13,7 @@ from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffstarpop_wrappers as mcdw
 from . import photometry_interpolation as photerp
+from .disk_bulge_modeling import disk_knots
 from .disk_bulge_modeling import mc_disk_bulge as mcdb
 from .kernels import dbk_kernels
 from .kernels.ssp_weight_kernels import (
@@ -119,11 +120,24 @@ def _mc_phot_kern(
 
 
 @jjit
-def _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, burstiness):
+def _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, ran_key):
     disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
         phot_info.t_table, phot_info.sfh_table
     )
-    ssp_weights_bulge = dbk_kernels.mc_ssp_weights_bulge(
+    ssp_weights_bulge, mstar_obs_bulge = dbk_kernels.get_bulge_weights(
         t_obs, ssp_data, phot_info, disk_bulge_history, smooth_ssp_weights
     )
-    return ssp_weights_bulge
+
+    ran_key, knot_key = jran.split(ran_key, 2)
+
+    n_gals = t_obs.size
+    fknot = jran.uniform(
+        knot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
+    )
+
+    _res = dbk_kernels.get_disk_age_weights(
+        t_obs, ssp_data, phot_info, disk_bulge_history, fknot
+    )
+    mstar_disk, mstar_knots, age_weights_disk, age_weights_knots = _res
+
+    return ssp_weights_bulge, mstar_obs_bulge

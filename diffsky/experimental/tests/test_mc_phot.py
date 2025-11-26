@@ -70,8 +70,9 @@ def test_mc_dbk_kern():
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
 
     fb = 0.156
+    ran_key, phot_key = jran.split(ran_key, 2)
     phot_info, smooth_ssp_weights, burstiness = mc_phot._mc_phot_kern(
-        ran_key,
+        phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
@@ -84,7 +85,8 @@ def test_mc_dbk_kern():
         fb,
     )
 
-    ssp_weights_bulge = mc_phot._mc_dbk_kern(
-        lc_data.t_obs, lc_data.ssp_data, phot_info, smooth_ssp_weights, burstiness
+    ran_key, knot_key = jran.split(ran_key, 2)
+    ssp_weights_bulge, mstar_obs_bulge = mc_phot._mc_dbk_kern(
+        lc_data.t_obs, lc_data.ssp_data, phot_info, smooth_ssp_weights, knot_key
     )
     assert np.all(np.isfinite(ssp_weights_bulge))
