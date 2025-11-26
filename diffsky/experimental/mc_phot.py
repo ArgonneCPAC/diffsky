@@ -18,6 +18,7 @@ from ..burstpop import freqburst_mono
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
+from . import mc_diffstarpop_wrappers as mcdw
 from . import photometry_interpolation as photerp
 
 
@@ -57,23 +58,10 @@ def _mc_phot_kern(
     n_z_table, n_bands, n_met, n_age = precomputed_ssp_mag_table.shape
     n_gals = logmp0.size
 
-    # Calculate halo mass at the observed redshift
-    t0 = age_at_z0(*cosmo_params)
-    lgt0 = jnp.log10(t0)
-    logmp_obs = logmh_at_t_obs(mah_params, t_obs, lgt0)
-
     # Calculate SFH with diffstarpop
     ran_key, sfh_key = jran.split(ran_key, 2)
-    diffstar_galpop = lc_phot_kern.diffstarpop_lc_cen_wrapper(
-        diffstarpop_params,
-        sfh_key,
-        mah_params,
-        logmp0,
-        t_table,
-        t_obs,
-        cosmo_params,
-        fb,
-    )
+    args = (diffstarpop_params, sfh_key, mah_params, t_obs, cosmo_params, fb)
+    diffstar_galpop = mcdw.diffstarpop_cen_wrapper(*args)
     # diffstar_galpop has separate diffstar params and SFH tables for ms and q
 
     # Calculate stellar age PDF weights from SFH
@@ -308,7 +296,7 @@ def _mc_phot_kern(
     dust_params = noisy_dust_params_q._make((av, delta, funo))
 
     phot_info = PhotInfo(
-        logmp_obs=logmp_obs,
+        logmp_obs=diffstar_galpop.logmp_obs,
         logsm_obs=logsm_obs,
         logssfr_obs=logssfr_obs,
         sfh_table=sfh_table,
