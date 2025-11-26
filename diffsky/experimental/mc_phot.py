@@ -72,12 +72,6 @@ def _mc_phot_kern(
     # For each filter, calculate λ_eff in the restframe of each galaxy
     wave_eff_galpop = lc_phot_kern.interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
-    # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
-    # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
-    frac_ssp_errors = compute_frac_ssp_errors(
-        ssp_err_pop_params, z_obs, diffstar_galpop, wave_eff_galpop
-    )
-
     # Generate randoms for stochasticity in dust attenuation curves
     ran_key, dust_key = jran.split(ran_key, 2)
     dust_att = compute_dust_attenuation(
@@ -90,14 +84,18 @@ def _mc_phot_kern(
         scatter_params,
     )
 
-    # Calculate stochasticity in fractional changes to SSP fluxes
+    # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
+    # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
+    frac_ssp_errors = compute_frac_ssp_errors(
+        ssp_err_pop_params, z_obs, diffstar_galpop, wave_eff_galpop
+    )
     ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
     delta_scatter_ms = ssp_err_model.compute_delta_scatter(
         ssp_ms_key, frac_ssp_errors.ms
     )
     delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_errors.q)
 
-    _ret = compute_obs_mags_ms_q(
+    _obs_mags = compute_obs_mags_ms_q(
         diffstar_galpop,
         dust_att,
         frac_ssp_errors,
@@ -108,7 +106,7 @@ def _mc_phot_kern(
         delta_scatter_ms,
         delta_scatter_q,
     )
-    obs_mags_q, obs_mags_smooth_ms, obs_mags_bursty_ms = _ret
+    obs_mags_q, obs_mags_smooth_ms, obs_mags_bursty_ms = _obs_mags
 
     weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - burstiness.p_burst)
     weights_bursty_ms = (1 - diffstar_galpop.frac_q) * burstiness.p_burst
