@@ -2,6 +2,7 @@
 
 from collections import namedtuple
 
+from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
@@ -48,6 +49,8 @@ _E = (None, 0, 0, 0, 0, None, 0, 0, 0, None)
 calc_dust_ftrans_vmap = jjit(vmap(vmap_kern1, in_axes=_E))
 
 MSQ = namedtuple("MSQ", ("ms", "q"))
+QMSB = namedtuple("QMSB", ("q", "smooth_ms", "bursty_ms"))
+
 AgeWeights = namedtuple("AgeWeights", ("ms", "q"))
 MetWeights = namedtuple("MetWeights", ("ms", "q"))
 SSPWeights = namedtuple("SSPWeights", ("weights", "age_weights", "lgmet_weights"))
@@ -285,4 +288,139 @@ def compute_obs_mags_ms_q(
     photflux_galpop_q = jnp.sum(integrand_q, axis=(2, 3)) * _mstar_q
     obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q)
 
-    return obs_mags_q, obs_mags_smooth_ms, obs_mags_bursty_ms
+    return QMSB(
+        q=obs_mags_q, smooth_ms=obs_mags_smooth_ms, bursty_ms=obs_mags_bursty_ms
+    )
+
+
+@jjit
+def compute_mc_realization(
+    diffstar_galpop,
+    burstiness,
+    smooth_ssp_weights,
+    dust_att,
+    obs_mags,
+    delta_scatter_ms,
+    delta_scatter_q,
+    ran_key,
+):
+    n_gals = diffstar_galpop.logmp_obs.size
+
+    weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - burstiness.p_burst)
+    weights_bursty_ms = (1 - diffstar_galpop.frac_q) * burstiness.p_burst
+    weights_q = diffstar_galpop.frac_q
+
+    # Generate Monte Carlo noise to stochastically select q, or ms-smooth, or ms-bursty
+    ran_key, smooth_sfh_key = jran.split(ran_key, 2)
+    uran_smooth_sfh = jran.uniform(smooth_sfh_key, shape=(n_gals,))
+
+    # Calculate CDFs from weights
+    # 0 < cdf < f_q ==> quenched
+    # f_q < cdf < f_q + f_smooth_ms ==> smooth main sequence
+    # f_q + f_smooth_ms < cdf < 1 ==> bursty main sequence
+    cdf_q = weights_q
+    cdf_ms = weights_q + weights_smooth_ms
+    mc_q = uran_smooth_sfh < cdf_q
+    diffstar_params = mc_select_diffstar_params(
+        diffstar_galpop.diffstar_params_q, diffstar_galpop.diffstar_params_ms, mc_q
+    )
+
+    # mc_sfh_type = 0 for quenched, 1 for smooth ms, 2 for bursty ms
+    mc_sfh_type = jnp.zeros(n_gals).astype(int)
+    mc_smooth_ms = (uran_smooth_sfh >= cdf_q) & (uran_smooth_sfh < cdf_ms)
+    mc_sfh_type = jnp.where(mc_smooth_ms, 1, mc_sfh_type)
+    mc_bursty_ms = uran_smooth_sfh >= cdf_ms
+    mc_sfh_type = jnp.where(mc_bursty_ms, 2, mc_sfh_type)
+    sfh_table = jnp.where(
+        mc_sfh_type.reshape((n_gals, 1)) == 0,
+        diffstar_galpop.sfh_q,
+        diffstar_galpop.sfh_ms,
+    )
+
+    # Calculate stochastic realization of SSP weights
+    mc_smooth_ms = mc_smooth_ms.reshape((n_gals, 1, 1))
+    mc_bursty_ms = mc_bursty_ms.reshape((n_gals, 1, 1))
+    ssp_weights = jnp.copy(smooth_ssp_weights.weights.q)
+    ssp_weights = jnp.where(mc_smooth_ms, smooth_ssp_weights.weights.ms, ssp_weights)
+    ssp_weights = jnp.where(mc_bursty_ms, burstiness.weights.ms, ssp_weights)
+    # ssp_weights.shape = (n_gals, n_met, n_age)
+
+    # Reshape stellar mass used to normalize SED
+    logsm_obs = jnp.where(
+        mc_sfh_type > 0, diffstar_galpop.logsm_obs_ms, diffstar_galpop.logsm_obs_q
+    )
+
+    # Calculate specific SFR at z_obs
+    logssfr_obs = jnp.where(
+        mc_sfh_type > 0, diffstar_galpop.logssfr_obs_ms, diffstar_galpop.logssfr_obs_q
+    )
+
+    # Reshape boolean array storing SFH type
+    msk_ms = mc_sfh_type.reshape((-1, 1)) == 1
+    msk_bursty = mc_sfh_type.reshape((-1, 1)) == 2
+
+    # Select observed mags according to SFH selection
+    mc_obs_mags = jnp.copy(obs_mags.q)
+    mc_obs_mags = jnp.where(msk_ms, obs_mags.smooth_ms, mc_obs_mags)
+    mc_obs_mags = jnp.where(msk_bursty, obs_mags.bursty_ms, mc_obs_mags)
+
+    msk_q = mc_sfh_type == 0
+    av = jnp.where(
+        msk_q.reshape((n_gals, 1)),
+        dust_att.dust_params.q.av[:, 0, :],
+        dust_att.dust_params.ms.av[:, 0, :],
+    )
+    delta = jnp.where(
+        msk_q, dust_att.dust_params.q.delta[:, 0], dust_att.dust_params.ms.delta[:, 0]
+    )
+    funo = jnp.where(
+        msk_q, dust_att.dust_params.q.funo[:, 0], dust_att.dust_params.ms.funo[:, 0]
+    )
+    dust_params = dust_att.dust_params.q._make((av, delta, funo))
+
+    phot_info = PhotInfo(
+        logmp_obs=diffstar_galpop.logmp_obs,
+        logsm_obs=logsm_obs,
+        logssfr_obs=logssfr_obs,
+        sfh_table=sfh_table,
+        obs_mags=mc_obs_mags,
+        diffstar_params=diffstar_params,
+        mc_sfh_type=mc_sfh_type,
+        burst_params=burstiness.burst_params,
+        dust_params=dust_params,
+        ssp_weights=ssp_weights,
+        uran_av=dust_att.dust_scatter.av,
+        uran_delta=dust_att.dust_scatter.delta,
+        uran_funo=dust_att.dust_scatter.funo,
+        logsm_obs_ms=diffstar_galpop.logsm_obs_ms,
+        logsm_obs_q=diffstar_galpop.logsm_obs_q,
+        logssfr_obs_ms=diffstar_galpop.logssfr_obs_ms,
+        logssfr_obs_q=diffstar_galpop.logssfr_obs_q,
+        delta_scatter_ms=delta_scatter_ms,
+        delta_scatter_q=delta_scatter_q,
+    )
+    return phot_info
+
+
+PHOT_INFO_KEYS = (
+    "logmp_obs",
+    "logsm_obs",
+    "logssfr_obs",
+    "sfh_table",
+    "obs_mags",
+    "diffstar_params",
+    "mc_sfh_type",
+    "burst_params",
+    "dust_params",
+    "ssp_weights",
+    "uran_av",
+    "uran_delta",
+    "uran_funo",
+    "logsm_obs_ms",
+    "logssfr_obs_ms",
+    "logsm_obs_q",
+    "logssfr_obs_q",
+    "delta_scatter_ms",
+    "delta_scatter_q",
+)
+PhotInfo = namedtuple("PhotInfo", PHOT_INFO_KEYS)
