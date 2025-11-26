@@ -397,11 +397,12 @@ def compute_mc_realization(
         logssfr_obs_q=diffstar_galpop.logssfr_obs_q,
         delta_scatter_ms=delta_scatter_ms,
         delta_scatter_q=delta_scatter_q,
+        t_table=diffstar_galpop.t_table,
     )
     return phot_info
 
 
-PHOT_INFO_KEYS = (
+MCPHOT_INFO_KEYS = (
     "logmp_obs",
     "logsm_obs",
     "logssfr_obs",
@@ -421,5 +422,6 @@ PHOT_INFO_KEYS = (
     "logssfr_obs_q",
     "delta_scatter_ms",
     "delta_scatter_q",
+    "t_table",
 )
-PhotInfo = namedtuple("PhotInfo", PHOT_INFO_KEYS)
+PhotInfo = namedtuple("PhotInfo", MCPHOT_INFO_KEYS)

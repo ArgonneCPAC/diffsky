@@ -13,6 +13,8 @@ from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffstarpop_wrappers as mcdw
 from . import photometry_interpolation as photerp
+from .disk_bulge_modeling import mc_disk_bulge as mcdb
+from .kernels import dbk_kernels
 from .kernels.ssp_weight_kernels import (
     compute_burstiness,
     compute_dust_attenuation,
@@ -113,8 +115,15 @@ def _mc_phot_kern(
         ran_key,
     )
 
-    return phot_info
+    return phot_info, smooth_ssp_weights, burstiness
 
 
-def _mc_dbk_kern(phot_info):
-    pass
+@jjit
+def _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, burstiness):
+    disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
+        phot_info.t_table, phot_info.sfh_table
+    )
+    dbk_ssp_weights = dbk_kernels.get_dbk_ssp_weights(
+        t_obs, ssp_data, phot_info, disk_bulge_history, smooth_ssp_weights, burstiness
+    )
+    return dbk_ssp_weights
