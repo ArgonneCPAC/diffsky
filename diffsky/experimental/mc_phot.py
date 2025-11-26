@@ -19,6 +19,7 @@ from .kernels.ssp_weight_kernels import (
     compute_burstiness,
     compute_dust_attenuation,
     compute_frac_ssp_errors,
+    compute_obs_mags_ms_q,
     get_smooth_ssp_weights,
 )
 from .mc_diffstarpop_wrappers import N_T_TABLE
@@ -108,36 +109,18 @@ def _mc_phot_kern(
     )
     delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_errors.q)
 
-    # Calculate fractional changes to SSP fluxes
-    frac_ssp_err_ms = frac_ssp_errors.ms * 10 ** (-0.4 * delta_scatter_ms)
-    frac_ssp_err_q = frac_ssp_errors.q * 10 ** (-0.4 * delta_scatter_q)
-
-    # Reshape arrays before calculating galaxy magnitudes
-    _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
-    _ferr_ssp_q = frac_ssp_err_q.reshape((n_gals, n_bands, 1, 1))
-
-    _ftrans_ms = dust_att.frac_trans.ms.reshape((n_gals, n_bands, 1, n_age))
-    _ftrans_q = dust_att.frac_trans.q.reshape((n_gals, n_bands, 1, n_age))
-
-    _mstar_ms = 10 ** diffstar_galpop.logsm_obs_ms.reshape((n_gals, 1))
-    _mstar_q = 10 ** diffstar_galpop.logsm_obs_q.reshape((n_gals, 1))
-
-    _w_smooth_ms = ssp_weights_smooth_ms.reshape((n_gals, 1, n_met, n_age))
-    _w_bursty_ms = ssp_weights_bursty_ms.reshape((n_gals, 1, n_met, n_age))
-    _w_q = ssp_weights_q.reshape((n_gals, 1, n_met, n_age))
-
-    # Calculate galaxy magnitudes as PDF-weighted sums
-    integrand_smooth_ms = ssp_photflux_table * _w_smooth_ms * _ftrans_ms * _ferr_ssp_ms
-    photflux_galpop_smooth_ms = jnp.sum(integrand_smooth_ms, axis=(2, 3)) * _mstar_ms
-    obs_mags_smooth_ms = -2.5 * jnp.log10(photflux_galpop_smooth_ms)
-
-    integrand_bursty_ms = ssp_photflux_table * _w_bursty_ms * _ftrans_ms * _ferr_ssp_ms
-    photflux_galpop_bursty_ms = jnp.sum(integrand_bursty_ms, axis=(2, 3)) * _mstar_ms
-    obs_mags_bursty_ms = -2.5 * jnp.log10(photflux_galpop_bursty_ms)
-
-    integrand_q = ssp_photflux_table * _w_q * _ftrans_q * _ferr_ssp_q
-    photflux_galpop_q = jnp.sum(integrand_q, axis=(2, 3)) * _mstar_q
-    obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q)
+    _ret = compute_obs_mags_ms_q(
+        diffstar_galpop,
+        dust_att,
+        frac_ssp_errors,
+        ssp_photflux_table,
+        ssp_weights_smooth_ms,
+        ssp_weights_bursty_ms,
+        ssp_weights_q,
+        delta_scatter_ms,
+        delta_scatter_q,
+    )
+    obs_mags_q, obs_mags_smooth_ms, obs_mags_bursty_ms = _ret
 
     weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - burstiness.p_burst)
     weights_bursty_ms = (1 - diffstar_galpop.frac_q) * burstiness.p_burst
