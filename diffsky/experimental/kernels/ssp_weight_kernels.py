@@ -21,8 +21,8 @@ calc_age_weights_from_sfh_table_vmap = jjit(
 SmoothSSPWeights = namedtuple(
     "SmoothSSPWeights",
     (
-        "smooth_age_weights_ms",
-        "smooth_age_weights_q",
+        "age_weights_ms",
+        "age_weights_q",
         "lgmet_weights_ms",
         "lgmet_weights_q",
     ),
@@ -31,11 +31,11 @@ SmoothSSPWeights = namedtuple(
 
 @jjit
 def get_smooth_ssp_weights(diffstar_galpop, ssp_data, t_obs, mzr_params, lgmet_scatter):
-    # smooth_age_weights_ms.shape = (n_gals, n_age)
-    smooth_age_weights_ms = calc_age_weights_from_sfh_table_vmap(
+    # age_weights.shape = (n_gals, n_age)
+    age_weights_ms = calc_age_weights_from_sfh_table_vmap(
         diffstar_galpop.t_table, diffstar_galpop.sfh_ms, ssp_data.ssp_lg_age_gyr, t_obs
     )
-    smooth_age_weights_q = calc_age_weights_from_sfh_table_vmap(
+    age_weights_q = calc_age_weights_from_sfh_table_vmap(
         diffstar_galpop.t_table, diffstar_galpop.sfh_q, ssp_data.ssp_lg_age_gyr, t_obs
     )
 
@@ -53,8 +53,8 @@ def get_smooth_ssp_weights(diffstar_galpop, ssp_data, t_obs, mzr_params, lgmet_s
     )
 
     return SmoothSSPWeights(
-        smooth_age_weights_ms=smooth_age_weights_ms,
-        smooth_age_weights_q=smooth_age_weights_q,
+        age_weights_ms=age_weights_ms,
+        age_weights_q=age_weights_q,
         lgmet_weights_ms=lgmet_weights_ms,
         lgmet_weights_q=lgmet_weights_q,
     )

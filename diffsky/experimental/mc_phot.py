@@ -61,7 +61,7 @@ def _mc_phot_kern(
         diffstar_galpop.logsm_obs_ms,
         diffstar_galpop.logssfr_obs_ms,
         ssp_data.ssp_lg_age_gyr,
-        smooth_ssp_weights.smooth_age_weights_ms,
+        smooth_ssp_weights.age_weights_ms,
     )
     _res = lc_phot_kern._calc_bursty_age_weights_vmap(*_args)
     bursty_age_weights_ms = _res[0]  # bursty_age_weights_ms.shape = (n_gals, age)
@@ -88,14 +88,14 @@ def _mc_phot_kern(
     )
 
     # Calculate SSP weights = P_SSP = P_met * P_age
-    _w_age_ms = smooth_ssp_weights.smooth_age_weights_ms.reshape((n_gals, 1, n_age))
+    _w_age_ms = smooth_ssp_weights.age_weights_ms.reshape((n_gals, 1, n_age))
     _w_lgmet_ms = lgmet_weights_ms.reshape((n_gals, n_met, 1))
     ssp_weights_smooth_ms = _w_lgmet_ms * _w_age_ms
 
     _w_age_bursty_ms = bursty_age_weights_ms.reshape((n_gals, 1, n_age))
     ssp_weights_bursty_ms = _w_lgmet_ms * _w_age_bursty_ms
 
-    _w_age_q = smooth_ssp_weights.smooth_age_weights_q.reshape((n_gals, 1, n_age))
+    _w_age_q = smooth_ssp_weights.age_weights_q.reshape((n_gals, 1, n_age))
     _w_lgmet_q = lgmet_weights_q.reshape((n_gals, n_met, 1))
     ssp_weights_q = _w_lgmet_q * _w_age_q  # (n_gals, n_met, n_age)
 
