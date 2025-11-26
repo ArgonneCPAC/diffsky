@@ -7,17 +7,19 @@ config.update("jax_enable_x64", True)
 from collections import namedtuple
 
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
-from dsps.metallicity import umzr
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 
-from ..burstpop import freqburst_mono
 from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffstarpop_wrappers as mcdw
 from . import photometry_interpolation as photerp
-from .kernels.ssp_weight_kernels import compute_burstiness, get_smooth_ssp_weights
+from .kernels.ssp_weight_kernels import (
+    compute_burstiness,
+    compute_frac_ssp_errors,
+    get_smooth_ssp_weights,
+)
 from .mc_diffstarpop_wrappers import N_T_TABLE
 
 LGMET_SCATTER = 0.2
@@ -70,20 +72,8 @@ def _mc_phot_kern(
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
-    frac_ssp_err_ms = lc_phot_kern.get_frac_ssp_err_vmap(
-        ssp_err_pop_params,
-        z_obs,
-        diffstar_galpop.logsm_obs_ms,
-        wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
-    )
-    # frac_ssp_err_ms.shape = (n_gals, n_bands)
-    frac_ssp_err_q = lc_phot_kern.get_frac_ssp_err_vmap(
-        ssp_err_pop_params,
-        z_obs,
-        diffstar_galpop.logsm_obs_q,
-        wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
+    frac_ssp_errors = compute_frac_ssp_errors(
+        ssp_err_pop_params, z_obs, diffstar_galpop, wave_eff_galpop
     )
 
     # Calculate SSP weights = P_SSP = P_met * P_age
@@ -141,12 +131,14 @@ def _mc_phot_kern(
 
     # Calculate stochasticity in fractional changes to SSP fluxes
     ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
-    delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_err_q)
-    delta_scatter_ms = ssp_err_model.compute_delta_scatter(ssp_ms_key, frac_ssp_err_ms)
+    delta_scatter_ms = ssp_err_model.compute_delta_scatter(
+        ssp_ms_key, frac_ssp_errors.ms
+    )
+    delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_errors.q)
 
     # Calculate fractional changes to SSP fluxes
-    frac_ssp_err_ms = frac_ssp_err_ms * 10 ** (-0.4 * delta_scatter_ms)
-    frac_ssp_err_q = frac_ssp_err_q * 10 ** (-0.4 * delta_scatter_q)
+    frac_ssp_err_ms = frac_ssp_errors.ms * 10 ** (-0.4 * delta_scatter_ms)
+    frac_ssp_err_q = frac_ssp_errors.q * 10 ** (-0.4 * delta_scatter_q)
 
     # Reshape arrays before calculating galaxy magnitudes
     _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))

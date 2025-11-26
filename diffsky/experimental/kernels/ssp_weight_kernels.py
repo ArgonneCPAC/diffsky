@@ -9,6 +9,7 @@ from jax import jit as jjit
 from jax import vmap
 
 from ...burstpop import diffqburstpop_mono, freqburst_mono
+from ...ssp_err_model import ssp_err_model
 
 _M = (0, None, None)
 _calc_lgmet_weights_galpop = jjit(
@@ -27,10 +28,17 @@ _calc_bursty_age_weights_vmap = jjit(
     )
 )
 
+_F = (None, None, None, 0, None)
+_G = (None, 0, 0, 0, None)
+get_frac_ssp_err_vmap = jjit(
+    vmap(vmap(ssp_err_model.F_sps_err_lambda, in_axes=_F), in_axes=_G)
+)
+
 AgeWeights = namedtuple("AgeWeights", ("ms", "q"))
 MetWeights = namedtuple("MetWeights", ("ms", "q"))
 SSPWeights = namedtuple("SSPWeights", ("age_weights", "lgmet_weights"))
 Burstiness = namedtuple("Burstiness", ("age_weights", "burst_params", "p_burst"))
+FracSSPErr = namedtuple("FracSSPErr", ("ms", "q"))
 
 
 @jjit
@@ -92,3 +100,25 @@ def compute_burstiness(diffstar_galpop, smooth_ssp_weights, ssp_data, burstpop_p
     return Burstiness(
         age_weights=age_weights, burst_params=burst_params, p_burst=p_burst
     )
+
+
+@jjit
+def compute_frac_ssp_errors(
+    ssp_err_pop_params, z_obs, diffstar_galpop, wave_eff_galpop
+):
+    frac_ssp_err_ms = get_frac_ssp_err_vmap(
+        ssp_err_pop_params,
+        z_obs,
+        diffstar_galpop.logsm_obs_ms,
+        wave_eff_galpop,
+        ssp_err_model.LAMBDA_REST,
+    )
+
+    frac_ssp_err_q = get_frac_ssp_err_vmap(
+        ssp_err_pop_params,
+        z_obs,
+        diffstar_galpop.logsm_obs_q,
+        wave_eff_galpop,
+        ssp_err_model.LAMBDA_REST,
+    )
+    return FracSSPErr(ms=frac_ssp_err_ms, q=frac_ssp_err_q)
