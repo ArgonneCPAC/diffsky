@@ -10,18 +10,31 @@ from .. import mc_phot
 from . import test_lc_phot_kern as tlcphk
 
 
-def test_mc_phot_kern():
+def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern():
+    """Enforce agreement to 1e-4 for the photometry computed by these two functions:
+    1. mcsed._mc_diffsky_phot_kern
+    2. mc_phot._mc_phot_kern
+
+    """
     ran_key = jran.key(0)
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
 
-    u_param_collection = dpw.get_u_param_collection_from_param_collection(
-        *dpw.DEFAULT_PARAM_COLLECTION
-    )
-    u_param_arr = dpw.unroll_u_param_collection_into_flat_array(*u_param_collection)
-
     fb = 0.156
-    phot_info = mcsed._mc_diffsky_phot_flat_u_params(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
+
+    phot_info = mcsed._mc_diffsky_phot_kern(
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.logmp0,
+        lc_data.t_table,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpw.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
     )
 
     phot_info2 = mc_phot._mc_phot_kern(
