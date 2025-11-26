@@ -113,4 +113,8 @@ def _mc_phot_kern(
         ran_key,
     )
 
-    return phot_info._asdict()
+    return phot_info
+
+
+def _mc_dbk_kern(phot_info):
+    pass

@@ -49,7 +49,7 @@ def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern():
         *dpw.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
-    )
+    )._asdict()
 
     TOL = 1e-4
     for p, p2 in zip(phot_info["obs_mags"], phot_info2["obs_mags"]):
