@@ -84,6 +84,7 @@ def test_mc_dbk_kern():
         fb,
     )
 
-    dbk_ssp_weights = mc_phot._mc_dbk_kern(
+    ssp_weights_bulge = mc_phot._mc_dbk_kern(
         lc_data.t_obs, lc_data.ssp_data, phot_info, smooth_ssp_weights, burstiness
     )
+    assert np.all(np.isfinite(ssp_weights_bulge))

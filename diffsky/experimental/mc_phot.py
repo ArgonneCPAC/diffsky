@@ -123,7 +123,7 @@ def _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, burstiness):
     disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
         phot_info.t_table, phot_info.sfh_table
     )
-    dbk_ssp_weights = dbk_kernels.get_dbk_ssp_weights(
-        t_obs, ssp_data, phot_info, disk_bulge_history, smooth_ssp_weights, burstiness
+    ssp_weights_bulge = dbk_kernels.mc_ssp_weights_bulge(
+        t_obs, ssp_data, phot_info, disk_bulge_history, smooth_ssp_weights
     )
-    return dbk_ssp_weights
+    return ssp_weights_bulge
