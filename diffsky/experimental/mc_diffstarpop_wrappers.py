@@ -1,9 +1,12 @@
 """"""
 
 from collections import namedtuple
+from functools import partial
 
+from diffmah import logmh_at_t_obs
 from diffstar.diffstarpop import mc_diffstar_sfh_galpop
 from diffstar.utils import cumulative_mstar_formed_galpop
+from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
 from jax import jit as jjit
 from jax import numpy as jnp
@@ -13,6 +16,8 @@ interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
 
 _DPKEYS = (
+    "logmp0",
+    "logmp_obs",
     "frac_q",
     "sfh_ms",
     "logsm_obs_ms",
@@ -22,6 +27,7 @@ _DPKEYS = (
     "logssfr_obs_q",
     "diffstar_params_ms",
     "diffstar_params_q",
+    "t_table",
 )
 DiffstarPopQuantities = namedtuple("DiffstarPopQuantities", _DPKEYS)
 
@@ -35,17 +41,24 @@ def _get_sfh_info_at_t_obs(t_table, sfh_table, t_obs):
     return logsm_obs, logssfr_obs
 
 
-@jjit
+@partial(jjit, static_argnames=["n_t_table"])
 def diffstarpop_lc_cen_wrapper(
-    diffstarpop_params, ran_key, mah_params, logmp0, t_table, t_obs, cosmo_params, fb
+    diffstarpop_params, ran_key, mah_params, t_obs, cosmo_params, fb, n_t_table=100
 ):
-    n_gals = logmp0.size
+    n_gals = mah_params.logm0.size
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t0)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
+    ZZ = jnp.zeros(n_gals)
+
+    logmp_obs = logmh_at_t_obs(mah_params, t_obs + ZZ, lgt0)
+    logmp0 = logmh_at_t_obs(mah_params, t0 + ZZ, lgt0)
+
     upids = jnp.zeros(n_gals).astype(int) - 1
     lgmu_infall = jnp.zeros(n_gals) - 1.0
     logmhost_infall = jnp.copy(logmp0)
     lgmu_infall = jnp.zeros(n_gals) - 1.0
     gyr_since_infall = jnp.zeros(n_gals)
-    lgt0 = jnp.log10(flat_wcdm.age_at_z0(*cosmo_params))
 
     args = (
         diffstarpop_params,
@@ -65,6 +78,8 @@ def diffstarpop_lc_cen_wrapper(
     logsm_obs_q, logssfr_obs_q = _get_sfh_info_at_t_obs(t_table, sfh_q, t_obs)
 
     diffstar_galpop = DiffstarPopQuantities(
+        logmp0=logmp0,
+        logmp_obs=logmp_obs,
         frac_q=frac_q,
         sfh_ms=sfh_ms,
         logsm_obs_ms=logsm_obs_ms,
@@ -74,6 +89,7 @@ def diffstarpop_lc_cen_wrapper(
         logssfr_obs_q=logssfr_obs_q,
         diffstar_params_ms=diffstar_params_ms,
         diffstar_params_q=diffstar_params_q,
+        t_table=t_table,
     )
 
     return diffstar_galpop
