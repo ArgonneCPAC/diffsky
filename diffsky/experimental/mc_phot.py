@@ -17,7 +17,7 @@ from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffstarpop_wrappers as mcdw
 from . import photometry_interpolation as photerp
-from .kernels.ssp_weight_kernels import get_smooth_ssp_weights
+from .kernels.ssp_weight_kernels import compute_burstiness, get_smooth_ssp_weights
 from .mc_diffstarpop_wrappers import N_T_TABLE
 
 LGMET_SCATTER = 0.2
@@ -55,23 +55,8 @@ def _mc_phot_kern(
         diffstar_galpop, ssp_data, t_obs, mzr_params, LGMET_SCATTER
     )
 
-    # Calculate stellar age PDF weights from SFH + burstiness
-    _args = (
-        spspop_params.burstpop_params,
-        diffstar_galpop.logsm_obs_ms,
-        diffstar_galpop.logssfr_obs_ms,
-        ssp_data.ssp_lg_age_gyr,
-        smooth_ssp_weights.age_weights.ms,
-    )
-    _res = lc_phot_kern._calc_bursty_age_weights_vmap(*_args)
-    bursty_age_weights_ms = _res[0]  # bursty_age_weights_ms.shape = (n_gals, age)
-    burst_params = _res[1]  # ('lgfburst', 'lgyr_peak', 'lgyr_max')
-
-    # Calculate the frequency of SFH bursts
-    p_burst_ms = freqburst_mono.get_freqburst_from_freqburst_params(
-        spspop_params.burstpop_params.freqburst_params,
-        diffstar_galpop.logsm_obs_ms,
-        diffstar_galpop.logssfr_obs_ms,
+    burstiness = compute_burstiness(
+        diffstar_galpop, smooth_ssp_weights, ssp_data, spspop_params.burstpop_params
     )
 
     # Calculate SSP weights = P_SSP = P_met * P_age
@@ -79,7 +64,7 @@ def _mc_phot_kern(
     _w_lgmet_ms = smooth_ssp_weights.lgmet_weights.ms.reshape((n_gals, n_met, 1))
     ssp_weights_smooth_ms = _w_lgmet_ms * _w_age_ms
 
-    _w_age_bursty_ms = bursty_age_weights_ms.reshape((n_gals, 1, n_age))
+    _w_age_bursty_ms = burstiness.age_weights.reshape((n_gals, 1, n_age))
     ssp_weights_bursty_ms = _w_lgmet_ms * _w_age_bursty_ms
 
     _w_age_q = smooth_ssp_weights.age_weights.q.reshape((n_gals, 1, n_age))
@@ -190,8 +175,8 @@ def _mc_phot_kern(
     photflux_galpop_q = jnp.sum(integrand_q, axis=(2, 3)) * _mstar_q
     obs_mags_q = -2.5 * jnp.log10(photflux_galpop_q)
 
-    weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - p_burst_ms)
-    weights_bursty_ms = (1 - diffstar_galpop.frac_q) * p_burst_ms
+    weights_smooth_ms = (1 - diffstar_galpop.frac_q) * (1 - burstiness.p_burst)
+    weights_bursty_ms = (1 - diffstar_galpop.frac_q) * burstiness.p_burst
     weights_q = diffstar_galpop.frac_q
 
     # Generate Monte Carlo noise to stochastically select q, or ms-smooth, or ms-bursty
@@ -272,7 +257,7 @@ def _mc_phot_kern(
         obs_mags=obs_mags,
         diffstar_params=diffstar_params,
         mc_sfh_type=mc_sfh_type,
-        burst_params=burst_params,
+        burst_params=burstiness.burst_params,
         dust_params=dust_params,
         ssp_weights=ssp_weights,
         uran_av=uran_av,
