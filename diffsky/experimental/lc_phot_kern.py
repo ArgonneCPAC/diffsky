@@ -23,7 +23,7 @@ from jax import vmap
 from ..burstpop import diffqburstpop_mono, freqburst_mono
 from ..dustpop import tw_dustpop_mono_noise
 from ..param_utils import diffsky_param_wrapper as dpw
-from ..phot_utils import get_wave_eff_from_tcurves
+from ..phot_utils import get_wave_eff_table
 from ..ssp_err_model import ssp_err_model
 from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
@@ -94,15 +94,6 @@ LCPHOT_EMPTY = LCPhot._make([None] * len(LCPhot._fields))
 
 LGMET_SCATTER = 0.2
 N_SFH_TABLE = 100
-
-
-def get_wave_eff_table(z_phot_table, tcurves):
-    collector = []
-    for z_obs in z_phot_table:
-        wave_eff = get_wave_eff_from_tcurves(tcurves, z_obs)
-        collector.append(wave_eff)
-    wave_eff_table = jnp.array(collector)
-    return wave_eff_table
 
 
 @jjit
