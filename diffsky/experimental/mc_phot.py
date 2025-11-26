@@ -61,7 +61,7 @@ def _mc_phot_kern(
         diffstar_galpop.logsm_obs_ms,
         diffstar_galpop.logssfr_obs_ms,
         ssp_data.ssp_lg_age_gyr,
-        smooth_ssp_weights.age_weights_ms,
+        smooth_ssp_weights.age_weights.ms,
     )
     _res = lc_phot_kern._calc_bursty_age_weights_vmap(*_args)
     bursty_age_weights_ms = _res[0]  # bursty_age_weights_ms.shape = (n_gals, age)
@@ -74,29 +74,16 @@ def _mc_phot_kern(
         diffstar_galpop.logssfr_obs_ms,
     )
 
-    # Calculate mean metallicity of the population
-    lgmet_med_ms = umzr.mzr_model(diffstar_galpop.logsm_obs_ms, t_obs, *mzr_params)
-    lgmet_med_q = umzr.mzr_model(diffstar_galpop.logsm_obs_q, t_obs, *mzr_params)
-
-    # Calculate metallicity distribution function
-    # lgmet_weights_q.shape = (n_gals, n_met)
-    lgmet_weights_ms = lc_phot_kern._calc_lgmet_weights_galpop(
-        lgmet_med_ms, lc_phot_kern.LGMET_SCATTER, ssp_data.ssp_lgmet
-    )
-    lgmet_weights_q = lc_phot_kern._calc_lgmet_weights_galpop(
-        lgmet_med_q, lc_phot_kern.LGMET_SCATTER, ssp_data.ssp_lgmet
-    )
-
     # Calculate SSP weights = P_SSP = P_met * P_age
-    _w_age_ms = smooth_ssp_weights.age_weights_ms.reshape((n_gals, 1, n_age))
-    _w_lgmet_ms = lgmet_weights_ms.reshape((n_gals, n_met, 1))
+    _w_age_ms = smooth_ssp_weights.age_weights.ms.reshape((n_gals, 1, n_age))
+    _w_lgmet_ms = smooth_ssp_weights.lgmet_weights.ms.reshape((n_gals, n_met, 1))
     ssp_weights_smooth_ms = _w_lgmet_ms * _w_age_ms
 
     _w_age_bursty_ms = bursty_age_weights_ms.reshape((n_gals, 1, n_age))
     ssp_weights_bursty_ms = _w_lgmet_ms * _w_age_bursty_ms
 
-    _w_age_q = smooth_ssp_weights.age_weights_q.reshape((n_gals, 1, n_age))
-    _w_lgmet_q = lgmet_weights_q.reshape((n_gals, n_met, 1))
+    _w_age_q = smooth_ssp_weights.age_weights.q.reshape((n_gals, 1, n_age))
+    _w_lgmet_q = smooth_ssp_weights.lgmet_weights.q.reshape((n_gals, n_met, 1))
     ssp_weights_q = _w_lgmet_q * _w_age_q  # (n_gals, n_met, n_age)
 
     # Interpolate SSP mag table to z_obs of each galaxy
