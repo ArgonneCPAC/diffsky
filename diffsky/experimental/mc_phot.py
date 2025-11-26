@@ -78,18 +78,6 @@ def _mc_phot_kern(
         ssp_err_pop_params, z_obs, diffstar_galpop, wave_eff_galpop
     )
 
-    # Calculate SSP weights = P_SSP = P_met * P_age
-    _w_age_ms = smooth_ssp_weights.age_weights.ms.reshape((n_gals, 1, n_age))
-    _w_lgmet_ms = smooth_ssp_weights.lgmet_weights.ms.reshape((n_gals, n_met, 1))
-    ssp_weights_smooth_ms = _w_lgmet_ms * _w_age_ms
-
-    _w_age_bursty_ms = burstiness.age_weights.reshape((n_gals, 1, n_age))
-    ssp_weights_bursty_ms = _w_lgmet_ms * _w_age_bursty_ms
-
-    _w_age_q = smooth_ssp_weights.age_weights.q.reshape((n_gals, 1, n_age))
-    _w_lgmet_q = smooth_ssp_weights.lgmet_weights.q.reshape((n_gals, n_met, 1))
-    ssp_weights_q = _w_lgmet_q * _w_age_q  # (n_gals, n_met, n_age)
-
     # Generate randoms for stochasticity in dust attenuation curves
     ran_key, dust_key = jran.split(ran_key, 2)
     dust_att = compute_dust_attenuation(
@@ -114,9 +102,9 @@ def _mc_phot_kern(
         dust_att,
         frac_ssp_errors,
         ssp_photflux_table,
-        ssp_weights_smooth_ms,
-        ssp_weights_bursty_ms,
-        ssp_weights_q,
+        smooth_ssp_weights.weights.ms,
+        burstiness.weights.ms,
+        smooth_ssp_weights.weights.q,
         delta_scatter_ms,
         delta_scatter_q,
     )
@@ -156,9 +144,9 @@ def _mc_phot_kern(
     # Calculate stochastic realization of SSP weights
     mc_smooth_ms = mc_smooth_ms.reshape((n_gals, 1, 1))
     mc_bursty_ms = mc_bursty_ms.reshape((n_gals, 1, 1))
-    ssp_weights = jnp.copy(ssp_weights_q)
-    ssp_weights = jnp.where(mc_smooth_ms, ssp_weights_smooth_ms, ssp_weights)
-    ssp_weights = jnp.where(mc_bursty_ms, ssp_weights_bursty_ms, ssp_weights)
+    ssp_weights = jnp.copy(smooth_ssp_weights.weights.q)
+    ssp_weights = jnp.where(mc_smooth_ms, smooth_ssp_weights.weights.ms, ssp_weights)
+    ssp_weights = jnp.where(mc_bursty_ms, burstiness.weights.ms, ssp_weights)
     # ssp_weights.shape = (n_gals, n_met, n_age)
 
     # Reshape stellar mass used to normalize SED
