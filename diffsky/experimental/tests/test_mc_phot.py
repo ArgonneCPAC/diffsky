@@ -99,6 +99,8 @@ def test_mc_dbk_kern(num_halos=75):
         dust_att,
         ssp_photflux_table,
         frac_ssp_errors,
+        delta_scatter_ms,
+        delta_scatter_q,
     ) = _res
 
     ran_key, knot_key = jran.split(ran_key, 2)
@@ -114,7 +116,13 @@ def test_mc_dbk_kern(num_halos=75):
     assert np.all(dbk_weights.mstar_knots > 0)
 
     _res = mc_phot.get_dbk_phot(
-        ssp_photflux_table, dbk_weights, dust_att, phot_info, frac_ssp_errors
+        ssp_photflux_table,
+        dbk_weights,
+        dust_att,
+        phot_info,
+        frac_ssp_errors,
+        delta_scatter_ms,
+        delta_scatter_q,
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res
 
@@ -126,6 +134,22 @@ def test_mc_dbk_kern(num_halos=75):
     assert np.all(np.isfinite(obs_mags_disk))
     assert np.all(np.isfinite(obs_mags_knots))
 
+    assert not np.allclose(phot_info.obs_mags, obs_mags_bulge, rtol=1e-4)
+    assert np.all(phot_info.obs_mags <= obs_mags_bulge)
+
+    assert not np.allclose(phot_info.obs_mags, obs_mags_disk, rtol=1e-4)
+    assert np.all(phot_info.obs_mags <= obs_mags_disk)
+
+    assert not np.allclose(phot_info.obs_mags, obs_mags_knots, rtol=1e-4)
+    assert np.all(phot_info.obs_mags <= obs_mags_knots)
+
+    a = 10 ** (-0.4 * obs_mags_bulge)
+    b = 10 ** (-0.4 * obs_mags_disk)
+    c = 10 ** (-0.4 * obs_mags_knots)
+    mtot = -2.5 * np.log10(a + b + c)
+
+    assert np.all(np.abs(mtot - phot_info.obs_mags) < 0.1)
+
     # return (
     #     obs_mags_bulge,
     #     obs_mags_disk,
@@ -136,12 +160,3 @@ def test_mc_dbk_kern(num_halos=75):
     #     phot_info,
     #     frac_ssp_errors,
     # )
-
-    assert not np.allclose(phot_info.obs_mags, obs_mags_bulge, rtol=1e-4)
-    assert np.all(phot_info.obs_mags <= obs_mags_bulge)
-
-    assert not np.allclose(phot_info.obs_mags, obs_mags_disk, rtol=1e-4)
-    assert np.all(phot_info.obs_mags <= obs_mags_disk)
-
-    assert not np.allclose(phot_info.obs_mags, obs_mags_knots, rtol=1e-4)
-    assert np.all(phot_info.obs_mags <= obs_mags_knots)

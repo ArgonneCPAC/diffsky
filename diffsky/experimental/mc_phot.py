@@ -124,6 +124,8 @@ def _mc_phot_kern(
         dust_att,
         ssp_photflux_table,
         frac_ssp_errors,
+        delta_scatter_ms,
+        delta_scatter_q,
     )
 
 
@@ -148,7 +150,15 @@ def _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, ran_key):
 
 
 @jjit
-def get_dbk_phot(ssp_photflux_table, dbk_weights, dust_att, phot_info, frac_ssp_errors):
+def get_dbk_phot(
+    ssp_photflux_table,
+    dbk_weights,
+    dust_att,
+    phot_info,
+    frac_ssp_errors,
+    delta_scatter_ms,
+    delta_scatter_q,
+):
     n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
 
     # Reshape arrays before calculating galaxy magnitudes
@@ -157,8 +167,12 @@ def get_dbk_phot(ssp_photflux_table, dbk_weights, dust_att, phot_info, frac_ssp_
     _ftrans_q = dust_att.frac_trans.q.reshape((n_gals, n_bands, 1, n_age))
     _ftrans = jnp.where(_mc_q, _ftrans_q, _ftrans_ms)
 
-    _ferr_ssp_ms = frac_ssp_errors.ms.reshape((n_gals, n_bands, 1, 1))
-    _ferr_ssp_q = frac_ssp_errors.q.reshape((n_gals, n_bands, 1, 1))
+    # Calculate fractional changes to SSP fluxes
+    frac_ssp_err_ms = frac_ssp_errors.ms * 10 ** (-0.4 * delta_scatter_ms)
+    frac_ssp_err_q = frac_ssp_errors.q * 10 ** (-0.4 * delta_scatter_q)
+
+    _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
+    _ferr_ssp_q = frac_ssp_err_q.reshape((n_gals, n_bands, 1, 1))
     _ferr_ssp = jnp.where(_mc_q, _ferr_ssp_q, _ferr_ssp_ms)
 
     _w_bulge = dbk_weights.ssp_weights_bulge.reshape((n_gals, 1, n_met, n_age))
