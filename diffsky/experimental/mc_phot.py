@@ -95,6 +95,11 @@ def _mc_phot_kern(
     )
     delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_errors.q)
 
+    zz = jnp.ones_like(frac_ssp_errors.q)
+    frac_ssp_errors = frac_ssp_errors._replace(q=zz, ms=zz)
+    delta_scatter_q = jnp.zeros_like(delta_scatter_q)
+    delta_scatter_ms = jnp.zeros_like(delta_scatter_ms)
+
     obs_mags = compute_obs_mags_ms_q(
         diffstar_galpop,
         dust_att,

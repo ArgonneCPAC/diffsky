@@ -78,6 +78,7 @@ def test_mc_dbk_kern(num_halos=75):
 
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)
+
     _res = mc_phot._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
@@ -137,7 +138,7 @@ def test_mc_dbk_kern(num_halos=75):
     # )
 
     assert not np.allclose(phot_info.obs_mags, obs_mags_bulge, rtol=1e-4)
-    # assert np.all(phot_info.obs_mags <= obs_mags_bulge)
+    assert np.all(phot_info.obs_mags <= obs_mags_bulge)
 
     assert not np.allclose(phot_info.obs_mags, obs_mags_disk, rtol=1e-4)
     assert np.all(phot_info.obs_mags <= obs_mags_disk)
