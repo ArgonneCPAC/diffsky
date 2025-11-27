@@ -344,6 +344,12 @@ def compute_mc_realization(
     ssp_weights = jnp.where(mc_bursty_ms, burstiness.weights.ms, ssp_weights)
     # ssp_weights.shape = (n_gals, n_met, n_age)
 
+    lgmet_weights = jnp.where(
+        mc_sfh_type.reshape((n_gals, 1)) == 0,
+        smooth_ssp_weights.lgmet_weights.q,
+        smooth_ssp_weights.lgmet_weights.ms,
+    )
+
     # Reshape stellar mass used to normalize SED
     logsm_obs = jnp.where(
         mc_sfh_type > 0, diffstar_galpop.logsm_obs_ms, diffstar_galpop.logsm_obs_q
@@ -385,9 +391,10 @@ def compute_mc_realization(
         obs_mags=mc_obs_mags,
         diffstar_params=diffstar_params,
         mc_sfh_type=mc_sfh_type,
-        burst_params=burstiness.burst_params,
+        burstiness=burstiness,
         dust_params=dust_params,
         ssp_weights=ssp_weights,
+        lgmet_weights=lgmet_weights,
         uran_av=dust_att.dust_scatter.av,
         uran_delta=dust_att.dust_scatter.delta,
         uran_funo=dust_att.dust_scatter.funo,
@@ -410,9 +417,10 @@ MCPHOT_INFO_KEYS = (
     "obs_mags",
     "diffstar_params",
     "mc_sfh_type",
-    "burst_params",
+    "burstiness",
     "dust_params",
     "ssp_weights",
+    "lgmet_weights",
     "uran_av",
     "uran_delta",
     "uran_funo",

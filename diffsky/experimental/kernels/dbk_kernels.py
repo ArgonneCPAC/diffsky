@@ -62,11 +62,13 @@ def get_bulge_weights(
 def get_disk_age_weights(t_obs, ssp_data, phot_info, disk_bulge_history, fknot):
     ssp_lg_age_yr = ssp_data.ssp_lg_age_gyr + 9.0
     age_weights_pureburst = get_pureburst_age_weights(
-        ssp_lg_age_yr, phot_info.burst_params.lgyr_peak, phot_info.burst_params.lgyr_max
+        ssp_lg_age_yr,
+        phot_info.burstiness.burst_params.lgyr_peak,
+        phot_info.burstiness.burst_params.lgyr_max,
     )
 
     fburst = jnp.where(
-        phot_info.mc_sfh_type == 0, 0.0, 10**phot_info.burst_params.lgfburst
+        phot_info.mc_sfh_type == 0, 0.0, 10**phot_info.burstiness.burst_params.lgfburst
     )
     _res = disk_knots._disk_knot_vmap(
         phot_info.t_table,
@@ -80,4 +82,37 @@ def get_disk_age_weights(t_obs, ssp_data, phot_info, disk_bulge_history, fknot):
     )
     mstar_disk, mstar_knots, age_weights_disk, age_weights_knots = _res[2:]
 
-    return (age_weights_disk, age_weights_knots, mstar_disk, mstar_knots)
+    n_gals = t_obs.size
+    n_met = ssp_data.ssp_lgmet.size
+    n_age = ssp_data.ssp_lg_age_gyr.size
+
+    _w_age_dd = age_weights_disk.reshape((n_gals, 1, n_age))
+    _w_lgmet_dd = phot_info.lgmet_weights.reshape((n_gals, n_met, 1))
+    ssp_weights_disk = _w_lgmet_dd * _w_age_dd
+
+    _w_age_knot = age_weights_knots.reshape((n_gals, 1, n_age))
+    _w_lgmet_knot = phot_info.lgmet_weights.reshape((n_gals, n_met, 1))
+    ssp_weights_knots = _w_lgmet_knot * _w_age_knot
+
+    return (ssp_weights_disk, ssp_weights_knots, mstar_disk, mstar_knots)
+
+
+@jjit
+def get_dbk_weights(
+    t_obs, ssp_data, phot_info, smooth_ssp_weights, disk_bulge_history, fknot
+):
+    ssp_weights_bulge, mstar_bulge = get_bulge_weights(
+        t_obs, ssp_data, phot_info, disk_bulge_history, smooth_ssp_weights
+    )
+
+    _res = get_disk_age_weights(t_obs, ssp_data, phot_info, disk_bulge_history, fknot)
+    ssp_weights_disk, ssp_weights_knots, mstar_disk, mstar_knots = _res
+
+    return DBKWeights(
+        ssp_weights_bulge=ssp_weights_bulge,
+        ssp_weights_disk=ssp_weights_disk,
+        ssp_weights_knots=ssp_weights_knots,
+        mstar_bulge=mstar_bulge,
+        mstar_disk=mstar_disk,
+        mstar_knots=mstar_knots,
+    )

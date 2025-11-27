@@ -1,7 +1,6 @@
 """"""
 
 import numpy as np
-import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
@@ -11,7 +10,6 @@ from .. import mc_phot
 from . import test_lc_phot_kern as tlcphk
 
 
-@pytest.mark.skip
 def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern():
     """Enforce agreement to 1e-4 for the photometry computed by these two functions:
     1. mcsed._mc_diffsky_phot_kern
@@ -60,6 +58,9 @@ def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern():
     for p, p2 in zip(phot_info["dust_params"], phot_info2["dust_params"]):
         assert np.allclose(p, p2, rtol=TOL)
 
+    for p, p2 in zip(phot_info["burst_params"], phot_info2["burstiness"].burst_params):
+        assert np.allclose(p, p2, rtol=TOL)
+
     assert np.allclose(phot_info["uran_av"], phot_info2["uran_av"])
     assert np.allclose(phot_info["uran_delta"], phot_info2["uran_delta"])
     assert np.allclose(phot_info["uran_funo"], phot_info2["uran_funo"])
@@ -86,7 +87,13 @@ def test_mc_dbk_kern():
     )
 
     ran_key, knot_key = jran.split(ran_key, 2)
-    ssp_weights_bulge, mstar_obs_bulge = mc_phot._mc_dbk_kern(
+    dbk_weights = mc_phot._mc_dbk_kern(
         lc_data.t_obs, lc_data.ssp_data, phot_info, smooth_ssp_weights, knot_key
     )
-    assert np.all(np.isfinite(ssp_weights_bulge))
+    assert np.all(np.isfinite(dbk_weights.ssp_weights_bulge))
+    assert np.all(np.isfinite(dbk_weights.ssp_weights_disk))
+    assert np.all(np.isfinite(dbk_weights.ssp_weights_knots))
+
+    assert np.all(dbk_weights.mstar_bulge > 0)
+    assert np.all(dbk_weights.mstar_disk > 0)
+    assert np.all(dbk_weights.mstar_knots > 0)
