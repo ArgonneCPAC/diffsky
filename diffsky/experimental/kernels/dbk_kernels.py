@@ -59,7 +59,7 @@ def get_bulge_weights(
 
 
 @jjit
-def get_disk_age_weights(t_obs, ssp_data, phot_info, disk_bulge_history, fknot):
+def get_disk_weights(t_obs, ssp_data, phot_info, disk_bulge_history, fknot):
     ssp_lg_age_yr = ssp_data.ssp_lg_age_gyr + 9.0
     age_weights_pureburst = get_pureburst_age_weights(
         ssp_lg_age_yr,
@@ -105,7 +105,7 @@ def get_dbk_weights(
         t_obs, ssp_data, phot_info, disk_bulge_history, smooth_ssp_weights
     )
 
-    _res = get_disk_age_weights(t_obs, ssp_data, phot_info, disk_bulge_history, fknot)
+    _res = get_disk_weights(t_obs, ssp_data, phot_info, disk_bulge_history, fknot)
     ssp_weights_disk, ssp_weights_knots, mstar_disk, mstar_knots = _res
 
     return DBKWeights(
