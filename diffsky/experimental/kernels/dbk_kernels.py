@@ -68,7 +68,7 @@ def get_disk_weights(t_obs, ssp_data, phot_info, disk_bulge_history, fknot):
     )
 
     fburst = jnp.where(
-        phot_info.mc_sfh_type == 0, 0.0, 10**phot_info.burstiness.burst_params.lgfburst
+        phot_info.mc_sfh_type < 2, 0.0, 10**phot_info.burstiness.burst_params.lgfburst
     )
     _res = disk_knots._disk_knot_vmap(
         phot_info.t_table,

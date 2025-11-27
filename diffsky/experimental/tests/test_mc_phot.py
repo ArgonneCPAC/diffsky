@@ -12,14 +12,16 @@ from . import test_lc_phot_kern as tlcphk
 
 
 @pytest.mark.skip
-def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern():
+def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern(num_halos=75):
     """Enforce agreement to 1e-4 for the photometry computed by these two functions:
     1. mcsed._mc_diffsky_phot_kern
     2. mc_phot._mc_phot_kern
 
     """
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(
+        num_halos=num_halos
+    )
 
     fb = 0.156
 
@@ -68,9 +70,11 @@ def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern():
     assert np.allclose(phot_info["uran_funo"], phot_info2["uran_funo"])
 
 
-def test_mc_dbk_kern():
+def test_mc_dbk_kern(num_halos=75):
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(
+        num_halos=num_halos
+    )
 
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)
@@ -113,20 +117,24 @@ def test_mc_dbk_kern():
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res
 
-    return (
-        obs_mags_bulge,
-        obs_mags_disk,
-        obs_mags_knots,
-        ssp_photflux_table,
-        dbk_weights,
-        dust_att,
-        phot_info,
-        frac_ssp_errors,
-    )
+    np.all(phot_info.logsm_obs > np.log10(dbk_weights.mstar_bulge.flatten()))
+    np.all(phot_info.logsm_obs > np.log10(dbk_weights.mstar_disk.flatten()))
+    np.all(phot_info.logsm_obs > np.log10(dbk_weights.mstar_knots.flatten()))
 
     assert np.all(np.isfinite(obs_mags_bulge))
     assert np.all(np.isfinite(obs_mags_disk))
     assert np.all(np.isfinite(obs_mags_knots))
+
+    # return (
+    #     obs_mags_bulge,
+    #     obs_mags_disk,
+    #     obs_mags_knots,
+    #     ssp_photflux_table,
+    #     dbk_weights,
+    #     dust_att,
+    #     phot_info,
+    #     frac_ssp_errors,
+    # )
 
     assert not np.allclose(phot_info.obs_mags, obs_mags_bulge, rtol=1e-4)
     # assert np.all(phot_info.obs_mags <= obs_mags_bulge)
