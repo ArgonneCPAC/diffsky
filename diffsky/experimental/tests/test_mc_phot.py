@@ -1,17 +1,17 @@
 """"""
 
 import numpy as np
-import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
+from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import random as jran
 
+from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...param_utils import diffsky_param_wrapper as dpw
 from .. import mc_diffsky_seds as mcsed
 from .. import mc_phot
 from . import test_lc_phot_kern as tlcphk
 
 
-@pytest.mark.skip
 def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern(num_halos=75):
     """Enforce agreement to 1e-4 for the photometry computed by these two functions:
     1. mcsed._mc_diffsky_phot_kern
@@ -59,11 +59,19 @@ def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern(num_halos=75):
     for p, p2 in zip(phot_info["obs_mags"], phot_info2["obs_mags"]):
         assert np.allclose(p, p2, rtol=TOL)
 
-    for p, p2 in zip(phot_info["dust_params"], phot_info2["dust_params"]):
-        assert np.allclose(p, p2, rtol=TOL)
+    assert "av" in phot_info["dust_params"]._fields
+    assert "av" in phot_info2.keys()
+    for pname in DEFAULT_DUST_PARAMS._fields:
+        assert np.allclose(
+            getattr(phot_info["dust_params"], pname), phot_info2[pname], rtol=TOL
+        )
 
-    for p, p2 in zip(phot_info["burst_params"], phot_info2["burstiness"].burst_params):
-        assert np.allclose(p, p2, rtol=TOL)
+    assert "lgfburst" in phot_info["burst_params"]._fields
+    assert "lgfburst" in phot_info2.keys()
+    for pname in DEFAULT_BURST_PARAMS._fields[1:]:
+        assert np.allclose(
+            getattr(phot_info["burst_params"], pname), phot_info2[pname], rtol=TOL
+        )
 
     assert np.allclose(phot_info["uran_av"], phot_info2["uran_av"])
     assert np.allclose(phot_info["uran_delta"], phot_info2["uran_delta"])
