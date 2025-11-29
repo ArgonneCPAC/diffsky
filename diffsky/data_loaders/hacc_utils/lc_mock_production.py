@@ -31,7 +31,7 @@ from jax import vmap
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...ellipsoidal_shapes import bulge_shapes, disk_shapes, ellipse_proj_kernels
 from ...experimental import mc_diffsky_disk_bulge_knot_seds as mc_dbk_sed
-from ...experimental import mc_diffsky_seds
+from ...experimental import mc_diffsky_seds, mc_phot
 from ...experimental.black_hole_modeling import black_hole_mass as bhm
 from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
     monte_carlo_bh_acc_rate,
@@ -483,9 +483,7 @@ def add_dbk_phot_quantities_to_mock(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
-
-    _res = mc_phot._mc_phot_kern(
+    dbk_phot_info = mc_phot.mc_dbk_phot(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],
@@ -498,18 +496,13 @@ def add_dbk_phot_quantities_to_mock(
         sim_info.cosmo_params,
         sim_info.fb,
     )
-    (
-        phot_info,
-        smooth_ssp_weights,
-        burstiness,
-        dust_att,
-        ssp_photflux_table,
-        frac_ssp_errors,
-        delta_scatter_ms,
-        delta_scatter_q,
-    ) = _res
 
-    return phot_info, lc_data, diffsky_data
+    # Discard columns storing non-tabular data
+    dbk_phot_info = dbk_phot_info._asdict()
+    dbk_phot_info.pop("burstiness")
+    dbk_phot_info.pop("t_table")
+
+    return dbk_phot_info, lc_data, diffsky_data
 
 
 def add_dbk_sed_quantities_to_mock(
@@ -569,9 +562,6 @@ def add_morphology_quantities_to_diffsky_data(
         t_table,
         phot_info["bulge_to_total_history"],
     )
-
-    diffsky_data["sfh_bulge"] = phot_info["sfh_bulge"]
-    diffsky_data["sfh_disk"] = phot_info["sfh_table"] - diffsky_data["sfh_bulge"]
 
     morph_key, disk_size_key, bulge_size_key = jran.split(morph_key, 3)
     r50_disk, zscore_disk = dbs.mc_r50_disk_size(
@@ -697,14 +687,23 @@ def concatenate_batched_phot_data(phot_batches):
 
     phot_info = dict()
     for key in phot_batches[0][0].keys():
-        phot_info[key] = np.concatenate([x[0][key] for x in phot_batches])
+        try:
+            phot_info[key] = np.concatenate([x[0][key] for x in phot_batches])
+        except ValueError:
+            raise ValueError(f"Unable to concatenate phot_info['{key}']")
 
     lc_data = dict()
     for key in phot_batches[0][1].keys():
-        lc_data[key] = np.concatenate([x[1][key] for x in phot_batches])
+        try:
+            lc_data[key] = np.concatenate([x[1][key] for x in phot_batches])
+        except ValueError:
+            raise ValueError(f"Unable to concatenate lc_data['{key}']")
 
     diffsky_data = dict()
     for key in phot_batches[0][2].keys():
-        diffsky_data[key] = np.concatenate([x[2][key] for x in phot_batches])
+        try:
+            diffsky_data[key] = np.concatenate([x[2][key] for x in phot_batches])
+        except ValueError:
+            raise ValueError(f"Unable to concatenate diffsky_data['{key}']")
 
     return phot_info, lc_data, diffsky_data

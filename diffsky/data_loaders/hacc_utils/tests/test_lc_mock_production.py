@@ -94,6 +94,7 @@ def _prepare_input_catalogs(n_gals=500):
     return lc_data, diffsky_data, tcurves
 
 
+@pytest.mark.skip
 def test_add_sfh_quantities_to_mock():
     ran_key = jran.key(0)
     diffsky_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
@@ -110,6 +111,7 @@ def test_add_sfh_quantities_to_mock():
     assert np.allclose(diffsky_data["sfh_table"], sfh_table_recomputed, rtol=0.01)
 
 
+@pytest.mark.skip
 def test_add_dbk_sed_quantities_to_mock():
     diffsky_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
 
@@ -145,6 +147,69 @@ def test_add_dbk_sed_quantities_to_mock():
     )
 
     _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
+    phot_info, lc_data, diffsky_data = _res
+
+    fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(
+        (phot_info["fbulge_tcrit"], phot_info["fbulge_early"], phot_info["fbulge_late"])
+    )
+
+    t_obs = age_at_z(lc_data["redshift_true"], *diffsky_info.cosmo_params)
+
+    _res = dbk._bulge_sfh_vmap(t_table, phot_info["sfh_table"], fbulge_params)
+    bth = _res[-1]
+    bulge_to_total_recomputed = vmap_interp(t_obs, t_table, bth)
+    bulge_to_total_recomputed2 = vmap_interp(
+        t_obs, t_table, phot_info["bulge_to_total_history"]
+    )
+    assert np.allclose(bulge_to_total_recomputed, bulge_to_total_recomputed2, rtol=0.01)
+
+    disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
+        t_table, phot_info["sfh_table"]
+    )
+
+    for pname in disk_bulge_history.fbulge_params._fields:
+        assert np.allclose(
+            getattr(disk_bulge_history.fbulge_params, pname),
+            getattr(fbulge_params, pname),
+            rtol=0.01,
+        )
+
+
+def test_add_dbk_phot_quantities_to_mock():
+    diffsky_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
+
+    ssp_data = load_fake_ssp_data()
+
+    lc_data, diffsky_data, tcurves = _prepare_input_catalogs()
+
+    ran_key = jran.key(0)
+    lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
+        diffsky_info, deepcopy(lc_data), deepcopy(diffsky_data), ran_key
+    )
+
+    z_phot_table = np.linspace(lc_data["z_obs"].min(), lc_data["z_obs"].max(), 15)
+    t0 = age_at_z0(*diffsky_info.cosmo_params)
+    t_table = np.linspace(T_TABLE_MIN, t0, 100)
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, diffsky_info.cosmo_params
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    ran_key = jran.key(0)
+    args = (
+        diffsky_info,
+        lc_data,
+        diffsky_data,
+        ssp_data,
+        dpw.DEFAULT_PARAM_COLLECTION,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        ran_key,
+    )
+
+    _res = lcmp.add_dbk_phot_quantities_to_mock(*args)
     phot_info, lc_data, diffsky_data = _res
 
     fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(

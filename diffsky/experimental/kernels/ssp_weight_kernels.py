@@ -2,10 +2,12 @@
 
 from collections import namedtuple
 
+from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.diffstarpop.param_utils import mc_select_diffstar_params
 from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
+from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS, LGFBURST_MIN
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -13,6 +15,7 @@ from jax import vmap
 
 from ...burstpop import diffqburstpop_mono, freqburst_mono
 from ...dustpop import tw_dustpop_mono_noise
+from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...ssp_err_model import ssp_err_model
 
 _M = (0, None, None)
@@ -383,16 +386,36 @@ def compute_mc_realization(
     )
     dust_params = dust_att.dust_params.q._make((av, delta, funo))
 
-    phot_info = PhotInfo(
+    lgfburst = jnp.where(
+        msk_bursty,
+        burstiness.burst_params.lgfburst,
+        LGFBURST_MIN + 0.01,
+    )
+    lgyr_peak = jnp.where(
+        msk_q,
+        burstiness.burst_params.lgyr_peak,
+        burstiness.burst_params.lgyr_peak,
+    )
+    lgyr_max = jnp.where(
+        msk_q,
+        burstiness.burst_params.lgyr_max,
+        burstiness.burst_params.lgyr_max,
+    )
+    burst_params = burstiness.burst_params._replace(
+        lgfburst=lgfburst, lgyr_peak=lgyr_peak, lgyr_max=lgyr_max
+    )
+
+    phot_info = MCPhotInfo(
         logmp_obs=diffstar_galpop.logmp_obs,
         logsm_obs=logsm_obs,
         logssfr_obs=logssfr_obs,
         sfh_table=sfh_table,
         obs_mags=mc_obs_mags,
-        diffstar_params=diffstar_params,
+        **diffstar_params._asdict(),
         mc_sfh_type=mc_sfh_type,
         burstiness=burstiness,
-        dust_params=dust_params,
+        **burst_params._asdict(),
+        **dust_params._asdict(),
         ssp_weights=ssp_weights,
         lgmet_weights=lgmet_weights,
         uran_av=dust_att.dust_scatter.av,
@@ -415,10 +438,11 @@ MCPHOT_INFO_KEYS = (
     "logssfr_obs",
     "sfh_table",
     "obs_mags",
-    "diffstar_params",
+    *DEFAULT_DIFFSTAR_PARAMS._fields,
     "mc_sfh_type",
     "burstiness",
-    "dust_params",
+    *DEFAULT_BURST_PARAMS._fields,
+    *DEFAULT_DUST_PARAMS._fields,
     "ssp_weights",
     "lgmet_weights",
     "uran_av",
@@ -432,4 +456,4 @@ MCPHOT_INFO_KEYS = (
     "delta_scatter_q",
     "t_table",
 )
-PhotInfo = namedtuple("PhotInfo", MCPHOT_INFO_KEYS)
+MCPhotInfo = namedtuple("MCPhotInfo", MCPHOT_INFO_KEYS)

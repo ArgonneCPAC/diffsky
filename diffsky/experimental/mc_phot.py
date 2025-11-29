@@ -6,6 +6,8 @@ from jax import config
 config.update("jax_enable_x64", True)
 
 
+from collections import namedtuple
+
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -14,10 +16,12 @@ from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffstarpop_wrappers as mcdw
 from . import photometry_interpolation as photerp
+from .disk_bulge_modeling import disk_bulge_kernels as dbk
 from .disk_bulge_modeling import disk_knots
 from .disk_bulge_modeling import mc_disk_bulge as mcdb
 from .kernels import dbk_kernels
 from .kernels.ssp_weight_kernels import (
+    MCPhotInfo,
     compute_burstiness,
     compute_dust_attenuation,
     compute_frac_ssp_errors,
@@ -129,24 +133,85 @@ def _mc_phot_kern(
     )
 
 
+def mc_dbk_phot(
+    ran_key,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    diffstarpop_params,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    cosmo_params,
+    fb,
+):
+    phot_key, dbk_key = jran.split(ran_key, 2)
+    _ret = _mc_phot_kern(
+        phot_key,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+    )
+    phot_info, smooth_ssp_weights = _ret[:2]
+    dust_att, ssp_photflux_table = _ret[3:5]
+    frac_ssp_errors, delta_scatter_ms, delta_scatter_q = _ret[5:]
+    _ret2 = _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, dbk_key)
+    dbk_weights, disk_bulge_history, fknot = _ret2
+
+    _ret3 = get_dbk_phot(
+        ssp_photflux_table,
+        dbk_weights,
+        dust_att,
+        phot_info,
+        frac_ssp_errors,
+        delta_scatter_ms,
+        delta_scatter_q,
+    )
+    obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
+
+    dbk_phot_info = MCDBKPhotInfo(
+        **phot_info._asdict(),
+        **disk_bulge_history.fbulge_params._asdict(),
+        bulge_to_total_history=disk_bulge_history.bulge_to_total_history,
+        obs_mags_bulge=obs_mags_bulge,
+        obs_mags_disk=obs_mags_disk,
+        obs_mags_knots=obs_mags_knots,
+        fknot=fknot,
+    )
+    return dbk_phot_info
+
+
 @jjit
-def _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, ran_key):
+def _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, dbk_key):
     disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
         phot_info.t_table, phot_info.sfh_table
     )
-
-    ran_key, knot_key = jran.split(ran_key, 2)
-
     n_gals = t_obs.size
     fknot = jran.uniform(
-        knot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
+        dbk_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
     )
 
     dbk_weights = dbk_kernels.get_dbk_weights(
         t_obs, ssp_data, phot_info, smooth_ssp_weights, disk_bulge_history, fknot
     )
 
-    return dbk_weights
+    return dbk_weights, disk_bulge_history, fknot
 
 
 @jjit
@@ -196,3 +261,14 @@ def get_dbk_phot(
     obs_mags_knots = -2.5 * jnp.log10(flux_knots)
 
     return obs_mags_bulge, obs_mags_disk, obs_mags_knots
+
+
+DBK_EXTRA_FIELDS = (
+    *dbk.FbulgeParams._fields,
+    "bulge_to_total_history",
+    "obs_mags_bulge",
+    "obs_mags_disk",
+    "obs_mags_knots",
+    "fknot",
+)
+MCDBKPhotInfo = namedtuple("MCDBKPhotInfo", (*MCPhotInfo._fields, *DBK_EXTRA_FIELDS))

@@ -330,7 +330,9 @@ if __name__ == "__main__":
                 wave_eff_table,
                 batch_key,
             )
-            _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
+            # _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
+            _res = lcmp.add_dbk_phot_quantities_to_mock(*args)
+
             phot_info_batch, lc_data_batch, diffsky_data_batch = _res
             phot_batches.append(_res)
 

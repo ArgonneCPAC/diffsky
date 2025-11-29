@@ -104,7 +104,7 @@ def test_mc_dbk_kern(num_halos=75):
     ) = _res
 
     ran_key, knot_key = jran.split(ran_key, 2)
-    dbk_weights = mc_phot._mc_dbk_kern(
+    dbk_weights, disk_bulge_history, fknot = mc_phot._mc_dbk_kern(
         lc_data.t_obs, lc_data.ssp_data, phot_info, smooth_ssp_weights, knot_key
     )
     assert np.all(np.isfinite(dbk_weights.ssp_weights_bulge))
