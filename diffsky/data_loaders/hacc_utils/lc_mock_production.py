@@ -435,36 +435,15 @@ def add_sed_quantities_to_mock(
     return phot_info, lc_data, diffsky_data
 
 
-def add_dbk_sed_quantities_to_mock(
-    sim_info,
-    lc_data,
-    diffsky_data,
-    ssp_data,
-    param_collection,
-    precomputed_ssp_mag_table,
-    z_phot_table,
-    wave_eff_table,
-    ran_key,
-):
-    (
-        diffstarpop_params,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssp_err_pop_params,
-    ) = param_collection
-
-    diffsky_data["t_obs"] = flat_wcdm.age_at_z(
-        lc_data["redshift_true"], *sim_info.cosmo_params
-    )
+def add_diffmah_properties_to_mock(diffsky_data, redshift_true, sim_info, ran_key):
+    diffsky_data["t_obs"] = flat_wcdm.age_at_z(redshift_true, *sim_info.cosmo_params)
 
     mah_params = DEFAULT_MAH_PARAMS._make(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    ran_key, mah_key = jran.split(ran_key, 2)
     mah_params, msk_has_diffmah_fit = load_lc_cf.get_imputed_mah_params(
-        mah_key, diffsky_data, sim_info.lgt0
+        ran_key, diffsky_data, sim_info.lgt0
     )
     for pname, pval in zip(mah_params._fields, mah_params):
         diffsky_data[pname] = pval
@@ -481,6 +460,78 @@ def add_dbk_sed_quantities_to_mock(
         np.zeros(mah_params.logm0.size) + diffsky_data["t_obs"],
         sim_info.lgt0,
     )
+    return diffsky_data
+
+
+def add_dbk_phot_quantities_to_mock(
+    sim_info,
+    lc_data,
+    diffsky_data,
+    ssp_data,
+    param_collection,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    ran_key,
+):
+    ran_key, mah_key = jran.split(ran_key, 2)
+    diffsky_data = add_diffmah_properties_to_mock(
+        diffsky_data, lc_data["redshift_true"], sim_info, mah_key
+    )
+
+    mah_params = DEFAULT_MAH_PARAMS._make(
+        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+    )
+
+    t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
+
+    _res = mc_phot._mc_phot_kern(
+        ran_key,
+        lc_data["redshift_true"],
+        diffsky_data["t_obs"],
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        *param_collection,
+        sim_info.cosmo_params,
+        sim_info.fb,
+    )
+    (
+        phot_info,
+        smooth_ssp_weights,
+        burstiness,
+        dust_att,
+        ssp_photflux_table,
+        frac_ssp_errors,
+        delta_scatter_ms,
+        delta_scatter_q,
+    ) = _res
+
+    return phot_info, lc_data, diffsky_data
+
+
+def add_dbk_sed_quantities_to_mock(
+    sim_info,
+    lc_data,
+    diffsky_data,
+    ssp_data,
+    param_collection,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    ran_key,
+):
+
+    ran_key, mah_key = jran.split(ran_key, 2)
+    diffsky_data = add_diffmah_properties_to_mock(
+        diffsky_data, lc_data["redshift_true"], sim_info, mah_key
+    )
+
+    mah_params = DEFAULT_MAH_PARAMS._make(
+        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+    )
 
     t_table = np.linspace(T_TABLE_MIN, 10**sim_info.lgt0, N_T_TABLE)
 
@@ -496,11 +547,7 @@ def add_dbk_sed_quantities_to_mock(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
-        diffstarpop_params,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssp_err_pop_params,
+        *param_collection,
         sim_info.cosmo_params,
         sim_info.fb,
     )
