@@ -69,53 +69,36 @@ DustAttenuation = namedtuple(
 
 
 @jjit
-def get_smooth_age_weights(diffstar_galpop, ssp_data, t_obs):
-    age_weights_ms = calc_age_weights_from_sfh_table_vmap(
-        diffstar_galpop.t_table, diffstar_galpop.sfh_ms, ssp_data.ssp_lg_age_gyr, t_obs
+def get_age_weights_smooth(t_table, sfh_table, ssp_data, t_obs):
+    age_weights = calc_age_weights_from_sfh_table_vmap(
+        t_table, sfh_table, ssp_data.ssp_lg_age_gyr, t_obs
     )
-    age_weights_q = calc_age_weights_from_sfh_table_vmap(
-        diffstar_galpop.t_table, diffstar_galpop.sfh_q, ssp_data.ssp_lg_age_gyr, t_obs
-    )
-    return AgeWeights(ms=age_weights_ms, q=age_weights_q)
+    return age_weights
 
 
 @jjit
-def get_lgmet_weights(diffstar_galpop, ssp_data, t_obs, mzr_params, lgmet_scatter):
+def get_lgmet_weights(logsm_obs, ssp_data, t_obs, mzr_params, lgmet_scatter):
     # Calculate mean metallicity of the population
-    lgmet_med_ms = umzr.mzr_model(diffstar_galpop.logsm_obs_ms, t_obs, *mzr_params)
-    lgmet_med_q = umzr.mzr_model(diffstar_galpop.logsm_obs_q, t_obs, *mzr_params)
+    lgmet_med = umzr.mzr_model(logsm_obs, t_obs, *mzr_params)
 
     # Compute metallicity distribution function
-    lgmet_weights_ms = _calc_lgmet_weights_galpop(
-        lgmet_med_ms, lgmet_scatter, ssp_data.ssp_lgmet
+    lgmet_weights = _calc_lgmet_weights_galpop(
+        lgmet_med, lgmet_scatter, ssp_data.ssp_lgmet
     )
-    lgmet_weights_q = _calc_lgmet_weights_galpop(
-        lgmet_med_q, lgmet_scatter, ssp_data.ssp_lgmet
-    )
-    return MetWeights(ms=lgmet_weights_ms, q=lgmet_weights_q)
+    return lgmet_weights
 
 
 @jjit
-def get_smooth_ssp_weights(diffstar_galpop, ssp_data, t_obs, mzr_params, lgmet_scatter):
-    age_weights = get_smooth_age_weights(diffstar_galpop, ssp_data, t_obs)
+def get_smooth_ssp_weights(
+    t_table, sfh_table, logsm_obs, ssp_data, t_obs, mzr_params, lgmet_scatter
+):
+    age_weights_smooth = get_age_weights_smooth(t_table, sfh_table, ssp_data, t_obs)
     lgmet_weights = get_lgmet_weights(
-        diffstar_galpop, ssp_data, t_obs, mzr_params, lgmet_scatter
+        logsm_obs, ssp_data, t_obs, mzr_params, lgmet_scatter
     )
-    n_gals, n_age = age_weights.ms.shape
-    n_met = lgmet_weights.ms.shape[1]
+    ssp_weights_smooth = combine_age_met_weights(age_weights_smooth, lgmet_weights)
 
-    weights_ms = combine_age_met_weights(age_weights.ms, lgmet_weights.ms)
-
-    _w_age_q = age_weights.q.reshape((n_gals, 1, n_age))
-    _w_lgmet_q = lgmet_weights.q.reshape((n_gals, n_met, 1))
-    weights_q = _w_lgmet_q * _w_age_q
-    weights_q = combine_age_met_weights(age_weights.q, lgmet_weights.q)
-
-    weights = MSQ(ms=weights_ms, q=weights_q)
-
-    return SSPWeights(
-        weights=weights, age_weights=age_weights, lgmet_weights=lgmet_weights
-    )
+    return ssp_weights_smooth, age_weights_smooth, lgmet_weights
 
 
 @jjit
@@ -129,61 +112,39 @@ def combine_age_met_weights(age_weights, lgmet_weights):
 
 
 @jjit
-def compute_burstiness(diffstar_galpop, smooth_ssp_weights, ssp_data, burstpop_params):
+def compute_burstiness(
+    logsm_obs, logssfr_obs, age_weights_smooth, lgmet_weights, ssp_data, burstpop_params
+):
     _args = (
         burstpop_params,
-        diffstar_galpop.logsm_obs_ms,
-        diffstar_galpop.logssfr_obs_ms,
+        logsm_obs,
+        logssfr_obs,
         ssp_data.ssp_lg_age_gyr,
-        smooth_ssp_weights.age_weights.ms,
+        age_weights_smooth,
     )
     _res = _calc_bursty_age_weights_vmap(*_args)
-    bursty_age_weights_ms, burst_params = _res
+    age_weights_bursty, burst_params = _res
 
-    weights_bursty_ms = combine_age_met_weights(
-        bursty_age_weights_ms, smooth_ssp_weights.lgmet_weights.ms
-    )
-    weights_smooth_q = combine_age_met_weights(
-        smooth_ssp_weights.age_weights.q, smooth_ssp_weights.lgmet_weights.q
-    )
-    weights = MSQ(ms=weights_bursty_ms, q=weights_smooth_q)
-
-    # burst_params = ('lgfburst', 'lgyr_peak', 'lgyr_max')
+    ssp_weights = combine_age_met_weights(age_weights_bursty, lgmet_weights)
 
     # Calculate the frequency of SFH bursts
     p_burst = freqburst_mono.get_freqburst_from_freqburst_params(
-        burstpop_params.freqburst_params,
-        diffstar_galpop.logsm_obs_ms,
-        diffstar_galpop.logssfr_obs_ms,
+        burstpop_params.freqburst_params, logsm_obs, logssfr_obs
     )
-    return Burstiness(
-        age_weights=bursty_age_weights_ms,
-        weights=weights,
-        burst_params=burst_params,
-        p_burst=p_burst,
-    )
+    return age_weights_bursty, ssp_weights, burst_params, p_burst
 
 
 @jjit
-def compute_frac_ssp_errors(
-    ssp_err_pop_params, z_obs, diffstar_galpop, wave_eff_galpop
-):
-    frac_ssp_err_ms = get_frac_ssp_err_vmap(
+def compute_frac_ssp_errors(ssp_err_pop_params, z_obs, logsm_obs, wave_eff_galpop):
+    frac_ssp_err = get_frac_ssp_err_vmap(
         ssp_err_pop_params,
         z_obs,
-        diffstar_galpop.logsm_obs_ms,
+        logsm_obs,
         wave_eff_galpop,
         ssp_err_model.LAMBDA_REST,
     )
 
-    frac_ssp_err_q = get_frac_ssp_err_vmap(
-        ssp_err_pop_params,
-        z_obs,
-        diffstar_galpop.logsm_obs_q,
-        wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
-    )
-    return FracSSPErr(ms=frac_ssp_err_ms, q=frac_ssp_err_q)
+    return frac_ssp_err
 
 
 @partial(jjit, static_argnames=["n_gals"])
@@ -204,7 +165,8 @@ def compute_dust_attenuation(
     uran_av,
     uran_delta,
     uran_funo,
-    diffstar_galpop,
+    logsm_obs,
+    logssfr_obs,
     ssp_data,
     z_obs,
     wave_eff_galpop,
@@ -213,11 +175,11 @@ def compute_dust_attenuation(
 ):
     # Calculate fraction of flux transmitted through dust for each galaxy
     # Note that F_trans(λ_eff, τ_age) varies with stellar age τ_age
-    ftrans_args_q = (
+    ftrans_args = (
         dustpop_params,
         wave_eff_galpop,
-        diffstar_galpop.logsm_obs_q,
-        diffstar_galpop.logssfr_obs_q,
+        logsm_obs,
+        logssfr_obs,
         z_obs,
         ssp_data.ssp_lg_age_gyr,
         uran_av,
@@ -225,33 +187,11 @@ def compute_dust_attenuation(
         uran_funo,
         scatter_params,
     )
-    _res = calc_dust_ftrans_vmap(*ftrans_args_q)
-    ftrans_q = _res[1]  # ftrans_q.shape = (n_gals, n_bands, n_age)
-    noisy_dust_params_q = _res[3]  # fields = ('av', 'delta', 'funo')
+    _res = calc_dust_ftrans_vmap(*ftrans_args)
+    frac_trans = _res[1]  # ftrans_q.shape = (n_gals, n_bands, n_age)
+    dust_params = _res[3]  # fields = ('av', 'delta', 'funo')
 
-    ftrans_args_ms = (
-        dustpop_params,
-        wave_eff_galpop,
-        diffstar_galpop.logsm_obs_ms,
-        diffstar_galpop.logssfr_obs_ms,
-        z_obs,
-        ssp_data.ssp_lg_age_gyr,
-        uran_av,
-        uran_delta,
-        uran_funo,
-        scatter_params,
-    )
-    _res = calc_dust_ftrans_vmap(*ftrans_args_ms)
-    ftrans_ms = _res[1]
-    noisy_dust_params_ms = _res[3]  # fields = ('av', 'delta', 'funo')
-
-    frac_trans = MSQ(ms=ftrans_ms, q=ftrans_q)
-    dust_params = MSQ(ms=noisy_dust_params_ms, q=noisy_dust_params_q)
-    dust_scatter = dust_params.q._replace(av=uran_av, delta=uran_delta, funo=uran_funo)
-
-    return DustAttenuation(
-        frac_trans=frac_trans, dust_params=dust_params, dust_scatter=dust_scatter
-    )
+    return frac_trans, dust_params
 
 
 @jjit

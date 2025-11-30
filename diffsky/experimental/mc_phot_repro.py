@@ -20,13 +20,12 @@ from .disk_bulge_modeling import disk_bulge_kernels as dbk
 from .disk_bulge_modeling import disk_knots
 from .disk_bulge_modeling import mc_disk_bulge as mcdb
 from .kernels import dbk_kernels
-from .kernels.ssp_weight_kernels import (
+from .kernels.ssp_weight_kernels_repro import (
     MCPhotInfo,
     _compute_obs_mags_from_weights,
     compute_burstiness,
     compute_dust_attenuation,
     compute_frac_ssp_errors,
-    compute_mc_realization,
     get_dust_randoms,
     get_smooth_ssp_weights,
 )
@@ -36,8 +35,27 @@ LGMET_SCATTER = 0.2
 
 
 @jjit
-def _get_diffmah_quantities(mah_params):
-    pass
+def get_mc_phot_randoms(
+    ran_key, diffstarpop_params, mah_params, cosmo_params, precomputed_ssp_mag_table
+):
+    n_gals = mah_params.logm0.size
+    n_bands = precomputed_ssp_mag_table.shape[1]
+
+    # Monte Carlo diffstar params
+    ran_key, sfh_key = jran.split(ran_key, 2)
+    sfh_params, mc_is_q = mcdw.mc_diffstarpop_cens_wrapper(
+        diffstarpop_params, sfh_key, mah_params, cosmo_params
+    )
+    # Generate randoms for stochasticity in dust attenuation curves
+    ran_key, dust_key = jran.split(ran_key, 2)
+    dust_randoms = get_dust_randoms(dust_key, n_gals)
+
+    # Scatter for SSP errors
+    ran_key, ssp_key = jran.split(ran_key, 2)
+    ZZ = jnp.zeros((n_gals, n_bands))
+    delta_mag_ssp_scatter = ssp_err_model.compute_delta_scatter(ssp_key, ZZ)
+
+    return sfh_params, mc_is_q, dust_randoms, delta_mag_ssp_scatter
 
 
 @jjit
@@ -61,27 +79,22 @@ def _mc_phot_kern(
 ):
     """Populate the input lightcone with galaxy SEDs"""
 
-    # Monte Carlo diffstar params
-    ran_key, sfh_key = jran.split(ran_key, 2)
-    sfh_params, mc_is_q = mcdw.mc_diffstarpop_cens_wrapper(
-        diffstarpop_params, sfh_key, mah_params, cosmo_params
+    _res = get_mc_phot_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params, precomputed_ssp_mag_table
     )
-    # Generate randoms for stochasticity in dust attenuation curves
-    ran_key, dust_key = jran.split(ran_key, 2)
-    dust_randoms = get_dust_randoms(dust_key, z_obs)
+    sfh_params, mc_is_q, dust_randoms, delta_mag_ssp_scatter = _res
 
-    # Scatter for SSP errors
-    ran_key, ssp_key = jran.split(ran_key, 2)
-    # delta_mag_ssp_scatter = ssp_err_model.compute_delta_scatter(
-    #     ssp_key, frac_ssp_errors.ms
-    # )
-
-    smooth_ssp_weights = get_smooth_ssp_weights(
-        diffstar_galpop, ssp_data, t_obs, mzr_params, LGMET_SCATTER
+    ssp_weights_smooth, age_weights_smooth, lgmet_weights = get_smooth_ssp_weights(
+        t_table, sfh_table, logsm_obs, ssp_data, t_obs, mzr_params, LGMET_SCATTER
     )
 
-    burstiness = compute_burstiness(
-        diffstar_galpop, smooth_ssp_weights, ssp_data, spspop_params.burstpop_params
+    age_weights_bursty, ssp_weights, burst_params, p_burst = compute_burstiness(
+        logsm_obs,
+        logssfr_obs,
+        age_weights_smooth,
+        lgmet_weights,
+        ssp_data,
+        spspop_params.burstpop_params,
     )
 
     # Interpolate SSP mag table to z_obs of each galaxy
@@ -93,11 +106,12 @@ def _mc_phot_kern(
     # For each filter, calculate λ_eff in the restframe of each galaxy
     wave_eff_galpop = lc_phot_kern.interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
-    dust_att = compute_dust_attenuation(
+    frac_trans, dust_params = compute_dust_attenuation(
         dust_randoms.uran_av,
         dust_randoms.uran_delta,
         dust_randoms.uran_funo,
-        diffstar_galpop,
+        logsm_obs,
+        logssfr_obs,
         ssp_data,
         z_obs,
         wave_eff_galpop,
@@ -108,21 +122,21 @@ def _mc_phot_kern(
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
     frac_ssp_errors = compute_frac_ssp_errors(
-        ssp_err_pop_params, z_obs, diffstar_galpop, wave_eff_galpop
+        ssp_err_pop_params, z_obs, logsm_obs, wave_eff_galpop
     )
 
     obs_mags = _compute_obs_mags_from_weights(
-        diffstar_galpop.logsm_obs,
+        logsm_obs,
         frac_trans,
         frac_ssp_errors,
         ssp_photflux_table,
         ssp_weights,
-        delta_scatter,
+        delta_mag_ssp_scatter,
     )
 
     return (
         phot_info,
-        smooth_ssp_weights,
+        ssp_weights_smooth,
         burstiness,
         dust_att,
         ssp_photflux_table,
@@ -166,10 +180,10 @@ def mc_dbk_phot(
         cosmo_params,
         fb,
     )
-    phot_info, smooth_ssp_weights = _ret[:2]
+    phot_info, ssp_weights_smooth = _ret[:2]
     dust_att, ssp_photflux_table = _ret[3:5]
     frac_ssp_errors, delta_scatter_ms, delta_scatter_q = _ret[5:]
-    _ret2 = _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, dbk_key)
+    _ret2 = _mc_dbk_kern(t_obs, ssp_data, phot_info, ssp_weights_smooth, dbk_key)
     dbk_weights, disk_bulge_history, fknot = _ret2
 
     _ret3 = get_dbk_phot(
@@ -196,7 +210,7 @@ def mc_dbk_phot(
 
 
 @jjit
-def _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, dbk_key):
+def _mc_dbk_kern(t_obs, ssp_data, phot_info, ssp_weights_smooth, dbk_key):
     disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
         phot_info.t_table, phot_info.sfh_table
     )
@@ -206,7 +220,7 @@ def _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, dbk_key):
     )
 
     dbk_weights = dbk_kernels.get_dbk_weights(
-        t_obs, ssp_data, phot_info, smooth_ssp_weights, disk_bulge_history, fknot
+        t_obs, ssp_data, phot_info, ssp_weights_smooth, disk_bulge_history, fknot
     )
 
     return dbk_weights, disk_bulge_history, fknot
