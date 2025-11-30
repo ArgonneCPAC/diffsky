@@ -114,23 +114,34 @@ def test_mc_dbk_kern(num_halos=75):
     assert np.all(phot_kern_results.frac_ssp_errors > 0)
     assert np.all(phot_kern_results.frac_ssp_errors < 5)
 
-    # ran_key, dbk_key = jran.split(ran_key, 2)
-    # dbk_randoms, dbk_weights, disk_bulge_history = mc_phot_repro._mc_dbk_kern(
-    #     lc_data.t_obs,
-    #     lc_data.ssp_data,
-    #     t_table,
-    #     sfh_table,
-    #     burst_params,
-    #     lgmet_weights,
-    #     dbk_key,
-    # )
-    # assert np.all(np.isfinite(dbk_weights.ssp_weights_bulge))
-    # assert np.all(np.isfinite(dbk_weights.ssp_weights_disk))
-    # assert np.all(np.isfinite(dbk_weights.ssp_weights_knots))
+    ran_key, dbk_key = jran.split(ran_key, 2)
+    args = (
+        lc_data.t_obs,
+        lc_data.ssp_data,
+        phot_kern_results.t_table,
+        phot_kern_results.sfh_table,
+        phot_kern_results.burst_params,
+        phot_kern_results.lgmet_weights,
+        dbk_key,
+    )
+    dbk_randoms, dbk_weights, disk_bulge_history = mc_phot_repro._mc_dbk_kern(*args)
+    assert np.all(np.isfinite(dbk_weights.ssp_weights_bulge))
+    assert np.all(np.isfinite(dbk_weights.ssp_weights_disk))
+    assert np.all(np.isfinite(dbk_weights.ssp_weights_knots))
 
-    # assert np.all(dbk_weights.mstar_bulge > 0)
-    # assert np.all(dbk_weights.mstar_disk > 0)
-    # assert np.all(dbk_weights.mstar_knots > 0)
+    assert np.allclose(
+        np.sum(dbk_weights.ssp_weights_bulge, axis=(1, 2)), 1.0, rtol=1e-4
+    )
+    assert np.allclose(
+        np.sum(dbk_weights.ssp_weights_disk, axis=(1, 2)), 1.0, rtol=1e-4
+    )
+    assert np.allclose(
+        np.sum(dbk_weights.ssp_weights_knots, axis=(1, 2)), 1.0, rtol=1e-4
+    )
+
+    assert np.all(dbk_weights.mstar_bulge > 0)
+    assert np.all(dbk_weights.mstar_disk > 0)
+    assert np.all(dbk_weights.mstar_knots > 0)
 
     # _res = mc_phot_repro.get_dbk_phot(
     #     ssp_photflux_table,
