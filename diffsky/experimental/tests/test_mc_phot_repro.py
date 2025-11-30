@@ -143,40 +143,46 @@ def test_mc_dbk_kern(num_halos=75):
     assert np.all(dbk_weights.mstar_disk > 0)
     assert np.all(dbk_weights.mstar_knots > 0)
 
-    # _res = mc_phot_repro.get_dbk_phot(
-    #     ssp_photflux_table,
-    #     dbk_weights,
-    #     dust_att,
-    #     phot_info,
-    #     frac_ssp_errors,
-    #     delta_scatter_ms,
-    #     delta_scatter_q,
-    # )
-    # obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res
+    args = (
+        phot_kern_results.ssp_photflux_table,
+        dbk_weights,
+        phot_kern_results.dust_frac_trans,
+        phot_kern_results.frac_ssp_errors,
+        phot_randoms.delta_mag_ssp_scatter,
+    )
+    _res = mc_phot_repro.get_dbk_phot(*args)
+    obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res
 
     # np.all(phot_info.logsm_obs > np.log10(dbk_weights.mstar_bulge.flatten()))
     # np.all(phot_info.logsm_obs > np.log10(dbk_weights.mstar_disk.flatten()))
     # np.all(phot_info.logsm_obs > np.log10(dbk_weights.mstar_knots.flatten()))
 
-    # assert np.all(np.isfinite(obs_mags_bulge))
-    # assert np.all(np.isfinite(obs_mags_disk))
-    # assert np.all(np.isfinite(obs_mags_knots))
+    assert np.all(np.isfinite(obs_mags_bulge))
+    assert np.all(np.isfinite(obs_mags_disk))
+    assert np.all(np.isfinite(obs_mags_knots))
 
-    # assert not np.allclose(phot_info.obs_mags, obs_mags_bulge, rtol=1e-4)
-    # assert np.all(phot_info.obs_mags <= obs_mags_bulge)
+    assert not np.allclose(phot_kern_results.obs_mags, obs_mags_bulge, rtol=1e-4)
+    assert np.all(phot_kern_results.obs_mags <= obs_mags_bulge)
 
-    # assert not np.allclose(phot_info.obs_mags, obs_mags_disk, rtol=1e-4)
-    # assert np.all(phot_info.obs_mags <= obs_mags_disk)
+    assert not np.allclose(phot_kern_results.obs_mags, obs_mags_disk, rtol=1e-4)
+    assert np.all(phot_kern_results.obs_mags <= obs_mags_disk)
 
-    # assert not np.allclose(phot_info.obs_mags, obs_mags_knots, rtol=1e-4)
-    # assert np.all(phot_info.obs_mags <= obs_mags_knots)
+    assert not np.allclose(phot_kern_results.obs_mags, obs_mags_knots, rtol=1e-4)
+    assert np.all(phot_kern_results.obs_mags <= obs_mags_knots)
 
-    # a = 10 ** (-0.4 * obs_mags_bulge)
-    # b = 10 ** (-0.4 * obs_mags_disk)
-    # c = 10 ** (-0.4 * obs_mags_knots)
-    # mtot = -2.5 * np.log10(a + b + c)
+    a = 10 ** (-0.4 * obs_mags_bulge)
+    b = 10 ** (-0.4 * obs_mags_disk)
+    c = 10 ** (-0.4 * obs_mags_knots)
+    mtot = -2.5 * np.log10(a + b + c)
 
-    # assert np.all(np.abs(mtot - phot_info.obs_mags) < 0.1)
+    magdiff = mtot - phot_kern_results.obs_mags
+    assert np.all(np.abs(magdiff) < 0.1)
+
+    mean_magdiff = np.mean(magdiff, axis=0)  # shape = (n_bands,)
+    assert np.allclose(mean_magdiff, 0.0, atol=0.01)
+
+    std_magdiff = np.std(magdiff, axis=0)
+    assert np.all(std_magdiff < 0.01)
 
     # return (
     #     obs_mags_bulge,

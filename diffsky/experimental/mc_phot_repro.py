@@ -344,12 +344,12 @@ def _dbk_kern(
 
 @jjit
 def get_dbk_phot(
-    ssp_photflux_table, dbk_weights, frac_trans, frac_ssp_errors, delta_scatter
+    ssp_photflux_table, dbk_weights, dust_frac_trans, frac_ssp_errors, delta_scatter
 ):
     n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
 
     # Reshape arrays before calculating galaxy magnitudes
-    _ftrans = frac_trans.reshape((n_gals, n_bands, 1, n_age))
+    _ftrans = dust_frac_trans.reshape((n_gals, n_bands, 1, n_age))
 
     # Calculate fractional changes to SSP fluxes
     frac_ssp_err_noise = frac_ssp_errors * 10 ** (-0.4 * delta_scatter)
