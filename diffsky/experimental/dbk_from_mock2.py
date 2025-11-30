@@ -57,6 +57,7 @@ def _reproduce_mock_phot_kern(
     z_obs,
     t_obs,
     mah_params,
+    fknot,
     ssp_data,
     precomputed_ssp_mag_table,
     z_phot_table,
@@ -95,6 +96,39 @@ def _reproduce_mock_phot_kern(
         cosmo_params,
         fb,
     )
-    return phot_kern_results, phot_randoms
+
+    burst_params = DEFAULT_BURST_PARAMS._make(
+        [getattr(phot_kern_results, pname) for pname in DEFAULT_BURST_PARAMS._fields]
+    )
+    dbk_randoms = mc_phot_repro.DBKRandoms(fknot=fknot)
+    _ret2 = mc_phot_repro._dbk_kern(
+        t_obs,
+        ssp_data,
+        phot_kern_results.t_table,
+        phot_kern_results.sfh_table,
+        burst_params,
+        phot_kern_results.lgmet_weights,
+        dbk_randoms,
+    )
+    dbk_weights, disk_bulge_history = _ret2
+
+    _ret3 = mc_phot_repro.get_dbk_phot(
+        phot_kern_results.ssp_photflux_table,
+        dbk_weights,
+        phot_kern_results.dust_frac_trans,
+        phot_kern_results.wave_eff_galpop,
+        phot_kern_results.frac_ssp_errors,
+        delta_mag_ssp_scatter,
+    )
+    obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
+
+    return (
+        phot_kern_results,
+        phot_randoms,
+        disk_bulge_history,
+        obs_mags_bulge,
+        obs_mags_disk,
+        obs_mags_knots,
+    )
 
     # return dbk_phot_info

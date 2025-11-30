@@ -7,9 +7,7 @@ from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
 from ...param_utils import diffsky_param_wrapper as dpw
-from .. import dbk_from_mock2
-from .. import mc_diffsky_disk_bulge_knot_seds as mc_dbk_sed
-from .. import mc_phot_repro
+from .. import dbk_from_mock2, mc_phot_repro
 from . import test_lc_phot_kern as tlcphk
 
 
@@ -61,6 +59,7 @@ def test_disk_bulge_knot_phot_from_mock():
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
+        dbk_phot_info.fknot,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
@@ -72,32 +71,17 @@ def test_disk_bulge_knot_phot_from_mock():
         DEFAULT_COSMOLOGY,
         FB,
     )
-    phot_kern_results, phot_randoms = dbk_from_mock2._reproduce_mock_phot_kern(
-        *temp_args
-    )
-
+    _res = dbk_from_mock2._reproduce_mock_phot_kern(*temp_args)
+    phot_kern_results, phot_randoms, disk_bulge_history = _res[:3]
+    obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res[3:]
     assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
 
-    # assert np.allclose(
-    #     dbk_phot_info["obs_mags_bulge"],
-    #     dbk_phot_info_from_mock["obs_mags_bulge"],
-    #     rtol=0.001,
-    # )
+    assert np.allclose(dbk_phot_info.obs_mags_bulge, obs_mags_bulge, rtol=0.001)
+    assert np.allclose(dbk_phot_info.obs_mags_disk, obs_mags_disk, rtol=0.001)
+    assert np.allclose(dbk_phot_info.obs_mags_knots, obs_mags_knots, rtol=0.001)
 
-    # assert np.allclose(
-    #     dbk_phot_info["obs_mags_disk"],
-    #     dbk_phot_info_from_mock["obs_mags_disk"],
-    #     rtol=0.01,
-    # )
-
-    # assert np.allclose(
-    #     dbk_phot_info["bulge_to_total_history"],
-    #     dbk_phot_info_from_mock["bulge_to_total_history"],
-    #     rtol=0.01,
-    # )
-
-    # assert np.allclose(
-    #     dbk_phot_info["obs_mags_knots"],
-    #     dbk_phot_info_from_mock["obs_mags_knots"],
-    #     atol=0.1,
-    # )
+    assert np.allclose(
+        dbk_phot_info.bulge_to_total_history,
+        disk_bulge_history.bulge_to_total_history,
+        rtol=0.01,
+    )
