@@ -31,7 +31,7 @@ from jax import vmap
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...ellipsoidal_shapes import bulge_shapes, disk_shapes, ellipse_proj_kernels
 from ...experimental import mc_diffsky_disk_bulge_knot_seds as mc_dbk_sed
-from ...experimental import mc_diffsky_seds, mc_phot
+from ...experimental import mc_diffsky_seds, mc_phot_repro
 from ...experimental.black_hole_modeling import black_hole_mass as bhm
 from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
     monte_carlo_bh_acc_rate,
@@ -483,7 +483,7 @@ def add_dbk_phot_quantities_to_mock(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    dbk_phot_info = mc_phot.mc_dbk_phot(
+    dbk_phot_info = mc_phot_repro.mc_dbk_phot(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],
