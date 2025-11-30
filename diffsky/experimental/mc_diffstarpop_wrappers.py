@@ -145,6 +145,16 @@ def mc_diffstarpop_cens_wrapper(diffstarpop_params, ran_key, mah_params, cosmo_p
 
 
 @jjit
-def compute_diffstar_sfh_wrapper(diffstar_params, mah_params, tarr, lgt0, fb):
-    sfh_table = calc_sfh_galpop(diffstar_params, mah_params, tarr, lgt0=lgt0, fb=fb)
+def compute_diffstar_sfh_wrapper(sfh_params, mah_params, t_table, lgt0, fb):
+    sfh_table = calc_sfh_galpop(sfh_params, mah_params, t_table, lgt0=lgt0, fb=fb)
     return sfh_table
+
+
+@partial(jjit, static_argnames=["n_t_table"])
+def compute_diffstar_info(mah_params, sfh_params, t_obs, cosmo_params, fb, n_t_table):
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t0)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
+    sfh_table = compute_diffstar_sfh_wrapper(sfh_params, mah_params, t_table, lgt0, fb)
+    logsm_obs, logssfr_obs = _get_sfh_info_at_t_obs(t_table, sfh_table, t_obs)
+    return t_table, sfh_table, logsm_obs, logssfr_obs

@@ -5,9 +5,11 @@ from jax import config
 
 config.update("jax_enable_x64", True)
 
-
 from collections import namedtuple
+from functools import partial
 
+from dsps.constants import T_TABLE_MIN
+from dsps.cosmology import flat_wcdm
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -26,12 +28,22 @@ from .kernels.ssp_weight_kernels_repro import (
     compute_burstiness,
     compute_dust_attenuation,
     compute_frac_ssp_errors,
+    get_burstiness_randoms,
     get_dust_randoms,
     get_smooth_ssp_weights,
 )
-from .mc_diffstarpop_wrappers import N_T_TABLE
 
 LGMET_SCATTER = 0.2
+
+PHOT_RAN_KEYS = (
+    "mc_is_q",
+    "uran_av",
+    "uran_delta",
+    "uran_funo",
+    "uran_pburst",
+    "delta_mag_ssp_scatter",
+)
+PhotRandoms = namedtuple("PhotRandoms", PHOT_RAN_KEYS)
 
 
 @jjit
@@ -50,17 +62,30 @@ def get_mc_phot_randoms(
     ran_key, dust_key = jran.split(ran_key, 2)
     dust_randoms = get_dust_randoms(dust_key, n_gals)
 
+    # Randoms for burstiness
+    ran_key, burst_key = jran.split(ran_key, 2)
+    uran_pburst = get_burstiness_randoms(burst_key, n_gals)
+
     # Scatter for SSP errors
     ran_key, ssp_key = jran.split(ran_key, 2)
     ZZ = jnp.zeros((n_gals, n_bands))
     delta_mag_ssp_scatter = ssp_err_model.compute_delta_scatter(ssp_key, ZZ)
 
-    return sfh_params, mc_is_q, dust_randoms, delta_mag_ssp_scatter
+    phot_randoms = PhotRandoms(
+        mc_is_q,
+        dust_randoms.uran_av,
+        dust_randoms.uran_delta,
+        dust_randoms.uran_funo,
+        uran_pburst,
+        delta_mag_ssp_scatter,
+    )
+    return phot_randoms, sfh_params
 
 
-@jjit
+@partial(jjit, static_argnames=["n_t_table"])
 def _mc_phot_kern(
     ran_key,
+    diffstarpop_params,
     z_obs,
     t_obs,
     mah_params,
@@ -68,27 +93,70 @@ def _mc_phot_kern(
     precomputed_ssp_mag_table,
     z_phot_table,
     wave_eff_table,
-    diffstarpop_params,
     mzr_params,
     spspop_params,
     scatter_params,
     ssp_err_pop_params,
     cosmo_params,
     fb,
-    n_t_table=N_T_TABLE,
+    n_t_table=mcdw.N_T_TABLE,
+):
+    phot_randoms, sfh_params = get_mc_phot_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params, precomputed_ssp_mag_table
+    )
+    phot_kern_results = _phot_kern(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+        n_t_table=n_t_table,
+    )
+    return phot_kern_results
+
+
+@partial(jjit, static_argnames=["n_t_table"])
+def _phot_kern(
+    phot_randoms,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    cosmo_params,
+    fb,
+    n_t_table=mcdw.N_T_TABLE,
 ):
     """Populate the input lightcone with galaxy SEDs"""
 
-    _res = get_mc_phot_randoms(
-        ran_key, diffstarpop_params, mah_params, cosmo_params, precomputed_ssp_mag_table
+    t_table, sfh_table, logsm_obs, logssfr_obs = mcdw.compute_diffstar_info(
+        mah_params, sfh_params, t_obs, cosmo_params, fb, n_t_table
     )
-    sfh_params, mc_is_q, dust_randoms, delta_mag_ssp_scatter = _res
 
-    ssp_weights_smooth, age_weights_smooth, lgmet_weights = get_smooth_ssp_weights(
+    age_weights_smooth, lgmet_weights = get_smooth_ssp_weights(
         t_table, sfh_table, logsm_obs, ssp_data, t_obs, mzr_params, LGMET_SCATTER
     )
 
-    age_weights_bursty, ssp_weights, burst_params, p_burst = compute_burstiness(
+    _res = compute_burstiness(
+        phot_randoms.uran_pburst,
+        phot_randoms.mc_is_q,
         logsm_obs,
         logssfr_obs,
         age_weights_smooth,
@@ -96,6 +164,7 @@ def _mc_phot_kern(
         ssp_data,
         spspop_params.burstpop_params,
     )
+    ssp_weights, burst_params, mc_sfh_type = _res
 
     # Interpolate SSP mag table to z_obs of each galaxy
     photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
@@ -107,9 +176,9 @@ def _mc_phot_kern(
     wave_eff_galpop = lc_phot_kern.interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
     frac_trans, dust_params = compute_dust_attenuation(
-        dust_randoms.uran_av,
-        dust_randoms.uran_delta,
-        dust_randoms.uran_funo,
+        phot_randoms.uran_av,
+        phot_randoms.uran_delta,
+        phot_randoms.uran_funo,
         logsm_obs,
         logssfr_obs,
         ssp_data,
@@ -131,17 +200,17 @@ def _mc_phot_kern(
         frac_ssp_errors,
         ssp_photflux_table,
         ssp_weights,
-        delta_mag_ssp_scatter,
+        phot_randoms.delta_mag_ssp_scatter,
     )
 
     return (
-        phot_info,
-        ssp_weights_smooth,
-        burstiness,
-        dust_att,
+        obs_mags,
+        mc_sfh_type,
+        ssp_weights,
+        burst_params,
+        dust_params,
         ssp_photflux_table,
         frac_ssp_errors,
-        delta_scatter,
     )
 
 
