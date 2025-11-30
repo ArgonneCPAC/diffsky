@@ -5,7 +5,6 @@ from collections import namedtuple
 from copy import deepcopy
 
 import numpy as np
-import pytest
 from diffmah import DEFAULT_MAH_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology.flat_wcdm import age_at_z, age_at_z0

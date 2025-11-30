@@ -2,23 +2,14 @@
 
 from collections import namedtuple
 
-from diffmah import logmh_at_t_obs
-from diffstar import calc_sfh_galpop
-from dsps.cosmology import age_at_z0
-from dsps.metallicity import umzr
 from dsps.sfh import diffburst
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
-from jax import numpy as jnp
 from jax import vmap
 
 from ..dustpop.tw_dust import DEFAULT_DUST_PARAMS
-from ..ssp_err_model2 import ssp_err_model
 from . import mc_phot_repro
-from . import photometry_interpolation as photerp
 from .disk_bulge_modeling import disk_bulge_kernels as dbk
-from .disk_bulge_modeling import disk_knots
-from .disk_bulge_modeling import mc_disk_bulge as mcdb
 
 _BPOP = (None, 0, 0)
 _pureburst_age_weights_from_params_vmap = jjit(
