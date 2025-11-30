@@ -12,7 +12,7 @@ on:
 
 jobs:
   mock-generation:
-    name: python make_dbk_sed_lc_mock_lj.py -synthetic_cores 1
+    name: python make_ou26_mock.py -synthetic_cores 1
     runs-on: "ubuntu-latest"
 
     steps:
