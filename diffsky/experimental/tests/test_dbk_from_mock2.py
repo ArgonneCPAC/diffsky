@@ -4,18 +4,64 @@ import numpy as np
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
+from dsps.data_loaders import retrieve_fake_fsps_data
+from dsps.data_loaders.defaults import TransmissionCurve
 from jax import random as jran
 
 from ...param_utils import diffsky_param_wrapper as dpw
-from .. import dbk_from_mock2, mc_phot_repro
-from . import test_lc_phot_kern as tlcphk
+from .. import dbk_from_mock2, lc_phot_kern, mc_phot_repro
+
+SSP_DATA = retrieve_fake_fsps_data.load_fake_ssp_data()
+
+
+ALL_FAKE_TCURVE_NAMES = ("u", "g", "r", "i", "z", "y")
+
+
+def _get_weighted_lc_data_for_unit_testing(
+    num_halos=75, ssp_data=SSP_DATA, tcurve_names=ALL_FAKE_TCURVE_NAMES
+):
+    ran_key = jran.key(0)
+
+    lgmp_min, lgmp_max = 10.0, 15.0
+    z_min, z_max = 0.1, 3.0
+    sky_area_degsq = 100.0
+
+    _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
+    wave, u, g, r, i, z, y = _res
+
+    tcurve_dict = dict(u=u, g=g, r=r, i=i, z=z, y=y)
+
+    tcurves = []
+    for name in tcurve_names:
+        tcurves.append(TransmissionCurve(wave, tcurve_dict[name]))
+
+    z_phot_table = 10 ** np.linspace(np.log10(z_min), np.log10(z_max), 30)
+
+    args = (
+        ran_key,
+        num_halos,
+        z_min,
+        z_max,
+        lgmp_min,
+        lgmp_max,
+        sky_area_degsq,
+        ssp_data,
+        tcurves,
+        z_phot_table,
+    )
+    lc_data = lc_phot_kern.mc_weighted_lightcone_data(*args)
+
+    return lc_data, tcurves
 
 
 def test_disk_bulge_knot_phot_from_mock():
     """Enforce that recomputed mock photometry agrees with original"""
     ran_key = jran.key(0)
 
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(num_halos=500)
+    tcurve_names = ("u", "z")
+    lc_data, tcurves = _get_weighted_lc_data_for_unit_testing(
+        num_halos=500, tcurve_names=tcurve_names
+    )
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
     assert lc_data.z_phot_table.shape == (n_z_table,)
     assert lc_data.ssp_data.ssp_lgmet.shape == (n_met,)
