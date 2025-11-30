@@ -8,7 +8,6 @@ config.update("jax_enable_x64", True)
 
 from collections import namedtuple
 
-from diffstar.diffstarpop import mc_diffstar_params_galpop
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -23,11 +22,11 @@ from .disk_bulge_modeling import mc_disk_bulge as mcdb
 from .kernels import dbk_kernels
 from .kernels.ssp_weight_kernels import (
     MCPhotInfo,
+    _compute_obs_mags_from_weights,
     compute_burstiness,
     compute_dust_attenuation,
     compute_frac_ssp_errors,
     compute_mc_realization,
-    compute_obs_mags_ms_q,
     get_dust_randoms,
     get_smooth_ssp_weights,
 )
@@ -112,26 +111,13 @@ def _mc_phot_kern(
         ssp_err_pop_params, z_obs, diffstar_galpop, wave_eff_galpop
     )
 
-    obs_mags = compute_obs_mags_ms_q(
-        diffstar_galpop,
-        dust_att,
+    obs_mags = _compute_obs_mags_from_weights(
+        diffstar_galpop.logsm_obs,
+        frac_trans,
         frac_ssp_errors,
         ssp_photflux_table,
-        smooth_ssp_weights.weights.ms,
-        burstiness.weights.ms,
-        smooth_ssp_weights.weights.q,
-        delta_scatter_ms,
-        delta_scatter_q,
-    )
-    phot_info = compute_mc_realization(
-        diffstar_galpop,
-        burstiness,
-        smooth_ssp_weights,
-        dust_att,
-        obs_mags,
-        delta_scatter_ms,
-        delta_scatter_q,
-        ran_key,
+        ssp_weights,
+        delta_scatter,
     )
 
     return (
@@ -141,8 +127,7 @@ def _mc_phot_kern(
         dust_att,
         ssp_photflux_table,
         frac_ssp_errors,
-        delta_scatter_ms,
-        delta_scatter_q,
+        delta_scatter,
     )
 
 
