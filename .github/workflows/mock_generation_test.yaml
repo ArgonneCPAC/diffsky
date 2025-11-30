@@ -85,7 +85,7 @@ jobs:
           mkdir -p ci_test_output
 
           # Run mock production script
-          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py \
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_ou26_mock.py \
             poboy \
             0.01 \
             0.2 \
