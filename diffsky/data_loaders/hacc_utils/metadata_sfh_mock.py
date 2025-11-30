@@ -119,11 +119,7 @@ column_metadata["uran_delta"] = (
 )
 column_metadata["uran_funo"] = ("None", "Array for adding noise to dust parameter funo")
 
-column_metadata["delta_scatter_ms"] = (
-    "None",
-    "Array for adding noise to SSP SED errors",
-)
-column_metadata["delta_scatter_q"] = (
+column_metadata["delta_mag_ssp_scatter"] = (
     "None",
     "Array for adding noise to SSP SED errors",
 )
@@ -167,134 +163,26 @@ column_metadata["lsst_i"] = ("None", "Apparent magnitude of composite galaxy")
 column_metadata["lsst_z"] = ("None", "Apparent magnitude of composite galaxy")
 column_metadata["lsst_y"] = ("None", "Apparent magnitude of composite galaxy")
 
-column_metadata["lsst_u_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_g_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_r_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_i_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_z_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_y_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
+column_metadata["lsst_u_bulge"] = ("None", "Apparent magnitude of bulge component. ")
+column_metadata["lsst_g_bulge"] = ("None", "Apparent magnitude of bulge component. ")
+column_metadata["lsst_r_bulge"] = ("None", "Apparent magnitude of bulge component. ")
+column_metadata["lsst_i_bulge"] = ("None", "Apparent magnitude of bulge component. ")
+column_metadata["lsst_z_bulge"] = ("None", "Apparent magnitude of bulge component. ")
+column_metadata["lsst_y_bulge"] = ("None", "Apparent magnitude of bulge component. ")
 
-column_metadata["lsst_u_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_g_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_r_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_i_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_z_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_y_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
+column_metadata["lsst_u_disk"] = ("None", "Apparent magnitude of disk component. ")
+column_metadata["lsst_g_disk"] = ("None", "Apparent magnitude of disk component. ")
+column_metadata["lsst_r_disk"] = ("None", "Apparent magnitude of disk component. ")
+column_metadata["lsst_i_disk"] = ("None", "Apparent magnitude of disk component. ")
+column_metadata["lsst_z_disk"] = ("None", "Apparent magnitude of disk component. ")
+column_metadata["lsst_y_disk"] = ("None", "Apparent magnitude of disk component. ")
 
-column_metadata["lsst_u_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_g_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_r_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_i_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_z_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_y_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
+column_metadata["lsst_u_knots"] = ("None", "Apparent magnitude of knot component. ")
+column_metadata["lsst_g_knots"] = ("None", "Apparent magnitude of knot component. ")
+column_metadata["lsst_r_knots"] = ("None", "Apparent magnitude of knot component. ")
+column_metadata["lsst_i_knots"] = ("None", "Apparent magnitude of knot component. ")
+column_metadata["lsst_z_knots"] = ("None", "Apparent magnitude of knot component. ")
+column_metadata["lsst_y_knots"] = ("None", "Apparent magnitude of knot component. ")
 
 column_metadata["fknot"] = (
     "None",

@@ -109,8 +109,7 @@ PHOT_INFO_KEYS_OUT = (
     "uran_av",
     "uran_delta",
     "uran_funo",
-    "delta_scatter_ms",
-    "delta_scatter_q",
+    "delta_mag_ssp_scatter",
 )
 
 MORPH_KEYS_OUT = ("bulge_to_total", *dbk.DEFAULT_FBULGE_PARAMS._fields)
@@ -361,7 +360,6 @@ def add_dbk_phot_quantities_to_mock(
 
     # Discard columns storing non-tabular data
     dbk_phot_info = dbk_phot_info._asdict()
-    dbk_phot_info.pop("burstiness")
     dbk_phot_info.pop("t_table")
 
     return dbk_phot_info, lc_data, diffsky_data

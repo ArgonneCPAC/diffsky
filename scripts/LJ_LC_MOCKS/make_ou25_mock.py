@@ -24,7 +24,7 @@ from mpi4py import MPI
 
 from diffsky import phot_utils
 from diffsky.data_loaders import mpi_utils
-from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
+from diffsky.data_loaders.hacc_utils import lc_mock_repro as lcmp_repro
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
@@ -226,13 +226,13 @@ if __name__ == "__main__":
     n_z_phot_table = 15
 
     filter_nicknames = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
-    tcurves = lcmp.get_dsps_transmission_curves(filter_nicknames)
+    tcurves = lcmp_repro.get_dsps_transmission_curves(filter_nicknames)
 
     # Get complete list of files to process
     fn_lc_list = []
     for lc_patch in lc_patch_list:
         for stepnum in output_timesteps:
-            bn_lc_diffsky = lcmp.LC_CF_BNPAT.format(stepnum, lc_patch)
+            bn_lc_diffsky = lcmp_repro.LC_CF_BNPAT.format(stepnum, lc_patch)
             fn_lc_diffsky = os.path.join(indir_lc_diffsky, bn_lc_diffsky)
             fn_lc_list.append(fn_lc_diffsky)
 
@@ -330,13 +330,12 @@ if __name__ == "__main__":
                 wave_eff_table,
                 batch_key,
             )
-            # _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
-            _res = lcmp.add_dbk_phot_quantities_to_mock(*args)
+            _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
 
             phot_info_batch, lc_data_batch, diffsky_data_batch = _res
             phot_batches.append(_res)
 
-        _cats = lcmp.concatenate_batched_phot_data(phot_batches)
+        _cats = lcmp_repro.concatenate_batched_phot_data(phot_batches)
         phot_info, lc_data, diffsky_data = _cats
 
         n_gals_check = len(lc_data["core_tag"])
@@ -355,22 +354,22 @@ if __name__ == "__main__":
         jax.clear_caches()
 
         patch_key, morph_key = jran.split(patch_key, 2)
-        diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
+        diffsky_data = lcmp_repro.add_morphology_quantities_to_diffsky_data(
             sim_info, phot_info, lc_data, diffsky_data, morph_key
         )
 
-        diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
+        diffsky_data = lcmp_repro.add_black_hole_quantities_to_diffsky_data(
             lc_data, diffsky_data, phot_info
         )
 
         patch_key, nfw_key = jran.split(patch_key, 2)
-        lc_data, diffsky_data = lcmp.reposition_satellites(
+        lc_data, diffsky_data = lcmp_repro.reposition_satellites(
             sim_info, lc_data, diffsky_data, nfw_key
         )
 
-        bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
+        bn_out = lcmp_repro.LC_MOCK_BNPAT.format(stepnum, lc_patch)
         fn_out = os.path.join(drn_out, bn_out)
-        lcmp.write_lc_dbk_sed_mock_to_disk(
+        lcmp_repro.write_lc_dbk_sed_mock_to_disk(
             fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
         )
         metadata_sfh_mock.append_metadata(
@@ -379,17 +378,17 @@ if __name__ == "__main__":
 
         bn_ssp_data = f"diffsky_{mock_version_name}_ssp_data.hdf5"
         fn_out_ssp_data = os.path.join(drn_out, bn_ssp_data)
-        lcmp.write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
+        lcmp_repro.write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
 
-        lcmp.write_diffsky_tcurves_to_disk(
+        lcmp_repro.write_diffsky_tcurves_to_disk(
             drn_out, mock_version_name, tcurves, filter_nicknames
         )
 
-        lcmp.write_diffsky_param_collection(
+        lcmp_repro.write_diffsky_param_collection(
             drn_out, mock_version_name, param_collection
         )
 
-        lcmp.write_diffsky_t_table(drn_out, mock_version_name, sim_info)
+        lcmp_repro.write_diffsky_t_table(drn_out, mock_version_name, sim_info)
 
         if rank == 0:
             print("All ranks completing file operations...", flush=True)

@@ -8,10 +8,13 @@ config.update("jax_enable_x64", True)
 from collections import namedtuple
 from functools import partial
 
+from diffstar import DEFAULT_DIFFSTAR_PARAMS
+from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 
+from ..dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ..ssp_err_model import ssp_err_model
 from . import lc_phot_kern
 from . import mc_diffstarpop_wrappers as mcdw
@@ -43,15 +46,19 @@ PHOT_RAN_KEYS = (
 PhotRandoms = namedtuple("PhotRandoms", PHOT_RAN_KEYS)
 DBKRandoms = namedtuple("DBKRandoms", ("fknot",))
 
+
 PHOT_KERN_KEYS = (
     "obs_mags",
     "t_table",
+    *DEFAULT_DIFFSTAR_PARAMS._fields,
     "sfh_table",
+    "logsm_obs",
+    "logssfr_obs",
     "mc_sfh_type",
     "ssp_weights",
     "lgmet_weights",
-    "burst_params",
-    "dust_params",
+    *DEFAULT_BURST_PARAMS._fields,
+    *DEFAULT_DUST_PARAMS._fields,
     "dust_frac_trans",
     "ssp_photflux_table",
     "frac_ssp_errors",
@@ -219,12 +226,15 @@ def _phot_kern(
     phot_kern_results = PhotKernResults(
         obs_mags,
         t_table,
+        *sfh_params,
         sfh_table,
+        logsm_obs,
+        logssfr_obs,
         mc_sfh_type,
         ssp_weights,
         lgmet_weights,
-        burst_params,
-        dust_params,
+        *burst_params,
+        *dust_params,
         dust_frac_trans,
         ssp_photflux_table,
         frac_ssp_errors,
@@ -252,6 +262,7 @@ def mc_dbk_phot(
     phot_key, dbk_key = jran.split(ran_key, 2)
     phot_kern_results, phot_randoms = _mc_phot_kern(
         phot_key,
+        diffstarpop_params,
         z_obs,
         t_obs,
         mah_params,
@@ -259,7 +270,6 @@ def mc_dbk_phot(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
-        diffstarpop_params,
         mzr_params,
         spspop_params,
         scatter_params,
@@ -268,12 +278,17 @@ def mc_dbk_phot(
         fb,
     )
 
+    burst_params = DEFAULT_BURST_PARAMS._replace(
+        lgfburst=phot_kern_results.lgfburst,
+        lgyr_peak=phot_kern_results.lgyr_peak,
+        lgyr_max=phot_kern_results.lgyr_max,
+    )
     _ret2 = _mc_dbk_kern(
         t_obs,
         ssp_data,
         phot_kern_results.t_table,
         phot_kern_results.sfh_table,
-        phot_kern_results.burst_params,
+        burst_params,
         phot_kern_results.lgmet_weights,
         dbk_key,
     )

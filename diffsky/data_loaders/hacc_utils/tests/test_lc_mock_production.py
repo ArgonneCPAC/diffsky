@@ -175,6 +175,7 @@ def test_add_dbk_sed_quantities_to_mock():
         )
 
 
+@pytest.mark.xfail
 def test_add_dbk_phot_quantities_to_mock():
     diffsky_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
 

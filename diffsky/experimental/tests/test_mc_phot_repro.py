@@ -104,9 +104,7 @@ def test_mc_dbk_kern(num_halos=75):
         fb,
     )
     assert np.all(np.isfinite(phot_kern_results.obs_mags))
-    assert np.all(
-        phot_kern_results.burst_params.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7
-    )
+    assert np.all(phot_kern_results.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7)
 
     assert np.allclose(
         np.sum(phot_kern_results.ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4
@@ -115,12 +113,17 @@ def test_mc_dbk_kern(num_halos=75):
     assert np.all(phot_kern_results.frac_ssp_errors < 5)
 
     ran_key, dbk_key = jran.split(ran_key, 2)
+    burst_params = DEFAULT_BURST_PARAMS._replace(
+        lgfburst=phot_kern_results.lgfburst,
+        lgyr_peak=phot_kern_results.lgyr_peak,
+        lgyr_max=phot_kern_results.lgyr_max,
+    )
     args = (
         lc_data.t_obs,
         lc_data.ssp_data,
         phot_kern_results.t_table,
         phot_kern_results.sfh_table,
-        phot_kern_results.burst_params,
+        burst_params,
         phot_kern_results.lgmet_weights,
         dbk_key,
     )
