@@ -13,10 +13,10 @@ from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
+from jax import vmap
 
 from ..dustpop.tw_dust import DEFAULT_DUST_PARAMS
-from ..ssp_err_model import ssp_err_model
-from . import lc_phot_kern
+from ..ssp_err_model2 import ssp_err_model
 from . import mc_diffstarpop_wrappers as mcdw
 from . import photometry_interpolation as photerp
 from .disk_bulge_modeling import disk_bulge_kernels as dbk
@@ -27,7 +27,6 @@ from .kernels.ssp_weight_kernels_repro import (
     _compute_obs_mags_from_weights,
     compute_burstiness,
     compute_dust_attenuation,
-    compute_frac_ssp_errors,
     get_burstiness_randoms,
     get_dust_randoms,
     get_smooth_ssp_weights,
@@ -62,8 +61,13 @@ PHOT_KERN_KEYS = (
     "dust_frac_trans",
     "ssp_photflux_table",
     "frac_ssp_errors",
+    "wave_eff_galpop",
 )
 PhotKernResults = namedtuple("PhotKernResults", PHOT_KERN_KEYS)
+
+
+_B = (None, None, 1)
+interp_vmap2 = jjit(vmap(jnp.interp, in_axes=_B, out_axes=1))
 
 
 @jjit
@@ -88,8 +92,7 @@ def get_mc_phot_randoms(
 
     # Scatter for SSP errors
     ran_key, ssp_key = jran.split(ran_key, 2)
-    ZZ = jnp.zeros((n_gals, n_bands))
-    delta_mag_ssp_scatter = ssp_err_model.compute_delta_scatter(ssp_key, ZZ)
+    delta_mag_ssp_scatter = ssp_err_model.get_delta_mag_ssp_scatter(ssp_key, n_gals)
 
     phot_randoms = PhotRandoms(
         mc_is_q,
@@ -193,7 +196,7 @@ def _phot_kern(
     ssp_photflux_table = 10 ** (-0.4 * photmag_table_galpop)
 
     # For each filter, calculate λ_eff in the restframe of each galaxy
-    wave_eff_galpop = lc_phot_kern.interp_vmap2(z_obs, z_phot_table, wave_eff_table)
+    wave_eff_galpop = interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
     dust_frac_trans, dust_params = compute_dust_attenuation(
         phot_randoms.uran_av,
@@ -210,8 +213,8 @@ def _phot_kern(
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
-    frac_ssp_errors = compute_frac_ssp_errors(
-        ssp_err_pop_params, z_obs, logsm_obs, wave_eff_galpop
+    frac_ssp_errors = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
+        ssp_err_pop_params, logsm_obs, z_obs, wave_eff_galpop
     )
 
     obs_mags = _compute_obs_mags_from_weights(
@@ -220,6 +223,7 @@ def _phot_kern(
         frac_ssp_errors,
         ssp_photflux_table,
         ssp_weights,
+        wave_eff_galpop,
         phot_randoms.delta_mag_ssp_scatter,
     )
 
@@ -238,6 +242,7 @@ def _phot_kern(
         dust_frac_trans,
         ssp_photflux_table,
         frac_ssp_errors,
+        wave_eff_galpop,
     )
     return phot_kern_results
 
@@ -294,10 +299,14 @@ def mc_dbk_phot(
     )
     dbk_randoms, dbk_weights, disk_bulge_history = _ret2
 
+    # For each filter, calculate λ_eff in the restframe of each galaxy
+    wave_eff_galpop = interp_vmap2(z_obs, z_phot_table, wave_eff_table)
+
     _ret3 = get_dbk_phot(
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,
+        wave_eff_galpop,
         phot_kern_results.frac_ssp_errors,
         phot_randoms.delta_mag_ssp_scatter,
     )
@@ -359,7 +368,12 @@ def _dbk_kern(
 
 @jjit
 def get_dbk_phot(
-    ssp_photflux_table, dbk_weights, dust_frac_trans, frac_ssp_errors, delta_scatter
+    ssp_photflux_table,
+    dbk_weights,
+    dust_frac_trans,
+    wave_eff_galpop,
+    frac_ssp_err_nonoise,
+    delta_mag_ssp_scatter,
 ):
     n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
 
@@ -367,7 +381,10 @@ def get_dbk_phot(
     _ftrans = dust_frac_trans.reshape((n_gals, n_bands, 1, n_age))
 
     # Calculate fractional changes to SSP fluxes
-    frac_ssp_err_noise = frac_ssp_errors * 10 ** (-0.4 * delta_scatter)
+    # frac_ssp_err_noise = frac_ssp_errors * 10 ** (-0.4 * delta_scatter)
+    frac_ssp_err_noise = ssp_err_model.get_noisy_frac_ssp_errors(
+        wave_eff_galpop, frac_ssp_err_nonoise, delta_mag_ssp_scatter
+    )
 
     _ferr_ssp = frac_ssp_err_noise.reshape((n_gals, n_bands, 1, 1))
 

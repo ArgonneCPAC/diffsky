@@ -17,7 +17,7 @@ from jax import vmap
 from ...burstpop import diffqburstpop_mono, freqburst_mono
 from ...dustpop import tw_dustpop_mono_noise
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
-from ...ssp_err_model import ssp_err_model
+from ...ssp_err_model2 import ssp_err_model
 
 _M = (0, None, None)
 _calc_lgmet_weights_galpop = jjit(
@@ -36,11 +36,6 @@ _calc_bursty_age_weights_vmap = jjit(
     )
 )
 
-_F = (None, None, None, 0, None)
-_G = (None, 0, 0, 0, None)
-get_frac_ssp_err_vmap = jjit(
-    vmap(vmap(ssp_err_model.F_sps_err_lambda, in_axes=_F), in_axes=_G)
-)
 
 _D = (None, 0, None, None, None, None, None, None, None, None)
 vmap_kern1 = jjit(
@@ -151,19 +146,6 @@ def compute_burstiness(
     ssp_weights = combine_age_met_weights(age_weights, lgmet_weights)
 
     return ssp_weights, burst_params, mc_sfh_type
-
-
-@jjit
-def compute_frac_ssp_errors(ssp_err_pop_params, z_obs, logsm_obs, wave_eff_galpop):
-    frac_ssp_err = get_frac_ssp_err_vmap(
-        ssp_err_pop_params,
-        z_obs,
-        logsm_obs,
-        wave_eff_galpop,
-        ssp_err_model.LAMBDA_REST,
-    )
-
-    return frac_ssp_err
 
 
 @partial(jjit, static_argnames=["n_gals"])
@@ -277,13 +259,16 @@ def _compute_obs_mags_from_weights(
     frac_ssp_errors,
     ssp_photflux_table,
     ssp_weights,
-    delta_scatter,
+    wave_eff_galpop,
+    delta_mag_ssp_scatter,
 ):
     n_gals = logsm_obs.size
     n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
 
     # Calculate fractional changes to SSP fluxes
-    frac_ssp_err = frac_ssp_errors * 10 ** (-0.4 * delta_scatter)
+    frac_ssp_err = ssp_err_model.get_noisy_frac_ssp_errors(
+        wave_eff_galpop, frac_ssp_errors, delta_mag_ssp_scatter
+    )
 
     # Reshape arrays before calculating galaxy magnitudes
     _ferr_ssp = frac_ssp_err.reshape((n_gals, n_bands, 1, 1))

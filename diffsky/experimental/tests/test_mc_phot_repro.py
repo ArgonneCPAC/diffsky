@@ -150,6 +150,7 @@ def test_mc_dbk_kern(num_halos=75):
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,
+        phot_kern_results.wave_eff_galpop,
         phot_kern_results.frac_ssp_errors,
         phot_randoms.delta_mag_ssp_scatter,
     )
