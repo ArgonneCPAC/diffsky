@@ -112,7 +112,7 @@ def diffstarpop_cen_wrapper(
     return diffstar_galpop
 
 
-@partial(jjit, static_argnames=["n_t_table"])
+@jjit
 def mc_diffstarpop_cens_wrapper(diffstarpop_params, ran_key, mah_params, cosmo_params):
     n_gals = mah_params.logm0.size
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
@@ -130,7 +130,7 @@ def mc_diffstarpop_cens_wrapper(diffstarpop_params, ran_key, mah_params, cosmo_p
     _res = mc_diffstar_params_galpop(
         diffstarpop_params,
         logmp0,
-        mah_params.tpeak,
+        mah_params.t_peak,
         upid,
         lgmu_infall,
         logmhost_infall,
