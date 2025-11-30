@@ -8,6 +8,7 @@ config.update("jax_enable_x64", True)
 
 from collections import namedtuple
 
+from diffstar.diffstarpop import mc_diffstar_params_galpop
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -27,11 +28,17 @@ from .kernels.ssp_weight_kernels import (
     compute_frac_ssp_errors,
     compute_mc_realization,
     compute_obs_mags_ms_q,
+    get_dust_randoms,
     get_smooth_ssp_weights,
 )
 from .mc_diffstarpop_wrappers import N_T_TABLE
 
 LGMET_SCATTER = 0.2
+
+
+@jjit
+def _get_diffmah_quantities(mah_params):
+    pass
 
 
 @jjit
@@ -55,9 +62,20 @@ def _mc_phot_kern(
 ):
     """Populate the input lightcone with galaxy SEDs"""
 
+    # Monte Carlo diffstar params
     ran_key, sfh_key = jran.split(ran_key, 2)
-    args = (diffstarpop_params, sfh_key, mah_params, t_obs, cosmo_params, fb)
-    diffstar_galpop = mcdw.diffstarpop_cen_wrapper(*args, n_t_table=n_t_table)
+    sfh_params, mc_is_q = mcdw.mc_diffstarpop_cens_wrapper(
+        diffstarpop_params, sfh_key, mah_params, cosmo_params
+    )
+    # Generate randoms for stochasticity in dust attenuation curves
+    ran_key, dust_key = jran.split(ran_key, 2)
+    dust_randoms = get_dust_randoms(dust_key, z_obs)
+
+    # Scatter for SSP errors
+    ran_key, ssp_key = jran.split(ran_key, 2)
+    # delta_mag_ssp_scatter = ssp_err_model.compute_delta_scatter(
+    #     ssp_key, frac_ssp_errors.ms
+    # )
 
     smooth_ssp_weights = get_smooth_ssp_weights(
         diffstar_galpop, ssp_data, t_obs, mzr_params, LGMET_SCATTER
@@ -76,10 +94,10 @@ def _mc_phot_kern(
     # For each filter, calculate λ_eff in the restframe of each galaxy
     wave_eff_galpop = lc_phot_kern.interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
-    # Generate randoms for stochasticity in dust attenuation curves
-    ran_key, dust_key = jran.split(ran_key, 2)
     dust_att = compute_dust_attenuation(
-        dust_key,
+        dust_randoms.uran_av,
+        dust_randoms.uran_delta,
+        dust_randoms.uran_funo,
         diffstar_galpop,
         ssp_data,
         z_obs,
@@ -93,11 +111,6 @@ def _mc_phot_kern(
     frac_ssp_errors = compute_frac_ssp_errors(
         ssp_err_pop_params, z_obs, diffstar_galpop, wave_eff_galpop
     )
-    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
-    delta_scatter_ms = ssp_err_model.compute_delta_scatter(
-        ssp_ms_key, frac_ssp_errors.ms
-    )
-    delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_errors.q)
 
     obs_mags = compute_obs_mags_ms_q(
         diffstar_galpop,
