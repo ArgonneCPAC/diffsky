@@ -1,3 +1,7 @@
+0.3.2 (unreleased)
+-------------------
+
+
 0.3.1 (2025-11-23)
 -------------------
 - Update diffsky to be compatible with diffstar v1.0.2 (https://github.com/ArgonneCPAC/diffsky/pull/277)
