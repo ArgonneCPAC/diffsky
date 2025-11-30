@@ -89,7 +89,7 @@ def test_mc_dbk_kern(num_halos=75):
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)
 
-    _res = mc_phot_repro._mc_phot_kern(
+    phot_kern_results, phot_randoms = mc_phot_repro._mc_phot_kern(
         phot_key,
         dpw.DEFAULT_PARAM_COLLECTION[0],
         lc_data.z_obs,
@@ -103,25 +103,26 @@ def test_mc_dbk_kern(num_halos=75):
         DEFAULT_COSMOLOGY,
         fb,
     )
-    (
-        obs_mags,
-        mc_sfh_type,
-        ssp_weights,
-        burst_params,
-        dust_params,
-        ssp_photflux_table,
-        frac_ssp_errors,
-    ) = _res
-    assert np.all(np.isfinite(obs_mags))
-    assert np.all(burst_params.lgfburst[mc_sfh_type < 2] < -7)
+    assert np.all(np.isfinite(phot_kern_results.obs_mags))
+    assert np.all(
+        phot_kern_results.burst_params.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7
+    )
 
-    assert np.allclose(np.sum(ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4)
-    assert np.all(frac_ssp_errors > 0)
-    assert np.all(frac_ssp_errors < 5)
+    assert np.allclose(
+        np.sum(phot_kern_results.ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4
+    )
+    assert np.all(phot_kern_results.frac_ssp_errors > 0)
+    assert np.all(phot_kern_results.frac_ssp_errors < 5)
 
-    # ran_key, knot_key = jran.split(ran_key, 2)
-    # dbk_weights, disk_bulge_history, fknot = mc_phot_repro._mc_dbk_kern(
-    #     lc_data.t_obs, lc_data.ssp_data, phot_info, smooth_ssp_weights, knot_key
+    # ran_key, dbk_key = jran.split(ran_key, 2)
+    # dbk_randoms, dbk_weights, disk_bulge_history = mc_phot_repro._mc_dbk_kern(
+    #     lc_data.t_obs,
+    #     lc_data.ssp_data,
+    #     t_table,
+    #     sfh_table,
+    #     burst_params,
+    #     lgmet_weights,
+    #     dbk_key,
     # )
     # assert np.all(np.isfinite(dbk_weights.ssp_weights_bulge))
     # assert np.all(np.isfinite(dbk_weights.ssp_weights_disk))
