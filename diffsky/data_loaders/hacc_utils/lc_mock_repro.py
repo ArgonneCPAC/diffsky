@@ -109,6 +109,7 @@ PHOT_INFO_KEYS_OUT = (
     "uran_av",
     "uran_delta",
     "uran_funo",
+    "uran_pburst",
     "delta_mag_ssp_scatter",
 )
 

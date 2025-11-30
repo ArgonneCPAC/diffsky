@@ -118,6 +118,7 @@ column_metadata["uran_delta"] = (
     "Array for adding noise to dust parameter delta",
 )
 column_metadata["uran_funo"] = ("None", "Array for adding noise to dust parameter funo")
+column_metadata["uran_pburst"] = ("None", "Array for adding noise to burstiness")
 
 column_metadata["delta_mag_ssp_scatter"] = (
     "None",

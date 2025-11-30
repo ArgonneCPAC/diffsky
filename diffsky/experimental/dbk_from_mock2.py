@@ -46,7 +46,7 @@ DBK_PhotInfo = namedtuple("DBK_PhotInfo", DBK_PHOT_INFO_KEYS)
 
 
 @jjit
-def _reproduce_mock_phot_kern(
+def _reproduce_mock_dbk_kern(
     mc_is_q,
     uran_av,
     uran_delta,

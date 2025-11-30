@@ -117,7 +117,7 @@ def test_disk_bulge_knot_phot_from_mock():
         DEFAULT_COSMOLOGY,
         FB,
     )
-    _res = dbk_from_mock2._reproduce_mock_phot_kern(*temp_args)
+    _res = dbk_from_mock2._reproduce_mock_dbk_kern(*temp_args)
     phot_kern_results, phot_randoms, disk_bulge_history = _res[:3]
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res[3:]
     assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
