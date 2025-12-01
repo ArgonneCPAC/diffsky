@@ -47,6 +47,7 @@ vmap_kern1 = jjit(
 _E = (None, 0, 0, 0, 0, None, 0, 0, 0, None)
 calc_dust_ftrans_vmap = jjit(vmap(vmap_kern1, in_axes=_E))
 
+
 MSQ = namedtuple("MSQ", ("ms", "q"))
 QMSB = namedtuple("QMSB", ("q", "smooth_ms", "bursty_ms"))
 
@@ -282,6 +283,37 @@ def _compute_obs_mags_from_weights(
     obs_mags = -2.5 * jnp.log10(photflux_galpop)
 
     return obs_mags
+
+
+@jjit
+def _compute_rest_sed_from_weights(
+    logsm_obs,
+    frac_trans,
+    frac_ssp_errors,
+    ssp_sed,
+    ssp_weights,
+    wave_eff_galpop,
+    delta_mag_ssp_scatter,
+):
+    n_gals = logsm_obs.size
+    n_gals, n_met, n_age, n_wave = ssp_sed.shape
+
+    # Calculate fractional changes to SSP fluxes
+    frac_ssp_err = ssp_err_model.get_noisy_frac_ssp_errors(
+        wave_eff_galpop, frac_ssp_errors, delta_mag_ssp_scatter
+    )
+
+    # Reshape arrays before calculating galaxy magnitudes
+    _ferr_ssp = frac_ssp_err.reshape((n_gals, 1, 1, n_wave))
+    _ftrans = frac_trans.reshape((n_gals, n_bands, 1, n_age))
+    _weights = ssp_weights.reshape((n_gals, n_met, n_age, 1))
+    _mstar = 10 ** logsm_obs.reshape((n_gals, 1))
+
+    # Calculate galaxy magnitudes as PDF-weighted sums
+    integrand = ssp_sed * _weights * _ftrans * _ferr_ssp
+    rest_sed = jnp.sum(integrand, axis=(2, 3)) * _mstar
+
+    return rest_sed
 
 
 @jjit
