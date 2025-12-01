@@ -1,88 +1,21 @@
 """"""
 
 import numpy as np
-import pytest
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology import DEFAULT_COSMOLOGY
+from dsps.photometry import photometry_kernels as phk
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import random as jran
+from jax import vmap
 
-from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...param_utils import diffsky_param_wrapper as dpw
-from .. import mc_diffsky_seds as mcsed
 from .. import mc_phot_repro
-from ..kernels import ssp_weight_kernels_repro as sspwkr
 from . import test_lc_phot_kern as tlcphk
 
-
-@pytest.mark.skip
-def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern(num_halos=75):
-    """Enforce agreement to 1e-4 for the photometry computed by these two functions:
-    1. mcsed._mc_diffsky_phot_kern
-    2. mc_phot_repro._mc_phot_kern
-
-    """
-    ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(
-        num_halos=num_halos
-    )
-
-    fb = 0.156
-
-    phot_info = mcsed._mc_diffsky_phot_kern(
-        ran_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        lc_data.logmp0,
-        lc_data.t_table,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
-        DEFAULT_COSMOLOGY,
-        fb,
-    )
-
-    phot_info2 = mc_phot_repro._mc_phot_kern(
-        ran_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
-        DEFAULT_COSMOLOGY,
-        fb,
-    )[0]._asdict()
-
-    TOL = 1e-4
-    for p, p2 in zip(phot_info["obs_mags"], phot_info2["obs_mags"]):
-        assert np.allclose(p, p2, rtol=TOL)
-
-    assert "av" in phot_info["dust_params"]._fields
-    assert "av" in phot_info2.keys()
-    for pname in DEFAULT_DUST_PARAMS._fields:
-        assert np.allclose(
-            getattr(phot_info["dust_params"], pname), phot_info2[pname], rtol=TOL
-        )
-
-    assert "lgfburst" in phot_info["burst_params"]._fields
-    assert "lgfburst" in phot_info2.keys()
-    for pname in DEFAULT_BURST_PARAMS._fields[1:]:
-        assert np.allclose(
-            getattr(phot_info["burst_params"], pname), phot_info2[pname], rtol=TOL
-        )
-
-    assert np.allclose(phot_info["uran_av"], phot_info2["uran_av"])
-    assert np.allclose(phot_info["uran_delta"], phot_info2["uran_delta"])
-    assert np.allclose(phot_info["uran_funo"], phot_info2["uran_funo"])
+_A = [None, 0, None, None, 0, *[None] * 4]
+calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-@pytest.mark.skip
 def test_mc_dbk_kern(num_halos=75):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(
@@ -160,9 +93,9 @@ def test_mc_dbk_kern(num_halos=75):
     _res = mc_phot_repro.get_dbk_phot(*args)
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res
 
-    # np.all(phot_info.logsm_obs > np.log10(dbk_weights.mstar_bulge.flatten()))
-    # np.all(phot_info.logsm_obs > np.log10(dbk_weights.mstar_disk.flatten()))
-    # np.all(phot_info.logsm_obs > np.log10(dbk_weights.mstar_knots.flatten()))
+    np.all(phot_kern_results.logsm_obs > np.log10(dbk_weights.mstar_bulge.flatten()))
+    np.all(phot_kern_results.logsm_obs > np.log10(dbk_weights.mstar_disk.flatten()))
+    np.all(phot_kern_results.logsm_obs > np.log10(dbk_weights.mstar_knots.flatten()))
 
     assert np.all(np.isfinite(obs_mags_bulge))
     assert np.all(np.isfinite(obs_mags_disk))
@@ -192,8 +125,7 @@ def test_mc_dbk_kern(num_halos=75):
     assert np.all(std_magdiff < 0.01)
 
 
-def test_sed_kern(num_halos=75):
-    n_gals = num_halos
+def test_sed_kern(num_halos=250):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(
         num_halos=num_halos
@@ -230,55 +162,24 @@ def test_sed_kern(num_halos=75):
         DEFAULT_COSMOLOGY,
         fb,
     )
-    rest_sed = sed_kern_results[0]
-    assert False, rest_sed.shape
-    # dust_frac_trans = sed_kern_results[0].swapaxes(1, 2)  # (n_gals, n_age, n_wave)
-    # frac_ssp_errors = sed_kern_results[1]  # (n_gals, n_wave)
-    # ssp_weights = sed_kern_results[2]  # (n_gals, n_met, n_age)
-    # ssp_sed = lc_data.ssp_data.ssp_flux  # (n_met, n_age, n_wave)
+    rest_sed_recomputed = sed_kern_results[0]
 
-    # n_met, n_age, n_wave = lc_data.ssp_data.ssp_flux.shape
-    # a = dust_frac_trans.reshape((n_gals, 1, n_age, n_wave))
-    # b = frac_ssp_errors.reshape((n_gals, 1, 1, n_wave))
-    # c = ssp_weights.reshape((n_gals, n_met, n_age, 1))
-    # d = ssp_sed.reshape((1, n_met, n_age, n_wave))
-    # e = phot_kern_results.logsm_obs.reshape((n_gals, 1))
-    # rest_sed = np.sum(a * b * c * d, axis=(1, 2)) * e
-    # assert False, rest_sed.shape
+    # Enforce agreement between precomputed vs exact magnitudes
+    n_bands = phot_kern_results.obs_mags.shape[1]
+    for iband in range(n_bands):
+        trans_iband = np.interp(
+            lc_data.ssp_data.ssp_wave,
+            tcurves[iband].wave,
+            tcurves[iband].transmission,
+        )
+        args = (
+            lc_data.ssp_data.ssp_wave,
+            rest_sed_recomputed,
+            lc_data.ssp_data.ssp_wave,
+            trans_iband,
+            lc_data.z_obs,
+            *DEFAULT_COSMOLOGY,
+        )
 
-
-# def test_vmapped_dust():
-#     n_gals = 250
-
-#     lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(num_halos=n_gals)
-
-#     ran_key = jran.key(0)
-#     ran_key, av_key, delta_key, funo_key = jran.split(ran_key, 4)
-#     uran_av = jran.uniform(av_key, shape=(n_gals,))
-#     uran_delta = jran.uniform(delta_key, shape=(n_gals,))
-#     uran_funo = jran.uniform(funo_key, shape=(n_gals,))
-
-#     logsm_obs = np.linspace(7, 12, n_gals)
-#     logssfr_obs = np.linspace(-13, -8, n_gals)
-
-#     ran_key, wave_key = jran.split(ran_key, 2)
-
-#     n_bands = 5
-#     wave_eff_galpop = jran.uniform(
-#         wave_key, minval=1_000, maxval=10_000, shape=(n_gals, n_bands)
-#     )
-
-#     frac_trans, dust_params = sspwkr.compute_dust_attenuation(
-#         uran_av,
-#         uran_delta,
-#         uran_funo,
-#         logsm_obs,
-#         logssfr_obs,
-#         lc_data.ssp_data,
-#         lc_data.z_obs,
-#         wave_eff_galpop,
-#         dpw.DEFAULT_PARAM_COLLECTION[2].dustpop_params,
-#         dpw.DEFAULT_PARAM_COLLECTION[3],
-#     )
-#     frac_trans2 = np.swapaxes(frac_trans, 1, 2)
-#     assert False, (frac_trans.shape, frac_trans2.shape)
+        mags = calc_obs_mags_galpop(*args)
+        assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
