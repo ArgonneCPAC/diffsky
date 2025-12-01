@@ -10,7 +10,7 @@ from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...param_utils import diffsky_param_wrapper as dpw
 from .. import mc_diffsky_seds as mcsed
 from .. import mc_phot
-from . import test_lc_phot_kern as tlcphk
+from . import test_mc_lightcone_halos as tmclh
 
 
 @pytest.mark.xfail
@@ -21,9 +21,7 @@ def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern(num_halos=75):
 
     """
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(
-        num_halos=num_halos
-    )
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
 
     fb = 0.156
 
@@ -83,9 +81,7 @@ def test_mc_phot_kern_agrees_with_mc_diffsky_seds_phot_kern(num_halos=75):
 @pytest.mark.xfail
 def test_mc_dbk_kern(num_halos=75):
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(
-        num_halos=num_halos
-    )
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
 
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)

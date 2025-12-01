@@ -11,6 +11,46 @@ from ...mass_functions.fitting_utils.calibrations import hacc_core_shmf_params a
 from .. import mc_lightcone_halos as mclh
 from .. import precompute_ssp_phot as psspp
 
+SSP_DATA = retrieve_fake_fsps_data.load_fake_ssp_data()
+
+
+def _get_weighted_lc_data_for_unit_testing(num_halos=75, ssp_data=SSP_DATA):
+    ran_key = jran.key(0)
+
+    lgmp_min, lgmp_max = 10.0, 15.0
+    z_min, z_max = 0.1, 3.0
+    sky_area_degsq = 100.0
+
+    _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
+    wave, u, g, r, i, z, y = _res
+
+    tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+
+    z_phot_table = 10 ** np.linspace(np.log10(z_min), np.log10(z_max), 30)
+
+    args = (
+        ran_key,
+        num_halos,
+        z_min,
+        z_max,
+        lgmp_min,
+        lgmp_max,
+        sky_area_degsq,
+        ssp_data,
+        tcurves,
+        z_phot_table,
+    )
+    lc_data = mclh.mc_weighted_lightcone_data(*args)
+
+    return lc_data, tcurves
+
+
+def test_get_weighted_lc_data_for_unit_testing():
+    lc_data, tcurves = _get_weighted_lc_data_for_unit_testing()
+    assert np.all(np.isfinite(lc_data.logmp0))
+    for x in lc_data.mah_params:
+        assert np.all(np.isfinite(x))
+
 
 def test_mc_lightcone_host_halo_mass_function():
     """Enforce mc_lightcone_host_halo_mass_function produces halo mass functions

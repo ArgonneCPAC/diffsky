@@ -2,7 +2,6 @@
 
 import os
 from collections import namedtuple
-from copy import deepcopy
 
 import numpy as np
 from diffmah import DEFAULT_MAH_PARAMS
@@ -20,9 +19,8 @@ from ....experimental import precompute_ssp_phot as psspp
 from ....experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
 from ....experimental.disk_bulge_modeling import mc_disk_bulge as mcdb
 from ....experimental.lc_phot_kern import get_wave_eff_table
-from ....experimental.tests import test_lc_phot_kern as tlcphk
+from ....experimental.tests import test_mc_lightcone_halos as tmclh
 from ... import io_utils as iou
-from .. import lc_mock_production as lcmp
 from .. import lc_mock_repro as lcmp_repro
 from .. import load_lc_cf
 
@@ -53,17 +51,19 @@ def test_load_diffsky_param_collection():
 
     drn_mock = ""
     mock_version_name = "unit_testing"
-    fn = lcmp.BNPAT_PARAM_COLLECTION.format(mock_version_name)
+    fn = lcmp_repro.BNPAT_PARAM_COLLECTION.format(mock_version_name)
     iou.write_namedtuple_to_hdf5(all_named_params, fn)
 
-    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
+    param_collection = lcmp_repro.load_diffsky_param_collection(
+        drn_mock, mock_version_name
+    )
     all_params_flat2 = dpw.unroll_param_collection_into_flat_array(*param_collection)
 
     assert np.allclose(all_params_flat, all_params_flat2, rtol=1e-5)
 
 
 def _prepare_input_catalogs(n_gals=500):
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(num_halos=n_gals)
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=n_gals)
     lc_data = lc_data._asdict()
     lc_data["redshift_true"] = lc_data["z_obs"]
 
@@ -89,9 +89,6 @@ def test_add_dbk_phot_quantities_to_mock():
     lc_data, diffsky_data, tcurves = _prepare_input_catalogs()
 
     ran_key = jran.key(0)
-    lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
-        diffsky_info, deepcopy(lc_data), deepcopy(diffsky_data), ran_key
-    )
 
     z_phot_table = np.linspace(lc_data["z_obs"].min(), lc_data["z_obs"].max(), 15)
     t0 = age_at_z0(*diffsky_info.cosmo_params)

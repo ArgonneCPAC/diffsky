@@ -4,8 +4,8 @@
 from jax import config
 
 config.update("jax_enable_x64", True)
-
 import warnings
+from collections import namedtuple
 
 import numpy as np
 from diffmah.diffmah_kernels import _log_mah_kern
@@ -31,10 +31,10 @@ from scipy.stats import qmc
 from ..burstpop import diffqburstpop_mono
 from ..dustpop import tw_dustpop_mono, tw_dustpop_mono_noise
 from ..mass_functions import hmf_model, mc_hosts
-from ..phot_utils import get_wave_eff_from_tcurves
+from ..phot_utils import get_wave_eff_from_tcurves, get_wave_eff_table
 from ..ssp_err_model import ssp_err_model
 from . import photometry_interpolation as photerp
-from . import precompute_ssp_phot as psp
+from . import precompute_ssp_phot as psspp
 from .lc_utils import spherical_shell_comoving_volume
 from .scatter import DEFAULT_SCATTER_PARAMS
 
@@ -1482,3 +1482,67 @@ def get_weighted_lightcone_sobol_host_halo_diffmah(
     cenpop_out["nhalos"] = nhalo_weights
 
     return cenpop_out
+
+
+def mc_weighted_lightcone_data(
+    ran_key,
+    num_halos,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmp_max,
+    sky_area_degsq,
+    ssp_data,
+    tcurves,
+    z_phot_table,
+    logmp_cutoff=11.0,
+    cosmo_params=flat_wcdm.PLANCK15,
+):
+    args = (
+        ran_key,
+        num_halos,
+        z_min,
+        z_max,
+        lgmp_min,
+        lgmp_max,
+        sky_area_degsq,
+    )
+
+    lc_grid = mc_weighted_halo_lightcone(*args, logmp_cutoff=logmp_cutoff)
+
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    lc_data = LCData(
+        lc_grid["nhalos"],
+        lc_grid["z_obs"],
+        lc_grid["t_obs"],
+        lc_grid["mah_params"],
+        lc_grid["logmp0"],
+        t_table,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+    )
+    return lc_data
+
+
+_LCDKEYS = (
+    "nhalos",
+    "z_obs",
+    "t_obs",
+    "mah_params",
+    "logmp0",
+    "t_table",
+    "ssp_data",
+    "precomputed_ssp_mag_table",
+    "z_phot_table",
+    "wave_eff_table",
+)
+LCData = namedtuple("LCData", _LCDKEYS)

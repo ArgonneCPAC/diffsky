@@ -12,7 +12,7 @@ from .... import phot_utils
 from ....experimental import dbk_from_mock2
 from ....experimental import precompute_ssp_phot as psspp
 from ....param_utils import diffsky_param_wrapper as dpw
-from .. import lc_mock_production as lcmp
+from .. import lc_mock_repro as lcmp
 from .. import load_flat_hdf5, load_lc_cf
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")

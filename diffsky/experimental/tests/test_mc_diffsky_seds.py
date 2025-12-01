@@ -10,7 +10,7 @@ from jax import vmap
 from ...param_utils import diffsky_param_wrapper as dpw
 from .. import lc_phot_kern
 from .. import mc_diffsky_seds as mcsed
-from . import test_lc_phot_kern as tlcphk
+from . import test_mc_lightcone_halos as tmclh
 
 _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
@@ -18,7 +18,7 @@ calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 def test_mc_diffsky_phot_flat_u_params():
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing()
     sed_info = mcsed.mc_weighted_diffsky_lightcone(ran_key, lc_data)
 
     u_param_collection = dpw.get_u_param_collection_from_param_collection(
@@ -36,7 +36,7 @@ def test_mc_diffsky_phot_flat_u_params():
 
 def test_recompute_photometry_from_phot_mock():
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing()
 
     (
         diffstarpop_params,
@@ -88,7 +88,7 @@ def test_recompute_photometry_from_phot_mock():
 
 def test_recompute_sed_from_phot_mock():
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing()
 
     (
         diffstarpop_params,
@@ -152,7 +152,7 @@ def test_recompute_sed_from_phot_mock():
 
 def test_mc_weighted_diffsky_lightcone():
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing()
     sed_info = mcsed.mc_weighted_diffsky_lightcone(ran_key, lc_data)
 
     _check_sed_info(sed_info, lc_data, tcurves)
@@ -160,7 +160,7 @@ def test_mc_weighted_diffsky_lightcone():
 
 def test_mc_diffsky_seds_flat_u_params():
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing()
 
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
     assert lc_data.z_phot_table.shape == (n_z_table,)
