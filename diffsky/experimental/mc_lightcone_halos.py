@@ -8,6 +8,7 @@ import warnings
 from collections import namedtuple
 
 import numpy as np
+from diffmah import logmh_at_t_obs
 from diffmah.diffmah_kernels import _log_mah_kern
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_cenpop
@@ -1512,6 +1513,7 @@ def mc_weighted_lightcone_data(
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+    logmp_obs = logmh_at_t_obs(lc_grid["mah_params"], lc_grid["t_obs"], jnp.log10(t0))
 
     precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
         tcurves, ssp_data, z_phot_table, cosmo_params
@@ -1524,6 +1526,7 @@ def mc_weighted_lightcone_data(
         lc_grid["t_obs"],
         lc_grid["mah_params"],
         lc_grid["logmp0"],
+        logmp_obs,
         t_table,
         ssp_data,
         precomputed_ssp_mag_table,
@@ -1539,6 +1542,7 @@ _LCDKEYS = (
     "t_obs",
     "mah_params",
     "logmp0",
+    "logmp_obs",
     "t_table",
     "ssp_data",
     "precomputed_ssp_mag_table",

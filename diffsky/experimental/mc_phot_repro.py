@@ -8,10 +8,9 @@ config.update("jax_enable_x64", True)
 from collections import namedtuple
 from functools import partial
 
-from diffmah import DEFAULT_MAH_PARAMS, logmh_at_t_obs
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.defaults import FB
-from dsps.cosmology import DEFAULT_COSMOLOGY, flat_wcdm
+from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
@@ -535,10 +534,7 @@ def mc_weighted_lc_phot(
         cosmo_params,
         fb,
     )
-    t0 = flat_wcdm.age_at_z0(*cosmo_params)
-    logmp_obs = logmh_at_t_obs(lc_data.mah_params, lc_data.t_obs, jnp.log10(t0))
     phot_kern_results = phot_kern_results._asdict()
-    phot_kern_results["logmp_obs"] = logmp_obs
     for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
         phot_kern_results[key] = val
     return phot_kern_results
