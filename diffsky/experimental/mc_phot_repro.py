@@ -8,7 +8,10 @@ config.update("jax_enable_x64", True)
 from collections import namedtuple
 from functools import partial
 
+from diffmah import DEFAULT_MAH_PARAMS, logmh_at_t_obs
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
+from diffstar.defaults import FB
+from dsps.cosmology import DEFAULT_COSMOLOGY, flat_wcdm
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
@@ -16,6 +19,7 @@ from jax import random as jran
 from jax import vmap
 
 from ..dustpop.tw_dust import DEFAULT_DUST_PARAMS
+from ..param_utils import diffsky_param_wrapper as dpw
 from ..ssp_err_model2 import ssp_err_model
 from . import mc_diffstarpop_wrappers as mcdw
 from . import photometry_interpolation as photerp
@@ -501,3 +505,91 @@ def _sed_kern(
 
     sed_kern_results = (rest_sed, dust_frac_trans, frac_ssp_errors, ssp_weights)
     return sed_kern_results
+
+
+def mc_weighted_lc_phot(
+    ran_key,
+    lc_data,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
+):
+    phot_kern_results, phot_randoms = _mc_phot_kern(
+        ran_key,
+        diffstarpop_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        cosmo_params,
+        fb,
+    )
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    logmp_obs = logmh_at_t_obs(lc_data.mah_params, lc_data.t_obs, jnp.log10(t0))
+    phot_kern_results = phot_kern_results._asdict()
+    phot_kern_results["logmp_obs"] = logmp_obs
+    for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
+        phot_kern_results[key] = val
+    return phot_kern_results
+
+
+def mc_weighted_lc_sed(
+    ran_key,
+    lc_data,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
+):
+    phot_kern_results, phot_randoms = _mc_phot_kern(
+        ran_key,
+        diffstarpop_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        cosmo_params,
+        fb,
+    )
+    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
+        [getattr(phot_kern_results, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+    )
+    sed_kern_results = _sed_kern(
+        phot_randoms,
+        sfh_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        cosmo_params,
+        fb,
+    )
+    rest_sed = sed_kern_results[0]
+    phot_kern_results = phot_kern_results._asdict()
+    phot_kern_results["rest_sed"] = rest_sed
+    return phot_kern_results
