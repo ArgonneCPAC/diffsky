@@ -90,6 +90,68 @@ def _reproduce_mock_phot_kern(
 
 
 @jjit
+def _reproduce_mock_sed_kern(
+    mc_is_q,
+    uran_av,
+    uran_delta,
+    uran_funo,
+    uran_pburst,
+    delta_mag_ssp_scatter,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    cosmo_params,
+    fb,
+):
+    phot_kern_results, phot_randoms = _reproduce_mock_phot_kern(
+        mc_is_q,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        uran_pburst,
+        delta_mag_ssp_scatter,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+    )
+    sed_kern_results = mc_phot_repro._sed_kern(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+    )
+    return phot_kern_results, phot_randoms, sed_kern_results
+
+
+@jjit
 def _reproduce_mock_dbk_kern(
     mc_is_q,
     uran_av,

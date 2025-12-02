@@ -198,3 +198,72 @@ def test_reproduce_mock_phot_kern():
     _res = dbk_from_mock2._reproduce_mock_phot_kern(*temp_args)
     phot_kern_results, phot_randoms = _res
     assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
+
+
+def test_reproduce_mock_sed_kern():
+    """Enforce that recomputed mock photometry agrees with original"""
+    ran_key = jran.key(0)
+
+    tcurve_names = ("u", "z")
+    lc_data, tcurves = _get_weighted_lc_data_for_unit_testing(
+        num_halos=500, tcurve_names=tcurve_names
+    )
+    n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
+    assert lc_data.z_phot_table.shape == (n_z_table,)
+    assert lc_data.ssp_data.ssp_lgmet.shape == (n_met,)
+    assert lc_data.ssp_data.ssp_lg_age_gyr.shape == (n_age,)
+
+    diffstarpop_params = dpw.DEFAULT_PARAM_COLLECTION[0]
+    mzr_params = dpw.DEFAULT_PARAM_COLLECTION[1]
+    spspop_params = dpw.DEFAULT_PARAM_COLLECTION[2]
+    scatter_params = dpw.DEFAULT_PARAM_COLLECTION[3]
+    ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
+
+    dbk_phot_info = mc_phot_repro.mc_dbk_phot(
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        DEFAULT_COSMOLOGY,
+        FB,
+    )
+
+    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
+        [getattr(dbk_phot_info, pname) for pname in DEFAULT_DIFFSTAR_PARAMS._fields]
+    )
+    temp_args = (
+        dbk_phot_info.mc_is_q,
+        dbk_phot_info.uran_av,
+        dbk_phot_info.uran_delta,
+        dbk_phot_info.uran_funo,
+        dbk_phot_info.uran_pburst,
+        dbk_phot_info.delta_mag_ssp_scatter,
+        sfh_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        DEFAULT_COSMOLOGY,
+        FB,
+    )
+    _res = dbk_from_mock2._reproduce_mock_sed_kern(*temp_args)
+    phot_kern_results, phot_randoms, sed_kern_results = _res
+    assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
+
+    rest_sed = sed_kern_results[0]
