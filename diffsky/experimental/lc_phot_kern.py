@@ -362,7 +362,7 @@ def multiband_lc_phot_kern_u_param_arr(u_param_arr, ran_key, lc_data, cosmo_para
         *u_param_collection
     )
     lc_phot = multiband_lc_phot_kern(
-        ran_key, *lc_data[1:-1], *param_collection, cosmo_params, fb
+        ran_key, *lc_data[1:], *param_collection, cosmo_params, fb
     )
     return lc_phot
 
