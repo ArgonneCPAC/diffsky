@@ -42,7 +42,7 @@ DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LJ_LC_LCRC = (
     "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-6/output"
 )
-DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc_cores"
+DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-6"
 
 DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-cf-diffsky"
 DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
@@ -80,15 +80,15 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-roman_hltds",
+        "--roman_hltds",
         help="Use all patches overlapping with Roman HLTDS. Overrides istart and iend",
-        default=0,
-        choices=[0, 1],
-        type=int,
+        action="store_true",
     )
 
     parser.add_argument(
-        "--ddf", action="store_true", help="Include LSST DDF sky patches"
+        "--lsst_ddf",
+        help="Use all patches overlapping with LSST DDF. Overrides istart and iend",
+        action="store_true",
     )
 
     parser.add_argument(
@@ -134,6 +134,7 @@ if __name__ == "__main__":
     mock_nickname = args.mock_nickname
 
     roman_hltds = args.roman_hltds
+    lsst_ddf = args.lsst_ddf
     fn_u_params = args.fn_u_params
     itest = args.itest
     sim_name = args.sim_name
@@ -161,7 +162,7 @@ if __name__ == "__main__":
 
     if machine == "poboy":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_POBOY
-        indir_lc_data = DRN_LJ_CROSSX_OUT_POBOY
+        indir_lc_data = DRN_LJ_LC_POBOY
     elif machine == "lcrc":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
@@ -172,18 +173,28 @@ if __name__ == "__main__":
 
     if itest == 1:
         lc_patch_list = [0, 1]
-    elif roman_hltds == 1:
-        lc_patch_list = np.array(ROMAN_HLTDS_PATCHES).astype(int)
-        if rank == 0:
-            print("Making all lightcone patches for Roman HLTDS")
-    elif args.ddf:
-        fn_lc_decomp = os.path.join(indir_lc_data, "lc_cores-decomposition.txt")
-        lc_patch_dict = hlu.get_lsst_ddf_patches(fn_lc_decomp)
-        lc_patch_list = np.unique(
-            np.concatenate([arr for arr in lc_patch_dict.values()])
-        )
     else:
-        lc_patch_list = np.arange(istart, iend).astype(int)
+        lc_patch_list = []
+        ignore_istart_iend = roman_hltds | lsst_ddf
+        if ignore_istart_iend:
+            if roman_hltds:
+                lc_patch_list.extend(ROMAN_HLTDS_PATCHES)
+                if rank == 0:
+                    print("Making all lightcone patches for Roman HLTDS")
+            if lsst_ddf:
+                fn_lc_decomp = os.path.join(indir_lc_data, "lc_cores-decomposition.txt")
+                lc_patch_dict = hlu.get_lsst_ddf_patches(fn_lc_decomp)
+                lc_patch_list_lsst = np.unique(
+                    np.concatenate([arr for arr in lc_patch_dict.values()])
+                )
+                lc_patch_list.extend(list(lc_patch_list_lsst))
+                if rank == 0:
+                    print("Making all lightcone patches for LSST DDF")
+        else:
+            lc_patch_list = np.arange(istart, iend).astype(int)
+    lc_patch_list = np.array(lc_patch_list)
+    if rank == 0:
+        print(f"Making mock with lc_patch_list={lc_patch_list}")
 
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
