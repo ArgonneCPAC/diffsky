@@ -46,14 +46,13 @@ jobs:
             astropy \
             h5py \
             mpi4py
-          pip install git+https://github.com/ArgonneCPAC/HACCyTrees.git
           pip uninstall diffmah --yes
           pip uninstall diffstar --yes
           pip uninstall dsps --yes
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffmah.git
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffstar.git
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
-          python -m pip install --no-deps -e .
+          python -m pip install --no-build-isolation --no-deps -e .
 
       - name: download dsps data
         shell: bash -l {0}
