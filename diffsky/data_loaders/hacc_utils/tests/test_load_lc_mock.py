@@ -18,10 +18,10 @@ MOCK_URL_DRN = os.path.join(URL_ROOT, URL_SUBDRN)
 
 @pytest.mark.skip
 def test_load_diffsky_lc_patch():
-    diffsky_lc_patch = llcm.load_diffsky_lc_patch(TESTING_DATA, BN_MOCK)
+    diffsky_lc_patch = llcm.load_diffsky_lc_patch(TESTING_DATA, BN_MOCK)  # noqa
 
 
 @pytest.mark.skip
 def test_compute_dbk_phot_from_diffsky_mock():
     diffsky_lc_patch = llcm.load_diffsky_lc_patch(TESTING_DATA, BN_MOCK)
-    phot_info = llcm.compute_dbk_phot_from_diffsky_mock(**diffsky_lc_patch)
+    phot_info = llcm.compute_dbk_phot_from_diffsky_mock(**diffsky_lc_patch)  # noqa

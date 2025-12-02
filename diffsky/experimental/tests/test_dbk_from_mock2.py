@@ -266,4 +266,4 @@ def test_reproduce_mock_sed_kern():
     phot_kern_results, phot_randoms, sed_kern_results = _res
     assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
 
-    rest_sed = sed_kern_results[0]
+    rest_sed = sed_kern_results[0]  # noqa
