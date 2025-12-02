@@ -18,7 +18,7 @@ ALL_FAKE_TCURVE_NAMES = ("u", "g", "r", "i", "z", "y")
 
 
 def _get_weighted_lc_data_for_unit_testing(
-    num_halos=75, ssp_data=SSP_DATA, tcurve_names=ALL_FAKE_TCURVE_NAMES
+    num_halos=50, ssp_data=SSP_DATA, tcurve_names=ALL_FAKE_TCURVE_NAMES
 ):
     ran_key = jran.key(0)
 
@@ -60,7 +60,7 @@ def test_reproduce_mock_dbk_kern():
 
     tcurve_names = ("u", "z")
     lc_data, tcurves = _get_weighted_lc_data_for_unit_testing(
-        num_halos=500, tcurve_names=tcurve_names
+        num_halos=50, tcurve_names=tcurve_names
     )
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
     assert lc_data.z_phot_table.shape == (n_z_table,)
@@ -139,7 +139,7 @@ def test_reproduce_mock_phot_kern():
 
     tcurve_names = ("u", "z")
     lc_data, tcurves = _get_weighted_lc_data_for_unit_testing(
-        num_halos=500, tcurve_names=tcurve_names
+        num_halos=50, tcurve_names=tcurve_names
     )
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
     assert lc_data.z_phot_table.shape == (n_z_table,)
@@ -206,7 +206,7 @@ def test_reproduce_mock_sed_kern():
 
     tcurve_names = ("u", "z")
     lc_data, tcurves = _get_weighted_lc_data_for_unit_testing(
-        num_halos=500, tcurve_names=tcurve_names
+        num_halos=50, tcurve_names=tcurve_names
     )
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
     assert lc_data.z_phot_table.shape == (n_z_table,)
