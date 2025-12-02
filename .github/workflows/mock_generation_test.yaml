@@ -44,8 +44,7 @@ jobs:
             "setuptools_scm>=7,<8" \
             matplotlib \
             astropy \
-            h5py \
-            mpi4py
+            h5py
           pip uninstall diffmah --yes
           pip uninstall diffstar --yes
           pip uninstall dsps --yes
