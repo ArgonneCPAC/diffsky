@@ -178,7 +178,7 @@ def test_mc_diffsky_seds_flat_u_params():
         u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
     )
     lc_phot_orig = lc_phot_kern.multiband_lc_phot_kern_u_param_arr(
-        u_param_arr, ran_key, lc_data, DEFAULT_COSMOLOGY, fb
+        u_param_arr, ran_key, lc_data[:-1], DEFAULT_COSMOLOGY, fb
     )
     msk_q = sed_info["mc_sfh_type"] == 0
     assert np.allclose(lc_phot_orig.obs_mags_q[msk_q], sed_info["obs_mags"][msk_q])
