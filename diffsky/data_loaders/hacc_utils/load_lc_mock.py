@@ -72,7 +72,7 @@ def load_diffsky_lc_patch(drn_mock, bn_mock):
     return diffsky_lc_patch
 
 
-def compute_phot_from_diffsky_mock(
+def compute_dbk_phot_from_diffsky_mock(
     *, diffsky_data, ssp_data, param_collection, sim_info, z_phot_table, tcurves
 ):
     mah_params = DEFAULT_MAH_PARAMS._make(
