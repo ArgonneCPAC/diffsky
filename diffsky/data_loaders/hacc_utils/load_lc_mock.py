@@ -14,7 +14,7 @@ from ...data_loaders import load_flat_hdf5
 from ...experimental import dbk_from_mock2
 from ...experimental import precompute_ssp_phot as psspp
 from . import hacc_core_utils as hcu
-from . import lc_mock_production as lcmp
+from . import lc_mock_repro as lcmp
 
 
 def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list):
