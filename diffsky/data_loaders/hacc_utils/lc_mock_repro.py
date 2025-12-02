@@ -146,18 +146,16 @@ def load_diffsky_ssp_data(drn_mock, mock_version_name):
     return ssp_data
 
 
-def write_diffsky_tcurves_to_disk(
-    drn_out, mock_version_name, tcurves, filter_nicknames
-):
+def write_diffsky_tcurves_to_disk(drn_out, mock_version_name, tcurves):
     """"""
     bn_tcurves = BNPAT_TCURVES.format(mock_version_name)
     with h5py.File(os.path.join(drn_out, bn_tcurves), "w") as hdf_out:
-        for tcurve, nickname in zip(tcurves, filter_nicknames):
+        for tcurve, nickname in zip(tcurves, tcurves._fields):
             tcurve_group = hdf_out.require_group(nickname)
             tcurve_group["wave"] = tcurve.wave
             tcurve_group["transmission"] = tcurve.transmission
 
-        hdf_out.attrs["_fields"] = np.array(filter_nicknames, dtype="S")
+        hdf_out.attrs["_fields"] = np.array(tcurves._fields, dtype="S")
 
 
 def load_diffsky_tcurves(drn_mock, mock_version_name):
@@ -205,6 +203,15 @@ def load_diffsky_sim_info(fn_mock):
         sim_name = hdf["metadata/nbody_info"].attrs["sim_name"]
     sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
     return sim_info
+
+
+def write_ancillary_data(
+    drn_out, mock_version_name, sim_info, param_collection, tcurves, ssp_data
+):
+    write_diffsky_t_table(drn_out, mock_version_name, sim_info)
+    write_diffsky_param_collection(drn_out, mock_version_name, param_collection)
+    write_diffsky_tcurves_to_disk(drn_out, mock_version_name, tcurves)
+    write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
 
 
 def get_dsps_transmission_curves(filter_nicknames, drn=None):

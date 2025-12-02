@@ -403,19 +403,9 @@ if __name__ == "__main__":
             fn_out, sim_name, mock_version_name, z_phot_table, OUTPUT_FILTER_NICKNAMES
         )
 
-        bn_ssp_data = f"diffsky_{mock_version_name}_ssp_data.hdf5"
-        fn_out_ssp_data = os.path.join(drn_out, bn_ssp_data)
-        lcmp_repro.write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
-
-        lcmp_repro.write_diffsky_tcurves_to_disk(
-            drn_out, mock_version_name, tcurves, OUTPUT_FILTER_NICKNAMES
+        lcmp_repro.write_ancillary_data(
+            drn_out, mock_version_name, sim_info, param_collection, tcurves, ssp_data
         )
-
-        lcmp_repro.write_diffsky_param_collection(
-            drn_out, mock_version_name, param_collection
-        )
-
-        lcmp_repro.write_diffsky_t_table(drn_out, mock_version_name, sim_info)
 
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
