@@ -57,6 +57,22 @@ DIFFSTARPOP_CALIBRATIONS = [
 
 ROMAN_HLTDS_PATCHES = [157, 158, 118, 119]
 
+LSST_FILTER_NICKNAMES = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
+
+ROMAN_FILTER_NICKNAMES = (
+    "roman_F062",
+    "roman_F087",
+    "roman_F106",
+    "roman_F129",
+    "roman_F158",
+    "roman_F184",
+    "roman_F146",
+    "roman_F213",
+    "roman_Prism",
+    "roman_Grism_1stOrder",
+    "roman_Grism_0thOrder",
+)
+OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES, *ROMAN_FILTER_NICKNAMES)
 
 if __name__ == "__main__":
     comm = MPI.COMM_WORLD
@@ -236,8 +252,8 @@ if __name__ == "__main__":
 
     n_z_phot_table = 15
 
-    filter_nicknames = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
-    tcurves = lcmp_repro.get_dsps_transmission_curves(filter_nicknames)
+    tcurves = lcmp_repro.get_dsps_transmission_curves(OUTPUT_FILTER_NICKNAMES)
+    assert len(tcurves) == len(OUTPUT_FILTER_NICKNAMES)
 
     # Get complete list of files to process
     fn_lc_list = []
@@ -381,10 +397,10 @@ if __name__ == "__main__":
         bn_out = lcmp_repro.LC_MOCK_BNPAT.format(stepnum, lc_patch)
         fn_out = os.path.join(drn_out, bn_out)
         lcmp_repro.write_lc_dbk_sed_mock_to_disk(
-            fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
+            fn_out, phot_info, lc_data, diffsky_data, OUTPUT_FILTER_NICKNAMES
         )
         metadata_sfh_mock.append_metadata(
-            fn_out, sim_name, mock_version_name, z_phot_table
+            fn_out, sim_name, mock_version_name, z_phot_table, OUTPUT_FILTER_NICKNAMES
         )
 
         bn_ssp_data = f"diffsky_{mock_version_name}_ssp_data.hdf5"
@@ -392,7 +408,7 @@ if __name__ == "__main__":
         lcmp_repro.write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
 
         lcmp_repro.write_diffsky_tcurves_to_disk(
-            drn_out, mock_version_name, tcurves, filter_nicknames
+            drn_out, mock_version_name, tcurves, OUTPUT_FILTER_NICKNAMES
         )
 
         lcmp_repro.write_diffsky_param_collection(
