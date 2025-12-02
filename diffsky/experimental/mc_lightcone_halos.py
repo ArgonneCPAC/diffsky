@@ -1526,12 +1526,12 @@ def mc_weighted_lightcone_data(
         lc_grid["t_obs"],
         lc_grid["mah_params"],
         lc_grid["logmp0"],
-        logmp_obs,
         t_table,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
+        logmp_obs,
     )
     return lc_data
 
@@ -1542,11 +1542,11 @@ _LCDKEYS = (
     "t_obs",
     "mah_params",
     "logmp0",
-    "logmp_obs",
     "t_table",
     "ssp_data",
     "precomputed_ssp_mag_table",
     "z_phot_table",
     "wave_eff_table",
+    "logmp_obs",
 )
 LCData = namedtuple("LCData", _LCDKEYS)

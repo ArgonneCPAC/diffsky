@@ -84,7 +84,7 @@ def mc_weighted_diffsky_lightcone(
         (diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params)
     )
     sed_data = _mc_diffsky_seds_kern(
-        ran_key, *lc_data[1:], *param_collection, cosmo_params, fb
+        ran_key, *lc_data[1:-1], *param_collection, cosmo_params, fb
     )
     return sed_data
 
@@ -95,7 +95,7 @@ def _mc_diffsky_seds_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params, 
         *u_param_collection
     )
     sed_data = _mc_diffsky_seds_kern(
-        ran_key, *lc_data[1:], *param_collection, cosmo_params, fb
+        ran_key, *lc_data[1:-1], *param_collection, cosmo_params, fb
     )
     return sed_data
 
@@ -106,7 +106,7 @@ def _mc_diffsky_phot_flat_u_params(u_param_arr, ran_key, lc_data, cosmo_params, 
         *u_param_collection
     )
     phot_data = _mc_diffsky_phot_kern(
-        ran_key, *lc_data[1:], *param_collection, cosmo_params, fb
+        ran_key, *lc_data[1:-1], *param_collection, cosmo_params, fb
     )
     return phot_data
 
