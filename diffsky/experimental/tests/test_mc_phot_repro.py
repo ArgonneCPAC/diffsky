@@ -1,5 +1,7 @@
 """"""
 
+from collections import namedtuple
+
 import numpy as np
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology import DEFAULT_COSMOLOGY
@@ -17,7 +19,27 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-def test_mc_dbk_kern(num_halos=75):
+def check_phot_kern_results(phot_kern_results):
+    assert np.all(np.isfinite(phot_kern_results.obs_mags))
+    assert np.all(phot_kern_results.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7)
+
+    assert np.allclose(
+        np.sum(phot_kern_results.ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4
+    )
+    assert np.all(phot_kern_results.frac_ssp_errors > 0)
+    assert np.all(phot_kern_results.frac_ssp_errors < 5)
+
+
+def test_mc_lc_phot_evaluates(num_halos=50):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
+    phot_kern_results = mc_phot_repro.mc_lc_phot(ran_key, lc_data)
+    keys = list(phot_kern_results.keys())
+    phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
+    check_phot_kern_results(phot_kern_results)
+
+
+def test_mc_dbk_kern(num_halos=50):
     ran_key = jran.key(0)
     lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
 
@@ -38,14 +60,8 @@ def test_mc_dbk_kern(num_halos=75):
         DEFAULT_COSMOLOGY,
         fb,
     )
-    assert np.all(np.isfinite(phot_kern_results.obs_mags))
-    assert np.all(phot_kern_results.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7)
 
-    assert np.allclose(
-        np.sum(phot_kern_results.ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4
-    )
-    assert np.all(phot_kern_results.frac_ssp_errors > 0)
-    assert np.all(phot_kern_results.frac_ssp_errors < 5)
+    check_phot_kern_results(phot_kern_results)
 
     ran_key, dbk_key = jran.split(ran_key, 2)
     burst_params = DEFAULT_BURST_PARAMS._replace(
