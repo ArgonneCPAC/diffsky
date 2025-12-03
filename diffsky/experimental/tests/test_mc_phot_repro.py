@@ -3,6 +3,9 @@
 from collections import namedtuple
 
 import numpy as np
+from diffstar.diffstarpop.kernels.params import (
+    DiffstarPop_Params_Diffstarpopfits_mgash as sfh_models,
+)
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
@@ -15,13 +18,24 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-def test_mc_lc_phot_evaluates(num_halos=50):
+def test_mc_lc_phot_changes_with_diffstarpop(num_halos=50):
     ran_key = jran.key(0)
     lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    phot_kern_results = mc_phot_repro.mc_lc_phot(ran_key, lc_data)
+    phot_kern_results = mc_phot_repro.mc_lc_phot(
+        ran_key, lc_data, diffstarpop_params=sfh_models["tng"]
+    )
+    phot_kern_results2 = mc_phot_repro.mc_lc_phot(
+        ran_key, lc_data, diffstarpop_params=sfh_models["smdpl_dr1"]
+    )
+    assert not np.allclose(
+        phot_kern_results["obs_mags"], phot_kern_results2["obs_mags"], atol=0.1
+    )
+
     keys = list(phot_kern_results.keys())
     phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
+    phot_kern_results2 = namedtuple("Results", keys)(**phot_kern_results2)
     check_phot_kern_results(phot_kern_results)
+    check_phot_kern_results(phot_kern_results2)
 
 
 def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=50):
