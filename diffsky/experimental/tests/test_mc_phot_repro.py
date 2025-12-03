@@ -39,6 +39,15 @@ def test_mc_lc_phot_evaluates(num_halos=50):
     check_phot_kern_results(phot_kern_results)
 
 
+def test_mc_lc_sed_evaluates(num_halos=50):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
+    phot_kern_results = mc_phot_repro.mc_lc_sed(ran_key, lc_data)
+    keys = list(phot_kern_results.keys())
+    sed_kern_results = namedtuple("Results", keys)(**phot_kern_results)
+    check_phot_kern_results(sed_kern_results)
+
+
 def test_mc_dbk_kern(num_halos=50):
     ran_key = jran.key(0)
     lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
