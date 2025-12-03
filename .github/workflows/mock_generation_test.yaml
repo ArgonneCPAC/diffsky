@@ -54,7 +54,8 @@ jobs:
             matplotlib \
             astropy \
             h5py \
-            mpi4py
+            mpi4py \
+            mpich
           conda uninstall diffmah --force
           conda uninstall diffstar --force
           conda uninstall dsps --force
