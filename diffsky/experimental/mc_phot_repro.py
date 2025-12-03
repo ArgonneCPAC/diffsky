@@ -540,7 +540,7 @@ def mcw_lc_phot(
     return phot_kern_results
 
 
-def mc_weighted_lc_sed(
+def mcw_lc_sed(
     ran_key,
     lc_data,
     diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
