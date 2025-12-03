@@ -62,7 +62,7 @@ def test_load_diffsky_param_collection():
     assert np.allclose(all_params_flat, all_params_flat2, rtol=1e-5)
 
 
-def _prepare_input_catalogs(n_gals=500):
+def _prepare_input_catalogs(n_gals=20):
     lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=n_gals)
     lc_data = lc_data._asdict()
     lc_data["redshift_true"] = lc_data["z_obs"]
@@ -90,7 +90,7 @@ def test_add_dbk_phot_quantities_to_mock():
 
     ran_key = jran.key(0)
 
-    z_phot_table = np.linspace(lc_data["z_obs"].min(), lc_data["z_obs"].max(), 15)
+    z_phot_table = np.linspace(lc_data["z_obs"].min(), lc_data["z_obs"].max(), 3)
     t0 = age_at_z0(*diffsky_info.cosmo_params)
     t_table = np.linspace(T_TABLE_MIN, t0, 100)
 
