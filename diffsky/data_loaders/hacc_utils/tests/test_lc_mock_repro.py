@@ -39,6 +39,8 @@ except AssertionError:
 CAN_RUN_LJ_DATA_TESTS = CAN_RUN_LJ_DATA_TESTS & HAS_HACCY_TREES
 POBOY_MSG = "This test only runs on poboy machine with haccytrees installed"
 
+_THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
+
 
 def test_load_diffsky_param_collection():
     all_params_flat = dpw.unroll_param_collection_into_flat_array(
@@ -79,6 +81,25 @@ def _prepare_input_catalogs(n_gals=20):
     lc_data["central"] = ZZ + 1
 
     return lc_data, diffsky_data, tcurves
+
+
+def test_write_ancillary_data():
+    lc_data, diffsky_data, tcurves = _prepare_input_catalogs()
+    ssp_data = load_fake_ssp_data()
+    mock_version_name = "dummy_mock_version_name"
+    sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
+
+    drn_out = os.path.join(_THIS_DRNAME, "tmp_testing")
+    os.makedirs(drn_out, exist_ok=True)
+    args = (
+        drn_out,
+        mock_version_name,
+        sim_info,
+        dpw.DEFAULT_PARAM_COLLECTION,
+        tcurves,
+        ssp_data,
+    )
+    lcmp_repro.write_ancillary_data(*args)
 
 
 def test_add_dbk_phot_quantities_to_mock():

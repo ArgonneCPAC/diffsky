@@ -1,5 +1,7 @@
 """ """
 
+from collections import namedtuple
+
 import numpy as np
 from dsps.cosmology import flat_wcdm
 from dsps.data_loaders import retrieve_fake_fsps_data
@@ -25,6 +27,9 @@ def _get_weighted_lc_data_for_unit_testing(num_halos=75, ssp_data=SSP_DATA):
     wave, u, g, r, i, z, y = _res
 
     tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+    names = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
+    TransmissionCurves = namedtuple("TransmissionCurves", names)
+    tcurves = TransmissionCurves(*tcurves)
 
     z_phot_table = 10 ** np.linspace(np.log10(z_min), np.log10(z_max), 30)
 
