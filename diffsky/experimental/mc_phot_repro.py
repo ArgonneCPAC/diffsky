@@ -5,6 +5,7 @@ from jax import config
 
 config.update("jax_enable_x64", True)
 
+from collections import namedtuple
 
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.defaults import FB
@@ -109,6 +110,7 @@ def mc_lc_dbk_phot(
     ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
+    return_dbk_weights=False,
 ):
     dbk_phot_info, dbk_weights = mcpk._mc_lc_dbk_phot_kern(
         ran_key,
@@ -132,4 +134,48 @@ def mc_lc_dbk_phot(
     dbk_phot_info["mstar_disk"] = dbk_weights.mstar_disk.flatten()
     dbk_phot_info["mstar_knots"] = dbk_weights.mstar_knots.flatten()
 
-    return dbk_phot_info
+    if return_dbk_weights:
+        return dbk_phot_info, dbk_weights
+    else:
+        return dbk_phot_info
+
+
+def mc_lc_dbk_sed(
+    ran_key,
+    lc_data,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
+):
+    dbk_sed_info, dbk_weights = mc_lc_dbk_phot(
+        ran_key,
+        lc_data,
+        diffstarpop_params=diffstarpop_params,
+        mzr_params=mzr_params,
+        spspop_params=spspop_params,
+        scatter_params=scatter_params,
+        ssperr_params=ssperr_params,
+        cosmo_params=cosmo_params,
+        fb=fb,
+        return_dbk_weights=True,
+    )
+    SEDInfo = namedtuple("SEDInfo", list(dbk_sed_info.keys()))
+    dbk_sed_info = SEDInfo(**dbk_sed_info)
+    sed_bulge, sed_disk, sed_knots = mcpk._mc_lc_dbk_sed_kern(
+        dbk_sed_info,
+        dbk_weights,
+        lc_data.z_obs,
+        lc_data.ssp_data,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+    )
+    dbk_sed_info = dbk_sed_info._asdict()
+    dbk_sed_info["rest_sed_bulge"] = sed_bulge
+    dbk_sed_info["rest_sed_disk"] = sed_disk
+    dbk_sed_info["rest_sed_knots"] = sed_knots
+    return dbk_sed_info

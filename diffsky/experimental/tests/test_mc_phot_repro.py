@@ -118,3 +118,12 @@ def check_phot_kern_results(phot_kern_results):
     )
     assert np.all(phot_kern_results.frac_ssp_errors > 0)
     assert np.all(phot_kern_results.frac_ssp_errors < 5)
+
+
+def test_mc_lc_dbk_sed(num_halos=50):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
+    dbk_sed_info = mc_phot_repro.mc_lc_dbk_sed(ran_key, lc_data)
+    assert np.all(np.isfinite(dbk_sed_info["rest_sed_bulge"]))
+    assert np.all(np.isfinite(dbk_sed_info["rest_sed_disk"]))
+    assert np.all(np.isfinite(dbk_sed_info["rest_sed_knots"]))

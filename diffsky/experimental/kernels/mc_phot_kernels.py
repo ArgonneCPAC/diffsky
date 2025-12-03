@@ -452,6 +452,59 @@ def _mc_lc_dbk_phot_kern(
     return dbk_phot_info, dbk_weights
 
 
+def _mc_lc_dbk_sed_kern(
+    dbk_phot_info,
+    dbk_weights,
+    z_obs,
+    ssp_data,
+    spspop_params,
+    scatter_params,
+    ssperr_params,
+):
+    n_gals = dbk_phot_info.logsm_obs.shape[0]
+    wave_eff_galpop = jnp.tile(ssp_data.ssp_wave, n_gals).reshape((n_gals, -1))
+
+    dust_frac_trans, dust_params = sspwk.compute_dust_attenuation(
+        dbk_phot_info.uran_av,
+        dbk_phot_info.uran_delta,
+        dbk_phot_info.uran_funo,
+        dbk_phot_info.logsm_obs,
+        dbk_phot_info.logssfr_obs,
+        ssp_data,
+        z_obs,
+        wave_eff_galpop,
+        spspop_params.dustpop_params,
+        scatter_params,
+    )
+
+    # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
+    # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
+    frac_ssp_errors = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
+        ssperr_params, dbk_phot_info.logsm_obs, z_obs, wave_eff_galpop
+    )
+
+    n_met, n_age, n_wave = ssp_data.ssp_flux.shape
+    dust_frac_trans = dust_frac_trans.swapaxes(1, 2)  # (n_gals, n_age, n_wave)
+
+    a = dust_frac_trans.reshape((n_gals, 1, n_age, n_wave))
+    b = frac_ssp_errors.reshape((n_gals, 1, 1, n_wave))
+    d = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
+
+    _w_bulge = dbk_weights.ssp_weights_bulge.reshape((n_gals, n_met, n_age, 1))
+    _w_dd = dbk_weights.ssp_weights_disk.reshape((n_gals, n_met, n_age, 1))
+    _w_knot = dbk_weights.ssp_weights_knots.reshape((n_gals, n_met, n_age, 1))
+
+    mb = dbk_phot_info.mstar_bulge.reshape((n_gals, 1))
+    md = dbk_phot_info.mstar_disk.reshape((n_gals, 1))
+    mk = dbk_phot_info.mstar_knots.reshape((n_gals, 1))
+
+    sed_bulge = jnp.sum(a * b * _w_bulge * d, axis=(1, 2)) * mb
+    sed_disk = jnp.sum(a * b * _w_dd * d, axis=(1, 2)) * md
+    sed_knots = jnp.sum(a * b * _w_knot * d, axis=(1, 2)) * mk
+
+    return sed_bulge, sed_disk, sed_knots
+
+
 DBKRandoms = namedtuple("DBKRandoms", ("fknot",))
 PHOT_KERN_KEYS = (
     "obs_mags",
