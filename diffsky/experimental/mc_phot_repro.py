@@ -506,7 +506,7 @@ def _sed_kern(
     return sed_kern_results
 
 
-def mc_weighted_lc_phot(
+def mcw_lc_phot(
     ran_key,
     lc_data,
     diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
