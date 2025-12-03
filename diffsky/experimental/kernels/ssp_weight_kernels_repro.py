@@ -17,7 +17,6 @@ from jax import vmap
 from ...burstpop import diffqburstpop_mono, freqburst_mono
 from ...dustpop import tw_dustpop_mono_noise
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
-from ...ssp_err_model2 import ssp_err_model
 
 _M = (0, None, None)
 _calc_lgmet_weights_galpop = jjit(
@@ -204,21 +203,10 @@ def compute_dust_attenuation(
 
 @jjit
 def _compute_obs_mags_from_weights(
-    logsm_obs,
-    frac_trans,
-    frac_ssp_errors,
-    ssp_photflux_table,
-    ssp_weights,
-    wave_eff_galpop,
-    delta_mag_ssp_scatter,
+    logsm_obs, frac_trans, frac_ssp_err, ssp_photflux_table, ssp_weights
 ):
     n_gals = logsm_obs.size
     n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
-
-    # Calculate fractional changes to SSP fluxes
-    frac_ssp_err = ssp_err_model.get_noisy_frac_ssp_errors(
-        wave_eff_galpop, frac_ssp_errors, delta_mag_ssp_scatter
-    )
 
     # Reshape arrays before calculating galaxy magnitudes
     _ferr_ssp = frac_ssp_err.reshape((n_gals, n_bands, 1, 1))

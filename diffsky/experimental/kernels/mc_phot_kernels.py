@@ -200,18 +200,15 @@ def _phot_kern(
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
-    frac_ssp_errors = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
+    frac_ssp_errors_nonoise = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
         ssp_err_pop_params, logsm_obs, z_obs, wave_eff_galpop
+    )
+    frac_ssp_errors = ssp_err_model.get_noisy_frac_ssp_errors(
+        wave_eff_galpop, frac_ssp_errors_nonoise, phot_randoms.delta_mag_ssp_scatter
     )
 
     obs_mags = sspwk._compute_obs_mags_from_weights(
-        logsm_obs,
-        dust_frac_trans,
-        frac_ssp_errors,
-        ssp_photflux_table,
-        ssp_weights,
-        wave_eff_galpop,
-        phot_randoms.delta_mag_ssp_scatter,
+        logsm_obs, dust_frac_trans, frac_ssp_errors, ssp_photflux_table, ssp_weights
     )
 
     phot_kern_results = PhotKernResults(
@@ -334,25 +331,14 @@ def get_mc_dbk_randoms(dbk_key, n_gals):
 
 @jjit
 def _get_dbk_phot_from_dbk_weights(
-    ssp_photflux_table,
-    dbk_weights,
-    dust_frac_trans,
-    wave_eff_galpop,
-    frac_ssp_err_nonoise,
-    delta_mag_ssp_scatter,
+    ssp_photflux_table, dbk_weights, dust_frac_trans, frac_ssp_err
 ):
     n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
 
     # Reshape arrays before calculating galaxy magnitudes
     _ftrans = dust_frac_trans.reshape((n_gals, n_bands, 1, n_age))
 
-    # Calculate fractional changes to SSP fluxes
-    # frac_ssp_err_noise = frac_ssp_errors * 10 ** (-0.4 * delta_scatter)
-    frac_ssp_err_noise = ssp_err_model.get_noisy_frac_ssp_errors(
-        wave_eff_galpop, frac_ssp_err_nonoise, delta_mag_ssp_scatter
-    )
-
-    _ferr_ssp = frac_ssp_err_noise.reshape((n_gals, n_bands, 1, 1))
+    _ferr_ssp = frac_ssp_err.reshape((n_gals, n_bands, 1, 1))
 
     _w_bulge = dbk_weights.ssp_weights_bulge.reshape((n_gals, 1, n_met, n_age))
     _w_dd = dbk_weights.ssp_weights_disk.reshape((n_gals, 1, n_met, n_age))
@@ -429,16 +415,11 @@ def _mc_lc_dbk_phot_kern(
     )
     dbk_randoms, dbk_weights, disk_bulge_history = _ret2
 
-    # For each filter, calculate λ_eff in the restframe of each galaxy
-    wave_eff_galpop = interp_vmap2(z_obs, z_phot_table, wave_eff_table)
-
     _ret3 = _get_dbk_phot_from_dbk_weights(
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,
-        wave_eff_galpop,
         phot_kern_results.frac_ssp_errors,
-        phot_randoms.delta_mag_ssp_scatter,
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
 
@@ -482,8 +463,11 @@ def _mc_lc_dbk_sed_kern(
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
-    frac_ssp_errors = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
+    frac_ssp_errors_nonoise = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
         ssperr_params, dbk_phot_info.logsm_obs, z_obs, wave_eff_galpop
+    )
+    frac_ssp_errors = ssp_err_model.get_noisy_frac_ssp_errors(
+        wave_eff_galpop, frac_ssp_errors_nonoise, dbk_phot_info.delta_mag_ssp_scatter
     )
 
     n_met, n_age, n_wave = ssp_data.ssp_flux.shape

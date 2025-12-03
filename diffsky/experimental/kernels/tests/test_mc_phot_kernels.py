@@ -137,9 +137,7 @@ def test_mc_dbk_kern(num_halos=50):
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,
-        phot_kern_results.wave_eff_galpop,
         phot_kern_results.frac_ssp_errors,
-        phot_randoms.delta_mag_ssp_scatter,
     )
     _res = mcpk._get_dbk_phot_from_dbk_weights(*args)
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res

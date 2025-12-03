@@ -217,9 +217,7 @@ def _reproduce_mock_dbk_kern(
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,
-        phot_kern_results.wave_eff_galpop,
         phot_kern_results.frac_ssp_errors,
-        delta_mag_ssp_scatter,
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
 
