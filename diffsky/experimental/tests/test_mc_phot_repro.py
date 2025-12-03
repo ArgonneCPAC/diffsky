@@ -89,7 +89,7 @@ def test_mc_dbk_kern(num_halos=75):
         phot_kern_results.frac_ssp_errors,
         phot_randoms.delta_mag_ssp_scatter,
     )
-    _res = mc_phot_repro._get_dbk_phot_from_dbk_weights(*args)
+    _res = mcpk._get_dbk_phot_from_dbk_weights(*args)
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res
 
     np.all(phot_kern_results.logsm_obs > np.log10(dbk_weights.mstar_bulge.flatten()))

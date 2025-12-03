@@ -214,7 +214,7 @@ def _reproduce_mock_dbk_kern(
     )
     dbk_weights, disk_bulge_history = _ret2
 
-    _ret3 = mc_phot_repro._get_dbk_phot_from_dbk_weights(
+    _ret3 = mcpk._get_dbk_phot_from_dbk_weights(
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,

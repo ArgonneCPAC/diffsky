@@ -81,7 +81,7 @@ def mc_dbk_phot(
     # For each filter, calculate λ_eff in the restframe of each galaxy
     wave_eff_galpop = mcpk.interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
-    _ret3 = _get_dbk_phot_from_dbk_weights(
+    _ret3 = mcpk._get_dbk_phot_from_dbk_weights(
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,
@@ -102,51 +102,6 @@ def mc_dbk_phot(
         obs_mags_knots=obs_mags_knots,
     )
     return dbk_phot_info
-
-
-@jjit
-def _get_dbk_phot_from_dbk_weights(
-    ssp_photflux_table,
-    dbk_weights,
-    dust_frac_trans,
-    wave_eff_galpop,
-    frac_ssp_err_nonoise,
-    delta_mag_ssp_scatter,
-):
-    n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
-
-    # Reshape arrays before calculating galaxy magnitudes
-    _ftrans = dust_frac_trans.reshape((n_gals, n_bands, 1, n_age))
-
-    # Calculate fractional changes to SSP fluxes
-    # frac_ssp_err_noise = frac_ssp_errors * 10 ** (-0.4 * delta_scatter)
-    frac_ssp_err_noise = ssp_err_model.get_noisy_frac_ssp_errors(
-        wave_eff_galpop, frac_ssp_err_nonoise, delta_mag_ssp_scatter
-    )
-
-    _ferr_ssp = frac_ssp_err_noise.reshape((n_gals, n_bands, 1, 1))
-
-    _w_bulge = dbk_weights.ssp_weights_bulge.reshape((n_gals, 1, n_met, n_age))
-    _w_dd = dbk_weights.ssp_weights_disk.reshape((n_gals, 1, n_met, n_age))
-    _w_knot = dbk_weights.ssp_weights_knots.reshape((n_gals, 1, n_met, n_age))
-
-    _mstar_bulge = dbk_weights.mstar_bulge.reshape((n_gals, 1))
-    _mstar_disk = dbk_weights.mstar_disk.reshape((n_gals, 1))
-    _mstar_knots = dbk_weights.mstar_knots.reshape((n_gals, 1))
-
-    integrand_bulge = ssp_photflux_table * _w_bulge * _ftrans * _ferr_ssp
-    flux_bulge = jnp.sum(integrand_bulge, axis=(2, 3)) * _mstar_bulge
-    obs_mags_bulge = -2.5 * jnp.log10(flux_bulge)
-
-    integrand_disk = ssp_photflux_table * _w_dd * _ftrans * _ferr_ssp
-    flux_disk = jnp.sum(integrand_disk, axis=(2, 3)) * _mstar_disk
-    obs_mags_disk = -2.5 * jnp.log10(flux_disk)
-
-    integrand_knots = ssp_photflux_table * _w_knot * _ftrans * _ferr_ssp
-    flux_knots = jnp.sum(integrand_knots, axis=(2, 3)) * _mstar_knots
-    obs_mags_knots = -2.5 * jnp.log10(flux_knots)
-
-    return obs_mags_bulge, obs_mags_disk, obs_mags_knots
 
 
 @partial(jjit, static_argnames=["n_t_table"])
