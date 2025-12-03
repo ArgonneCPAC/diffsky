@@ -81,7 +81,7 @@ def mc_dbk_phot(
     # For each filter, calculate λ_eff in the restframe of each galaxy
     wave_eff_galpop = mcpk.interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
-    _ret3 = get_dbk_phot(
+    _ret3 = _get_dbk_phot_from_dbk_weights(
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,
@@ -105,7 +105,7 @@ def mc_dbk_phot(
 
 
 @jjit
-def get_dbk_phot(
+def _get_dbk_phot_from_dbk_weights(
     ssp_photflux_table,
     dbk_weights,
     dust_frac_trans,
