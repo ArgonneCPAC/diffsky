@@ -9,3 +9,4 @@ Diffsky Code Demos
    validate_mc_lightcones.ipynb
    demo_diffmahpop_lightcone.ipynb
    demo_diffsky_lightcone.ipynb
+   demo_diffsky_recompute_from_mock.ipynb

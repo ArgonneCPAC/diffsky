@@ -2,9 +2,9 @@
 
 To run a unit test of this script:
 
-python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py  poboy 0.01 0.5 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 11.5 -lgmp_max 13.5
+python scripts/LJ_LC_MOCKS/make_ou26_mock.py  poboy 0.01 0.5 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 11.5 -lgmp_max 13.5
 
-python scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
+python scripts/LJ_LC_MOCKS/make_ou26_mock.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
 
 python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
 
@@ -24,7 +24,7 @@ from mpi4py import MPI
 
 from diffsky import phot_utils
 from diffsky.data_loaders import mpi_utils
-from diffsky.data_loaders.hacc_utils import lc_mock_production as lcmp
+from diffsky.data_loaders.hacc_utils import lc_mock_repro as lcmp_repro
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
@@ -42,7 +42,7 @@ DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LJ_LC_LCRC = (
     "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-6/output"
 )
-DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc_cores"
+DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-6"
 
 DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-cf-diffsky"
 DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
@@ -57,6 +57,22 @@ DIFFSTARPOP_CALIBRATIONS = [
 
 ROMAN_HLTDS_PATCHES = [157, 158, 118, 119]
 
+LSST_FILTER_NICKNAMES = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
+
+ROMAN_FILTER_NICKNAMES = (
+    "roman_F062",
+    "roman_F087",
+    "roman_F106",
+    "roman_F129",
+    "roman_F158",
+    "roman_F184",
+    "roman_F146",
+    "roman_F213",
+    "roman_Prism",
+    "roman_Grism_1stOrder",
+    "roman_Grism_0thOrder",
+)
+OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES, *ROMAN_FILTER_NICKNAMES)
 
 if __name__ == "__main__":
     comm = MPI.COMM_WORLD
@@ -80,15 +96,18 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-roman_hltds",
+        "--roman_hltds",
         help="Use all patches overlapping with Roman HLTDS. Overrides istart and iend",
-        default=0,
-        choices=[0, 1],
-        type=int,
+        action="store_true",
     )
 
     parser.add_argument(
-        "--ddf", action="store_true", help="Include LSST DDF sky patches"
+        "--lsst_ddf",
+        help="Use all patches overlapping with LSST DDF. Overrides istart and iend",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--lsst_only", help="Use only LSST bandpasses", action="store_true"
     )
 
     parser.add_argument(
@@ -134,6 +153,8 @@ if __name__ == "__main__":
     mock_nickname = args.mock_nickname
 
     roman_hltds = args.roman_hltds
+    lsst_ddf = args.lsst_ddf
+    lsst_only = args.lsst_only
     fn_u_params = args.fn_u_params
     itest = args.itest
     sim_name = args.sim_name
@@ -143,6 +164,9 @@ if __name__ == "__main__":
     batch_size = args.batch_size
 
     mock_version_name = get_mock_version_name(mock_nickname)
+
+    if lsst_only:
+        OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES,)
 
     if synthetic_cores == 1:
         drn_out = os.path.join(drn_out, "synthetic_cores")
@@ -161,7 +185,7 @@ if __name__ == "__main__":
 
     if machine == "poboy":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_POBOY
-        indir_lc_data = DRN_LJ_CROSSX_OUT_POBOY
+        indir_lc_data = DRN_LJ_LC_POBOY
     elif machine == "lcrc":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
@@ -172,18 +196,28 @@ if __name__ == "__main__":
 
     if itest == 1:
         lc_patch_list = [0, 1]
-    elif roman_hltds == 1:
-        lc_patch_list = np.array(ROMAN_HLTDS_PATCHES).astype(int)
-        if rank == 0:
-            print("Making all lightcone patches for Roman HLTDS")
-    elif args.ddf:
-        fn_lc_decomp = os.path.join(indir_lc_data, "lc_cores-decomposition.txt")
-        lc_patch_dict = hlu.get_lsst_ddf_patches(fn_lc_decomp)
-        lc_patch_list = np.unique(
-            np.concatenate([arr for arr in lc_patch_dict.values()])
-        )
     else:
-        lc_patch_list = np.arange(istart, iend).astype(int)
+        lc_patch_list = []
+        ignore_istart_iend = roman_hltds | lsst_ddf
+        if ignore_istart_iend:
+            if roman_hltds:
+                lc_patch_list.extend(ROMAN_HLTDS_PATCHES)
+                if rank == 0:
+                    print("Making all lightcone patches for Roman HLTDS")
+            if lsst_ddf:
+                fn_lc_decomp = os.path.join(indir_lc_data, "lc_cores-decomposition.txt")
+                lc_patch_dict = hlu.get_lsst_ddf_patches(fn_lc_decomp)
+                lc_patch_list_lsst = np.unique(
+                    np.concatenate([arr for arr in lc_patch_dict.values()])
+                )
+                lc_patch_list.extend(list(lc_patch_list_lsst))
+                if rank == 0:
+                    print("Making all lightcone patches for LSST DDF")
+        else:
+            lc_patch_list = np.arange(istart, iend).astype(int)
+    lc_patch_list = np.array(lc_patch_list)
+    if rank == 0:
+        print(f"Making mock with lc_patch_list={lc_patch_list}")
 
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
@@ -207,7 +241,7 @@ if __name__ == "__main__":
             if rank == 0:
                 print("Ignoring pre-computed fit of SPS parameters")
             diffstarpop_sfh_model = param_collection[0]
-            param_collection = (
+            param_collection = dpw.ParamCollection(
                 diffstarpop_sfh_model,
                 *dpw.DEFAULT_PARAM_COLLECTION[1:],
             )
@@ -225,14 +259,14 @@ if __name__ == "__main__":
 
     n_z_phot_table = 15
 
-    filter_nicknames = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
-    tcurves = lcmp.get_dsps_transmission_curves(filter_nicknames)
+    tcurves = lcmp_repro.get_dsps_transmission_curves(OUTPUT_FILTER_NICKNAMES)
+    assert len(tcurves) == len(OUTPUT_FILTER_NICKNAMES)
 
     # Get complete list of files to process
     fn_lc_list = []
     for lc_patch in lc_patch_list:
         for stepnum in output_timesteps:
-            bn_lc_diffsky = lcmp.LC_CF_BNPAT.format(stepnum, lc_patch)
+            bn_lc_diffsky = lcmp_repro.LC_CF_BNPAT.format(stepnum, lc_patch)
             fn_lc_diffsky = os.path.join(indir_lc_diffsky, bn_lc_diffsky)
             fn_lc_list.append(fn_lc_diffsky)
 
@@ -330,11 +364,12 @@ if __name__ == "__main__":
                 wave_eff_table,
                 batch_key,
             )
-            _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
+            _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
+
             phot_info_batch, lc_data_batch, diffsky_data_batch = _res
             phot_batches.append(_res)
 
-        _cats = lcmp.concatenate_batched_phot_data(phot_batches)
+        _cats = lcmp_repro.concatenate_batched_phot_data(phot_batches)
         phot_info, lc_data, diffsky_data = _cats
 
         n_gals_check = len(lc_data["core_tag"])
@@ -353,41 +388,31 @@ if __name__ == "__main__":
         jax.clear_caches()
 
         patch_key, morph_key = jran.split(patch_key, 2)
-        diffsky_data = lcmp.add_morphology_quantities_to_diffsky_data(
+        diffsky_data = lcmp_repro.add_morphology_quantities_to_diffsky_data(
             sim_info, phot_info, lc_data, diffsky_data, morph_key
         )
 
-        diffsky_data = lcmp.add_black_hole_quantities_to_diffsky_data(
+        diffsky_data = lcmp_repro.add_black_hole_quantities_to_diffsky_data(
             lc_data, diffsky_data, phot_info
         )
 
         patch_key, nfw_key = jran.split(patch_key, 2)
-        lc_data, diffsky_data = lcmp.reposition_satellites(
+        lc_data, diffsky_data = lcmp_repro.reposition_satellites(
             sim_info, lc_data, diffsky_data, nfw_key
         )
 
-        bn_out = lcmp.LC_MOCK_BNPAT.format(stepnum, lc_patch)
+        bn_out = lcmp_repro.LC_MOCK_BNPAT.format(stepnum, lc_patch)
         fn_out = os.path.join(drn_out, bn_out)
-        lcmp.write_lc_dbk_sed_mock_to_disk(
-            fn_out, phot_info, lc_data, diffsky_data, filter_nicknames
+        lcmp_repro.write_lc_dbk_sed_mock_to_disk(
+            fn_out, phot_info, lc_data, diffsky_data, OUTPUT_FILTER_NICKNAMES
         )
         metadata_sfh_mock.append_metadata(
-            fn_out, sim_name, mock_version_name, z_phot_table
+            fn_out, sim_name, mock_version_name, z_phot_table, OUTPUT_FILTER_NICKNAMES
         )
 
-        bn_ssp_data = f"diffsky_{mock_version_name}_ssp_data.hdf5"
-        fn_out_ssp_data = os.path.join(drn_out, bn_ssp_data)
-        lcmp.write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
-
-        lcmp.write_diffsky_tcurves_to_disk(
-            drn_out, mock_version_name, tcurves, filter_nicknames
+        lcmp_repro.write_ancillary_data(
+            drn_out, mock_version_name, sim_info, param_collection, tcurves, ssp_data
         )
-
-        lcmp.write_diffsky_param_collection(
-            drn_out, mock_version_name, param_collection
-        )
-
-        lcmp.write_diffsky_t_table(drn_out, mock_version_name, sim_info)
 
         if rank == 0:
             print("All ranks completing file operations...", flush=True)

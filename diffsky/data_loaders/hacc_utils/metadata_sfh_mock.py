@@ -118,12 +118,9 @@ column_metadata["uran_delta"] = (
     "Array for adding noise to dust parameter delta",
 )
 column_metadata["uran_funo"] = ("None", "Array for adding noise to dust parameter funo")
+column_metadata["uran_pburst"] = ("None", "Array for adding noise to burstiness")
 
-column_metadata["delta_scatter_ms"] = (
-    "None",
-    "Array for adding noise to SSP SED errors",
-)
-column_metadata["delta_scatter_q"] = (
+column_metadata["delta_mag_ssp_scatter"] = (
     "None",
     "Array for adding noise to SSP SED errors",
 )
@@ -160,141 +157,8 @@ column_metadata["lgyr_peak"] = (
     "Burstiness parameter. Specifies burst recency.",
 )
 
-column_metadata["lsst_u"] = ("None", "Apparent magnitude of composite galaxy")
-column_metadata["lsst_g"] = ("None", "Apparent magnitude of composite galaxy")
-column_metadata["lsst_r"] = ("None", "Apparent magnitude of composite galaxy")
-column_metadata["lsst_i"] = ("None", "Apparent magnitude of composite galaxy")
-column_metadata["lsst_z"] = ("None", "Apparent magnitude of composite galaxy")
-column_metadata["lsst_y"] = ("None", "Apparent magnitude of composite galaxy")
-
-column_metadata["lsst_u_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_g_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_r_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_i_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_z_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_y_bulge"] = (
-    "None",
-    "Apparent magnitude of bulge component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-
-column_metadata["lsst_u_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_g_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_r_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_i_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_z_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_y_disk"] = (
-    "None",
-    "Apparent magnitude of disk component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-
-column_metadata["lsst_u_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_g_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_r_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_i_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_z_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
-column_metadata["lsst_y_knots"] = (
-    "None",
-    "Apparent magnitude of knot component. "
-    "Note that the sum of disk/bulge/knot fluxes does not exactly equal the composite galaxy flux. "
-    "Unless your science critically needs disk/bulge/knot magnitudes, "
-    "these should be ignored in favor of the composite magnitudes.",
-)
+COMPOSITE_MAG_MSG = "Apparent magnitude of composite galaxy"
+COMPONENT_MAG_MSG_PAT = "Apparent magnitude of {0} component"
 
 column_metadata["fknot"] = (
     "None",
@@ -401,7 +265,7 @@ Contact: ahearin@anl.gov for questions.
 """
 
 
-def append_metadata(fnout, sim_name, mock_version_name, z_phot_table):
+def append_metadata(fnout, sim_name, mock_version_name, z_phot_table, filter_nicknames):
     with h5py.File(fnout, "r+") as hdf_out:
 
         metadata_group = hdf_out.require_group("metadata")
@@ -449,6 +313,25 @@ def append_metadata(fnout, sim_name, mock_version_name, z_phot_table):
             unit, description = val
             hdf_out[key_out].attrs["unit"] = unit
             hdf_out[key_out].attrs["description"] = description
+
+        # Filter magnitudes
+        for nickname in filter_nicknames:
+
+            # Composite magnitudes
+            key_out = "data/" + nickname
+            assert key_out in hdf_out.keys(), f"{key_out} is missing from {fnout}"
+
+            hdf_out[key_out].attrs["unit"] = "None"
+            hdf_out[key_out].attrs["description"] = COMPOSITE_MAG_MSG
+
+            # Component magnitudes
+            for component in ("bulge", "disk", "knots"):
+                key_out = "data/" + "_".join((nickname, component))
+                assert key_out in hdf_out.keys(), f"{key_out} is missing from {fnout}"
+
+                msg = COMPONENT_MAG_MSG_PAT.format(component)
+                hdf_out[key_out].attrs["unit"] = "None"
+                hdf_out[key_out].attrs["description"] = msg
 
 
 def get_dependency_versions():

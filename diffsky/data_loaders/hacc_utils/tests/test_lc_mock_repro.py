@@ -2,10 +2,8 @@
 
 import os
 from collections import namedtuple
-from copy import deepcopy
 
 import numpy as np
-import pytest
 from diffmah import DEFAULT_MAH_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology.flat_wcdm import age_at_z, age_at_z0
@@ -21,9 +19,9 @@ from ....experimental import precompute_ssp_phot as psspp
 from ....experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
 from ....experimental.disk_bulge_modeling import mc_disk_bulge as mcdb
 from ....experimental.lc_phot_kern import get_wave_eff_table
-from ....experimental.tests import test_lc_phot_kern as tlcphk
+from ....experimental.tests import test_mc_lightcone_halos as tmclh
 from ... import io_utils as iou
-from .. import lc_mock_production as lcmp
+from .. import lc_mock_repro as lcmp_repro
 from .. import load_lc_cf
 
 vmap_interp = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
@@ -41,6 +39,8 @@ except AssertionError:
 CAN_RUN_LJ_DATA_TESTS = CAN_RUN_LJ_DATA_TESTS & HAS_HACCY_TREES
 POBOY_MSG = "This test only runs on poboy machine with haccytrees installed"
 
+_THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
+
 
 def test_load_diffsky_param_collection():
     all_params_flat = dpw.unroll_param_collection_into_flat_array(
@@ -53,30 +53,19 @@ def test_load_diffsky_param_collection():
 
     drn_mock = ""
     mock_version_name = "unit_testing"
-    fn = lcmp.BNPAT_PARAM_COLLECTION.format(mock_version_name)
+    fn = lcmp_repro.BNPAT_PARAM_COLLECTION.format(mock_version_name)
     iou.write_namedtuple_to_hdf5(all_named_params, fn)
 
-    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
+    param_collection = lcmp_repro.load_diffsky_param_collection(
+        drn_mock, mock_version_name
+    )
     all_params_flat2 = dpw.unroll_param_collection_into_flat_array(*param_collection)
 
     assert np.allclose(all_params_flat, all_params_flat2, rtol=1e-5)
 
 
-@pytest.mark.skipif(not CAN_RUN_LJ_DATA_TESTS, reason=POBOY_MSG)
-def test_add_sfh_quantities_to_mock_last_journey():
-    ran_key = jran.key(0)
-    sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
-
-    bn_list = ["lc_cores-213.0.diffsky_data.hdf5"]
-    fn_list = [os.path.join(DRN_LC_CF_LJ_POBOY, bn) for bn in bn_list]
-    lc_data, diffsky_data = load_lc_cf.collect_lc_diffsky_data(fn_list)
-
-    args = (sim_info, lc_data, diffsky_data, ran_key)
-    lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(*args)
-
-
-def _prepare_input_catalogs(n_gals=500):
-    lc_data, tcurves = tlcphk._get_weighted_lc_data_for_unit_testing(num_halos=n_gals)
+def _prepare_input_catalogs(n_gals=20):
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=n_gals)
     lc_data = lc_data._asdict()
     lc_data["redshift_true"] = lc_data["z_obs"]
 
@@ -94,23 +83,43 @@ def _prepare_input_catalogs(n_gals=500):
     return lc_data, diffsky_data, tcurves
 
 
-def test_add_sfh_quantities_to_mock():
-    ran_key = jran.key(0)
-    diffsky_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
+def test_write_ancillary_data():
     lc_data, diffsky_data, tcurves = _prepare_input_catalogs()
-    lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
-        diffsky_info, lc_data, diffsky_data, ran_key
+    ssp_data = load_fake_ssp_data()
+    mock_version_name = "dummy_mock_version_name"
+    sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
+
+    drn_mock = os.path.join(_THIS_DRNAME, "tmp_testing")
+    os.makedirs(drn_mock, exist_ok=True)
+    args = (
+        drn_mock,
+        mock_version_name,
+        sim_info,
+        dpw.DEFAULT_PARAM_COLLECTION,
+        tcurves,
+        ssp_data,
+    )
+    lcmp_repro.write_ancillary_data(*args)
+    t_table = lcmp_repro.load_diffsky_t_table(drn_mock, mock_version_name)
+    assert np.all(t_table > 0)
+    assert np.all(t_table < 15)
+    tcurves2 = lcmp_repro.load_diffsky_tcurves(drn_mock, mock_version_name)
+    for name in tcurves2._fields:
+        assert np.allclose(getattr(tcurves, name), getattr(tcurves2, name), rtol=0.01)
+
+    ssp_data2 = lcmp_repro.load_diffsky_ssp_data(drn_mock, mock_version_name)
+    for name in ssp_data2._fields:
+        assert np.allclose(getattr(ssp_data, name), getattr(ssp_data2, name), rtol=0.01)
+
+    param_collection2 = lcmp_repro.load_diffsky_param_collection(
+        drn_mock, mock_version_name
+    )
+    assert np.allclose(
+        dpw.DEFAULT_PARAM_COLLECTION.mzr_params, param_collection2.mzr_params
     )
 
-    sfh_table_recomputed = np.where(
-        diffsky_data["mc_is_q"].reshape((-1, 1)),
-        diffsky_data["sfh_table_q"],
-        diffsky_data["sfh_table_ms"],
-    )
-    assert np.allclose(diffsky_data["sfh_table"], sfh_table_recomputed, rtol=0.01)
 
-
-def test_add_dbk_sed_quantities_to_mock():
+def test_add_dbk_phot_quantities_to_mock():
     diffsky_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
 
     ssp_data = load_fake_ssp_data()
@@ -118,11 +127,8 @@ def test_add_dbk_sed_quantities_to_mock():
     lc_data, diffsky_data, tcurves = _prepare_input_catalogs()
 
     ran_key = jran.key(0)
-    lc_data, diffsky_data = lcmp.add_sfh_quantities_to_mock(
-        diffsky_info, deepcopy(lc_data), deepcopy(diffsky_data), ran_key
-    )
 
-    z_phot_table = np.linspace(lc_data["z_obs"].min(), lc_data["z_obs"].max(), 15)
+    z_phot_table = np.linspace(lc_data["z_obs"].min(), lc_data["z_obs"].max(), 3)
     t0 = age_at_z0(*diffsky_info.cosmo_params)
     t_table = np.linspace(T_TABLE_MIN, t0, 100)
 
@@ -144,7 +150,7 @@ def test_add_dbk_sed_quantities_to_mock():
         ran_key,
     )
 
-    _res = lcmp.add_dbk_sed_quantities_to_mock(*args)
+    _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
     phot_info, lc_data, diffsky_data = _res
 
     fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(

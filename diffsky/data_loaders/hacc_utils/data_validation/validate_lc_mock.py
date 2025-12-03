@@ -9,10 +9,10 @@ from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology.flat_wcdm import age_at_z
 
 from .... import phot_utils
-from ....experimental import dbk_from_mock
+from ....experimental import dbk_from_mock2
 from ....experimental import precompute_ssp_phot as psspp
 from ....param_utils import diffsky_param_wrapper as dpw
-from .. import lc_mock_production as lcmp
+from .. import lc_mock_repro as lcmp
 from .. import load_flat_hdf5, load_lc_cf
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
@@ -95,6 +95,7 @@ def check_all_data_columns_have_metadata(fn_lc_mock):
 
     msg = []
     with h5py.File(fn_lc_mock, "r") as hdf:
+
         for key in hdf["data"].keys():
             try:
                 unit = hdf["data/" + key].attrs["unit"]
@@ -275,12 +276,10 @@ def check_recomputed_photometry(fn_lc_mock, n_test=200, return_results=False):
 
     drn_mock = os.path.dirname(fn_lc_mock)
     tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
-    t_table = lcmp.load_diffsky_t_table(drn_mock, mock_version_name)
     ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
     sim_info = lcmp.load_diffsky_sim_info(fn_lc_mock)
 
     mock = load_flat_hdf5(fn_lc_mock, dataset="data", iend=n_test)
-    n_gals = mock["redshift_true"].size
 
     mah_params = DEFAULT_MAH_PARAMS._make(
         [mock[key] for key in DEFAULT_MAH_PARAMS._fields]
@@ -291,11 +290,6 @@ def check_recomputed_photometry(fn_lc_mock, n_test=200, return_results=False):
     param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
     t_obs = age_at_z(mock["redshift_true"], *sim_info.cosmo_params)
 
-    _msk_q = mock["mc_sfh_type"].reshape((n_gals, 1))
-    delta_scatter = np.where(
-        _msk_q == 0, mock["delta_scatter_q"], mock["delta_scatter_ms"]
-    )
-
     # Precompute photometry at each element of the redshift table
     z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
     wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
@@ -304,31 +298,43 @@ def check_recomputed_photometry(fn_lc_mock, n_test=200, return_results=False):
         tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
     )
 
+    mc_is_q = np.where(mock["mc_sfh_type"] == 0, True, False)
     args = (
+        mc_is_q,
+        mock["uran_av"],
+        mock["uran_delta"],
+        mock["uran_funo"],
+        mock["uran_pburst"],
+        mock["delta_mag_ssp_scatter"],
+        sfh_params,
         mock["redshift_true"],
         t_obs,
         mah_params,
-        mock["logmp0"],
-        t_table,
+        mock["fknot"],
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
-        sfh_params,
         param_collection.mzr_params,
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
         sim_info.cosmo_params,
         sim_info.fb,
-        mock["uran_av"],
-        mock["uran_delta"],
-        mock["uran_funo"],
-        delta_scatter,
-        mock["mc_sfh_type"],
-        mock["fknot"],
     )
-    phot_info = dbk_from_mock._disk_bulge_knot_phot_from_mock(*args)
+    _res = dbk_from_mock2._reproduce_mock_dbk_kern(*args)
+    (
+        phot_info,
+        phot_randoms,
+        disk_bulge_history,
+        obs_mags_bulge,
+        obs_mags_disk,
+        obs_mags_knots,
+    ) = _res
+    phot_info = phot_info._asdict()
+    phot_info["obs_mags_bulge"] = obs_mags_bulge
+    phot_info["obs_mags_disk"] = obs_mags_disk
+    phot_info["obs_mags_knots"] = obs_mags_knots
 
     if return_results:
         return mock, phot_info, tcurves
