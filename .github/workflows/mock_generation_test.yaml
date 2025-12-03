@@ -37,13 +37,12 @@ jobs:
           miniforge-version: latest
 
       - name: configure conda and install code
-        shell: bash -leo pipefail {0}
+        shell: bash -l {0}
         env:
           GITHUB_TOKEN: ${{ secrets.CPAC_PRIVATE_REPO_TOKEN }}
           GITHUB_USER: ${{ secrets.GH_USR_TESTING_TOKEN }}
 
         run: |
-          set -x
           conda config --set always_yes yes
           conda install --quiet \
             --file=requirements.txt
