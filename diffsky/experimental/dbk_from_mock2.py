@@ -8,7 +8,6 @@ from jax import jit as jjit
 from jax import vmap
 
 from ..dustpop.tw_dust import DEFAULT_DUST_PARAMS
-from . import mc_phot_repro
 from .disk_bulge_modeling import disk_bulge_kernels as dbk
 from .kernels import mc_phot_kernels as mcpk
 
