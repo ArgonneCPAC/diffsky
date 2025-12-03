@@ -241,7 +241,7 @@ if __name__ == "__main__":
             if rank == 0:
                 print("Ignoring pre-computed fit of SPS parameters")
             diffstarpop_sfh_model = param_collection[0]
-            param_collection = (
+            param_collection = dpw.ParamCollection(
                 diffstarpop_sfh_model,
                 *dpw.DEFAULT_PARAM_COLLECTION[1:],
             )
