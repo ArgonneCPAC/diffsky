@@ -18,9 +18,6 @@ from jax import random as jran
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..ssp_err_model2 import ssp_err_model
 from . import mc_diffstarpop_wrappers as mcdw
-from .disk_bulge_modeling import disk_knots
-from .disk_bulge_modeling import mc_disk_bulge as mcdb
-from .kernels import dbk_kernels
 from .kernels import mc_phot_kernels as mcpk
 from .kernels.ssp_weight_kernels_repro import (
     compute_burstiness,
@@ -70,7 +67,7 @@ def mc_dbk_phot(
         lgyr_peak=phot_kern_results.lgyr_peak,
         lgyr_max=phot_kern_results.lgyr_max,
     )
-    _ret2 = _mc_dbk_kern(
+    _ret2 = mcpk._mc_dbk_kern(
         t_obs,
         ssp_data,
         phot_kern_results.t_table,
@@ -105,47 +102,6 @@ def mc_dbk_phot(
         obs_mags_knots=obs_mags_knots,
     )
     return dbk_phot_info
-
-
-@partial(jjit, static_argnames=["n_gals"])
-def get_mc_dbk_randoms(dbk_key, n_gals):
-    fknot = jran.uniform(
-        dbk_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
-    )
-    return mcpk.DBKRandoms(fknot=fknot)
-
-
-@jjit
-def _mc_dbk_kern(
-    t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_key
-):
-    n_gals = t_obs.shape[0]
-    dbk_randoms = get_mc_dbk_randoms(dbk_key, n_gals)
-    dbk_weights, disk_bulge_history = _dbk_kern(
-        t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_randoms
-    )
-    return dbk_randoms, dbk_weights, disk_bulge_history
-
-
-@jjit
-def _dbk_kern(
-    t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_randoms
-):
-    disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(t_table, sfh_table)
-
-    args = (
-        t_obs,
-        ssp_data,
-        t_table,
-        sfh_table,
-        burst_params,
-        lgmet_weights,
-        disk_bulge_history,
-        dbk_randoms.fknot,
-    )
-    dbk_weights = dbk_kernels.get_dbk_weights(*args)
-
-    return dbk_weights, disk_bulge_history
 
 
 @jjit

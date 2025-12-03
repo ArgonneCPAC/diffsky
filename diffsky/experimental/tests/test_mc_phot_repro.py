@@ -62,7 +62,7 @@ def test_mc_dbk_kern(num_halos=75):
         phot_kern_results.lgmet_weights,
         dbk_key,
     )
-    dbk_randoms, dbk_weights, disk_bulge_history = mc_phot_repro._mc_dbk_kern(*args)
+    dbk_randoms, dbk_weights, disk_bulge_history = mcpk._mc_dbk_kern(*args)
     assert np.all(np.isfinite(dbk_weights.ssp_weights_bulge))
     assert np.all(np.isfinite(dbk_weights.ssp_weights_disk))
     assert np.all(np.isfinite(dbk_weights.ssp_weights_knots))

@@ -15,6 +15,9 @@ from ...ssp_err_model2 import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
 from .. import photometry_interpolation as photerp
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
+from ..disk_bulge_modeling import disk_knots
+from ..disk_bulge_modeling import mc_disk_bulge as mcdb
+from . import dbk_kernels
 from . import ssp_weight_kernels_repro as sspwk
 
 PHOT_RAN_KEYS = (
@@ -65,6 +68,27 @@ def get_mc_phot_randoms(ran_key, diffstarpop_params, mah_params, cosmo_params):
         delta_mag_ssp_scatter,
     )
     return phot_randoms, sfh_params
+
+
+@jjit
+def _dbk_kern(
+    t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_randoms
+):
+    disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(t_table, sfh_table)
+
+    args = (
+        t_obs,
+        ssp_data,
+        t_table,
+        sfh_table,
+        burst_params,
+        lgmet_weights,
+        disk_bulge_history,
+        dbk_randoms.fknot,
+    )
+    dbk_weights = dbk_kernels.get_dbk_weights(*args)
+
+    return dbk_weights, disk_bulge_history
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -208,6 +232,26 @@ def _phot_kern(
         wave_eff_galpop,
     )
     return phot_kern_results
+
+
+@jjit
+def _mc_dbk_kern(
+    t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_key
+):
+    n_gals = t_obs.shape[0]
+    dbk_randoms = get_mc_dbk_randoms(dbk_key, n_gals)
+    dbk_weights, disk_bulge_history = _dbk_kern(
+        t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_randoms
+    )
+    return dbk_randoms, dbk_weights, disk_bulge_history
+
+
+@partial(jjit, static_argnames=["n_gals"])
+def get_mc_dbk_randoms(dbk_key, n_gals):
+    fknot = jran.uniform(
+        dbk_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
+    )
+    return DBKRandoms(fknot=fknot)
 
 
 DBKRandoms = namedtuple("DBKRandoms", ("fknot",))

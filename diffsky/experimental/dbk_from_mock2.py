@@ -203,7 +203,7 @@ def _reproduce_mock_dbk_kern(
         [getattr(phot_kern_results, pname) for pname in DEFAULT_BURST_PARAMS._fields]
     )
     dbk_randoms = mcpk.DBKRandoms(fknot=fknot)
-    _ret2 = mc_phot_repro._dbk_kern(
+    _ret2 = mcpk._dbk_kern(
         t_obs,
         ssp_data,
         phot_kern_results.t_table,
