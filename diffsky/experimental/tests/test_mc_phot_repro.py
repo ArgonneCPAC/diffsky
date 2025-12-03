@@ -10,6 +10,7 @@ from jax import vmap
 
 from ...param_utils import diffsky_param_wrapper as dpw
 from .. import mc_phot_repro
+from ..kernels import mc_phot_kernels as mcpk
 from . import test_mc_lightcone_halos as tmclh
 
 _A = [None, 0, None, None, 0, *[None] * 4]
@@ -23,7 +24,7 @@ def test_mc_dbk_kern(num_halos=75):
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)
 
-    phot_kern_results, phot_randoms = mc_phot_repro._mc_phot_kern(
+    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         phot_key,
         dpw.DEFAULT_PARAM_COLLECTION[0],
         lc_data.z_obs,
@@ -130,7 +131,7 @@ def test_sed_kern(num_halos=250):
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)
 
-    phot_kern_results, phot_randoms = mc_phot_repro._mc_phot_kern(
+    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         phot_key,
         dpw.DEFAULT_PARAM_COLLECTION[0],
         lc_data.z_obs,
