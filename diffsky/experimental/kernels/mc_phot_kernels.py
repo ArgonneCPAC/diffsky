@@ -306,6 +306,9 @@ def _sed_kern(
     frac_ssp_errors = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
         ssp_err_pop_params, logsm_obs, z_obs, wave_eff_galpop
     )
+    frac_ssp_errors = ssp_err_model.get_noisy_frac_ssp_errors(
+        wave_eff_galpop, frac_ssp_errors, phot_randoms.delta_mag_ssp_scatter
+    )
 
     n_met, n_age, n_wave = ssp_data.ssp_flux.shape
     dust_frac_trans = dust_frac_trans.swapaxes(1, 2)  # (n_gals, n_age, n_wave)
