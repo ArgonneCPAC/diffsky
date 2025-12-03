@@ -449,7 +449,7 @@ def _mc_lc_dbk_phot_kern(
         obs_mags_disk=obs_mags_disk,
         obs_mags_knots=obs_mags_knots,
     )
-    return dbk_phot_info
+    return dbk_phot_info, dbk_weights
 
 
 DBKRandoms = namedtuple("DBKRandoms", ("fknot",))

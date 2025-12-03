@@ -27,13 +27,13 @@ from jax import vmap
 
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...ellipsoidal_shapes import bulge_shapes, disk_shapes, ellipse_proj_kernels
-from ...experimental import mc_phot_repro
 from ...experimental.black_hole_modeling import black_hole_mass as bhm
 from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
     monte_carlo_bh_acc_rate,
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
+from ...experimental.kernels import mc_phot_kernels as mcpk
 from ...experimental.size_modeling import disk_bulge_sizes as dbs
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
@@ -352,7 +352,7 @@ def add_dbk_phot_quantities_to_mock(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(
+    dbk_phot_info, dbk_weights = mcpk._mc_lc_dbk_phot_kern(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],
@@ -361,7 +361,11 @@ def add_dbk_phot_quantities_to_mock(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
-        *param_collection,
+        param_collection.diffstarpop_params,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
         sim_info.cosmo_params,
         sim_info.fb,
     )

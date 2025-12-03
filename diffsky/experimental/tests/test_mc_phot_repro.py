@@ -19,15 +19,13 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-def check_phot_kern_results(phot_kern_results):
-    assert np.all(np.isfinite(phot_kern_results.obs_mags))
-    assert np.all(phot_kern_results.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7)
-
-    assert np.allclose(
-        np.sum(phot_kern_results.ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4
-    )
-    assert np.all(phot_kern_results.frac_ssp_errors > 0)
-    assert np.all(phot_kern_results.frac_ssp_errors < 5)
+def test_mc_lc_phot_evaluates(num_halos=50):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
+    phot_kern_results = mc_phot_repro.mc_lc_phot(ran_key, lc_data)
+    keys = list(phot_kern_results.keys())
+    phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
+    check_phot_kern_results(phot_kern_results)
 
 
 def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=50):
@@ -62,13 +60,43 @@ def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=50):
         assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
 
 
-def test_mc_lc_phot_evaluates(num_halos=50):
+def test_mc_lc_dbk_phot(num_halos=50):
     ran_key = jran.key(0)
     lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    phot_kern_results = mc_phot_repro.mc_lc_phot(ran_key, lc_data)
-    keys = list(phot_kern_results.keys())
-    phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
-    check_phot_kern_results(phot_kern_results)
+    dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(ran_key, lc_data)
+
+    np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_phot_info["mstar_bulge"]))
+    np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_phot_info["mstar_disk"]))
+    np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_phot_info["mstar_knots"]))
+
+    assert not np.allclose(
+        dbk_phot_info["obs_mags"], dbk_phot_info["obs_mags_bulge"], rtol=1e-4
+    )
+    assert np.all(dbk_phot_info["obs_mags"] <= dbk_phot_info["obs_mags_bulge"])
+
+    assert not np.allclose(
+        dbk_phot_info["obs_mags"], dbk_phot_info["obs_mags_disk"], rtol=1e-4
+    )
+    assert np.all(dbk_phot_info["obs_mags"] <= dbk_phot_info["obs_mags_disk"])
+
+    assert not np.allclose(
+        dbk_phot_info["obs_mags"], dbk_phot_info["obs_mags_knots"], rtol=1e-4
+    )
+    assert np.all(dbk_phot_info["obs_mags"] <= dbk_phot_info["obs_mags_knots"])
+
+    a = 10 ** (-0.4 * dbk_phot_info["obs_mags_bulge"])
+    b = 10 ** (-0.4 * dbk_phot_info["obs_mags_disk"])
+    c = 10 ** (-0.4 * dbk_phot_info["obs_mags_knots"])
+    mtot = -2.5 * np.log10(a + b + c)
+
+    magdiff = mtot - dbk_phot_info["obs_mags"]
+    assert np.all(np.abs(magdiff) < 0.1)
+
+    mean_magdiff = np.mean(magdiff, axis=0)  # shape = (n_bands,)
+    assert np.allclose(mean_magdiff, 0.0, atol=0.01)
+
+    std_magdiff = np.std(magdiff, axis=0)
+    assert np.all(std_magdiff < 0.01)
 
 
 def test_mc_dbk_kern(num_halos=50):
@@ -228,3 +256,14 @@ def test_sed_kern(num_halos=250):
 
         mags = calc_obs_mags_galpop(*args)
         assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
+
+
+def check_phot_kern_results(phot_kern_results):
+    assert np.all(np.isfinite(phot_kern_results.obs_mags))
+    assert np.all(phot_kern_results.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7)
+
+    assert np.allclose(
+        np.sum(phot_kern_results.ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4
+    )
+    assert np.all(phot_kern_results.frac_ssp_errors > 0)
+    assert np.all(phot_kern_results.frac_ssp_errors < 5)

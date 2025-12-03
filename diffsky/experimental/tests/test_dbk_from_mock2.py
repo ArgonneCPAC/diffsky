@@ -1,5 +1,7 @@
 """"""
 
+from collections import namedtuple
+
 import numpy as np
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.defaults import FB
@@ -75,13 +77,7 @@ def test_reproduce_mock_dbk_kern():
 
     dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(
         ran_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
+        lc_data,
         diffstarpop_params,
         mzr_params,
         spspop_params,
@@ -89,6 +85,9 @@ def test_reproduce_mock_dbk_kern():
         ssp_err_pop_params,
         DEFAULT_COSMOLOGY,
         FB,
+    )
+    dbk_phot_info = namedtuple("DBKPhotInfo", list(dbk_phot_info.keys()))(
+        **dbk_phot_info
     )
 
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
@@ -154,13 +153,7 @@ def test_reproduce_mock_phot_kern():
 
     dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(
         ran_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
+        lc_data,
         diffstarpop_params,
         mzr_params,
         spspop_params,
@@ -168,6 +161,9 @@ def test_reproduce_mock_phot_kern():
         ssp_err_pop_params,
         DEFAULT_COSMOLOGY,
         FB,
+    )
+    dbk_phot_info = namedtuple("DBKPhotInfo", list(dbk_phot_info.keys()))(
+        **dbk_phot_info
     )
 
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
@@ -221,13 +217,7 @@ def test_reproduce_mock_sed_kern():
 
     dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(
         ran_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
+        lc_data,
         diffstarpop_params,
         mzr_params,
         spspop_params,
@@ -235,6 +225,9 @@ def test_reproduce_mock_sed_kern():
         ssp_err_pop_params,
         DEFAULT_COSMOLOGY,
         FB,
+    )
+    dbk_phot_info = namedtuple("DBKPhotInfo", list(dbk_phot_info.keys()))(
+        **dbk_phot_info
     )
 
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(

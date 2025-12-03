@@ -103,77 +103,35 @@ def mc_lc_sed(
 
 def mc_lc_dbk_phot(
     ran_key,
-    z_obs,
-    t_obs,
-    mah_params,
-    ssp_data,
-    precomputed_ssp_mag_table,
-    z_phot_table,
-    wave_eff_table,
-    diffstarpop_params,
-    mzr_params,
-    spspop_params,
-    scatter_params,
-    ssp_err_pop_params,
-    cosmo_params,
-    fb,
+    lc_data,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
 ):
-    phot_key, dbk_key = jran.split(ran_key, 2)
-    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
-        phot_key,
+    dbk_phot_info, dbk_weights = mcpk._mc_lc_dbk_phot_kern(
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
         diffstarpop_params,
-        z_obs,
-        t_obs,
-        mah_params,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )
+    dbk_phot_info = dbk_phot_info._asdict()
+    dbk_phot_info["mstar_bulge"] = dbk_weights.mstar_bulge.flatten()
+    dbk_phot_info["mstar_disk"] = dbk_weights.mstar_disk.flatten()
+    dbk_phot_info["mstar_knots"] = dbk_weights.mstar_knots.flatten()
 
-    burst_params = DEFAULT_BURST_PARAMS._replace(
-        lgfburst=phot_kern_results.lgfburst,
-        lgyr_peak=phot_kern_results.lgyr_peak,
-        lgyr_max=phot_kern_results.lgyr_max,
-    )
-    _ret2 = mcpk._mc_dbk_kern(
-        t_obs,
-        ssp_data,
-        phot_kern_results.t_table,
-        phot_kern_results.sfh_table,
-        burst_params,
-        phot_kern_results.lgmet_weights,
-        dbk_key,
-    )
-    dbk_randoms, dbk_weights, disk_bulge_history = _ret2
-
-    # For each filter, calculate λ_eff in the restframe of each galaxy
-    wave_eff_galpop = mcpk.interp_vmap2(z_obs, z_phot_table, wave_eff_table)
-
-    _ret3 = mcpk._get_dbk_phot_from_dbk_weights(
-        phot_kern_results.ssp_photflux_table,
-        dbk_weights,
-        phot_kern_results.dust_frac_trans,
-        wave_eff_galpop,
-        phot_kern_results.frac_ssp_errors,
-        phot_randoms.delta_mag_ssp_scatter,
-    )
-    obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
-
-    dbk_phot_info = mcpk.MCDBKPhotInfo(
-        **phot_kern_results._asdict(),
-        **phot_randoms._asdict(),
-        **dbk_randoms._asdict(),
-        **disk_bulge_history.fbulge_params._asdict(),
-        bulge_to_total_history=disk_bulge_history.bulge_to_total_history,
-        obs_mags_bulge=obs_mags_bulge,
-        obs_mags_disk=obs_mags_disk,
-        obs_mags_knots=obs_mags_knots,
-    )
     return dbk_phot_info
