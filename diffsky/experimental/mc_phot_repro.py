@@ -9,8 +9,6 @@ config.update("jax_enable_x64", True)
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
-from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
-from jax import random as jran
 
 from ..param_utils import diffsky_param_wrapper as dpw
 from .kernels import mc_phot_kernels as mcpk
