@@ -26,26 +26,16 @@ from .disk_bulge_modeling import disk_bulge_kernels as dbk
 from .disk_bulge_modeling import disk_knots
 from .disk_bulge_modeling import mc_disk_bulge as mcdb
 from .kernels import dbk_kernels
+from .kernels import mc_phot_kernels as mcpk
 from .kernels.ssp_weight_kernels_repro import (
     _compute_obs_mags_from_weights,
     compute_burstiness,
     compute_dust_attenuation,
-    get_burstiness_randoms,
-    get_dust_randoms,
     get_smooth_ssp_weights,
 )
 
 LGMET_SCATTER = 0.2
 
-PHOT_RAN_KEYS = (
-    "mc_is_q",
-    "uran_av",
-    "uran_delta",
-    "uran_funo",
-    "uran_pburst",
-    "delta_mag_ssp_scatter",
-)
-PhotRandoms = namedtuple("PhotRandoms", PHOT_RAN_KEYS)
 DBKRandoms = namedtuple("DBKRandoms", ("fknot",))
 
 
@@ -79,7 +69,7 @@ MCDBKPhotInfo = namedtuple(
     "MCDBKPhotInfo",
     (
         *PhotKernResults._fields,
-        *PhotRandoms._fields,
+        *mcpk.PhotRandoms._fields,
         *DBKRandoms._fields,
         *DBK_EXTRA_FIELDS,
     ),
@@ -87,41 +77,6 @@ MCDBKPhotInfo = namedtuple(
 
 _B = (None, None, 1)
 interp_vmap2 = jjit(vmap(jnp.interp, in_axes=_B, out_axes=1))
-
-
-@jjit
-def get_mc_phot_randoms(
-    ran_key, diffstarpop_params, mah_params, cosmo_params, precomputed_ssp_mag_table
-):
-    n_gals = mah_params.logm0.size
-    n_bands = precomputed_ssp_mag_table.shape[1]
-
-    # Monte Carlo diffstar params
-    ran_key, sfh_key = jran.split(ran_key, 2)
-    sfh_params, mc_is_q = mcdw.mc_diffstarpop_cens_wrapper(
-        diffstarpop_params, sfh_key, mah_params, cosmo_params
-    )
-    # Generate randoms for stochasticity in dust attenuation curves
-    ran_key, dust_key = jran.split(ran_key, 2)
-    dust_randoms = get_dust_randoms(dust_key, n_gals)
-
-    # Randoms for burstiness
-    ran_key, burst_key = jran.split(ran_key, 2)
-    uran_pburst = get_burstiness_randoms(burst_key, n_gals)
-
-    # Scatter for SSP errors
-    ran_key, ssp_key = jran.split(ran_key, 2)
-    delta_mag_ssp_scatter = ssp_err_model.get_delta_mag_ssp_scatter(ssp_key, n_gals)
-
-    phot_randoms = PhotRandoms(
-        mc_is_q,
-        dust_randoms.uran_av,
-        dust_randoms.uran_delta,
-        dust_randoms.uran_funo,
-        uran_pburst,
-        delta_mag_ssp_scatter,
-    )
-    return phot_randoms, sfh_params
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -143,8 +98,8 @@ def _mc_phot_kern(
     fb,
     n_t_table=mcdw.N_T_TABLE,
 ):
-    phot_randoms, sfh_params = get_mc_phot_randoms(
-        ran_key, diffstarpop_params, mah_params, cosmo_params, precomputed_ssp_mag_table
+    phot_randoms, sfh_params = mcpk.get_mc_phot_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params
     )
     phot_kern_results = _phot_kern(
         phot_randoms,
