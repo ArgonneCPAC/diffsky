@@ -148,7 +148,7 @@ def test_sed_kern(num_halos=250):
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
         [getattr(phot_kern_results, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
-    sed_kern_results = mc_phot_repro._sed_kern(
+    sed_kern_results = mcpk._sed_kern(
         phot_randoms,
         sfh_params,
         lc_data.z_obs,

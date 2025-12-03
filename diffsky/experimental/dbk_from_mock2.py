@@ -135,7 +135,7 @@ def _reproduce_mock_sed_kern(
         cosmo_params,
         fb,
     )
-    sed_kern_results = mc_phot_repro._sed_kern(
+    sed_kern_results = mcpk._sed_kern(
         phot_randoms,
         sfh_params,
         z_obs,
