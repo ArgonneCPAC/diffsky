@@ -16,7 +16,7 @@ from ..param_utils import diffsky_param_wrapper as dpw
 from .kernels import mc_phot_kernels as mcpk
 
 
-def mc_dbk_phot(
+def mc_lc_dbk_phot(
     ran_key,
     z_obs,
     t_obs,

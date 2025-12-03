@@ -133,7 +133,7 @@ def _mc_phot_kern(
     )
 
 
-def mc_dbk_phot(
+def mc_lc_dbk_phot(
     ran_key,
     z_obs,
     t_obs,
