@@ -94,7 +94,7 @@ def mc_dbk_phot(
     return dbk_phot_info
 
 
-def mcw_lc_phot(
+def mc_lc_phot(
     ran_key,
     lc_data,
     diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
@@ -128,7 +128,7 @@ def mcw_lc_phot(
     return phot_kern_results
 
 
-def mcw_lc_sed(
+def mc_lc_sed(
     ran_key,
     lc_data,
     diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
