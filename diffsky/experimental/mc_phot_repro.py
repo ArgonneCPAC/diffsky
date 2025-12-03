@@ -26,6 +26,21 @@ def mc_lc_phot(
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
 ):
+    """Populate the input lightcone with galaxy photometry
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lc_data : namedtuple
+        Contains info about the halo lightcone, SED inputs, and diffsky parameters
+
+    Returns
+    -------
+    results : dict
+        Contains info about the galaxy SEDs
+
+    """
     phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         ran_key,
         diffstarpop_params,
@@ -60,6 +75,21 @@ def mc_lc_sed(
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
 ):
+    """Populate the input lightcone with galaxy SEDs
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lc_data : namedtuple
+        Contains info about the halo lightcone, SED inputs, and diffsky parameters
+
+    Returns
+    -------
+    results : dict
+        Contains info about the galaxy SEDs
+
+    """
     phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         ran_key,
         diffstarpop_params,
@@ -112,6 +142,21 @@ def mc_lc_dbk_phot(
     fb=FB,
     return_dbk_weights=False,
 ):
+    """Populate the input lightcone with disk/bulge/knot photometry
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lc_data : namedtuple
+        Contains info about the halo lightcone, SED inputs, and diffsky parameters
+
+    Returns
+    -------
+    results : dict
+        Contains info about disk/bulge/knot photometry
+
+    """
     dbk_phot_info, dbk_weights = mcpk._mc_lc_dbk_phot_kern(
         ran_key,
         lc_data.z_obs,
@@ -151,6 +196,21 @@ def mc_lc_dbk_sed(
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
 ):
+    """Populate the input lightcone with disk/bulge/knot SEDs
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lc_data : namedtuple
+        Contains info about the halo lightcone, SED inputs, and diffsky parameters
+
+    Returns
+    -------
+    results : dict
+        Contains info about disk/bulge/knot SEDs
+
+    """
     dbk_sed_info, dbk_weights = mc_lc_dbk_phot(
         ran_key,
         lc_data,
