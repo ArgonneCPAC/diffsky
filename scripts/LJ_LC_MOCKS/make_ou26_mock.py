@@ -106,6 +106,9 @@ if __name__ == "__main__":
         help="Use all patches overlapping with LSST DDF. Overrides istart and iend",
         action="store_true",
     )
+    parser.add_argument(
+        "--lsst_only", help="Use only LSST bandpasses", action="store_true"
+    )
 
     parser.add_argument(
         "-fn_u_params",
@@ -151,6 +154,7 @@ if __name__ == "__main__":
 
     roman_hltds = args.roman_hltds
     lsst_ddf = args.lsst_ddf
+    lsst_only = args.lsst_only
     fn_u_params = args.fn_u_params
     itest = args.itest
     sim_name = args.sim_name
@@ -160,6 +164,9 @@ if __name__ == "__main__":
     batch_size = args.batch_size
 
     mock_version_name = get_mock_version_name(mock_nickname)
+
+    if lsst_only:
+        OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES,)
 
     if synthetic_cores == 1:
         drn_out = os.path.join(drn_out, "synthetic_cores")

@@ -105,7 +105,8 @@ jobs:
             -sfh_model smdpl_dr1 \
             -synthetic_cores 1 \
             -lgmp_min 12.0 \
-            -lgmp_max 13.0
+            -lgmp_max 13.0 \
+            --lsst_only
 
       - name: verify script completed
         shell: bash -l {0}
