@@ -89,10 +89,10 @@ def test_write_ancillary_data():
     mock_version_name = "dummy_mock_version_name"
     sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim("LastJourney")
 
-    drn_out = os.path.join(_THIS_DRNAME, "tmp_testing")
-    os.makedirs(drn_out, exist_ok=True)
+    drn_mock = os.path.join(_THIS_DRNAME, "tmp_testing")
+    os.makedirs(drn_mock, exist_ok=True)
     args = (
-        drn_out,
+        drn_mock,
         mock_version_name,
         sim_info,
         dpw.DEFAULT_PARAM_COLLECTION,
@@ -100,6 +100,23 @@ def test_write_ancillary_data():
         ssp_data,
     )
     lcmp_repro.write_ancillary_data(*args)
+    t_table = lcmp_repro.load_diffsky_t_table(drn_mock, mock_version_name)
+    assert np.all(t_table > 0)
+    assert np.all(t_table < 15)
+    tcurves2 = lcmp_repro.load_diffsky_tcurves(drn_mock, mock_version_name)
+    for name in tcurves2._fields:
+        assert np.allclose(getattr(tcurves, name), getattr(tcurves2, name), rtol=0.01)
+
+    ssp_data2 = lcmp_repro.load_diffsky_ssp_data(drn_mock, mock_version_name)
+    for name in ssp_data2._fields:
+        assert np.allclose(getattr(ssp_data, name), getattr(ssp_data2, name), rtol=0.01)
+
+    param_collection2 = lcmp_repro.load_diffsky_param_collection(
+        drn_mock, mock_version_name
+    )
+    assert np.allclose(
+        dpw.DEFAULT_PARAM_COLLECTION.mzr_params, param_collection2.mzr_params
+    )
 
 
 def test_add_dbk_phot_quantities_to_mock():
