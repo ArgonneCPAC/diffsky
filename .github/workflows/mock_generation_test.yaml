@@ -16,6 +16,14 @@ jobs:
     runs-on: "ubuntu-latest"
 
     steps:
+      - name: free disk space
+        uses: endersonmenezes/free-disk-space@v3
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+          rm_cmd: "rmz"
+    
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -23,7 +31,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: 3.11
-          channels: conda-forge,defaults
+          channels: conda-forge
           channel-priority: strict
           show-channel-urls: true
           miniforge-version: latest
