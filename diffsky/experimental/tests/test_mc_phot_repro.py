@@ -30,6 +30,38 @@ def check_phot_kern_results(phot_kern_results):
     assert np.all(phot_kern_results.frac_ssp_errors < 5)
 
 
+def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=50):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
+    phot_kern_results = mc_phot_repro.mc_lc_phot(ran_key, lc_data)
+    sed_kern_results = mc_phot_repro.mc_lc_sed(ran_key, lc_data)
+
+    phot_kern_results = namedtuple("Results", list(phot_kern_results.keys()))(
+        **phot_kern_results
+    )
+    rest_sed_recomputed = sed_kern_results["rest_sed"]
+
+    # Enforce agreement between precomputed vs exact magnitudes
+    n_bands = phot_kern_results.obs_mags.shape[1]
+    for iband in range(n_bands):
+        trans_iband = np.interp(
+            lc_data.ssp_data.ssp_wave,
+            tcurves[iband].wave,
+            tcurves[iband].transmission,
+        )
+        args = (
+            lc_data.ssp_data.ssp_wave,
+            rest_sed_recomputed,
+            lc_data.ssp_data.ssp_wave,
+            trans_iband,
+            lc_data.z_obs,
+            *DEFAULT_COSMOLOGY,
+        )
+
+        mags = calc_obs_mags_galpop(*args)
+        assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
+
+
 def test_mc_lc_phot_evaluates(num_halos=50):
     ran_key = jran.key(0)
     lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
@@ -37,15 +69,6 @@ def test_mc_lc_phot_evaluates(num_halos=50):
     keys = list(phot_kern_results.keys())
     phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
     check_phot_kern_results(phot_kern_results)
-
-
-def test_mc_lc_sed_evaluates(num_halos=50):
-    ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    phot_kern_results = mc_phot_repro.mc_lc_sed(ran_key, lc_data)
-    keys = list(phot_kern_results.keys())
-    sed_kern_results = namedtuple("Results", keys)(**phot_kern_results)
-    check_phot_kern_results(sed_kern_results)
 
 
 def test_mc_dbk_kern(num_halos=50):
