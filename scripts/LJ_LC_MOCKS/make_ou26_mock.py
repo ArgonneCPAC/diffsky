@@ -24,7 +24,7 @@ from mpi4py import MPI
 
 from diffsky import phot_utils
 from diffsky.data_loaders import mpi_utils
-from diffsky.data_loaders.hacc_utils import lc_mock_repro as lcmp_repro
+from diffsky.data_loaders.hacc_utils import lc_mock as lcmp_repro
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs

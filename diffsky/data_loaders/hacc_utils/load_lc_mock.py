@@ -17,7 +17,7 @@ from ...experimental import dbk_phot_from_mock
 from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import mc_phot_kernels as mcpk
 from . import hacc_core_utils as hcu
-from . import lc_mock_repro as lcmp
+from . import lc_mock as lcmp
 
 
 def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list):

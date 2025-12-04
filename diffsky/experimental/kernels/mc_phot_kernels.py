@@ -18,7 +18,7 @@ from ..disk_bulge_modeling import disk_bulge_kernels as dbk
 from ..disk_bulge_modeling import disk_knots
 from ..disk_bulge_modeling import mc_disk_bulge as mcdb
 from . import dbk_kernels
-from . import ssp_weight_kernels_repro as sspwk
+from . import ssp_weight_kernels as sspwk
 
 PHOT_RAN_KEYS = (
     "mc_is_q",

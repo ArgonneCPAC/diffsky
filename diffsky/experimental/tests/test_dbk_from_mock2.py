@@ -13,7 +13,7 @@ from jax import random as jran
 from ...param_utils import diffsky_param_wrapper as dpw
 from .. import dbk_phot_from_mock
 from .. import mc_lightcone_halos as mclh
-from .. import mc_phot_repro
+from .. import mc_phot
 
 SSP_DATA = retrieve_fake_fsps_data.load_fake_ssp_data()
 
@@ -77,7 +77,7 @@ def test_reproduce_mock_dbk_kern():
     scatter_params = dpw.DEFAULT_PARAM_COLLECTION[3]
     ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
-    dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(
+    dbk_phot_info = mc_phot.mc_lc_dbk_phot(
         ran_key,
         lc_data,
         diffstarpop_params,
@@ -153,7 +153,7 @@ def test_reproduce_mock_phot_kern():
     scatter_params = dpw.DEFAULT_PARAM_COLLECTION[3]
     ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
-    dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(
+    dbk_phot_info = mc_phot.mc_lc_dbk_phot(
         ran_key,
         lc_data,
         diffstarpop_params,
@@ -217,7 +217,7 @@ def test_reproduce_mock_sed_kern():
     scatter_params = dpw.DEFAULT_PARAM_COLLECTION[3]
     ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
-    dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(
+    dbk_phot_info = mc_phot.mc_lc_dbk_phot(
         ran_key,
         lc_data,
         diffstarpop_params,

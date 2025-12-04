@@ -13,7 +13,7 @@ from jax import random as jran
 from ...param_utils import diffsky_param_wrapper as dpw
 from ...param_utils import spspop_param_utils as spspu
 from ...ssp_err_model import ssp_err_model
-from .. import lc_phot_kern_repro as lc_phot_kern
+from .. import lc_phot_kern as lc_phot_kern
 from .. import mc_lightcone_halos as mclh
 from .. import precompute_ssp_phot as psspp
 from ..scatter import DEFAULT_SCATTER_PARAMS

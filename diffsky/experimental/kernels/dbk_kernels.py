@@ -8,7 +8,7 @@ from jax import numpy as jnp
 from jax import vmap
 
 from ..disk_bulge_modeling import disk_knots
-from . import ssp_weight_kernels_repro as sspwk
+from . import ssp_weight_kernels as sspwk
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 

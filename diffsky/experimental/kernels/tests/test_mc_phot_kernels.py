@@ -10,7 +10,7 @@ from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper as dpw
 from ...tests import test_mc_lightcone_halos as tmclh
-from ...tests import test_mc_phot_repro
+from ...tests import test_mc_phot
 from .. import mc_phot_kernels as mcpk
 
 _A = [None, 0, None, None, 0, *[None] * 4]
@@ -97,7 +97,7 @@ def test_mc_dbk_kern(num_halos=50):
         fb,
     )
 
-    test_mc_phot_repro.check_phot_kern_results(phot_kern_results)
+    test_mc_phot.check_phot_kern_results(phot_kern_results)
 
     ran_key, dbk_key = jran.split(ran_key, 2)
     burst_params = DEFAULT_BURST_PARAMS._replace(
