@@ -11,7 +11,7 @@ from dsps.data_loaders.defaults import TransmissionCurve
 from jax import random as jran
 
 from ...param_utils import diffsky_param_wrapper as dpw
-from .. import dbk_from_mock2
+from .. import dbk_phot_from_mock
 from .. import mc_lightcone_halos as mclh
 from .. import mc_phot_repro
 
@@ -118,7 +118,7 @@ def test_reproduce_mock_dbk_kern():
         DEFAULT_COSMOLOGY,
         FB,
     )
-    _res = dbk_from_mock2._reproduce_mock_dbk_kern(*temp_args)
+    _res = dbk_phot_from_mock._reproduce_mock_dbk_kern(*temp_args)
     phot_kern_results, phot_randoms, disk_bulge_history = _res[:3]
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res[3:]
     assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
@@ -193,7 +193,7 @@ def test_reproduce_mock_phot_kern():
         DEFAULT_COSMOLOGY,
         FB,
     )
-    _res = dbk_from_mock2._reproduce_mock_phot_kern(*temp_args)
+    _res = dbk_phot_from_mock._reproduce_mock_phot_kern(*temp_args)
     phot_kern_results, phot_randoms = _res
     assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
 
@@ -257,7 +257,7 @@ def test_reproduce_mock_sed_kern():
         DEFAULT_COSMOLOGY,
         FB,
     )
-    _res = dbk_from_mock2._reproduce_mock_sed_kern(*temp_args)
+    _res = dbk_phot_from_mock._reproduce_mock_sed_kern(*temp_args)
     phot_kern_results, phot_randoms, sed_kern_results = _res
     assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
 

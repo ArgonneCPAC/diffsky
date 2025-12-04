@@ -13,7 +13,7 @@ from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 
 from ... import phot_utils
 from ...data_loaders import load_flat_hdf5
-from ...experimental import dbk_from_mock2
+from ...experimental import dbk_phot_from_mock
 from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import mc_phot_kernels as mcpk
 from . import hacc_core_utils as hcu
@@ -116,7 +116,7 @@ def compute_phot_from_diffsky_mock(
         sim_info.fb,
     )
 
-    phot_info = dbk_from_mock2._reproduce_mock_phot_kern(*args)[0]
+    phot_info = dbk_phot_from_mock._reproduce_mock_phot_kern(*args)[0]
     phot_info = phot_info._asdict()
     return phot_info
 
@@ -162,7 +162,7 @@ def compute_dbk_phot_from_diffsky_mock(
         sim_info.cosmo_params,
         sim_info.fb,
     )
-    _res = dbk_from_mock2._reproduce_mock_dbk_kern(*args)
+    _res = dbk_phot_from_mock._reproduce_mock_dbk_kern(*args)
     (
         phot_info,
         phot_randoms,
@@ -219,7 +219,7 @@ def compute_sed_from_diffsky_mock(
         sim_info.fb,
     )
 
-    phot_info, __, sed_kern_results = dbk_from_mock2._reproduce_mock_sed_kern(*args)
+    phot_info, __, sed_kern_results = dbk_phot_from_mock._reproduce_mock_sed_kern(*args)
     sed_info = phot_info._asdict()
     rest_sed = sed_kern_results[0]
     sed_info["rest_sed"] = rest_sed
