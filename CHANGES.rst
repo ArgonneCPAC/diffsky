@@ -1,3 +1,11 @@
+0.3.2 (2025-12-04)
+-------------------
+- Resolve bug in the treatment of scatter in the SSP errors.
+- Component vs composite SEDs now exactly agree
+- Improved CI and unit testing
+- See (https://github.com/ArgonneCPAC/diffsky/pull/284) for details.
+
+
 0.3.1 (2025-11-23)
 -------------------
 - Update diffsky to be compatible with diffstar v1.0.2 (https://github.com/ArgonneCPAC/diffsky/pull/277)
