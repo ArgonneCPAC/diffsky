@@ -11,7 +11,9 @@ from dsps.data_loaders.defaults import TransmissionCurve
 from jax import random as jran
 
 from ...param_utils import diffsky_param_wrapper as dpw
-from .. import dbk_from_mock2, lc_phot_kern, mc_phot_repro
+from .. import dbk_from_mock2
+from .. import mc_lightcone_halos as mclh
+from .. import mc_phot_repro
 
 SSP_DATA = retrieve_fake_fsps_data.load_fake_ssp_data()
 
@@ -51,7 +53,7 @@ def _get_weighted_lc_data_for_unit_testing(
         tcurves,
         z_phot_table,
     )
-    lc_data = lc_phot_kern.mc_weighted_lightcone_data(*args)
+    lc_data = mclh.mc_weighted_lightcone_data(*args)
 
     return lc_data, tcurves
 
