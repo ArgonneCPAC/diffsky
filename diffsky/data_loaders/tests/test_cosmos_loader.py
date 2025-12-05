@@ -3,6 +3,7 @@
 import os
 import subprocess
 
+import numpy as np
 import pytest
 
 from .. import cosmos20_loader as c20
@@ -77,3 +78,35 @@ def test_cosmos20_quality_cuts_do_not_change():
 def test_cosmos20_sky_area_is_frozen():
     """Enforce that the sky area of COSMOS-20 is frozen."""
     assert c20.SKY_AREA == 1.21
+
+
+@pytest.mark.skipif(not c20.HAS_ASTROPY, reason=ASTROPY_MSG)
+@pytest.mark.skipif(not HAS_COSMOS20, reason=HAS_COSMOS20_MSG)
+def test_apply_nan_cuts():
+    """Enforce that the sky area of COSMOS-20 is frozen."""
+    cat = c20.load_cosmos20(apply_cuts=True)
+
+    # Enforce initial catalog has at least some NaNs
+    has_nans_initially = False
+    for name in c20.COSMOS_TARGET_MAGS:
+        if not np.all(np.isfinite(cat[name])):
+            has_nans_initially = True
+    assert has_nans_initially
+
+    # Enforce cut catalog has no NaNs in target columns
+    cat = c20.apply_nan_cuts(cat)
+    for name in c20.COSMOS_TARGET_MAGS:
+        assert np.all(np.isfinite(cat[name]))
+
+
+@pytest.mark.skipif(not c20.HAS_ASTROPY, reason=ASTROPY_MSG)
+@pytest.mark.skipif(not HAS_COSMOS20, reason=HAS_COSMOS20_MSG)
+def test_masks():
+    cat = c20.load_cosmos20(apply_cuts=True)
+    cat = c20.apply_nan_cuts(cat)
+
+    msk_is_complete = c20.get_is_complete_mask(cat)
+    assert msk_is_complete.sum() < len(cat)
+
+    msk_is_not_outlier = c20.get_color_outlier_mask(cat, c20.HSC_MAG_NAMES)
+    assert msk_is_not_outlier.sum() < len(cat)
