@@ -13,6 +13,15 @@ except ImportError:
     HAS_ASTROPY = False
 
 
+Z_MIN, Z_MAX = 0.4, 2.5
+
+HSC_MAG_NAMES = ["HSC_g_MAG", "HSC_r_MAG", "HSC_i_MAG", "HSC_z_MAG", "HSC_y_MAG"]
+UVISTA_MAG_NAMES = ["UVISTA_Y_MAG", "UVISTA_J_MAG", "UVISTA_H_MAG", "UVISTA_Ks_MAG"]
+COSMOS_TARGET_MAGS = [*HSC_MAG_NAMES, *UVISTA_MAG_NAMES]
+MAGI_THRESH = 25.5
+
+NANFILL = -999.0
+
 COSMOS20_BASENAME = "COSMOS2020_Farmer_processed_hlin.fits"
 
 SKY_AREA = 1.21  # square degrees
@@ -103,4 +112,85 @@ def load_cosmos20(
     else:
         return cat
 
-    return cat
+
+def apply_nan_cuts(cosmos, mag_names=COSMOS_TARGET_MAGS):
+    """Remove any galaxy with a NaN in any column storing a target magnitude
+
+    Parameters
+    ----------
+    cosmos : astropy Table
+
+    mag_names : list of strings
+
+    Returns
+    -------
+    cosmos : astropy Table
+        Catalog after applying a NaN cut on `photoz` and any colname in mag_names
+
+    """
+    msk_has_nan = np.isnan(cosmos["photoz"])
+    for name in mag_names:
+        x = np.nan_to_num(
+            cosmos[name], copy=True, nan=NANFILL, posinf=NANFILL, neginf=NANFILL
+        )
+        msk_has_nan = msk_has_nan | (x == NANFILL)
+
+    cosmos = cosmos[~msk_has_nan]
+    return cosmos
+
+
+def get_is_complete_mask(cosmos, z_min=Z_MIN, z_max=Z_MAX, magi_thresh=MAGI_THRESH):
+    """Compute mask to define the redshift and i-mag threshold for our target data
+
+    Parameters
+    ----------
+    cosmos : astropy Table
+
+    z_min, z_max : float
+        Galaxies outside this range will be excluded
+
+    magi_thresh : float
+        Galaxies fainter than this apparent magnitude will be excluded
+
+    Returns
+    -------
+    msk_is_complete : array, dtype bool
+        Boolean mask defining galaxies that pass the completeness cut
+
+    """
+    msk_redshift = (cosmos["photoz"] > z_min) & (cosmos["photoz"] < z_max)
+    msk_i_thresh = cosmos["HSC_i_MAG"] < magi_thresh
+    msk_is_complete = msk_redshift & msk_i_thresh
+    return msk_is_complete
+
+
+def get_color_outlier_mask(cosmos, mag_names, p_cut=0.5):
+    """Compute mask to define extreme outliers in color space
+
+    Parameters
+    ----------
+    cosmos : astropy Table
+
+    mag_names : list of strings
+        Column names defining the colors for which outliers will be excluded
+
+    p_cut : float, optional
+        Value in the range [0, 100] defining a percentile cut
+
+    Returns
+    -------
+    msk_is_not_outlier : array, dtype bool
+        Boolean mask defining galaxies that pass the outlier cut
+
+    """
+    msk_is_outlier = np.zeros(len(cosmos)).astype(bool)
+    for name0, name1 in zip(mag_names[0:], mag_names[1:]):
+        c0 = cosmos[name0]
+        c1 = cosmos[name1]
+        color = c0 - c1
+        lo, hi = np.percentile(color, (p_cut, 100.0 - p_cut))
+        msk_is_outlier = msk_is_outlier | (color < lo) | (color > hi)
+
+    msk_is_not_outlier = ~msk_is_outlier
+
+    return msk_is_not_outlier
