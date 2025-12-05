@@ -9,10 +9,10 @@ from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology.flat_wcdm import age_at_z
 
 from .... import phot_utils
-from ....experimental import dbk_from_mock2
+from ....experimental import dbk_phot_from_mock
 from ....experimental import precompute_ssp_phot as psspp
 from ....param_utils import diffsky_param_wrapper as dpw
-from .. import lc_mock_repro as lcmp
+from .. import lc_mock as lcmp
 from .. import load_flat_hdf5, load_lc_cf
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
@@ -322,7 +322,7 @@ def check_recomputed_photometry(fn_lc_mock, n_test=200, return_results=False):
         sim_info.cosmo_params,
         sim_info.fb,
     )
-    _res = dbk_from_mock2._reproduce_mock_dbk_kern(*args)
+    _res = dbk_phot_from_mock._reproduce_mock_dbk_kern(*args)
     (
         phot_info,
         phot_randoms,

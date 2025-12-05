@@ -11,7 +11,9 @@ from dsps.data_loaders.defaults import TransmissionCurve
 from jax import random as jran
 
 from ...param_utils import diffsky_param_wrapper as dpw
-from .. import dbk_from_mock2, lc_phot_kern, mc_phot_repro
+from .. import dbk_phot_from_mock
+from .. import mc_lightcone_halos as mclh
+from .. import mc_phot
 
 SSP_DATA = retrieve_fake_fsps_data.load_fake_ssp_data()
 
@@ -51,7 +53,7 @@ def _get_weighted_lc_data_for_unit_testing(
         tcurves,
         z_phot_table,
     )
-    lc_data = lc_phot_kern.mc_weighted_lightcone_data(*args)
+    lc_data = mclh.mc_weighted_lightcone_data(*args)
 
     return lc_data, tcurves
 
@@ -75,7 +77,7 @@ def test_reproduce_mock_dbk_kern():
     scatter_params = dpw.DEFAULT_PARAM_COLLECTION[3]
     ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
-    dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(
+    dbk_phot_info = mc_phot.mc_lc_dbk_phot(
         ran_key,
         lc_data,
         diffstarpop_params,
@@ -116,7 +118,7 @@ def test_reproduce_mock_dbk_kern():
         DEFAULT_COSMOLOGY,
         FB,
     )
-    _res = dbk_from_mock2._reproduce_mock_dbk_kern(*temp_args)
+    _res = dbk_phot_from_mock._reproduce_mock_dbk_kern(*temp_args)
     phot_kern_results, phot_randoms, disk_bulge_history = _res[:3]
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res[3:]
     assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
@@ -151,7 +153,7 @@ def test_reproduce_mock_phot_kern():
     scatter_params = dpw.DEFAULT_PARAM_COLLECTION[3]
     ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
-    dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(
+    dbk_phot_info = mc_phot.mc_lc_dbk_phot(
         ran_key,
         lc_data,
         diffstarpop_params,
@@ -191,7 +193,7 @@ def test_reproduce_mock_phot_kern():
         DEFAULT_COSMOLOGY,
         FB,
     )
-    _res = dbk_from_mock2._reproduce_mock_phot_kern(*temp_args)
+    _res = dbk_phot_from_mock._reproduce_mock_phot_kern(*temp_args)
     phot_kern_results, phot_randoms = _res
     assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
 
@@ -215,7 +217,7 @@ def test_reproduce_mock_sed_kern():
     scatter_params = dpw.DEFAULT_PARAM_COLLECTION[3]
     ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
-    dbk_phot_info = mc_phot_repro.mc_lc_dbk_phot(
+    dbk_phot_info = mc_phot.mc_lc_dbk_phot(
         ran_key,
         lc_data,
         diffstarpop_params,
@@ -255,7 +257,7 @@ def test_reproduce_mock_sed_kern():
         DEFAULT_COSMOLOGY,
         FB,
     )
-    _res = dbk_from_mock2._reproduce_mock_sed_kern(*temp_args)
+    _res = dbk_phot_from_mock._reproduce_mock_sed_kern(*temp_args)
     phot_kern_results, phot_randoms, sed_kern_results = _res
     assert np.allclose(dbk_phot_info.obs_mags, phot_kern_results.obs_mags, rtol=1e-3)
 

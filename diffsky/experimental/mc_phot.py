@@ -5,270 +5,237 @@ from jax import config
 
 config.update("jax_enable_x64", True)
 
-
 from collections import namedtuple
 
-from jax import jit as jjit
-from jax import numpy as jnp
-from jax import random as jran
+from diffstar import DEFAULT_DIFFSTAR_PARAMS
+from diffstar.defaults import FB
+from dsps.cosmology import DEFAULT_COSMOLOGY
 
-from ..ssp_err_model import ssp_err_model
-from . import lc_phot_kern
-from . import mc_diffstarpop_wrappers as mcdw
-from . import photometry_interpolation as photerp
-from .disk_bulge_modeling import disk_bulge_kernels as dbk
-from .disk_bulge_modeling import disk_knots
-from .disk_bulge_modeling import mc_disk_bulge as mcdb
-from .kernels import dbk_kernels
-from .kernels.ssp_weight_kernels import (
-    MCPhotInfo,
-    compute_burstiness,
-    compute_dust_attenuation,
-    compute_frac_ssp_errors,
-    compute_mc_realization,
-    compute_obs_mags_ms_q,
-    get_smooth_ssp_weights,
-)
-from .mc_diffstarpop_wrappers import N_T_TABLE
-
-LGMET_SCATTER = 0.2
+from ..param_utils import diffsky_param_wrapper as dpw
+from .kernels import mc_phot_kernels as mcpk
 
 
-@jjit
-def _mc_phot_kern(
+def mc_lc_phot(
     ran_key,
-    z_obs,
-    t_obs,
-    mah_params,
-    ssp_data,
-    precomputed_ssp_mag_table,
-    z_phot_table,
-    wave_eff_table,
-    diffstarpop_params,
-    mzr_params,
-    spspop_params,
-    scatter_params,
-    ssp_err_pop_params,
-    cosmo_params,
-    fb,
-    n_t_table=N_T_TABLE,
+    lc_data,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
 ):
-    """Populate the input lightcone with galaxy SEDs"""
+    """Populate the input lightcone with galaxy photometry
 
-    ran_key, sfh_key = jran.split(ran_key, 2)
-    args = (diffstarpop_params, sfh_key, mah_params, t_obs, cosmo_params, fb)
-    diffstar_galpop = mcdw.diffstarpop_cen_wrapper(*args, n_t_table=n_t_table)
+    Parameters
+    ----------
+    ran_key : jax.random.key
 
-    smooth_ssp_weights = get_smooth_ssp_weights(
-        diffstar_galpop, ssp_data, t_obs, mzr_params, LGMET_SCATTER
-    )
+    lc_data : namedtuple
+        Contains info about the halo lightcone, SED inputs, and diffsky parameters
 
-    burstiness = compute_burstiness(
-        diffstar_galpop, smooth_ssp_weights, ssp_data, spspop_params.burstpop_params
-    )
+    Returns
+    -------
+    results : dict
+        Contains info about the galaxy SEDs
 
-    # Interpolate SSP mag table to z_obs of each galaxy
-    photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
-        z_obs, z_phot_table, precomputed_ssp_mag_table
-    )
-    ssp_photflux_table = 10 ** (-0.4 * photmag_table_galpop)
-
-    # For each filter, calculate λ_eff in the restframe of each galaxy
-    wave_eff_galpop = lc_phot_kern.interp_vmap2(z_obs, z_phot_table, wave_eff_table)
-
-    # Generate randoms for stochasticity in dust attenuation curves
-    ran_key, dust_key = jran.split(ran_key, 2)
-    dust_att = compute_dust_attenuation(
-        dust_key,
-        diffstar_galpop,
-        ssp_data,
-        z_obs,
-        wave_eff_galpop,
-        spspop_params.dustpop_params,
-        scatter_params,
-    )
-
-    # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
-    # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
-    frac_ssp_errors = compute_frac_ssp_errors(
-        ssp_err_pop_params, z_obs, diffstar_galpop, wave_eff_galpop
-    )
-    ran_key, ssp_q_key, ssp_ms_key = jran.split(ran_key, 3)
-    delta_scatter_ms = ssp_err_model.compute_delta_scatter(
-        ssp_ms_key, frac_ssp_errors.ms
-    )
-    delta_scatter_q = ssp_err_model.compute_delta_scatter(ssp_q_key, frac_ssp_errors.q)
-
-    obs_mags = compute_obs_mags_ms_q(
-        diffstar_galpop,
-        dust_att,
-        frac_ssp_errors,
-        ssp_photflux_table,
-        smooth_ssp_weights.weights.ms,
-        burstiness.weights.ms,
-        smooth_ssp_weights.weights.q,
-        delta_scatter_ms,
-        delta_scatter_q,
-    )
-    phot_info = compute_mc_realization(
-        diffstar_galpop,
-        burstiness,
-        smooth_ssp_weights,
-        dust_att,
-        obs_mags,
-        delta_scatter_ms,
-        delta_scatter_q,
+    """
+    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         ran_key,
+        diffstarpop_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        cosmo_params,
+        fb,
     )
+    phot_kern_results = phot_kern_results._asdict()
+    for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
+        phot_kern_results[key] = val
+    return phot_kern_results
 
-    return (
-        phot_info,
-        smooth_ssp_weights,
-        burstiness,
-        dust_att,
-        ssp_photflux_table,
-        frac_ssp_errors,
-        delta_scatter_ms,
-        delta_scatter_q,
+
+def mc_lc_sed(
+    ran_key,
+    lc_data,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
+):
+    """Populate the input lightcone with galaxy SEDs
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lc_data : namedtuple
+        Contains info about the halo lightcone, SED inputs, and diffsky parameters
+
+    Returns
+    -------
+    results : dict
+        Contains info about the galaxy SEDs
+
+    """
+    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
+        ran_key,
+        diffstarpop_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        cosmo_params,
+        fb,
     )
+    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
+        [getattr(phot_kern_results, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+    )
+    sed_kern_results = mcpk._sed_kern(
+        phot_randoms,
+        sfh_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        cosmo_params,
+        fb,
+    )
+    rest_sed = sed_kern_results[0]
+    phot_kern_results = phot_kern_results._asdict()
+    phot_kern_results["rest_sed"] = rest_sed
+    return phot_kern_results
 
 
 def mc_lc_dbk_phot(
     ran_key,
-    z_obs,
-    t_obs,
-    mah_params,
-    ssp_data,
-    precomputed_ssp_mag_table,
-    z_phot_table,
-    wave_eff_table,
-    diffstarpop_params,
-    mzr_params,
-    spspop_params,
-    scatter_params,
-    ssp_err_pop_params,
-    cosmo_params,
-    fb,
+    lc_data,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
+    return_dbk_weights=False,
 ):
-    phot_key, dbk_key = jran.split(ran_key, 2)
-    _ret = _mc_phot_kern(
-        phot_key,
-        z_obs,
-        t_obs,
-        mah_params,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
+    """Populate the input lightcone with disk/bulge/knot photometry
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lc_data : namedtuple
+        Contains info about the halo lightcone, SED inputs, and diffsky parameters
+
+    Returns
+    -------
+    results : dict
+        Contains info about disk/bulge/knot photometry
+
+    """
+    dbk_phot_info, dbk_weights = mcpk._mc_lc_dbk_phot_kern(
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
         diffstarpop_params,
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )
-    phot_info, smooth_ssp_weights = _ret[:2]
-    dust_att, ssp_photflux_table = _ret[3:5]
-    frac_ssp_errors, delta_scatter_ms, delta_scatter_q = _ret[5:]
-    _ret2 = _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, dbk_key)
-    dbk_weights, disk_bulge_history, fknot = _ret2
+    dbk_phot_info = dbk_phot_info._asdict()
+    dbk_phot_info["mstar_bulge"] = dbk_weights.mstar_bulge.flatten()
+    dbk_phot_info["mstar_disk"] = dbk_weights.mstar_disk.flatten()
+    dbk_phot_info["mstar_knots"] = dbk_weights.mstar_knots.flatten()
 
-    _ret3 = get_dbk_phot(
-        ssp_photflux_table,
-        dbk_weights,
-        dust_att,
-        phot_info,
-        frac_ssp_errors,
-        delta_scatter_ms,
-        delta_scatter_q,
-    )
-    obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
-
-    dbk_phot_info = MCDBKPhotInfo(
-        **phot_info._asdict(),
-        **disk_bulge_history.fbulge_params._asdict(),
-        bulge_to_total_history=disk_bulge_history.bulge_to_total_history,
-        obs_mags_bulge=obs_mags_bulge,
-        obs_mags_disk=obs_mags_disk,
-        obs_mags_knots=obs_mags_knots,
-        fknot=fknot,
-    )
-    return dbk_phot_info
+    if return_dbk_weights:
+        return dbk_phot_info, dbk_weights
+    else:
+        return dbk_phot_info
 
 
-@jjit
-def _mc_dbk_kern(t_obs, ssp_data, phot_info, smooth_ssp_weights, dbk_key):
-    disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
-        phot_info.t_table, phot_info.sfh_table
-    )
-    n_gals = t_obs.size
-    fknot = jran.uniform(
-        dbk_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
-    )
-
-    dbk_weights = dbk_kernels.get_dbk_weights(
-        t_obs, ssp_data, phot_info, smooth_ssp_weights, disk_bulge_history, fknot
-    )
-
-    return dbk_weights, disk_bulge_history, fknot
-
-
-@jjit
-def get_dbk_phot(
-    ssp_photflux_table,
-    dbk_weights,
-    dust_att,
-    phot_info,
-    frac_ssp_errors,
-    delta_scatter_ms,
-    delta_scatter_q,
+def mc_lc_dbk_sed(
+    ran_key,
+    lc_data,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
 ):
-    n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
+    """Populate the input lightcone with disk/bulge/knot SEDs
 
-    # Reshape arrays before calculating galaxy magnitudes
-    _mc_q = phot_info.mc_sfh_type.reshape((n_gals, 1, 1, 1)) == 0
-    _ftrans_ms = dust_att.frac_trans.ms.reshape((n_gals, n_bands, 1, n_age))
-    _ftrans_q = dust_att.frac_trans.q.reshape((n_gals, n_bands, 1, n_age))
-    _ftrans = jnp.where(_mc_q, _ftrans_q, _ftrans_ms)
+    Parameters
+    ----------
+    ran_key : jax.random.key
 
-    # Calculate fractional changes to SSP fluxes
-    frac_ssp_err_ms = frac_ssp_errors.ms * 10 ** (-0.4 * delta_scatter_ms)
-    frac_ssp_err_q = frac_ssp_errors.q * 10 ** (-0.4 * delta_scatter_q)
+    lc_data : namedtuple
+        Contains info about the halo lightcone, SED inputs, and diffsky parameters
 
-    _ferr_ssp_ms = frac_ssp_err_ms.reshape((n_gals, n_bands, 1, 1))
-    _ferr_ssp_q = frac_ssp_err_q.reshape((n_gals, n_bands, 1, 1))
-    _ferr_ssp = jnp.where(_mc_q, _ferr_ssp_q, _ferr_ssp_ms)
+    Returns
+    -------
+    results : dict
+        Contains info about disk/bulge/knot SEDs
 
-    _w_bulge = dbk_weights.ssp_weights_bulge.reshape((n_gals, 1, n_met, n_age))
-    _w_dd = dbk_weights.ssp_weights_disk.reshape((n_gals, 1, n_met, n_age))
-    _w_knot = dbk_weights.ssp_weights_knots.reshape((n_gals, 1, n_met, n_age))
-
-    _mstar_bulge = dbk_weights.mstar_bulge.reshape((n_gals, 1))
-    _mstar_disk = dbk_weights.mstar_disk.reshape((n_gals, 1))
-    _mstar_knots = dbk_weights.mstar_knots.reshape((n_gals, 1))
-
-    integrand_bulge = ssp_photflux_table * _w_bulge * _ftrans * _ferr_ssp
-    flux_bulge = jnp.sum(integrand_bulge, axis=(2, 3)) * _mstar_bulge
-    obs_mags_bulge = -2.5 * jnp.log10(flux_bulge)
-
-    integrand_disk = ssp_photflux_table * _w_dd * _ftrans * _ferr_ssp
-    flux_disk = jnp.sum(integrand_disk, axis=(2, 3)) * _mstar_disk
-    obs_mags_disk = -2.5 * jnp.log10(flux_disk)
-
-    integrand_knots = ssp_photflux_table * _w_knot * _ftrans * _ferr_ssp
-    flux_knots = jnp.sum(integrand_knots, axis=(2, 3)) * _mstar_knots
-    obs_mags_knots = -2.5 * jnp.log10(flux_knots)
-
-    return obs_mags_bulge, obs_mags_disk, obs_mags_knots
-
-
-DBK_EXTRA_FIELDS = (
-    *dbk.FbulgeParams._fields,
-    "bulge_to_total_history",
-    "obs_mags_bulge",
-    "obs_mags_disk",
-    "obs_mags_knots",
-    "fknot",
-)
-MCDBKPhotInfo = namedtuple("MCDBKPhotInfo", (*MCPhotInfo._fields, *DBK_EXTRA_FIELDS))
+    """
+    dbk_sed_info, dbk_weights = mc_lc_dbk_phot(
+        ran_key,
+        lc_data,
+        diffstarpop_params=diffstarpop_params,
+        mzr_params=mzr_params,
+        spspop_params=spspop_params,
+        scatter_params=scatter_params,
+        ssperr_params=ssperr_params,
+        cosmo_params=cosmo_params,
+        fb=fb,
+        return_dbk_weights=True,
+    )
+    SEDInfo = namedtuple("SEDInfo", list(dbk_sed_info.keys()))
+    dbk_sed_info = SEDInfo(**dbk_sed_info)
+    sed_bulge, sed_disk, sed_knots = mcpk._mc_lc_dbk_sed_kern(
+        dbk_sed_info,
+        dbk_weights,
+        lc_data.z_obs,
+        lc_data.ssp_data,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+    )
+    dbk_sed_info = dbk_sed_info._asdict()
+    dbk_sed_info["rest_sed_bulge"] = sed_bulge
+    dbk_sed_info["rest_sed_disk"] = sed_disk
+    dbk_sed_info["rest_sed_knots"] = sed_knots
+    return dbk_sed_info
