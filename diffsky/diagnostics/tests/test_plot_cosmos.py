@@ -39,8 +39,9 @@ def test_plot_color_pdf(testing_data, tmp_path):
 
 
 @pytest.mark.skipif(not plc.HAS_ASTROPY, reason=ASTROPY_MSG)
-def test_make_color_mag_diagnostic_plots(tmp_path):
+def test_make_color_mag_diagnostic_plots(testing_data, tmp_path):
     plc.make_color_mag_diagnostic_plots(
+        pdata=testing_data,
         param_collection=dpw.DEFAULT_PARAM_COLLECTION,
         model_nickname="default",
         drn_out=str(tmp_path),

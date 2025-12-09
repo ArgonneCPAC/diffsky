@@ -53,6 +53,16 @@ COSMOS_FILTER_BNAMES = (
 MAG_I_LO, MAG_I_HI = 18.5, 25.5
 MAG_BINS = mag_bins = np.linspace(MAG_I_LO, MAG_I_HI, 30)
 
+Z_MAGI_PAIRS = (
+    (0.6, 20.0),
+    (0.6, 22.0),
+    (0.6, 24.0),
+    (1.0, 22.0),
+    (1.0, 24.0),
+    (2.0, 22.0),
+    (2.0, 24.0),
+)
+
 
 @lru_cache()
 def get_plotting_data(
@@ -226,7 +236,7 @@ def plot_app_mag_func(
     *,
     pdata,
     z_bin,
-    dz=0.2,
+    dz=0.25,
     mag_bins=MAG_BINS,
     m0=c20.HSC_MAG_NAMES[0],
     m1=c20.HSC_MAG_NAMES[2],
@@ -349,7 +359,7 @@ def plot_color_pdf(
     m1_bin,
     c0,
     c1,
-    dz=0.2,
+    dz=0.25,
     m1=c20.HSC_MAG_NAMES[2],
     drn_out="",
     model_nickname="default",
@@ -397,8 +407,6 @@ def plot_color_pdf(
 
     xlabel = ax.set_xlabel(f"{c0_label}-{c1_label}")
 
-    dz = 0.2
-
     msk_z = np.abs(pdata.cosmos["photoz"] - z_bin) < dz
     msk_z_pred = np.abs(pdata.lc_data.z_obs - z_bin) < dz
 
@@ -440,16 +448,19 @@ def make_color_mag_diagnostic_plots(
     model_nickname,
     drn_out,
     z_bins=(0.6, 1.0, 2.0),
-    m_i_bins=(20.0, 22.0, 24.0),
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
     m0=c20.HSC_MAG_NAMES[0],
     m1=c20.HSC_MAG_NAMES[2],
     m2=c20.UVISTA_MAG_NAMES[1],
+    z_magi_pairs=Z_MAGI_PAIRS,
+    pdata=None,
 ):
-    pdata = get_plotting_data(
-        seed=0, **param_collection._asdict(), cosmo_params=cosmo_params, fb=fb
-    )
+    if pdata is None:
+        pdata = get_plotting_data(
+            seed=0, **param_collection._asdict(), cosmo_params=cosmo_params, fb=fb
+        )
+
     for z_bin in z_bins:
         plot_app_mag_func(
             pdata=pdata,
@@ -460,14 +471,14 @@ def make_color_mag_diagnostic_plots(
             m1=m1,
             m2=m2,
         )
-        for m_i in m_i_bins:
-            plot_color_pdf(
-                pdata=pdata,
-                z_bin=z_bin,
-                m1_bin=m_i,
-                drn_out=os.path.join(drn_out, "color_pdfs"),
-                model_nickname=model_nickname,
-                m1=m1,
-                c0="HSC_g_MAG",
-                c1="HSC_r_MAG",
-            )
+    for z_bin, m_i in z_magi_pairs:
+        plot_color_pdf(
+            pdata=pdata,
+            z_bin=z_bin,
+            m1_bin=m_i,
+            drn_out=os.path.join(drn_out, "color_pdfs"),
+            model_nickname=model_nickname,
+            m1=m1,
+            c0="HSC_g_MAG",
+            c1="HSC_r_MAG",
+        )
