@@ -12,7 +12,9 @@ def testing_data(seed=0):
 
 
 def _generate_testing_data(seed=0):
-    testing_data = plc.get_plotting_data(seed, num_halos=50, tcurves="random")
+    testing_data = plc.get_plotting_data(
+        seed, num_halos=50, tcurves="random", ssp_data="random"
+    )
     return testing_data
 
 

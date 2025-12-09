@@ -12,6 +12,7 @@ from dsps.data_loaders import (
     load_ssp_templates,
     load_transmission_curve,
 )
+from dsps.data_loaders.retrieve_fake_fsps_data import load_fake_ssp_data
 from jax import random as jran
 
 from ..data_loaders import cosmos20_loader as c20
@@ -88,6 +89,8 @@ def get_plotting_data(
 
     if ssp_data is None:
         ssp_data = load_ssp_templates()
+    elif ssp_data == "random":
+        ssp_data = load_fake_ssp_data()
 
     filter_dict = dict()
     for i, cosmos_key in enumerate(c20.COSMOS_TARGET_MAGS):
