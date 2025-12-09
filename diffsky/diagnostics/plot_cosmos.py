@@ -1,6 +1,7 @@
 """"""
 
 import os
+import random
 from collections import namedtuple
 from functools import lru_cache
 
@@ -8,8 +9,10 @@ import numpy as np
 from diffstar.defaults import FB
 from dsps import data_loaders as ddl
 from dsps.cosmology import DEFAULT_COSMOLOGY
+from dsps.data_loaders.load_filter_data import TransmissionCurve
 from dsps.data_loaders.retrieve_fake_fsps_data import load_fake_ssp_data
 from jax import random as jran
+from jax.scipy.stats import norm
 
 from ..data_loaders import cosmos20_loader as c20
 from ..experimental.mc_lightcone_halos import mc_weighted_lightcone_data
@@ -172,11 +175,35 @@ def _get_cosmos_dsps_tcurves(bnames=COSMOS_FILTER_BNAMES):
 def _get_random_tcurves(bnames=COSMOS_FILTER_BNAMES):
     tcurves = []
     for __ in bnames:
-        tcurve = ddl.load_random_transmission_curve()
+        tcurve = _load_random_transmission_curve()
         tcurves.append(tcurve)
 
     Tcurves = namedtuple("TCurves", COSMOS_FILTER_BNAMES)
     return Tcurves(*tcurves)
+
+
+def _load_random_transmission_curve(
+    ran_key=None, tcurve_center=None, wave_range=(1_000, 10_000), scale=300
+):
+    """Reimplementation from dsps.data_loaders.load_filter_data"""
+    if ran_key is None:
+        seed = random.randint(0, 2**32 - 1)
+        ran_key = jran.key(seed)
+
+    if tcurve_center is None:
+        xmin = wave_range[0] + scale * 2
+        xmax = wave_range[1] - scale * 2
+        tcurve_center = jran.uniform(ran_key, minval=xmin, maxval=xmax)
+    else:
+        assert wave_range[0] < tcurve_center < wave_range[1]
+
+    wave = np.linspace(*wave_range, 200)
+
+    _transmission = norm.pdf(wave, loc=tcurve_center, scale=scale)
+    transmission = _transmission / _transmission.max()
+    tcurve = TransmissionCurve(wave, transmission)
+
+    return tcurve
 
 
 def plot_app_mag_func(
