@@ -1,7 +1,6 @@
 """"""
 
 import pytest
-from dsps.data_loaders import load_random_transmission_curve
 
 from .. import plot_cosmos as plc
 
@@ -13,7 +12,7 @@ def testing_data(seed=0):
 
 
 def _generate_testing_data(seed=0):
-    testing_data = plc.get_plotting_data(seed, num_halos=50)
+    testing_data = plc.get_plotting_data(seed, num_halos=50, tcurves="random")
     return testing_data
 
 

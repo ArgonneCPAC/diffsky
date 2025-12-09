@@ -7,7 +7,11 @@ from functools import lru_cache
 import numpy as np
 from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
-from dsps.data_loaders import load_ssp_templates, load_transmission_curve
+from dsps.data_loaders import (
+    load_random_transmission_curve,
+    load_ssp_templates,
+    load_transmission_curve,
+)
 from jax import random as jran
 
 from ..data_loaders import cosmos20_loader as c20
@@ -66,20 +70,21 @@ def get_plotting_data(
 
     if cosmos is None:
         cosmos = c20.load_cosmos20()
-        cosmos = c20.apply_nan_cuts(cosmos)
 
-        msk_is_complete = c20.get_is_complete_mask(cosmos)
-        cosmos = cosmos[msk_is_complete]
+    cosmos = c20.apply_nan_cuts(cosmos)
 
-        msk_is_not_hsc_outlier = c20.get_color_outlier_mask(cosmos, c20.HSC_MAG_NAMES)
-        msk_is_not_uvista_outlier = c20.get_color_outlier_mask(
-            cosmos, c20.UVISTA_MAG_NAMES
-        )
-        msk_is_not_uvista_outlier.mean(), msk_is_not_hsc_outlier.mean()
-        cosmos = cosmos[msk_is_not_hsc_outlier & msk_is_not_uvista_outlier]
+    msk_is_complete = c20.get_is_complete_mask(cosmos)
+    cosmos = cosmos[msk_is_complete]
+
+    msk_is_not_hsc_outlier = c20.get_color_outlier_mask(cosmos, c20.HSC_MAG_NAMES)
+    msk_is_not_uvista_outlier = c20.get_color_outlier_mask(cosmos, c20.UVISTA_MAG_NAMES)
+    msk_is_not_uvista_outlier.mean(), msk_is_not_hsc_outlier.mean()
+    cosmos = cosmos[msk_is_not_hsc_outlier & msk_is_not_uvista_outlier]
 
     if tcurves is None:
         tcurves = _get_cosmos_dsps_tcurves()
+    elif tcurves == "random":
+        tcurves = _get_random_tcurves()
 
     if ssp_data is None:
         ssp_data = load_ssp_templates()
@@ -133,7 +138,19 @@ def _get_cosmos_dsps_tcurves(bnames=COSMOS_FILTER_BNAMES):
     for bn_pat in bnames:
         tcurve = load_transmission_curve(bn_pat=bn_pat + "*")
         tcurves.append(tcurve)
-    return tcurves
+
+    Tcurves = namedtuple("TCurves", COSMOS_FILTER_BNAMES)
+    return Tcurves(*tcurves)
+
+
+def _get_random_tcurves(bnames=COSMOS_FILTER_BNAMES):
+    tcurves = []
+    for __ in bnames:
+        tcurve = load_random_transmission_curve()
+        tcurves.append(tcurve)
+
+    Tcurves = namedtuple("TCurves", COSMOS_FILTER_BNAMES)
+    return Tcurves(*tcurves)
 
 
 def plot_app_mag_func(
