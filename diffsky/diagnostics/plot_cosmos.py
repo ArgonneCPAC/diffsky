@@ -439,7 +439,8 @@ def plot_color_pdf(
         color_pred, bins=target_bins, label=r"${\rm Diffsky}$", density=True, alpha=0.7
     )
 
-    ax.set_title(f"{m1} = {m1_bin}; z={z_bin}")
+    ax.set_title(f"{m1_label} = {m1_bin}; z={z_bin}")
+    ax.legend()
 
     prefix = f"{model_nickname}_diffsky_vs_cosmos_"
     color_label = f"{c0_label}-{c1_label}_PDF_"
