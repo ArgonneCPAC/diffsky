@@ -22,4 +22,16 @@ def _generate_testing_data(seed=0):
 
 @pytest.mark.skipif(not plc.HAS_ASTROPY, reason=ASTROPY_MSG)
 def test_plot_app_mag_func(testing_data, tmp_path):
-    plc.plot_app_mag_func(testing_data, 2.0, drn_out=str(tmp_path))
+    plc.plot_app_mag_func(pdata=testing_data, z_bin=2.0, drn_out=str(tmp_path))
+
+
+@pytest.mark.skipif(not plc.HAS_ASTROPY, reason=ASTROPY_MSG)
+def test_plot_color_pdf(testing_data, tmp_path):
+    plc.plot_color_pdf(
+        pdata=testing_data,
+        m_bin=23.0,
+        c0="UVISTA_Y_MAG",
+        c1="UVISTA_J_MAG",
+        z_bin=1.5,
+        drn_out=str(tmp_path),
+    )

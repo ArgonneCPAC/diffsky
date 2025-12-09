@@ -223,6 +223,7 @@ def _load_random_transmission_curve(
 
 
 def plot_app_mag_func(
+    *,
     pdata,
     z_bin,
     dz=0.2,
@@ -234,7 +235,7 @@ def plot_app_mag_func(
     model_nickname="default",
 ):
     """Plot a comparison to the COSMOS apparent magnitude function
-    of the input diffsky galaxy population
+    of the input diffsky galaxy population.
 
     Parameters
     ----------
@@ -338,4 +339,93 @@ def plot_app_mag_func(
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
+    return fig
+
+
+def plot_color_pdf(
+    *,
+    pdata,
+    z_bin,
+    m_bin,
+    c0,
+    c1,
+    dz=0.2,
+    m0=c20.HSC_MAG_NAMES[2],
+    drn_out="",
+    model_nickname="default",
+):
+    """Plot a comparison to the COSMOS color PDF of the input diffsky galaxy population
+
+    Parameters
+    ----------
+    pdata : namedtuple
+        Data created by the plot_cosmos.get_plotting_data function
+
+    z_bin : float
+        Redshift of the galaxy population to plot
+
+    m_bin : float
+        Apparent of the galaxy population to plot
+        Default magnitude column is m0=`HSC_i_MAG`
+
+    m0 : string
+        Column name of the magnitude used to bin the galaxies
+        Default is m0=`HSC_i_MAG`
+
+    c0, c1 : strings
+        Columns of the COSMOS dataset used to define the plotted color
+        Examples: 'HSC_g_MAG', 'HSC_i_MAG', 'UVISTA_H_MAG',  'UVISTA_Ks_MAG'
+
+    drn_out : string
+        Output directory to store plots
+
+    model_nickname : string
+        Nickname of the model being tested. Default is `default`.
+        The model_nickname will be part of the output filename of the plot.
+
+    """
+    fig, ax = plt.subplots(1, 1)
+
+    m0_label = pdata.diffsky_data["filter_dict"][m0][1].split("_")[0]
+    c0_label = pdata.diffsky_data["filter_dict"][c0][1].split("_")[0]
+    c1_label = pdata.diffsky_data["filter_dict"][c1][1].split("_")[0]
+
+    xlabel = ax.set_xlabel(f"{c0_label}-{c1_label}")
+
+    m0 = c20.HSC_MAG_NAMES[2]
+
+    dz = 0.2
+
+    msk_z = np.abs(pdata.cosmos["photoz"] - z_bin) < dz
+    msk_z_pred = np.abs(pdata.lc_data.z_obs - z_bin) < dz
+
+    msk_mag = np.abs(pdata.cosmos[m0] - m_bin) < 1
+    indx_m0 = pdata.diffsky_data["filter_dict"][m0][0]
+    msk_mag_pred = np.abs(pdata.diffsky_data["obs_mags"][:, indx_m0] - m_bin) < 1
+
+    msk_sample = msk_z & msk_mag
+    msk_sample_pred = msk_z_pred & msk_mag_pred
+
+    color_target = (pdata.cosmos[c0] - pdata.cosmos[c1])[msk_sample]
+    __, target_bins, __ = ax.hist(
+        color_target, bins=50, label=r"${\rm COSMOS}$", density=True, alpha=0.7
+    )
+
+    indx_c0 = pdata.diffsky_data["filter_dict"][c0][0]
+    indx_c1 = pdata.diffsky_data["filter_dict"][c1][0]
+    c0_pred = pdata.diffsky_data["obs_mags"][:, indx_c0][msk_sample_pred]
+    c1_pred = pdata.diffsky_data["obs_mags"][:, indx_c1][msk_sample_pred]
+    color_pred = c0_pred - c1_pred
+    ax.hist(
+        color_pred, bins=target_bins, label=r"${\rm Diffsky}$", density=True, alpha=0.7
+    )
+
+    ax.set_title(f"{m0} = {m_bin}; z={z_bin}")
+
+    prefix = f"{model_nickname}_diffsky_vs_cosmos_"
+    color_label = f"{c0_label}-{c1_label}_PDF_"
+    z_m_label = f"z={z_bin:.1f}_{m0_label}={m_bin:.1f}"
+    bn_out = prefix + color_label + z_m_label + ".png"
+    fn_out = os.path.join(drn_out, bn_out)
+    fig.savefig(fn_out, bbox_extra_artists=[xlabel], bbox_inches="tight", dpi=200)
     return fig
