@@ -32,6 +32,13 @@ try:
 except ImportError:
     HAS_MATPLOTLIB = False
 
+try:
+    from astropy.table import Table
+
+    HAS_ASTROPY = True
+except ImportError:
+    HAS_ASTROPY = False
+
 COSMOS_FILTER_BNAMES = (
     "g_HSC",
     "r_HSC",
@@ -71,6 +78,9 @@ def get_plotting_data(
 
     if cosmos is None:
         cosmos = c20.load_cosmos20()
+    elif cosmos == "random":
+        ran_key, cosmos_key = jran.split(ran_key, 2)
+        cosmos = _generate_random_cosmos_data(cosmos_key)
 
     cosmos = c20.apply_nan_cuts(cosmos)
 
@@ -134,6 +144,23 @@ def get_plotting_data(
     pdata = PlottingData(cosmos, lc_data, diffsky_data)
 
     return pdata
+
+
+def _generate_random_cosmos_data(ran_key, n_gals=2_000):
+    if not HAS_ASTROPY:
+        msg = "Must have astropy installed to use _generate_random_cosmos_data"
+        raise ImportError(msg)
+
+    cosmos = Table()
+    ran_key, redshift_key = jran.split(ran_key, 2)
+    cosmos["photoz"] = jran.uniform(
+        redshift_key, minval=c20.Z_MIN, maxval=c20.Z_MAX, shape=(n_gals,)
+    )
+    for key in c20.COSMOS_TARGET_MAGS:
+        ran_key, col_key = jran.split(ran_key, 2)
+        ran_data = jran.uniform(col_key, minval=15, maxval=28, shape=(n_gals,))
+        cosmos[key] = ran_data
+    return cosmos
 
 
 def _get_cosmos_dsps_tcurves(bnames=COSMOS_FILTER_BNAMES):
