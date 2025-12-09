@@ -21,5 +21,5 @@ def _generate_testing_data(seed=0):
 
 
 @pytest.mark.skipif(not plc.HAS_ASTROPY, reason=ASTROPY_MSG)
-def test_plot_app_mag_func(testing_data):
-    plc.plot_app_mag_func(testing_data, 2.0, drn_out="FIGS")
+def test_plot_app_mag_func(testing_data, tmp_path):
+    plc.plot_app_mag_func(testing_data, 2.0, drn_out=str(tmp_path))
