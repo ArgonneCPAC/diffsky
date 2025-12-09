@@ -1,4 +1,4 @@
-""""""
+"""Module to make diagnostic plots comparing COSMOS-20 to diffsky lightcones"""
 
 import os
 import random
@@ -74,6 +74,21 @@ def get_plotting_data(
     z_min=c20.Z_MIN,
     z_max=c20.Z_MAX,
 ):
+    """Generate lightcone halos and galaxy photometry
+    to make diagnostic plots for the input model
+
+    Returns
+    -------
+    cosmos : astropy.table.Table
+        COSMOS-20 dataset
+
+    lc_data : namedtuple
+        Halo lightcone data
+
+    diffsky_data : dict
+        Dictionary of diffsky galaxies with photometry and associated data
+
+    """
     ran_key = jran.key(seed)
 
     if cosmos is None:
@@ -218,6 +233,32 @@ def plot_app_mag_func(
     drn_out="",
     model_nickname="default",
 ):
+    """Plot a comparison to the COSMOS apparent magnitude function
+    of the input diffsky galaxy population
+
+    Parameters
+    ----------
+    pdata : namedtuple
+        Data created by the plot_cosmos.get_plotting_data function
+
+    z_bin : float
+        Redshift of the galaxy population to plot
+
+    m0, m1, m2 : strings
+        Columns of the COSMOS dataset used to check the apparent magnitude function
+        Defaults:
+            m0 = 'HSC_g_MAG'
+            m1 = 'HSC_i_MAG'
+            m2 = 'UVISTA_J_MAG'
+
+    drn_out : string
+        Output directory to store plots
+
+    model_nickname : string
+        Nickname of the model being tested. Default is `default`.
+        The model_nickname will be part of the output filename of the plot.
+
+    """
     if not HAS_MATPLOTLIB:
         raise ImportError("Must have matplotlib installed to make diagnostic plots")
 
