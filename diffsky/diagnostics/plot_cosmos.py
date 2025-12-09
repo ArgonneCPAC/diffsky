@@ -5,12 +5,15 @@ from collections import namedtuple
 from functools import lru_cache
 
 import numpy as np
+from diffstar.defaults import FB
+from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.data_loaders import load_ssp_templates, load_transmission_curve
 from jax import random as jran
 
 from ..data_loaders import cosmos20_loader as c20
 from ..experimental.mc_lightcone_halos import mc_weighted_lightcone_data
 from ..experimental.mc_phot import mc_lc_phot
+from ..param_utils import diffsky_param_wrapper as dpw
 
 MBLUE = "#1f77b4"
 MGREEN = "#2ca02c"
@@ -41,7 +44,16 @@ MAG_BINS = mag_bins = np.linspace(MAG_I_LO, MAG_I_HI, 30)
 
 
 @lru_cache()
-def get_plotting_data(seed):
+def get_plotting_data(
+    seed,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
+):
     ran_key = jran.key(seed)
 
     cosmos = c20.load_cosmos20()
@@ -80,7 +92,17 @@ def get_plotting_data(seed):
     lc_data = mc_weighted_lightcone_data(*args)
 
     ran_key, sed_key = jran.split(ran_key, 2)
-    diffsky_data = mc_lc_phot(sed_key, lc_data)
+    diffsky_data = mc_lc_phot(
+        sed_key,
+        lc_data,
+        diffstarpop_params=diffstarpop_params,
+        mzr_params=mzr_params,
+        spspop_params=spspop_params,
+        scatter_params=scatter_params,
+        ssperr_params=ssperr_params,
+        cosmo_params=cosmo_params,
+        fb=fb,
+    )
     diffsky_data["filter_dict"] = filter_dict
     diffsky_data["sky_area_degsq"] = sky_area_degsq
 
@@ -106,13 +128,31 @@ def plot_app_mag_func(
     m1=c20.HSC_MAG_NAMES[2],
     m2=c20.UVISTA_MAG_NAMES[1],
     drn_out="",
+    model_nickname="default",
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
+    seed=0,
 ):
     if not HAS_MATPLOTLIB:
         raise ImportError("Must have matplotlib installed to make diagnostic plots")
 
     os.makedirs(drn_out, exist_ok=True)
 
-    pdata = get_plotting_data(0)
+    pdata = get_plotting_data(
+        seed,
+        diffstarpop_params=diffstarpop_params,
+        mzr_params=mzr_params,
+        spspop_params=spspop_params,
+        scatter_params=scatter_params,
+        ssperr_params=ssperr_params,
+        cosmo_params=cosmo_params,
+        fb=fb,
+    )
 
     m0_label = pdata.diffsky_data["filter_dict"][m0][1].split("_")[0]
     m1_label = pdata.diffsky_data["filter_dict"][m1][1].split("_")[0]
@@ -183,7 +223,7 @@ def plot_app_mag_func(
     ax.add_artist(leg0)
     ax.legend(handles=[dashed_line, solid_line], loc="lower left")
 
-    bn_out = f"cosmos_vs_diffsky_app_mag_func_z={z_bin:.1f}.png"
+    bn_out = f"{model_nickname}_diffsky_vs_cosmos_app_mag_func_z={z_bin:.1f}.png"
     fn_out = os.path.join(drn_out, bn_out)
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
