@@ -61,7 +61,7 @@ def get_plotting_data(seed):
 
     filter_dict = dict()
     for i, cosmos_key in enumerate(c20.COSMOS_TARGET_MAGS):
-        filter_dict[cosmos_key] = i
+        filter_dict[cosmos_key] = i, COSMOS_FILTER_BNAMES[i]
 
     num_halos = 20_000
     z_min, z_max = cosmos["photoz"].min(), cosmos["photoz"].max()
@@ -114,13 +114,16 @@ def plot_app_mag_func(
 
     pdata = get_plotting_data(0)
 
+    m0_label = pdata.diffsky_data["filter_dict"][m0][1].split("_")[0]
+    m1_label = pdata.diffsky_data["filter_dict"][m1][1].split("_")[0]
+    m2_label = pdata.diffsky_data["filter_dict"][m2][1].split("_")[0]
+
     fig, ax = plt.subplots(1, 1)
     ax.set_yscale("log")
 
-    # ax.set_xlim(26, 18.0)
-    # ax.set_ylim(1, 1e4)
+    ax.set_xlim(mag_bins.max() + 0.5, mag_bins.min() - 0.5)
 
-    xlabel = ax.set_xlabel(r"$m_{\rm x}$")
+    xlabel = ax.set_xlabel(r"${\rm mag}$")
     ylabel = ax.set_ylabel(r"$\phi(m)$")
 
     mag_binmids = 0.5 * (mag_bins[:-1] + mag_bins[1:])
@@ -131,50 +134,47 @@ def plot_app_mag_func(
     msk_z_pred = np.abs(pdata.lc_data.z_obs - z_bin) < dz
 
     target = np.histogram(pdata.cosmos[m0][msk_z], bins=mag_bins)[0] / c20.SKY_AREA
+    indx_m0 = pdata.diffsky_data["filter_dict"][m0][0]
     pred = (
         np.histogram(
-            pdata.diffsky_data["obs_mags"][:, pdata.diffsky_data["filter_dict"][m0]][
-                msk_z_pred
-            ],
+            pdata.diffsky_data["obs_mags"][:, indx_m0][msk_z_pred],
             bins=mag_bins,
             weights=pdata.lc_data.nhalos[msk_z_pred],
         )[0]
         / pdata.diffsky_data["sky_area_degsq"]
     )
-    __ = ax.plot(mag_binmids, target, color=MBLUE, label=r"${\rm g}$")
-    __ = ax.plot(mag_binmids, pred, "--", color=MBLUE)
+    ax.plot(mag_binmids, target, color=MBLUE, label=m0_label)
+    ax.plot(mag_binmids, pred, "--", color=MBLUE)
 
     target = np.histogram(pdata.cosmos[m1][msk_z], bins=mag_bins)[0] / c20.SKY_AREA
+    indx_m1 = pdata.diffsky_data["filter_dict"][m1][0]
     pred = (
         np.histogram(
-            pdata.diffsky_data["obs_mags"][:, pdata.diffsky_data["filter_dict"][m1]][
-                msk_z_pred
-            ],
+            pdata.diffsky_data["obs_mags"][:, indx_m1][msk_z_pred],
             bins=mag_bins,
             weights=pdata.lc_data.nhalos[msk_z_pred],
         )[0]
         / pdata.diffsky_data["sky_area_degsq"]
     )
-    __ = ax.plot(mag_binmids, target, color=MGREEN, label=r"${\rm i}$")
-    __ = ax.plot(mag_binmids, pred, "--", color=MGREEN)
+    ax.plot(mag_binmids, target, color=MGREEN, label=m1_label)
+    ax.plot(mag_binmids, pred, "--", color=MGREEN)
 
     target = np.histogram(pdata.cosmos[m2][msk_z], bins=mag_bins)[0] / c20.SKY_AREA
+    indx_m2 = pdata.diffsky_data["filter_dict"][m2][0]
     pred = (
         np.histogram(
-            pdata.diffsky_data["obs_mags"][:, pdata.diffsky_data["filter_dict"][m2]][
-                msk_z_pred
-            ],
+            pdata.diffsky_data["obs_mags"][:, indx_m2][msk_z_pred],
             bins=mag_bins,
             weights=pdata.lc_data.nhalos[msk_z_pred],
         )[0]
         / pdata.diffsky_data["sky_area_degsq"]
     )
-    __ = ax.plot(mag_binmids, target, color=MRED, label=r"${\rm J}$")
-    __ = ax.plot(mag_binmids, pred, "--", color=MRED)
+    ax.plot(mag_binmids, target, color=MRED, label=m2_label)
+    ax.plot(mag_binmids, pred, "--", color=MRED)
 
-    blue_line = mlines.Line2D([], [], ls="-", c=MBLUE, label=m0)
-    green_line = mlines.Line2D([], [], ls="-", c=MGREEN, label=m1)
-    red_line = mlines.Line2D([], [], ls="-", c=MRED, label=m2)
+    blue_line = mlines.Line2D([], [], ls="-", c=MBLUE, label=m0_label)
+    green_line = mlines.Line2D([], [], ls="-", c=MGREEN, label=m1_label)
+    red_line = mlines.Line2D([], [], ls="-", c=MRED, label=m2_label)
 
     solid_line = mlines.Line2D([], [], ls="-", c="k", label=r"${\rm COSMOS}$")
     dashed_line = mlines.Line2D([], [], ls="--", c="k", label=r"${\rm Diffsky}$")
@@ -189,13 +189,3 @@ def plot_app_mag_func(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
     return fig
-
-
-def make_another_plot():
-    pdata = get_plotting_data(0)
-    # make plot
-
-
-def make_third_plot():
-    pdata = get_plotting_data(1)
-    # make plot
