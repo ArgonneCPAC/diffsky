@@ -49,6 +49,13 @@ COSMOS_FILTER_BNAMES = (
     "H_uv",
     "K_uv",
 )
+COLOR_PAIRS = (
+    ("HSC_g_MAG", "HSC_r_MAG"),
+    ("HSC_r_MAG", "HSC_i_MAG"),
+    ("HSC_i_MAG", "HSC_z_MAG"),
+    ("UVISTA_J_MAG", "UVISTA_H_MAG"),
+    ("UVISTA_H_MAG", "UVISTA_Ks_MAG"),
+)
 
 MAG_I_LO, MAG_I_HI = 18.5, 25.5
 MAG_BINS = mag_bins = np.linspace(MAG_I_LO, MAG_I_HI, 30)
@@ -349,6 +356,7 @@ def plot_app_mag_func(
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
+    plt.close()
     return fig
 
 
@@ -439,6 +447,8 @@ def plot_color_pdf(
     bn_out = prefix + color_label + z_m_label + ".png"
     fn_out = os.path.join(drn_out, bn_out)
     fig.savefig(fn_out, bbox_extra_artists=[xlabel], bbox_inches="tight", dpi=200)
+    plt.close()
+
     return fig
 
 
@@ -454,6 +464,7 @@ def make_color_mag_diagnostic_plots(
     m1=c20.HSC_MAG_NAMES[2],
     m2=c20.UVISTA_MAG_NAMES[1],
     z_magi_pairs=Z_MAGI_PAIRS,
+    color_pairs=COLOR_PAIRS,
     pdata=None,
 ):
     if pdata is None:
@@ -471,14 +482,16 @@ def make_color_mag_diagnostic_plots(
             m1=m1,
             m2=m2,
         )
+
     for z_bin, m_i in z_magi_pairs:
-        plot_color_pdf(
-            pdata=pdata,
-            z_bin=z_bin,
-            m1_bin=m_i,
-            drn_out=os.path.join(drn_out, "color_pdfs"),
-            model_nickname=model_nickname,
-            m1=m1,
-            c0="HSC_g_MAG",
-            c1="HSC_r_MAG",
-        )
+        for c0, c1 in color_pairs:
+            plot_color_pdf(
+                pdata=pdata,
+                z_bin=z_bin,
+                m1_bin=m_i,
+                drn_out=os.path.join(drn_out, "color_pdfs"),
+                model_nickname=model_nickname,
+                m1=m1,
+                c0=c0,
+                c1=c1,
+            )
