@@ -31,6 +31,7 @@ def plot_diffstarpop_insitu_smhm(
     diffstarpop_params2=DEFAULT_DIFFSTARPOP_PARAMS,
     fname="diffstarpop_insitu_smhm_lc_kern_check.png",
 ):
+    """Make plots comparing the SMHM of two diffstarpop models"""
     ran_key = jran.key(0)
     lgmp_min = 11.0
     sky_area_degsq = 20.0
@@ -90,4 +91,5 @@ def plot_diffstarpop_insitu_smhm(
         fname, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
 
+    plt.close()
     return fig
