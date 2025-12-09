@@ -56,7 +56,8 @@ MAG_BINS = mag_bins = np.linspace(MAG_I_LO, MAG_I_HI, 30)
 
 @lru_cache()
 def get_plotting_data(
-    seed,
+    *,
+    seed=0,
     diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
     mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
     spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
