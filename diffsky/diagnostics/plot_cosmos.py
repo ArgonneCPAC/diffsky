@@ -414,6 +414,7 @@ def plot_color_pdf(
     c1_label = pdata.diffsky_data["filter_dict"][c1][1].split("_")[0]
 
     xlabel = ax.set_xlabel(f"{c0_label}-{c1_label}")
+    ylabel = ax.set_ylabel(r"{\rm PDF}")
 
     msk_z = np.abs(pdata.cosmos["photoz"] - z_bin) < dz
     msk_z_pred = np.abs(pdata.lc_data.z_obs - z_bin) < dz
@@ -447,7 +448,9 @@ def plot_color_pdf(
     z_m_label = f"z={z_bin:.1f}_{m1_label}={m1_bin:.1f}"
     bn_out = prefix + color_label + z_m_label + ".png"
     fn_out = os.path.join(drn_out, bn_out)
-    fig.savefig(fn_out, bbox_extra_artists=[xlabel], bbox_inches="tight", dpi=200)
+    fig.savefig(
+        fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
+    )
     plt.close()
 
     return fig
