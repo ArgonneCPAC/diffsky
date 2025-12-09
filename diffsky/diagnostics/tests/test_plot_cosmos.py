@@ -1,55 +1,21 @@
 """"""
 
-import random
-from collections import namedtuple
-
-import numpy as np
 import pytest
-from jax import random as jran
-from jax.scipy.stats import norm
+from dsps.data_loaders import load_random_transmission_curve
 
-
-def get_random_transmission_curve(
-    ran_key=None, tcurve_center=None, wave_range=(1000, 10_000), scale=300
-):
-    if ran_key is None:
-        seed = random.randint(0, 2**32 - 1)
-        ran_key = jran.key(seed)
-
-    if tcurve_center is None:
-        xmin = wave_range[0] + scale * 2
-        xmax = wave_range[1] - scale * 2
-        tcurve_center = jran.uniform(ran_key, minval=xmin, maxval=xmax)
-    else:
-        assert wave_range[0] < tcurve_center < wave_range[1]
-
-    wave = np.linspace(*wave_range, 200)
-
-    _transmission = norm.pdf(wave, loc=tcurve_center, scale=scale)
-    transmission = _transmission / _transmission.max()
-    TransmissionCurve = namedtuple("TransmissionCurve", ("wave", "transmission"))
-    tcurve = TransmissionCurve(wave, transmission)
-
-    return tcurve
+from .. import plot_cosmos as plc
 
 
 @pytest.fixture(scope="module")
-def lc_data():
+def testing_data(seed=0):
     """Generate lightcone data once per test module."""
-    return _generate_testing_lightcone()
+    return _generate_testing_data(seed=seed)
 
 
-def _generate_testing_lightcone():
-    return (1, 2, 3)
+def _generate_testing_data(seed=0):
+    testing_data = plc.get_plotting_data(seed, num_halos=50)
+    return testing_data
 
 
-def test1(lc_data):
-    pass
-
-
-def test2():
-    pass
-
-
-def test3():
-    pass
+def test_plot_app_mag_func(testing_data):
+    plc.plot_app_mag_func(testing_data, 2.0, drn_out="FIGS")

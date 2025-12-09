@@ -53,43 +53,59 @@ def get_plotting_data(
     ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
+    cosmos=None,
+    tcurves=None,
+    ssp_data=None,
+    num_halos=20_000,
+    lc_data=None,
+    sky_area_degsq=None,
+    z_min=c20.Z_MIN,
+    z_max=c20.Z_MAX,
 ):
     ran_key = jran.key(seed)
 
-    cosmos = c20.load_cosmos20()
-    cosmos = c20.apply_nan_cuts(cosmos)
+    if cosmos is None:
+        cosmos = c20.load_cosmos20()
+        cosmos = c20.apply_nan_cuts(cosmos)
 
-    msk_is_complete = c20.get_is_complete_mask(cosmos)
-    cosmos = cosmos[msk_is_complete]
+        msk_is_complete = c20.get_is_complete_mask(cosmos)
+        cosmos = cosmos[msk_is_complete]
 
-    msk_is_not_hsc_outlier = c20.get_color_outlier_mask(cosmos, c20.HSC_MAG_NAMES)
-    msk_is_not_uvista_outlier = c20.get_color_outlier_mask(cosmos, c20.UVISTA_MAG_NAMES)
-    msk_is_not_uvista_outlier.mean(), msk_is_not_hsc_outlier.mean()
-    cosmos = cosmos[msk_is_not_hsc_outlier & msk_is_not_uvista_outlier]
+        msk_is_not_hsc_outlier = c20.get_color_outlier_mask(cosmos, c20.HSC_MAG_NAMES)
+        msk_is_not_uvista_outlier = c20.get_color_outlier_mask(
+            cosmos, c20.UVISTA_MAG_NAMES
+        )
+        msk_is_not_uvista_outlier.mean(), msk_is_not_hsc_outlier.mean()
+        cosmos = cosmos[msk_is_not_hsc_outlier & msk_is_not_uvista_outlier]
 
-    tcurves = _get_cosmos_dsps_tcurves()
+    if tcurves is None:
+        tcurves = _get_cosmos_dsps_tcurves()
 
-    ssp_data = load_ssp_templates()
+    if ssp_data is None:
+        ssp_data = load_ssp_templates()
 
     filter_dict = dict()
     for i, cosmos_key in enumerate(c20.COSMOS_TARGET_MAGS):
         filter_dict[cosmos_key] = i, COSMOS_FILTER_BNAMES[i]
 
-    num_halos = 20_000
-    z_min, z_max = cosmos["photoz"].min(), cosmos["photoz"].max()
-    lgmp_min, lgmp_max = 10.0, 15.0
-    sky_area_degsq = 100.0 * c20.SKY_AREA
+    if lc_data is None:
+        lgmp_min, lgmp_max = 10.0, 15.0
+        sky_area_degsq = 100.0 * c20.SKY_AREA
 
-    n_z_phot_table = 15
-    z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
+        n_z_phot_table = 15
+        z_min, z_max = cosmos["photoz"].min(), cosmos["photoz"].max()
+        z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
 
-    halo_lc_data = (num_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
-    phot_data = (ssp_data, tcurves, z_phot_table)
+        halo_lc_data = (num_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
+        phot_data = (ssp_data, tcurves, z_phot_table)
 
-    ran_key, lc_halo_key = jran.split(ran_key, 2)
-    args = (lc_halo_key, *halo_lc_data, *phot_data)
-
-    lc_data = mc_weighted_lightcone_data(*args)
+        ran_key, lc_halo_key = jran.split(ran_key, 2)
+        args = (lc_halo_key, *halo_lc_data, *phot_data)
+        lc_data = mc_weighted_lightcone_data(*args)
+    else:
+        assert z_min is not None
+        assert z_max is not None
+        assert sky_area_degsq is not None
 
     ran_key, sed_key = jran.split(ran_key, 2)
     diffsky_data = mc_lc_phot(
@@ -121,6 +137,7 @@ def _get_cosmos_dsps_tcurves(bnames=COSMOS_FILTER_BNAMES):
 
 
 def plot_app_mag_func(
+    pdata,
     z_bin,
     dz=0.2,
     mag_bins=MAG_BINS,
@@ -129,30 +146,11 @@ def plot_app_mag_func(
     m2=c20.UVISTA_MAG_NAMES[1],
     drn_out="",
     model_nickname="default",
-    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
-    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
-    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
-    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
-    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
-    cosmo_params=DEFAULT_COSMOLOGY,
-    fb=FB,
-    seed=0,
 ):
     if not HAS_MATPLOTLIB:
         raise ImportError("Must have matplotlib installed to make diagnostic plots")
 
     os.makedirs(drn_out, exist_ok=True)
-
-    pdata = get_plotting_data(
-        seed,
-        diffstarpop_params=diffstarpop_params,
-        mzr_params=mzr_params,
-        spspop_params=spspop_params,
-        scatter_params=scatter_params,
-        ssperr_params=ssperr_params,
-        cosmo_params=cosmo_params,
-        fb=fb,
-    )
 
     m0_label = pdata.diffsky_data["filter_dict"][m0][1].split("_")[0]
     m1_label = pdata.diffsky_data["filter_dict"][m1][1].split("_")[0]
