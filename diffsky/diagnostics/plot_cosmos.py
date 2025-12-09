@@ -346,11 +346,11 @@ def plot_color_pdf(
     *,
     pdata,
     z_bin,
-    m_bin,
+    m1_bin,
     c0,
     c1,
     dz=0.2,
-    m0=c20.HSC_MAG_NAMES[2],
+    m1=c20.HSC_MAG_NAMES[2],
     drn_out="",
     model_nickname="default",
 ):
@@ -364,13 +364,13 @@ def plot_color_pdf(
     z_bin : float
         Redshift of the galaxy population to plot
 
-    m_bin : float
+    m1_bin : float
         Apparent of the galaxy population to plot
-        Default magnitude column is m0=`HSC_i_MAG`
+        Default magnitude column is m1=`HSC_i_MAG`
 
-    m0 : string
+    m1 : string
         Column name of the magnitude used to bin the galaxies
-        Default is m0=`HSC_i_MAG`
+        Default is m1=`HSC_i_MAG`
 
     c0, c1 : strings
         Columns of the COSMOS dataset used to define the plotted color
@@ -384,24 +384,27 @@ def plot_color_pdf(
         The model_nickname will be part of the output filename of the plot.
 
     """
+    if not HAS_MATPLOTLIB:
+        raise ImportError("Must have matplotlib installed to make diagnostic plots")
+
+    os.makedirs(drn_out, exist_ok=True)
+
     fig, ax = plt.subplots(1, 1)
 
-    m0_label = pdata.diffsky_data["filter_dict"][m0][1].split("_")[0]
+    m1_label = pdata.diffsky_data["filter_dict"][m1][1].split("_")[0]
     c0_label = pdata.diffsky_data["filter_dict"][c0][1].split("_")[0]
     c1_label = pdata.diffsky_data["filter_dict"][c1][1].split("_")[0]
 
     xlabel = ax.set_xlabel(f"{c0_label}-{c1_label}")
-
-    m0 = c20.HSC_MAG_NAMES[2]
 
     dz = 0.2
 
     msk_z = np.abs(pdata.cosmos["photoz"] - z_bin) < dz
     msk_z_pred = np.abs(pdata.lc_data.z_obs - z_bin) < dz
 
-    msk_mag = np.abs(pdata.cosmos[m0] - m_bin) < 1
-    indx_m0 = pdata.diffsky_data["filter_dict"][m0][0]
-    msk_mag_pred = np.abs(pdata.diffsky_data["obs_mags"][:, indx_m0] - m_bin) < 1
+    msk_mag = np.abs(pdata.cosmos[m1] - m1_bin) < 1
+    indx_m1 = pdata.diffsky_data["filter_dict"][m1][0]
+    msk_mag_pred = np.abs(pdata.diffsky_data["obs_mags"][:, indx_m1] - m1_bin) < 1
 
     msk_sample = msk_z & msk_mag
     msk_sample_pred = msk_z_pred & msk_mag_pred
@@ -420,12 +423,51 @@ def plot_color_pdf(
         color_pred, bins=target_bins, label=r"${\rm Diffsky}$", density=True, alpha=0.7
     )
 
-    ax.set_title(f"{m0} = {m_bin}; z={z_bin}")
+    ax.set_title(f"{m1} = {m1_bin}; z={z_bin}")
 
     prefix = f"{model_nickname}_diffsky_vs_cosmos_"
     color_label = f"{c0_label}-{c1_label}_PDF_"
-    z_m_label = f"z={z_bin:.1f}_{m0_label}={m_bin:.1f}"
+    z_m_label = f"z={z_bin:.1f}_{m1_label}={m1_bin:.1f}"
     bn_out = prefix + color_label + z_m_label + ".png"
     fn_out = os.path.join(drn_out, bn_out)
     fig.savefig(fn_out, bbox_extra_artists=[xlabel], bbox_inches="tight", dpi=200)
     return fig
+
+
+def make_color_mag_diagnostic_plots(
+    *,
+    param_collection,
+    model_nickname,
+    drn_out,
+    z_bins=(0.6, 1.0, 2.0),
+    m_i_bins=(20.0, 22.0, 24.0),
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
+    m0=c20.HSC_MAG_NAMES[0],
+    m1=c20.HSC_MAG_NAMES[2],
+    m2=c20.UVISTA_MAG_NAMES[1],
+):
+    pdata = get_plotting_data(
+        seed=0, **param_collection._asdict(), cosmo_params=cosmo_params, fb=fb
+    )
+    for z_bin in z_bins:
+        plot_app_mag_func(
+            pdata=pdata,
+            z_bin=z_bin,
+            drn_out=os.path.join(drn_out, "app_mag_funcs"),
+            model_nickname=model_nickname,
+            m0=m0,
+            m1=m1,
+            m2=m2,
+        )
+        for m_i in m_i_bins:
+            plot_color_pdf(
+                pdata=pdata,
+                z_bin=z_bin,
+                m1_bin=m_i,
+                drn_out=os.path.join(drn_out, "color_pdfs"),
+                model_nickname=model_nickname,
+                m1=m1,
+                c0="HSC_g_MAG",
+                c1="HSC_r_MAG",
+            )
