@@ -6,12 +6,8 @@ from functools import lru_cache
 
 import numpy as np
 from diffstar.defaults import FB
+from dsps import data_loaders as ddl
 from dsps.cosmology import DEFAULT_COSMOLOGY
-from dsps.data_loaders import (
-    load_random_transmission_curve,
-    load_ssp_templates,
-    load_transmission_curve,
-)
 from dsps.data_loaders.retrieve_fake_fsps_data import load_fake_ssp_data
 from jax import random as jran
 
@@ -98,7 +94,7 @@ def get_plotting_data(
         tcurves = _get_random_tcurves()
 
     if ssp_data is None:
-        ssp_data = load_ssp_templates()
+        ssp_data = ddl.load_ssp_templates()
     elif ssp_data == "random":
         ssp_data = load_fake_ssp_data()
 
@@ -166,7 +162,7 @@ def _generate_random_cosmos_data(ran_key, n_gals=2_000):
 def _get_cosmos_dsps_tcurves(bnames=COSMOS_FILTER_BNAMES):
     tcurves = []
     for bn_pat in bnames:
-        tcurve = load_transmission_curve(bn_pat=bn_pat + "*")
+        tcurve = ddl.load_transmission_curve(bn_pat=bn_pat + "*")
         tcurves.append(tcurve)
 
     Tcurves = namedtuple("TCurves", COSMOS_FILTER_BNAMES)
@@ -176,7 +172,7 @@ def _get_cosmos_dsps_tcurves(bnames=COSMOS_FILTER_BNAMES):
 def _get_random_tcurves(bnames=COSMOS_FILTER_BNAMES):
     tcurves = []
     for __ in bnames:
-        tcurve = load_random_transmission_curve()
+        tcurve = ddl.load_random_transmission_curve()
         tcurves.append(tcurve)
 
     Tcurves = namedtuple("TCurves", COSMOS_FILTER_BNAMES)
