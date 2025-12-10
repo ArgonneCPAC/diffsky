@@ -292,7 +292,7 @@ def plot_app_mag_func(
     ax.set_xlim(mag_bins.max() + 0.5, mag_bins.min() - 0.5)
 
     xlabel = ax.set_xlabel(r"${\rm mag}$")
-    ylabel = ax.set_ylabel(r"$\phi(m)$")
+    ylabel = ax.set_ylabel(r"$\phi(m)\ {\rm [deg^{-2}}]$")
 
     mag_binmids = 0.5 * (mag_bins[:-1] + mag_bins[1:])
     dmagbins = np.diff(mag_bins)
@@ -303,32 +303,34 @@ def plot_app_mag_func(
     msk_z_pred = np.abs(pdata.lc_data.z_obs - z_bin) < dz
 
     w_pred = pdata.lc_data.nhalos[msk_z_pred]
+    pred_norm_factor = pdata.diffsky_data["sky_area_degsq"] * dmagbins * 2 * dz
+    target_norm_factor = c20.SKY_AREA * dmagbins * 2 * dz
 
     _target = np.histogram(pdata.cosmos[m0][msk_z], bins=mag_bins)[0]
-    target_nd_m0 = _target / c20.SKY_AREA / dmagbins
+    target_nd_m0 = _target / target_norm_factor
     indx_m0 = pdata.diffsky_data["filter_dict"][m0][0]
     x_m0 = pdata.diffsky_data["obs_mags"][:, indx_m0][msk_z_pred]
     pred_counts_m0 = np.histogram(x_m0, bins=mag_bins, weights=w_pred)[0]
-    pred_nd_m0 = pred_counts_m0 / pdata.diffsky_data["sky_area_degsq"] / dmagbins
+    pred_nd_m0 = pred_counts_m0 / pred_norm_factor
     ax.plot(mag_binmids, target_nd_m0, color=MBLUE, label=m0_label)
     ax.plot(mag_binmids, pred_nd_m0, "--", color=MBLUE)
 
     _target = np.histogram(pdata.cosmos[m1][msk_z], bins=mag_bins)[0]
-    target_nd_m1 = _target / c20.SKY_AREA / dmagbins
+    target_nd_m1 = _target / target_norm_factor
     indx_m1 = pdata.diffsky_data["filter_dict"][m1][0]
     x_m1 = pdata.diffsky_data["obs_mags"][:, indx_m1][msk_z_pred]
     pred_counts_m1 = np.histogram(x_m1, bins=mag_bins, weights=w_pred)[0]
-    pred_nd_m1 = pred_counts_m1 / pdata.diffsky_data["sky_area_degsq"] / dmagbins
+    pred_nd_m1 = pred_counts_m1 / pred_norm_factor
 
     ax.plot(mag_binmids, target_nd_m1, color=MGREEN, label=m1_label)
     ax.plot(mag_binmids, pred_nd_m1, "--", color=MGREEN)
 
     _target = np.histogram(pdata.cosmos[m2][msk_z], bins=mag_bins)[0]
-    target_nd_m2 = _target / c20.SKY_AREA / dmagbins
+    target_nd_m2 = _target / target_norm_factor
     indx_m2 = pdata.diffsky_data["filter_dict"][m2][0]
     x_m2 = pdata.diffsky_data["obs_mags"][:, indx_m2][msk_z_pred]
     pred_counts_m2 = np.histogram(x_m2, bins=mag_bins, weights=w_pred)[0]
-    pred_nd_m2 = pred_counts_m2 / pdata.diffsky_data["sky_area_degsq"] / dmagbins
+    pred_nd_m2 = pred_counts_m2 / pred_norm_factor
 
     ax.plot(mag_binmids, target_nd_m2, color=MRED, label=m2_label)
     ax.plot(mag_binmids, pred_nd_m2, "--", color=MRED)
