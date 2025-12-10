@@ -466,6 +466,21 @@ def make_color_mag_diagnostic_plots(
     color_pairs=COLOR_PAIRS,
     pdata=None,
 ):
+    """Generate standard set of diagnostic plots
+
+    Parameters
+    ----------
+    param_collection : namedtuple
+        Example: diffsky_param_wrappers.DEFAULT_PARAM_COLLECTION
+
+    model_nickname : string
+        Nickname of the model being tested.
+        The model_nickname will be part of the output filename of each plot.
+
+    drn_out : string
+        Output directory to store plots
+
+    """
     if pdata is None:
         pdata = get_plotting_data(
             seed=0, **param_collection._asdict(), cosmo_params=cosmo_params, fb=fb
