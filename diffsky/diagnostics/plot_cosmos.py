@@ -426,13 +426,20 @@ def plot_color_pdf(
         color_target, bins=50, label=r"${\rm COSMOS}$", density=True, alpha=0.7
     )
 
+    w_pred = pdata.lc_data.nhalos[msk_sample_pred]
+
     indx_c0 = pdata.diffsky_data["filter_dict"][c0][0]
     indx_c1 = pdata.diffsky_data["filter_dict"][c1][0]
     c0_pred = pdata.diffsky_data["obs_mags"][:, indx_c0][msk_sample_pred]
     c1_pred = pdata.diffsky_data["obs_mags"][:, indx_c1][msk_sample_pred]
     color_pred = c0_pred - c1_pred
     ax.hist(
-        color_pred, bins=target_bins, label=r"${\rm Diffsky}$", density=True, alpha=0.7
+        color_pred,
+        bins=target_bins,
+        label=r"${\rm Diffsky}$",
+        density=True,
+        alpha=0.7,
+        weights=w_pred,
     )
 
     ax.set_title(f"{m1_label} = {m1_bin}; z={z_bin}")
