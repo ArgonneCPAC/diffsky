@@ -2,6 +2,8 @@
 
 python generate_lj_cf_crossmatch_jobs.py galsampler 8 0.01 3.0 /lcrc/project/halotools/random_data/0903 -istart 0 -iend 20 -drn_script /home/ahearin/work/random/0903/CROSSX_JOBS
 
+python generate_lj_cf_crossmatch_jobs.py galsampler 8 3.0 4.0 /lcrc/project/halotools/random_data/1211 -istart 0 -iend 40 -drn_script /home/ahearin/work/random/1211/CROSSX_JOBS
+
 """
 
 import argparse
@@ -57,7 +59,7 @@ if __name__ == "__main__":
         drn_script = os.path.dirname(os.path.abspath(__file__))
 
     if fn_patch_list == "":
-        patch_list = np.arange(istart, iend).astype(int)
+        patch_list = np.arange(istart, iend + 1).astype(int)
     else:
         patch_list = np.loadtxt(fn_patch_list).astype(int)
     if len(patch_list) == 0:
