@@ -12,7 +12,7 @@ import subprocess
 import numpy as np
 
 BN_JOB = "run_lc_cf_crossx_{0}_to_{1}.sh"
-BN_SCRIPT = "generate_lj_cf_crossmatch_holepatch_jobs.py"
+BN_SCRIPT = "lc_cf_crossmatch_script.py"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -88,7 +88,7 @@ if __name__ == "__main__":
         "",
     )
 
-    line_pat = "python {0} {1:.3f} {2:.3f} -fn_patch_list {3} -drn_out {4} "
+    line_pat = "python {0} {1:.3f} {2:.3f} -lc_patch_list_cfg {3} -drn_out {4} "
 
     if submit_job:
         print("\nSubmitting jobs to queue\n")
