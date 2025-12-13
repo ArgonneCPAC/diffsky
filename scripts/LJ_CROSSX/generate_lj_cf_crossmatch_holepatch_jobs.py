@@ -1,6 +1,6 @@
 """Script to generate scripts for cross-matching LastJourney core lightcones
 
-python generate_lj_cf_crossmatch_holepatch_jobs.py galsampler 8 0.01 3.0 /lcrc/project/halotools/random_data/0903 /Users/aphearin/work/random/1212/fn_missing_patches.txt -drn_script /Users/aphearin/work/random/1212
+python generate_lj_cf_crossmatch_holepatch_jobs.py galsampler 24 0.01 3.0 /lcrc/project/halotools/random_data/1213_holepatch /home/ahearin/work/random/1213_holepatch/fn_missing_patches.txt
 
 
 """
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     parser.add_argument("fn_missing_patches", help="fname of list of missing patches")
     parser.add_argument("--submit_job", action="store_true", help="Submit jobs")
     parser.add_argument(
-        "-job_size", help="Number of patches per job", default=5, type=int
+        "-job_size", help="Number of patches per job", default=10, type=int
     )
 
     parser.add_argument("-drn_script", help="Directory to write scripts", default="")
