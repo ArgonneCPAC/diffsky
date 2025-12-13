@@ -98,7 +98,7 @@ if __name__ == "__main__":
     sim = HACCSim.simulations[SIM_NAME]
 
     if lc_patch_list_cfg == "":
-        lc_patch_list = np.arange(istart, iend).astype(int)
+        lc_patch_list = np.arange(istart, iend + 1).astype(int)
     else:
         lc_patch_list = np.loadtxt(lc_patch_list_cfg).astype(int)
 
