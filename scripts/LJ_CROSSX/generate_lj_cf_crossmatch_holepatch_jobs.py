@@ -12,7 +12,7 @@ import subprocess
 import numpy as np
 
 BN_JOB = "run_lc_cf_crossx_{0}_to_{1}.sh"
-BN_SCRIPT = "lc_cf_crossmatch_script.py"
+BN_SCRIPT = "generate_lj_cf_crossmatch_holepatch_jobs.py"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
