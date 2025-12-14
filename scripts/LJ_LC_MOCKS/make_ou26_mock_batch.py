@@ -30,6 +30,7 @@ from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
 from diffsky.data_loaders.hacc_utils import metadata_sfh_mock
 from diffsky.data_loaders.mock_utils import get_mock_version_name
+from diffsky.experimental import mc_lightcone_halos as mclh
 from diffsky.experimental import precompute_ssp_phot as psspp
 from diffsky.experimental.sfh_model_calibrations import (
     load_diffsky_sfh_model_calibrations as ldup,
@@ -306,7 +307,14 @@ if __name__ == "__main__":
             bn_in = os.path.basename(fn_lc_diffsky)
             bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
             fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
+            lc_patch_info = llcs.get_lc_patch_info_from_lc_cores(fn_lc_cores, sim_name)
             patch_key, synthetic_lc_key = jran.split(patch_key, 2)
+            nhalos_estimate = mclh.estimate_nhalos_in_lightcone(
+                lgmp_min,
+                lc_patch_info.z_lo,
+                lc_patch_info.z_hi,
+                lc_patch_info.sky_area_degsq,
+            )
             lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(
                 fn_lc_cores, sim_name, synthetic_lc_key, lgmp_min, lgmp_max
             )
