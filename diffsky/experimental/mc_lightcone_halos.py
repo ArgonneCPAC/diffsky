@@ -90,6 +90,36 @@ _calc_bursty_age_weights_vmap = jjit(
 )
 
 
+def estimate_nhalos_in_lightcone(
+    lgmp_min,
+    z_min,
+    z_max,
+    sky_area_degsq,
+    *,
+    cosmo_params=flat_wcdm.PLANCK15,
+    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
+    n_hmf_grid=N_HMF_GRID,
+    lgmp_max=mc_hosts.LGMH_MAX,
+):
+    # Set up a uniform grid in redshift
+    z_grid = jnp.linspace(z_min, z_max, n_hmf_grid)
+
+    # Compute the comoving volume of a thin shell at each grid point
+    fsky = sky_area_degsq / FULL_SKY_AREA
+    vol_shell_grid_mpc = fsky * spherical_shell_comoving_volume(z_grid, cosmo_params)
+
+    # At each grid point, compute <Nhalos> for the shell volume
+    mean_nhalos_grid = mc_hosts._compute_nhalos_tot(
+        hmf_params, lgmp_min, z_grid, vol_shell_grid_mpc
+    )
+    mean_nhalos_lgmp_max = mc_hosts._compute_nhalos_tot(
+        hmf_params, lgmp_max, z_grid, vol_shell_grid_mpc
+    )
+    mean_nhalos_grid = mean_nhalos_grid - mean_nhalos_lgmp_max
+    nhalos_tot = mean_nhalos_grid.sum()
+    return nhalos_tot
+
+
 def mc_lightcone_host_halo_mass_function(
     ran_key,
     lgmp_min,
