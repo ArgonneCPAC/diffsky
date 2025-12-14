@@ -1,6 +1,6 @@
 """Script to generate scripts for cross-matching LastJourney core lightcones
 
-python generate_lj_cf_crossmatch_holepatch_jobs.py galsampler 24 0.01 3.0 /lcrc/project/halotools/random_data/1213_holepatch /home/ahearin/work/random/1213_holepatch/fn_missing_patches.txt
+python generate_lj_cf_crossmatch_holepatch_jobs.py galsampler 24 0.01 3.0 /lcrc/project/halotools/random_data/1213_holepatch /home/ahearin/work/random/1213_holepatch/fn_missing_patches.txt --submit_job
 
 
 """
