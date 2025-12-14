@@ -1,13 +1,18 @@
 """ """
 
 import os
+from collections import namedtuple
 
 import numpy as np
 from diffmah import logmh_at_t_obs
 
 from ...experimental import mc_lightcone_halos as mclh
+from . import haccsims
 from . import lightcone_utils as hlu
 from . import load_lc_cf as llcf
+
+LCPKEYS = ("z_lo", "z_hi", "ra_lo", "ra_hi", "dec_lo", "dec_hi", "sky_area_degsq")
+LCPatchInfo = namedtuple("LCPatchInfo", LCPKEYS)
 
 
 def load_lc_diffsky_patch_data(
@@ -87,3 +92,38 @@ def load_lc_diffsky_patch_data(
 
     lc_data = diffsky_data
     return lc_data, diffsky_data
+
+
+def get_lc_patch_info_from_lc_cores(fn_lc_cores, sim_name):
+    """Get lc_patch boundaries and sky area
+
+    Parameters
+    ----------
+    fn_lc_cores : string
+
+    sim_name : string
+
+    Returns
+    -------
+    lc_patch_info : namedtuple
+        lc_patch_info = z_lo, z_hi, ra_lo, ra_hi, dec_lo, dec_hi, sky_area_degsq
+
+    """
+
+    bname_lc_cores = os.path.basename(fn_lc_cores)
+    stepnum, lc_patch = hlu.get_stepnum_and_skypatch_from_lc_bname(bname_lc_cores)
+
+    _res = hlu.read_hacc_lc_patch_decomposition(sim_name)
+    patch_decomposition, sky_frac, solid_angles = _res
+    sky_area_degsq = solid_angles[lc_patch]
+
+    theta_lo, theta_hi, phi_lo, phi_hi = patch_decomposition[lc_patch, 1:]
+    ra_lo, dec_hi = hlu.get_ra_dec_from_theta_phi(theta_lo, phi_lo)
+    ra_hi, dec_lo = hlu.get_ra_dec_from_theta_phi(theta_hi, phi_hi)
+
+    z_table = haccsims.simulations[sim_name].redshifts
+    steps = haccsims.simulations[sim_name].cosmotools_steps
+    indx_stepnum = np.searchsorted(steps, stepnum)
+    z_lo, z_hi = z_table[indx_stepnum + 1], z_table[indx_stepnum]
+
+    return LCPatchInfo(z_lo, z_hi, ra_lo, ra_hi, dec_lo, dec_hi, sky_area_degsq)
