@@ -56,6 +56,8 @@ LC_DATA_NFW_KEYS_OUT = (
     "x_nfw",
     "y_nfw",
     "z_nfw",
+    "ra_nfw",
+    "dec_nfw",
 )
 LC_DATA_KEYS_OUT = (
     "core_tag",
@@ -64,8 +66,6 @@ LC_DATA_KEYS_OUT = (
     "z",
     "top_host_idx",
     "central",
-    "ra_nfw",
-    "dec_nfw",
     "redshift_true",
     "stepnum",
     "lc_patch",
