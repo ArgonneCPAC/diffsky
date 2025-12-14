@@ -313,8 +313,8 @@ if __name__ == "__main__":
         if synthetic_cores == 0:
             with h5py.File(fn_lc_cores, "r") as hdf:
                 nhalos_estimate = hdf["core_tag"].shape[0]
-                z_min_shell = 1.0 / hdf["scale_factor"].max() - 1
-                z_max_shell = 1.0 / hdf["scale_factor"].min() - 1
+                z_min_shell = 1.0 / hdf["scale_factor"][:].max() - 1
+                z_max_shell = 1.0 / hdf["scale_factor"][:].min() - 1
         elif synthetic_cores == 1:
             mean_nhalos = mclh.estimate_nhalos_in_lightcone(
                 lgmp_min,
