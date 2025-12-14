@@ -295,7 +295,7 @@ def write_batched_lc_sed_mock_to_disk(
     write_batched_mock_data(fnout, phot_info, phot_info_colnames, dataset="data")
 
     diffsky_data_colnames = [*MORPH_KEYS_OUT, *BLACK_HOLE_KEYS_OUT]
-    write_batched_mock_data(fnout, phot_info, diffsky_data_colnames, dataset="data")
+    write_batched_mock_data(fnout, diffsky_data, diffsky_data_colnames, dataset="data")
 
 
 def write_lc_sed_mock_to_disk(
