@@ -409,8 +409,9 @@ if __name__ == "__main__":
                 OUTPUT_FILTER_NICKNAMES,
             )
 
-        lc_cores_poskeys = ("x", "y", "z", "top_host_idx", "redshift_true", "central")
+        lc_cores_poskeys = ("x", "y", "z", "top_host_idx", "scale_factor", "central")
         lc_data_posinfo = load_flat_hdf5(fn_lc_cores, keys=lc_cores_poskeys)
+        lc_data_posinfo["redshift_true"] = 1 / lc_data_posinfo["scale_factor"] - 1
         diffsky_poskeys = ("logmp_obs",)
         diffsky_data_posinfo = load_flat_hdf5(fn_lc_diffsky, keys=diffsky_poskeys)
         if synthetic_cores == 0:
