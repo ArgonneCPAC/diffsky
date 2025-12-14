@@ -16,6 +16,7 @@ import os
 import sys
 from time import sleep, time
 
+import h5py
 import jax
 import numpy as np
 from dsps.data_loaders import load_ssp_templates
@@ -294,27 +295,33 @@ if __name__ == "__main__":
         bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
         stepnum, lc_patch = [int(x) for x in bn_lc_diffsky.split("-")[1].split(".")[:2]]
 
+        bn_in = os.path.basename(fn_lc_diffsky)
+        bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
+        fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
+        lc_patch_info = llcs.get_lc_patch_info_from_lc_cores(fn_lc_cores, sim_name)
+
         if rank == 0:
             print(f"...working on {os.path.basename(fn_lc_diffsky)}")
 
         ran_key, patch_key = jran.split(ran_key, 2)
 
         if synthetic_cores == 0:
-            lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
-                fn_lc_diffsky, indir_lc_data
-            )
-        else:
-            bn_in = os.path.basename(fn_lc_diffsky)
-            bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
-            fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
-            lc_patch_info = llcs.get_lc_patch_info_from_lc_cores(fn_lc_cores, sim_name)
-            patch_key, synthetic_lc_key = jran.split(patch_key, 2)
+            with h5py.File(fn_lc_diffsky, "r") as hdf:
+                nhalos_estimate = hdf["core_tag"].shape[0]
+        elif synthetic_cores == 1:
             nhalos_estimate = mclh.estimate_nhalos_in_lightcone(
                 lgmp_min,
                 lc_patch_info.z_lo,
                 lc_patch_info.z_hi,
                 lc_patch_info.sky_area_degsq,
             )
+
+        if synthetic_cores == 0:
+            lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
+                fn_lc_diffsky, indir_lc_data
+            )
+        else:
+            patch_key, synthetic_lc_key = jran.split(patch_key, 2)
             lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(
                 fn_lc_cores, sim_name, synthetic_lc_key, lgmp_min, lgmp_max
             )
