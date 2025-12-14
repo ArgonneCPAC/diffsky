@@ -52,14 +52,16 @@ shapes_3 = [f"infall_fof_halo_eigS3{x}" for x in ("X", "Y", "Z")]
 SHAPE_KEYS = (*shapes_1, *shapes_2, *shapes_3)
 TOP_HOST_SHAPE_KEYS = ["top_host_" + key for key in SHAPE_KEYS]
 
+LC_DATA_NFW_KEYS_OUT = (
+    "x_nfw",
+    "y_nfw",
+    "z_nfw",
+)
 LC_DATA_KEYS_OUT = (
     "core_tag",
     "x",
     "y",
     "z",
-    "x_nfw",
-    "y_nfw",
-    "z_nfw",
     "top_host_idx",
     "central",
     "ra_nfw",
@@ -85,14 +87,16 @@ _ORIEN_PATS = (
 ORIENTATION_KEYS = [pat.format("disk") for pat in _ORIEN_PATS]
 ORIENTATION_KEYS.extend([pat.format("bulge") for pat in _ORIEN_PATS])
 
-DIFFSKY_DATA_KEYS_OUT = (
+DIFFSKY_DATA_NFW_HOST_KEYS_OUT = (
     "x_host",
     "y_host",
     "z_host",
+    "logmp_obs_host",
+)
+DIFFSKY_DATA_KEYS_OUT = (
     "vx",
     "vy",
     "vz",
-    "logmp_obs_host",
     "has_diffmah_fit",
     "logmp0",
     "logmp_obs",

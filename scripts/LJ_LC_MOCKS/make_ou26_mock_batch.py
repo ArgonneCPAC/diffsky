@@ -24,7 +24,7 @@ from jax import random as jran
 from mpi4py import MPI
 
 from diffsky import phot_utils
-from diffsky.data_loaders import mpi_utils
+from diffsky.data_loaders import load_flat_hdf5, mpi_utils
 from diffsky.data_loaders.hacc_utils import lc_mock as lcmp_repro
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
@@ -396,9 +396,10 @@ if __name__ == "__main__":
             )
 
             batch_key, nfw_key = jran.split(batch_key, 2)
-            lc_data_batch, diffsky_data_batch = lcmp_repro.reposition_satellites(
-                sim_info, lc_data_batch, diffsky_data_batch, nfw_key
-            )
+            if synthetic_cores == 1:
+                lc_data_batch, diffsky_data_batch = lcmp_repro.reposition_satellites(
+                    sim_info, lc_data_batch, diffsky_data_batch, nfw_key
+                )
 
             lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
                 fn_out,
@@ -407,6 +408,25 @@ if __name__ == "__main__":
                 diffsky_data_batch,
                 OUTPUT_FILTER_NICKNAMES,
             )
+
+        lc_cores_poskeys = ("x", "y", "z", "top_host_idx", "redshift_true", "central")
+        lc_data_posinfo = load_flat_hdf5(fn_lc_cores, keys=lc_cores_poskeys)
+        diffsky_poskeys = ("logmp_obs",)
+        diffsky_data_posinfo = load_flat_hdf5(fn_lc_diffsky, keys=diffsky_poskeys)
+        if synthetic_cores == 0:
+            lc_data_posinfo, diffsky_data_posinfo = lcmp_repro.reposition_satellites(
+                sim_info, lc_data_posinfo, diffsky_data_posinfo, nfw_key
+            )
+
+        lcmp_repro.write_batched_mock_data(
+            fn_out, lc_data_posinfo, lcmp_repro.LC_DATA_NFW_KEYS_OUT, dataset="data"
+        )
+        lcmp_repro.write_batched_mock_data(
+            fn_out,
+            diffsky_data_posinfo,
+            lcmp_repro.DIFFSKY_DATA_NFW_HOST_KEYS_OUT,
+            dataset="data",
+        )
 
         gc.collect()
         jax.clear_caches()
