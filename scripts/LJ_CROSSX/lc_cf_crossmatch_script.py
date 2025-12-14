@@ -215,7 +215,7 @@ if __name__ == "__main__":
                         lc_patch_data_out = load_lc_patch_data_out(
                             drn_out_scratch, bn_patch_in, rank
                         )
-                    except FileNotFoundError:
+                    except (FileNotFoundError, OSError):
                         lc_patch_data_out = initialize_lc_patch_data_out(n_patch)
 
                     lc_patch_data_out = get_diffsky_quantities_for_lc_patch(
