@@ -596,22 +596,28 @@ def write_batched_mock_data(fn_out, data_batch, colnames_out, dataset="data"):
             grp = hdf_out[dataset]
 
         for key in colnames_out:
-
-            arr = np.atleast_1d(data_batch[key])
+            # Ensure data_batch[key] is an array
+            arr = np.asarray(data_batch[key])
+            if arr.ndim == 0:
+                arr = np.array([arr])
 
             if key not in grp:
+                maxshape = (None,) + arr.shape[1:]
 
-                if len(arr.shape) > 1:
-                    maxshape = (None,) + arr.shape[1:]
-                else:
-                    maxshape = (None,)
+                # Explicitly set chunk size instead of chunks=True
+                chunk_size = min(1000, arr.shape[0])
+                chunks = (chunk_size,) + arr.shape[1:]
 
-                grp.create_dataset(key, data=arr, maxshape=maxshape, chunks=True)
+                grp.create_dataset(key, data=arr, maxshape=maxshape, chunks=chunks)
             else:
                 current_size = grp[key].shape[0]
                 new_size = current_size + arr.shape[0]
                 try:
                     grp[key].resize(new_size, axis=0)
                     grp[key][current_size:new_size] = arr
-                except TypeError:
-                    raise TypeError(f"Tried to resize column `{key}`")
+                except (TypeError, RuntimeError) as e:
+                    raise TypeError(
+                        f"Tried to resize column `{key}`. "
+                        f"Original error: {e}. "
+                        f"Dataset chunks: {grp[key].chunks}"
+                    )

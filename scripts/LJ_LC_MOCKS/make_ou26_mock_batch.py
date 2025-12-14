@@ -302,6 +302,8 @@ if __name__ == "__main__":
 
         bn_out = lcmp_repro.LC_MOCK_BNPAT.format(stepnum, lc_patch)
         fn_out = os.path.join(drn_out, bn_out)
+        if os.path.exists(fn_out):
+            os.remove(fn_out)
 
         if rank == 0:
             print(f"...working on {os.path.basename(fn_lc_diffsky)}")
