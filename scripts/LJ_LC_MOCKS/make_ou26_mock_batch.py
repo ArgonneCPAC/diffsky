@@ -192,7 +192,7 @@ if __name__ == "__main__":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
 
-    ran_key = jran.key(0)
+    ran_key = jran.key(rank)
 
     sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
 
@@ -347,7 +347,7 @@ if __name__ == "__main__":
         for istart in range(0, nhalos_estimate, batch_size):
             iend = min(istart + batch_size, nhalos_estimate)
 
-            ran_key, batch_key = jran.split(ran_key)
+            patch_key, batch_key = jran.split(patch_key)
 
             if synthetic_cores == 0:
                 lc_data_batch, diffsky_data_batch = (
@@ -357,7 +357,7 @@ if __name__ == "__main__":
                 )
             else:
                 downsample_factor = nhalos_estimate / batch_size
-                patch_key, synthetic_lc_key = jran.split(patch_key, 2)
+                batch_key, synthetic_lc_key = jran.split(batch_key, 2)
                 lc_data_batch, diffsky_data_batch = llcs.load_lc_diffsky_patch_data(
                     fn_lc_cores,
                     sim_name,
@@ -371,6 +371,7 @@ if __name__ == "__main__":
             lc_data_batch["stepnum"] = np.zeros(n_gals_batch).astype(int) + stepnum
             lc_data_batch["lc_patch"] = np.zeros(n_gals_batch).astype(int) + lc_patch
 
+            batch_key, dbk_phot_key = jran.split(batch_key, 2)
             args = (
                 sim_info,
                 lc_data_batch,
@@ -380,12 +381,12 @@ if __name__ == "__main__":
                 precomputed_ssp_mag_table,
                 z_phot_table,
                 wave_eff_table,
-                batch_key,
+                dbk_phot_key,
             )
             _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
             phot_info_batch, lc_data_batch, diffsky_data_batch = _res
 
-            patch_key, morph_key = jran.split(patch_key, 2)
+            batch_key, morph_key = jran.split(batch_key, 2)
             diffsky_data_batch = lcmp_repro.add_morphology_quantities_to_diffsky_data(
                 sim_info, phot_info_batch, lc_data_batch, diffsky_data_batch, morph_key
             )
@@ -394,7 +395,7 @@ if __name__ == "__main__":
                 lc_data_batch, diffsky_data_batch, phot_info_batch
             )
 
-            patch_key, nfw_key = jran.split(patch_key, 2)
+            batch_key, nfw_key = jran.split(batch_key, 2)
             lc_data_batch, diffsky_data_batch = lcmp_repro.reposition_satellites(
                 sim_info, lc_data_batch, diffsky_data_batch, nfw_key
             )
