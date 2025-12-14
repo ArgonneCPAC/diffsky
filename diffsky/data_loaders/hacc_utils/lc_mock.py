@@ -264,6 +264,40 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
             hdf_out[key_out] = diffsky_data[key]
 
 
+def write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
+    """"""
+    write_batched_mock_data(fnout, lc_data, LC_DATA_KEYS_OUT, dataset="data")
+    write_batched_mock_data(fnout, diffsky_data, DIFFSKY_DATA_KEYS_OUT, dataset="data")
+
+    ra, dec = hlu._get_lon_lat_from_theta_phi(lc_data["theta"], lc_data["phi"])
+    ra_dec_dict = dict(ra=ra, dec=dec)
+    write_batched_mock_data(
+        fnout, ra_dec_dict, list(ra_dec_dict.keys()), dataset="data"
+    )
+
+
+def write_batched_lc_sed_mock_to_disk(
+    fnout, phot_info, lc_data, diffsky_data, filter_nicknames
+):
+    write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data)
+
+    phot_dict = dict()
+    for iband, name in enumerate(filter_nicknames):
+        phot_dict[name] = phot_info["obs_mags"][:, iband]
+    write_batched_mock_data(fnout, phot_dict, list(phot_dict.keys()), dataset="data")
+
+    phot_info_colnames = [
+        *DEFAULT_BURST_PARAMS._fields,
+        *DEFAULT_DUST_PARAMS._fields,
+        "mc_sfh_type",
+        *PHOT_INFO_KEYS_OUT,
+    ]
+    write_batched_mock_data(fnout, phot_info, phot_info_colnames, dataset="data")
+
+    diffsky_data_colnames = [*MORPH_KEYS_OUT, *BLACK_HOLE_KEYS_OUT]
+    write_batched_mock_data(fnout, phot_info, diffsky_data_colnames, dataset="data")
+
+
 def write_lc_sed_mock_to_disk(
     fnout, phot_info, lc_data, diffsky_data, filter_nicknames
 ):
@@ -295,13 +329,29 @@ def write_lc_dbk_sed_mock_to_disk(
     fnout, phot_info, lc_data, diffsky_data, filter_nicknames
 ):
     write_lc_sed_mock_to_disk(fnout, phot_info, lc_data, diffsky_data, filter_nicknames)
-
     with h5py.File(fnout, "a") as hdf_out:
         for iband, name in enumerate(filter_nicknames):
             hdf_out["data"][name + "_bulge"] = phot_info["obs_mags_bulge"][:, iband]
             hdf_out["data"][name + "_disk"] = phot_info["obs_mags_disk"][:, iband]
             hdf_out["data"][name + "_knots"] = phot_info["obs_mags_knots"][:, iband]
         hdf_out["data"]["fknot"] = phot_info["fknot"]
+
+
+def write_batched_lc_dbk_sed_mock_to_disk(
+    fnout, phot_info, lc_data, diffsky_data, filter_nicknames
+):
+    write_batched_lc_sed_mock_to_disk(
+        fnout, phot_info, lc_data, diffsky_data, filter_nicknames
+    )
+    dbk_phot_dict = dict()
+    for iband, name in enumerate(filter_nicknames):
+        dbk_phot_dict[name + "_bulge"] = phot_info["obs_mags_bulge"][:, iband]
+        dbk_phot_dict[name + "_disk"] = phot_info["obs_mags_disk"][:, iband]
+        dbk_phot_dict[name + "_knots"] = phot_info["obs_mags_knots"][:, iband]
+        dbk_phot_dict["fknot"] = phot_info["fknot"]
+    write_batched_mock_data(
+        fnout, dbk_phot_dict, list(dbk_phot_dict.keys()), dataset="data"
+    )
 
 
 def add_diffmah_properties_to_mock(diffsky_data, redshift_true, sim_info, ran_key):
@@ -535,3 +585,33 @@ def concatenate_batched_phot_data(phot_batches):
             raise ValueError(f"Unable to concatenate diffsky_data['{key}']")
 
     return phot_info, lc_data, diffsky_data
+
+
+def write_batched_mock_data(fn_out, data_batch, colnames_out, dataset="data"):
+
+    with h5py.File(fn_out, "a") as hdf_out:
+        if dataset not in hdf_out:
+            grp = hdf_out.create_group(dataset)
+        else:
+            grp = hdf_out[dataset]
+
+        for key in colnames_out:
+
+            arr = np.atleast_1d(data_batch[key])
+
+            if key not in grp:
+
+                if len(arr.shape) > 1:
+                    maxshape = (None,) + arr.shape[1:]
+                else:
+                    maxshape = (None,)
+
+                grp.create_dataset(key, data=arr, maxshape=maxshape, chunks=True)
+            else:
+                current_size = grp[key].shape[0]
+                new_size = current_size + arr.shape[0]
+                try:
+                    grp[key].resize(new_size, axis=0)
+                    grp[key][current_size:new_size] = arr
+                except TypeError:
+                    raise TypeError(f"Tried to resize column `{key}`")

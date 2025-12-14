@@ -300,6 +300,9 @@ if __name__ == "__main__":
         fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
         lc_patch_info = llcs.get_lc_patch_info_from_lc_cores(fn_lc_cores, sim_name)
 
+        bn_out = lcmp_repro.LC_MOCK_BNPAT.format(stepnum, lc_patch)
+        fn_out = os.path.join(drn_out, bn_out)
+
         if rank == 0:
             print(f"...working on {os.path.basename(fn_lc_diffsky)}")
 
@@ -308,37 +311,28 @@ if __name__ == "__main__":
         if synthetic_cores == 0:
             with h5py.File(fn_lc_diffsky, "r") as hdf:
                 nhalos_estimate = hdf["core_tag"].shape[0]
+                z_min_shell = 1.0 / hdf["scale_factor"].max() - 1
+                z_max_shell = 1.0 / hdf["scale_factor"].min() - 1
         elif synthetic_cores == 1:
-            nhalos_estimate = mclh.estimate_nhalos_in_lightcone(
+            mean_nhalos = mclh.estimate_nhalos_in_lightcone(
                 lgmp_min,
                 lc_patch_info.z_lo,
                 lc_patch_info.z_hi,
                 lc_patch_info.sky_area_degsq,
             )
-
-        if synthetic_cores == 0:
-            lc_data, diffsky_data = load_lc_cf.load_lc_diffsky_patch_data(
-                fn_lc_diffsky, indir_lc_data
-            )
-        else:
-            patch_key, synthetic_lc_key = jran.split(patch_key, 2)
-            lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(
-                fn_lc_cores, sim_name, synthetic_lc_key, lgmp_min, lgmp_max
-            )
-
-        n_gals = len(lc_data["core_tag"])
-        lc_data["stepnum"] = np.zeros(n_gals).astype(int) + stepnum
-        lc_data["lc_patch"] = np.zeros(n_gals).astype(int) + lc_patch
+            nhalos_estimate = int(np.round(mean_nhalos))
+            z_min_shell = lc_patch_info.z_lo
+            z_max_shell = lc_patch_info.z_hi
 
         # Define redshift table used for magnitude interpolation
         _EPS = 1e-3
-        z_max = lc_data["redshift_true"].max() + _EPS
+        z_min = min(lc_patch_info.z_lo, z_min_shell) - _EPS
+        z_max = max(lc_patch_info.z_hi, z_max_shell) + _EPS
 
-        z_min_shell = lc_data["redshift_true"].min()
-        z_min = z_min_shell - _EPS
         z_min_cutoff = 1e-3
         if z_min < z_min_cutoff:
             z_min = z_min_shell / 2
+
         z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
 
         # Precompute photometry at each element of the redshift table
@@ -348,25 +342,32 @@ if __name__ == "__main__":
             tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
         )
 
-        n_gals_orig = len(lc_data["core_tag"])
+        for istart in range(0, nhalos_estimate, batch_size):
+            iend = min(istart + batch_size, nhalos_estimate)
 
-        n_batches = n_gals // batch_size
-        print(f"{n_gals} total galaxies")
-        print(f"Batch size = {batch_size:_}")
-        print(f"Looping over {n_batches} batches of data\n")
-        # Loop over batches of data
-        phot_batches = []
-        for istart in range(0, n_gals, batch_size):
-            iend = min(istart + batch_size, n_gals)
             ran_key, batch_key = jran.split(ran_key)
 
-            lc_data_batch = dict()
-            for key in lc_data.keys():
-                lc_data_batch[key] = lc_data[key][istart:iend]
+            if synthetic_cores == 0:
+                lc_data_batch, diffsky_data_batch = (
+                    load_lc_cf.load_lc_diffsky_patch_data(
+                        fn_lc_diffsky, indir_lc_data, istart=istart, iend=iend
+                    )
+                )
+            else:
+                downsample_factor = nhalos_estimate / batch_size
+                patch_key, synthetic_lc_key = jran.split(patch_key, 2)
+                lc_data_batch, diffsky_data_batch = llcs.load_lc_diffsky_patch_data(
+                    fn_lc_cores,
+                    sim_name,
+                    synthetic_lc_key,
+                    lgmp_min,
+                    lgmp_max,
+                    downsample_factor=downsample_factor,
+                )
 
-            diffsky_data_batch = dict()
-            for key in diffsky_data.keys():
-                diffsky_data_batch[key] = diffsky_data[key][istart:iend]
+            n_gals_batch = len(lc_data_batch["core_tag"])
+            lc_data_batch["stepnum"] = np.zeros(n_gals_batch).astype(int) + stepnum
+            lc_data_batch["lc_patch"] = np.zeros(n_gals_batch).astype(int) + lc_patch
 
             args = (
                 sim_info,
@@ -380,47 +381,33 @@ if __name__ == "__main__":
                 batch_key,
             )
             _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
-
             phot_info_batch, lc_data_batch, diffsky_data_batch = _res
-            phot_batches.append(_res)
 
-        _cats = lcmp_repro.concatenate_batched_phot_data(phot_batches)
-        phot_info, lc_data, diffsky_data = _cats
+            patch_key, morph_key = jran.split(patch_key, 2)
+            diffsky_data_batch = lcmp_repro.add_morphology_quantities_to_diffsky_data(
+                sim_info, phot_info_batch, lc_data_batch, diffsky_data_batch, morph_key
+            )
 
-        n_gals_check = len(lc_data["core_tag"])
-        assert n_gals_orig == n_gals_check, "mismatch between orig and new lengths"
-        print(f"Rank {rank}: Validating {n_gals_check} galaxies after batching")
+            diffsky_data_batch = lcmp_repro.add_black_hole_quantities_to_diffsky_data(
+                lc_data_batch, diffsky_data_batch, phot_info_batch
+            )
 
-        # Check every array has correct length
-        for key, val in {**lc_data, **diffsky_data, **phot_info}.items():
-            if val.shape[0] != n_gals_check:
-                raise ValueError(
-                    f"Array length mismatch: {key} has shape {val.shape}, "
-                    f"expected first dim = {n_gals_check}"
-                )
+            patch_key, nfw_key = jran.split(patch_key, 2)
+            lc_data_batch, diffsky_data_batch = lcmp_repro.reposition_satellites(
+                sim_info, lc_data_batch, diffsky_data_batch, nfw_key
+            )
+
+            lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
+                fn_out,
+                phot_info_batch,
+                lc_data_batch,
+                diffsky_data_batch,
+                OUTPUT_FILTER_NICKNAMES,
+            )
 
         gc.collect()
         jax.clear_caches()
 
-        patch_key, morph_key = jran.split(patch_key, 2)
-        diffsky_data = lcmp_repro.add_morphology_quantities_to_diffsky_data(
-            sim_info, phot_info, lc_data, diffsky_data, morph_key
-        )
-
-        diffsky_data = lcmp_repro.add_black_hole_quantities_to_diffsky_data(
-            lc_data, diffsky_data, phot_info
-        )
-
-        patch_key, nfw_key = jran.split(patch_key, 2)
-        lc_data, diffsky_data = lcmp_repro.reposition_satellites(
-            sim_info, lc_data, diffsky_data, nfw_key
-        )
-
-        bn_out = lcmp_repro.LC_MOCK_BNPAT.format(stepnum, lc_patch)
-        fn_out = os.path.join(drn_out, bn_out)
-        lcmp_repro.write_lc_dbk_sed_mock_to_disk(
-            fn_out, phot_info, lc_data, diffsky_data, OUTPUT_FILTER_NICKNAMES
-        )
         metadata_sfh_mock.append_metadata(
             fn_out, sim_name, mock_version_name, z_phot_table, OUTPUT_FILTER_NICKNAMES
         )

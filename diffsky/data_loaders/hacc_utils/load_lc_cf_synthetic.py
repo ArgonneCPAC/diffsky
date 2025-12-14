@@ -27,7 +27,7 @@ def load_lc_diffsky_patch_data(
     _res = hlu.read_hacc_lc_patch_decomposition(sim_name)
     patch_decomposition, sky_frac, solid_angles = _res
     sky_area_degsq = solid_angles[lc_patch]
-    sky_area_degsq = sky_area_degsq * downsample_factor
+    sky_area_degsq = sky_area_degsq / downsample_factor
 
     a_min, a_max = hlu.get_a_range_of_lc_cores_file(bname_lc_cores, sim_name)
 
