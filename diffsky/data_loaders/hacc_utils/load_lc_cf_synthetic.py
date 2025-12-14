@@ -10,7 +10,9 @@ from . import lightcone_utils as hlu
 from . import load_lc_cf as llcf
 
 
-def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max):
+def load_lc_diffsky_patch_data(
+    fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max, *, downsample_factor=1.0
+):
 
     sim_info = llcf.get_diffsky_info_from_hacc_sim(sim_name)
 
@@ -20,6 +22,7 @@ def load_lc_diffsky_patch_data(fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_ma
     _res = hlu.read_hacc_lc_patch_decomposition(sim_name)
     patch_decomposition, sky_frac, solid_angles = _res
     sky_area_degsq = solid_angles[lc_patch]
+    sky_area_degsq = sky_area_degsq * downsample_factor
 
     a_min, a_max = hlu.get_a_range_of_lc_cores_file(bname_lc_cores, sim_name)
 
