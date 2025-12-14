@@ -311,7 +311,7 @@ if __name__ == "__main__":
         ran_key, patch_key = jran.split(ran_key, 2)
 
         if synthetic_cores == 0:
-            with h5py.File(fn_lc_diffsky, "r") as hdf:
+            with h5py.File(fn_lc_cores, "r") as hdf:
                 nhalos_estimate = hdf["core_tag"].shape[0]
                 z_min_shell = 1.0 / hdf["scale_factor"].max() - 1
                 z_max_shell = 1.0 / hdf["scale_factor"].min() - 1
