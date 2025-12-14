@@ -413,10 +413,12 @@ if __name__ == "__main__":
         lc_data_posinfo = load_flat_hdf5(fn_lc_cores, keys=lc_cores_poskeys)
         lc_data_posinfo["redshift_true"] = 1 / lc_data_posinfo["scale_factor"] - 1
         diffsky_poskeys = ("logmp_obs",)
-        diffsky_data_posinfo = load_flat_hdf5(fn_lc_diffsky, keys=diffsky_poskeys)
+        diffsky_gals_posinfo = load_flat_hdf5(
+            fn_out, keys=diffsky_poskeys, dataset="data"
+        )
         if synthetic_cores == 0:
             lc_data_posinfo, diffsky_data_posinfo = lcmp_repro.reposition_satellites(
-                sim_info, lc_data_posinfo, diffsky_data_posinfo, nfw_key
+                sim_info, lc_data_posinfo, diffsky_gals_posinfo, nfw_key
             )
 
         lcmp_repro.write_batched_mock_data(
