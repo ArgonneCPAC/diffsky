@@ -404,8 +404,8 @@ if __name__ == "__main__":
                 OUTPUT_FILTER_NICKNAMES,
             )
 
-            batch_key, nfw_key = jran.split(batch_key, 2)
             if synthetic_cores == 1:
+                batch_key, nfw_key = jran.split(batch_key, 2)
                 lc_data_batch, diffsky_data_batch = lcmp_repro.reposition_satellites(
                     sim_info, lc_data_batch, diffsky_data_batch, nfw_key
                 )
@@ -455,16 +455,16 @@ if __name__ == "__main__":
         gc.collect()
         jax.clear_caches()
 
+        metadata_sfh_mock.append_metadata(
+            fn_out,
+            sim_name,
+            mock_version_name,
+            z_phot_table,
+            OUTPUT_FILTER_NICKNAMES,
+        )
+
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
-
-            metadata_sfh_mock.append_metadata(
-                fn_out,
-                sim_name,
-                mock_version_name,
-                z_phot_table,
-                OUTPUT_FILTER_NICKNAMES,
-            )
 
             lcmp_repro.write_ancillary_data(
                 drn_out,
