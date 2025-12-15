@@ -23,7 +23,7 @@ jobs:
           remove_dotnet: true
           remove_haskell: true
           rm_cmd: "rmz"
-    
+
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
@@ -93,7 +93,7 @@ jobs:
           mkdir -p ci_test_output
 
           # Run mock production script
-          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_ou26_mock.py \
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py \
             poboy \
             0.01 \
             0.2 \

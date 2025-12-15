@@ -53,13 +53,13 @@ def get_diffsky_info_from_hacc_sim(sim_name):
     return diffsky_info
 
 
-def load_lc_diffsky_patch_data(fn_lc_diffsky, indir_lc_data):
-    diffsky_data = load_flat_hdf5(fn_lc_diffsky)
+def load_lc_diffsky_patch_data(fn_lc_diffsky, indir_lc_data, *, istart=0, iend=None):
+    diffsky_data = load_flat_hdf5(fn_lc_diffsky, istart=istart, iend=iend)
 
     bn_in = os.path.basename(fn_lc_diffsky)
     bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
     fn_lc = os.path.join(indir_lc_data, bn_lc)
-    lc_data = load_flat_hdf5(fn_lc)
+    lc_data = load_flat_hdf5(fn_lc, istart=istart, iend=iend)
 
     lc_data["redshift_true"] = 1 / lc_data["scale_factor"] - 1
 

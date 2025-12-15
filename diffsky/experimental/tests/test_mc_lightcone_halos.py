@@ -50,6 +50,22 @@ def _get_weighted_lc_data_for_unit_testing(num_halos=75, ssp_data=SSP_DATA):
     return lc_data, tcurves
 
 
+def test_estimate_nhalos_in_lightcone_always_returns_positive():
+    ran_key = jran.key(0)
+    n_tests = 10
+    for __ in range(n_tests):
+        ran_key, test_key = jran.split(ran_key, 2)
+        z_key, lgm_key = jran.split(test_key, 2)
+        z_min = jran.uniform(z_key, minval=0, maxval=1, shape=())
+        z_max = z_min + 0.1
+        lgmp_min = jran.uniform(lgm_key, minval=10, maxval=13, shape=())
+        sky_area_degsq = 1.0
+        nhalos = mclh.estimate_nhalos_in_lightcone(
+            lgmp_min, z_min, z_max, sky_area_degsq
+        )
+        assert nhalos > 0
+
+
 def test_get_weighted_lc_data_for_unit_testing():
     lc_data, tcurves = _get_weighted_lc_data_for_unit_testing()
     assert np.all(np.isfinite(lc_data.logmp0))
