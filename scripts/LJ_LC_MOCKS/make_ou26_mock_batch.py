@@ -455,16 +455,25 @@ if __name__ == "__main__":
         gc.collect()
         jax.clear_caches()
 
-        metadata_sfh_mock.append_metadata(
-            fn_out, sim_name, mock_version_name, z_phot_table, OUTPUT_FILTER_NICKNAMES
-        )
-
-        lcmp_repro.write_ancillary_data(
-            drn_out, mock_version_name, sim_info, param_collection, tcurves, ssp_data
-        )
-
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
+
+            metadata_sfh_mock.append_metadata(
+                fn_out,
+                sim_name,
+                mock_version_name,
+                z_phot_table,
+                OUTPUT_FILTER_NICKNAMES,
+            )
+
+            lcmp_repro.write_ancillary_data(
+                drn_out,
+                mock_version_name,
+                sim_info,
+                param_collection,
+                tcurves,
+                ssp_data,
+            )
 
         gc.collect()
         jax.clear_caches()
