@@ -344,6 +344,7 @@ if __name__ == "__main__":
             tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
         )
 
+        print(f"Looping over {nhalos_estimate} halos with batch_size={batch_size}")
         for istart in range(0, nhalos_estimate, batch_size):
             iend = min(istart + batch_size, nhalos_estimate)
 
