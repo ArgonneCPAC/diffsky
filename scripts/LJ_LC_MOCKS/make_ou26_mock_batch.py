@@ -396,12 +396,6 @@ if __name__ == "__main__":
                 lc_data_batch, diffsky_data_batch, phot_info_batch
             )
 
-            # batch_key, nfw_key = jran.split(batch_key, 2)
-            # if synthetic_cores == 1:
-            #     lc_data_batch, diffsky_data_batch = lcmp_repro.reposition_satellites(
-            #         sim_info, lc_data_batch, diffsky_data_batch, nfw_key
-            #     )
-
             lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
                 fn_out,
                 phot_info_batch,
@@ -410,32 +404,53 @@ if __name__ == "__main__":
                 OUTPUT_FILTER_NICKNAMES,
             )
 
-        lc_cores_poskeys = (
-            "x",
-            "y",
-            "z",
-            "top_host_idx",
-            "redshift_true",
-            "central",
-            "logmp_obs",
-        )
-        lc_data_posinfo = load_flat_hdf5(fn_out, keys=lc_cores_poskeys, dataset="data")
-        diffsky_gals_posinfo = lc_data_posinfo
+            batch_key, nfw_key = jran.split(batch_key, 2)
+            if synthetic_cores == 1:
+                lc_data_batch, diffsky_data_batch = lcmp_repro.reposition_satellites(
+                    sim_info, lc_data_batch, diffsky_data_batch, nfw_key
+                )
+                lcmp_repro.write_batched_mock_data(
+                    fn_out,
+                    lc_data_batch,
+                    lcmp_repro.LC_DATA_NFW_KEYS_OUT,
+                    dataset="data",
+                )
+                lcmp_repro.write_batched_mock_data(
+                    fn_out,
+                    diffsky_data_batch,
+                    lcmp_repro.DIFFSKY_DATA_NFW_HOST_KEYS_OUT,
+                    dataset="data",
+                )
 
-        patch_key, nfw_key = jran.split(patch_key, 2)
-        lc_data_posinfo, diffsky_data_posinfo = lcmp_repro.reposition_satellites(
-            sim_info, lc_data_posinfo, diffsky_gals_posinfo, nfw_key
-        )
+        if synthetic_cores == 0:
+            lc_cores_poskeys = (
+                "x",
+                "y",
+                "z",
+                "top_host_idx",
+                "redshift_true",
+                "central",
+                "logmp_obs",
+            )
+            lc_data_posinfo = load_flat_hdf5(
+                fn_out, keys=lc_cores_poskeys, dataset="data"
+            )
+            diffsky_gals_posinfo = lc_data_posinfo
 
-        lcmp_repro.write_batched_mock_data(
-            fn_out, lc_data_posinfo, lcmp_repro.LC_DATA_NFW_KEYS_OUT, dataset="data"
-        )
-        lcmp_repro.write_batched_mock_data(
-            fn_out,
-            diffsky_data_posinfo,
-            lcmp_repro.DIFFSKY_DATA_NFW_HOST_KEYS_OUT,
-            dataset="data",
-        )
+            patch_key, nfw_key = jran.split(patch_key, 2)
+            lc_data_posinfo, diffsky_data_posinfo = lcmp_repro.reposition_satellites(
+                sim_info, lc_data_posinfo, diffsky_gals_posinfo, nfw_key
+            )
+
+            lcmp_repro.write_batched_mock_data(
+                fn_out, lc_data_posinfo, lcmp_repro.LC_DATA_NFW_KEYS_OUT, dataset="data"
+            )
+            lcmp_repro.write_batched_mock_data(
+                fn_out,
+                diffsky_data_posinfo,
+                lcmp_repro.DIFFSKY_DATA_NFW_HOST_KEYS_OUT,
+                dataset="data",
+            )
 
         gc.collect()
         jax.clear_caches()
