@@ -98,7 +98,7 @@ if __name__ == "__main__":
     sim = HACCSim.simulations[SIM_NAME]
 
     if lc_patch_list_cfg == "":
-        lc_patch_list = np.arange(istart, iend).astype(int)
+        lc_patch_list = np.arange(istart, iend + 1).astype(int)
     else:
         lc_patch_list = np.loadtxt(lc_patch_list_cfg).astype(int)
 
@@ -215,7 +215,7 @@ if __name__ == "__main__":
                         lc_patch_data_out = load_lc_patch_data_out(
                             drn_out_scratch, bn_patch_in, rank
                         )
-                    except FileNotFoundError:
+                    except (FileNotFoundError, OSError):
                         lc_patch_data_out = initialize_lc_patch_data_out(n_patch)
 
                     lc_patch_data_out = get_diffsky_quantities_for_lc_patch(

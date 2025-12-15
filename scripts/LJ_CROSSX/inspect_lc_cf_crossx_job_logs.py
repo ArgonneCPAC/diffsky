@@ -18,6 +18,8 @@ def _get_bad_example(bad_job_collector):
 
 def check_o_logs(drn):
     fn_list = glob(os.path.join(drn, "run_*.o*"))
+    if len(fn_list) == 0:
+        raise ValueError(f"No job logs found in `{drn}`")
     bad_jobs = []
     incompl_jobs = []
 
@@ -39,6 +41,8 @@ def check_o_logs(drn):
 
 def check_e_logs(drn):
     fn_list = glob(os.path.join(drn, "run_*.sh.e*"))
+    if len(fn_list) == 0:
+        raise ValueError(f"No job logs found in `{drn}`")
     bad_job_collector = []
     for fn in fn_list:
         line_counter = 0
