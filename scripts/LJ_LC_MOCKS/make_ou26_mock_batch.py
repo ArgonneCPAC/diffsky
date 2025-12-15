@@ -410,13 +410,18 @@ if __name__ == "__main__":
                 OUTPUT_FILTER_NICKNAMES,
             )
 
-        lc_cores_poskeys = ("x", "y", "z", "top_host_idx", "scale_factor", "central")
-        lc_data_posinfo = load_flat_hdf5(fn_lc_cores, keys=lc_cores_poskeys)
-        lc_data_posinfo["redshift_true"] = 1 / lc_data_posinfo["scale_factor"] - 1
-        diffsky_poskeys = ("logmp_obs",)
-        diffsky_gals_posinfo = load_flat_hdf5(
-            fn_out, keys=diffsky_poskeys, dataset="data"
+        lc_cores_poskeys = (
+            "x",
+            "y",
+            "z",
+            "top_host_idx",
+            "redshift_true",
+            "central",
+            "logmp_obs",
         )
+        lc_data_posinfo = load_flat_hdf5(fn_out, keys=lc_cores_poskeys, dataset="data")
+        diffsky_gals_posinfo = lc_data_posinfo
+
         patch_key, nfw_key = jran.split(patch_key, 2)
         lc_data_posinfo, diffsky_data_posinfo = lcmp_repro.reposition_satellites(
             sim_info, lc_data_posinfo, diffsky_gals_posinfo, nfw_key
