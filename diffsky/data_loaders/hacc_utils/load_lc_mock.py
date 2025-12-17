@@ -49,6 +49,18 @@ def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list):
     return diffsky_data
 
 
+def load_lc_patch_collection(fn_list, keys):
+    """Concatenate a collection of mock data from an input list of files"""
+    mock_collector = []
+    for fn in fn_list:
+        mock_bn = load_flat_hdf5(fn, dataset="data", keys=keys)
+        mock_collector.append(mock_bn)
+    mock = dict()
+    for key in keys:
+        mock[key] = np.concatenate([mock_bn[key] for mock_bn in mock_collector])
+    return mock
+
+
 def load_diffsky_lc_patch(drn_mock, bn_mock):
     fn_mock = os.path.join(drn_mock, bn_mock)
     diffsky_data = load_flat_hdf5(fn_mock, dataset="data")
