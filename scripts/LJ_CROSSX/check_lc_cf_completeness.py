@@ -46,16 +46,20 @@ def get_stepnums_with_missing_patches(
     return stepnums_with_missing_patches
 
 
-def get_patches_with_missing_stepnums(patch_match_info, complete_stepnums):
-    uniq_patches = np.sort(list(patch_match_info.keys()))
+def get_patches_with_missing_stepnums(
+    patch_match_info, complete_stepnums, lc_patches_expected
+):
 
     print("...computing patches_with_missing_stepnums")
     patches_with_missing_stepnums = dict()
-    for patch in uniq_patches:
-        avail_stepnums = patch_match_info[patch]
-        _s = list(set(complete_stepnums) - set(avail_stepnums))
-        if len(_s) > 0:
-            missing_stepnums = sorted([int(s) for s in _s])
+    for patch in lc_patches_expected:
+        try:
+            avail_stepnums = patch_match_info[patch]
+        except KeyError:
+            avail_stepnums = []
+        missing_stepnums = list(set(complete_stepnums) - set(avail_stepnums))
+        missing_stepnums = sorted([int(x) for x in missing_stepnums])
+        if len(missing_stepnums) > 0:
             patches_with_missing_stepnums[int(patch)] = missing_stepnums
 
     return patches_with_missing_stepnums
@@ -136,7 +140,7 @@ if __name__ == "__main__":
     )
 
     patches_with_missing_stepnums = get_patches_with_missing_stepnums(
-        patch_match_info, complete_stepnums
+        patch_match_info, complete_stepnums, lc_patches_expected
     )
 
     with open("stepnums_with_missing_patches.pickle", "wb") as handle:
