@@ -6,6 +6,7 @@ import pickle
 from glob import glob
 
 import numpy as np
+
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
 BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
@@ -37,19 +38,19 @@ def compute_missing_patches(step_match_info):
     return missing_patches
 
 
-def compute_missing_stepnums(patch_match_info, z_min, z_max):
+def get_patches_with_missing_stepnums(patch_match_info, z_min, z_max):
     uniq_patches = np.sort(list(patch_match_info.keys()))
     complete_stepnums = hlu.get_timesteps_in_zrange(SIM_NAME, z_min, z_max)
 
-    print("...computing missing_stepnums")
-    missing_stepnums = dict()
+    print("...computing patches_with_missing_stepnums")
+    patches_with_missing_stepnums = dict()
     for patch in uniq_patches:
         avail_stepnums = patch_match_info[patch]
         _s = list(set(complete_stepnums) - set(avail_stepnums))
         if len(_s) > 0:
-            missing_stepnums[int(patch)] = [int(s) for s in _s]
+            patches_with_missing_stepnums[int(patch)] = [int(s) for s in _s]
 
-    return missing_stepnums
+    return patches_with_missing_stepnums
 
 
 if __name__ == "__main__":
@@ -101,10 +102,14 @@ if __name__ == "__main__":
         pickle.dump(step_match_info, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     missing_patches = compute_missing_patches(step_match_info)
-    missing_stepnums = compute_missing_stepnums(patch_match_info, z_min, z_max)
+    patches_with_missing_stepnums = get_patches_with_missing_stepnums(
+        patch_match_info, z_min, z_max
+    )
 
     with open("missing_patches.pickle", "wb") as handle:
         pickle.dump(missing_patches, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open("missing_stepnums.pickle", "wb") as handle:
-        pickle.dump(missing_stepnums, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open("patches_with_missing_stepnums.pickle", "wb") as handle:
+        pickle.dump(
+            patches_with_missing_stepnums, handle, protocol=pickle.HIGHEST_PROTOCOL
+        )
