@@ -55,7 +55,8 @@ def get_patches_with_missing_stepnums(patch_match_info, complete_stepnums):
         avail_stepnums = patch_match_info[patch]
         _s = list(set(complete_stepnums) - set(avail_stepnums))
         if len(_s) > 0:
-            patches_with_missing_stepnums[int(patch)] = [int(s) for s in _s]
+            missing_stepnums = sorted([int(s) for s in _s])
+            patches_with_missing_stepnums[int(patch)] = missing_stepnums
 
     return patches_with_missing_stepnums
 
