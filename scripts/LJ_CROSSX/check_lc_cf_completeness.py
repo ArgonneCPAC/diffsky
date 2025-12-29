@@ -26,25 +26,28 @@ def get_stepnum_and_patch(bname):
     return stepnum, patch
 
 
-def compute_missing_patches(step_match_info):
-    print("...computing missing_patches")
-    uniq_steps = np.sort(list(step_match_info.keys()))
+def get_stepnums_with_missing_patches(
+    step_match_info, complete_stepnums, lc_patches_expected
+):
+    print("...computing stepnums_with_missing_patches")
 
-    missing_patches = dict()
-    for stepnum in uniq_steps:
-        avail_patches = step_match_info[stepnum]
-        max_patch = np.max(avail_patches)
-        complete_patches = np.arange(max_patch + 1).astype(int)
-        _s = list(set(complete_patches) - set(avail_patches))
-        if len(_s) > 0:
-            missing_patches[int(stepnum)] = [int(s) for s in _s]
+    stepnums_with_missing_patches = dict()
+    for stepnum in complete_stepnums:
+        try:
+            avail_patches = step_match_info[stepnum]
+        except KeyError:
+            avail_patches = []
 
-    return missing_patches
+        missing_patches = list(set(lc_patches_expected) - set(avail_patches))
+        if len(missing_patches) > 0:
+            missing_patches = sorted([int(s) for s in missing_patches])
+            stepnums_with_missing_patches[int(stepnum)] = missing_patches
+
+    return stepnums_with_missing_patches
 
 
-def get_patches_with_missing_stepnums(patch_match_info, z_min, z_max):
+def get_patches_with_missing_stepnums(patch_match_info, complete_stepnums):
     uniq_patches = np.sort(list(patch_match_info.keys()))
-    complete_stepnums = hlu.get_timesteps_in_zrange(SIM_NAME, z_min, z_max)
 
     print("...computing patches_with_missing_stepnums")
     patches_with_missing_stepnums = dict()
@@ -86,6 +89,8 @@ if __name__ == "__main__":
     else:
         lc_patches_expected = np.loadtxt(lc_patch_list_cfg).astype(int)
 
+    complete_stepnums = hlu.get_timesteps_in_zrange(SIM_NAME, z_min, z_max)
+
     fn_pat = os.path.join(drn, BNPAT.format("*", "*"))
     bn_list = [os.path.basename(fn) for fn in glob(fn_pat)]
     patch_list = []
@@ -125,13 +130,18 @@ if __name__ == "__main__":
     with open("step_match_info.pickle", "wb") as handle:
         pickle.dump(step_match_info, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    missing_patches = compute_missing_patches(step_match_info)
-    patches_with_missing_stepnums = get_patches_with_missing_stepnums(
-        patch_match_info, z_min, z_max
+    stepnums_with_missing_patches = get_stepnums_with_missing_patches(
+        step_match_info, complete_stepnums, lc_patches_expected
     )
 
-    with open("missing_patches.pickle", "wb") as handle:
-        pickle.dump(missing_patches, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    patches_with_missing_stepnums = get_patches_with_missing_stepnums(
+        patch_match_info, complete_stepnums
+    )
+
+    with open("stepnums_with_missing_patches.pickle", "wb") as handle:
+        pickle.dump(
+            stepnums_with_missing_patches, handle, protocol=pickle.HIGHEST_PROTOCOL
+        )
 
     with open("patches_with_missing_stepnums.pickle", "wb") as handle:
         pickle.dump(
