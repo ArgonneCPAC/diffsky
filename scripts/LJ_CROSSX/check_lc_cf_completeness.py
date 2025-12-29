@@ -88,7 +88,7 @@ if __name__ == "__main__":
         if iend == -1:
             _res = hlu.read_lc_ra_dec_patch_decomposition(FN_LC_CORES)
             patch_decomposition = _res[0]
-            lc_patches_expected = patch_decomposition[:, 0]
+            lc_patches_expected = patch_decomposition[:, 0].astype(int)
         else:
             lc_patches_expected = np.arange(istart, iend + 1).astype(int)
     else:
