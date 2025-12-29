@@ -13,6 +13,10 @@ BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 
 SIM_NAME = "LastJourney"
 DRN_LC_CF = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-cf-diffsky"
+DRN_LC_CORES = (
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-6/output"
+)
+FN_LC_CORES = os.path.join(DRN_LC_CORES, "lc_cores-decomposition.txt")
 
 
 def get_stepnum_and_patch(bname):
@@ -58,17 +62,36 @@ if __name__ == "__main__":
     parser.add_argument("drn", help="Name of the directory storing cross-x files")
     parser.add_argument("z_min", help="Minimum expected redshift", type=float)
     parser.add_argument("z_max", help="Maximum expected reshift", type=float)
+    parser.add_argument("-istart", help="First expected patch", type=int, default=0)
+    parser.add_argument("-iend", help="Last expected patch", type=int, default=-1)
+    parser.add_argument(
+        "-lc_patch_list_cfg", help="fname to ASCII with list of sky patches", default=""
+    )
     args = parser.parse_args()
     drn = args.drn
     z_min = args.z_min
     z_max = args.z_max
+
+    lc_patch_list_cfg = args.lc_patch_list_cfg
+    istart = args.istart
+    iend = args.iend
+
+    if lc_patch_list_cfg == "":
+        if iend == -1:
+            _res = hlu.read_lc_ra_dec_patch_decomposition(FN_LC_CORES)
+            patch_decomposition = _res[0]
+            lc_patches_expected = patch_decomposition[:, 0]
+        else:
+            lc_patches_expected = np.arange(istart, iend + 1).astype(int)
+    else:
+        lc_patches_expected = np.loadtxt(lc_patch_list_cfg).astype(int)
 
     fn_pat = os.path.join(drn, BNPAT.format("*", "*"))
     bn_list = [os.path.basename(fn) for fn in glob(fn_pat)]
     patch_list = []
     step_list = []
 
-    print("...computing step & patch of all available files")
+    print("...getting step & patch of all available files")
     for bn in bn_list:
         stepnum, patch = get_stepnum_and_patch(bn)
         patch_list.append(patch)
@@ -80,7 +103,8 @@ if __name__ == "__main__":
     patch_match_info = dict()
     step_match_info = dict()
 
-    for patch in uniq_patches:
+    # Search lc_patches_expected instead
+    for patch in lc_patches_expected:
         fn_pat = os.path.join(drn, BNPAT.format("*", patch))
         bn_list_patch = [os.path.basename(fn) for fn in glob(fn_pat)]
         stepnum_list_patch = [get_stepnum_and_patch(bn)[0] for bn in bn_list_patch]
