@@ -29,8 +29,6 @@ def get_stepnum_and_patch(bname):
 def get_stepnums_with_missing_patches(
     step_match_info, complete_stepnums, lc_patches_expected
 ):
-    print("...computing stepnums_with_missing_patches")
-
     stepnums_with_missing_patches = dict()
     for stepnum in complete_stepnums:
         try:
@@ -50,7 +48,6 @@ def get_patches_with_missing_stepnums(
     patch_match_info, complete_stepnums, lc_patches_expected
 ):
 
-    print("...computing patches_with_missing_stepnums")
     patches_with_missing_stepnums = dict()
     for patch in lc_patches_expected:
         try:
@@ -113,7 +110,6 @@ if __name__ == "__main__":
     patch_match_info = dict()
     step_match_info = dict()
 
-    # Search lc_patches_expected instead
     for patch in lc_patches_expected:
         fn_pat = os.path.join(drn, BNPAT.format("*", patch))
         bn_list_patch = [os.path.basename(fn) for fn in glob(fn_pat)]
