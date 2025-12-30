@@ -31,6 +31,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-drn_out", help="Output directory to store best-fit parameters", default=""
     )
+    parser.add_argument(
+        "-enforce_tol", help="MAE agreement enforced", default=0.2, type=float
+    )
 
     args = parser.parse_args()
 
@@ -73,5 +76,7 @@ if __name__ == "__main__":
     io_utils.write_namedtuple_to_hdf5(params_best, fn_out)
 
     pbarp13.make_bulge_rp13_comparison_plot(
-        bulge_params=params_best, fname="bulge_axis_ratio_rp13_comparison.png"
+        bulge_params=params_best,
+        fname="bulge_axis_ratio_rp13_comparison.png",
+        enforce_tol=args.enforce_tol,
     )

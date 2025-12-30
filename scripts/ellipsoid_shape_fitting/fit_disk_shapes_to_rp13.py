@@ -32,6 +32,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-drn_out", help="Output directory to store best-fit parameters", default=""
     )
+    parser.add_argument(
+        "-enforce_tol", help="MAE agreement enforced", default=0.2, type=float
+    )
 
     args = parser.parse_args()
 
@@ -69,5 +72,7 @@ if __name__ == "__main__":
     io_utils.write_namedtuple_to_hdf5(disk_params_best, fn_out)
 
     pbarp13.make_disk_rp13_comparison_plot(
-        disk_params=disk_params_best, fname="disk_axis_ratio_rp13_comparison.png"
+        disk_params=disk_params_best,
+        fname="disk_axis_ratio_rp13_comparison.png",
+        enforce_tol=args.enforce_tol,
     )

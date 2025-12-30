@@ -17,11 +17,17 @@ BNAME_TDATA_ELLIPSOID = "ellipsoid_b_over_a_pdf_rodriguez_padilla_2013.txt"
 BNAME_TDATA_SPIRAL = "spiral_b_over_a_pdf_rodriguez_padilla_2013.txt"
 
 
+def _mae(pred, target):
+    diff = pred - target
+    return np.mean(np.abs(diff))
+
+
 def make_bulge_rp13_comparison_plot(
     ngals=50_000,
     drn_tdata=DRN_RP13_TDATA,
     bulge_params=bulge_shapes.DEFAULT_BULGE_PARAMS,
     fname=None,
+    enforce_tol=float("inf"),
 ):
     ran_key = jran.key(0)
 
@@ -62,6 +68,10 @@ def make_bulge_rp13_comparison_plot(
     ax.plot(ba_binmids, ba_pdf_model, color="k", label="model bulges")
     ax.legend()
 
+    ba_pdf_pred = np.interp(ba_pdf_abscissa_target, ba_binmids, ba_pdf_model)
+    mae_loss = _mae(ba_pdf_pred, ba_pdf_target)
+    assert mae_loss < enforce_tol, mae_loss
+
     if fname is not None:
         fig.savefig(
             fname, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
@@ -75,6 +85,7 @@ def make_disk_rp13_comparison_plot(
     drn_tdata=DRN_RP13_TDATA,
     disk_params=disk_shapes.DEFAULT_DISK_PARAMS,
     fname=None,
+    enforce_tol=float("inf"),
 ):
     ran_key = jran.key(0)
 
@@ -114,6 +125,10 @@ def make_disk_rp13_comparison_plot(
     )
     ax.plot(ba_binmids, ba_pdf_model, color="k", label="model disks")
     ax.legend()
+
+    ba_pdf_pred = np.interp(ba_pdf_abscissa_target, ba_binmids, ba_pdf_model)
+    mae_loss = _mae(ba_pdf_pred, ba_pdf_target)
+    assert mae_loss < enforce_tol, mae_loss
 
     if fname is not None:
         fig.savefig(
