@@ -66,7 +66,7 @@ jobs:
       - name: run disk optimization script
         shell: bash -l {0}
         run: |
-          python scripts/ellipsoid_shape_fitting/fit_disk_shapes_to_rp13.py
+          python scripts/ellipsoid_shape_fitting/fit_disk_shapes_to_rp13.py -nsteps 20
 
       - name: verify disk script completed
         shell: bash -l {0}
@@ -76,7 +76,7 @@ jobs:
       - name: run bulge optimization script
         shell: bash -l {0}
         run: |
-          python scripts/ellipsoid_shape_fitting/fit_bulge_shapes_to_rp13.py
+          python scripts/ellipsoid_shape_fitting/fit_bulge_shapes_to_rp13.py -nsteps 20
 
       - name: verify bulge script completed
         shell: bash -l {0}
