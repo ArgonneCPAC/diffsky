@@ -53,7 +53,7 @@ def _pred_kern(disk_params, pred_data):
     ran_key, disk_key = jran.split(ran_key, 2)
     ellipse2d = _pred_ellipse_samples_kern(disk_params, disk_key, mu_ran, phi_ran)
 
-    nddata = jnp.array(ellipse2d.alpha / ellipse2d.beta).reshape((-1, 1))
+    nddata = jnp.array(ellipse2d.beta / ellipse2d.alpha).reshape((-1, 1))
     ndsig = jnp.zeros_like(nddata) + 0.05
 
     ndbins_lo = ba_bins[:-1].reshape((-1, 1))
