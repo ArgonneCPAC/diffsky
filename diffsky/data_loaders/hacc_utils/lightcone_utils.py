@@ -485,7 +485,15 @@ def write_lc_cores_diffsky_data_report_to_disk(report, fnout):
     return all_good
 
 
-def collate_rank_data(drn_in, drn_out, lc_patches, nranks, cleanup=True):
+def get_ncores_lc_patch(drn_lc, stepnum, patchnum):
+    bn = LC_PATCH_BNPAT.format(stepnum, patchnum)
+    fn = os.path.join(drn_lc, bn)
+    mock = load_flat_hdf5(fn)
+    ncores_lc_patch = mock["central"].shape[0]
+    return ncores_lc_patch
+
+
+def collate_rank_data(drn_in, drn_out, drn_lc, lc_patches, nranks, cleanup=True):
     for patch_info in lc_patches:
         stepnum, patchnum = patch_info
         bn_patch_out = LC_PATCH_DIFFSKY_BNPAT.format(stepnum, patchnum)
@@ -498,8 +506,15 @@ def collate_rank_data(drn_in, drn_out, lc_patches, nranks, cleanup=True):
                 LC_PATCH_BNPAT.format(stepnum, patchnum), rank
             )
             fname_in = os.path.join(drn_in, bname_in)
-            data_collector.append(load_flat_hdf5(fname_in))
-            fname_collector.append(fname_in)
+            if os.path.isfile(fname_in):
+                data_collector.append(load_flat_hdf5(fname_in))
+                fname_collector.append(fname_in)
+            else:
+                ncores_lc_patch = get_ncores_lc_patch(drn_lc, stepnum, patchnum)
+                if ncores_lc_patch > 0:
+                    bn = LC_PATCH_BNPAT.format(stepnum, patchnum)
+                    msg = f"{bn} is not empty but {fname_in} does not exist"
+                    raise ValueError(msg)
 
         # Initialize output data
         example_key = LC_PATCH_OUT_KEYS[0]

@@ -242,7 +242,7 @@ if __name__ == "__main__":
 
     end_script = time()
     if rank == 0:
-        collate_rank_data(drn_out_scratch, drn_out, lc_patches, nranks)
+        collate_rank_data(drn_out_scratch, drn_out, drn_lc, lc_patches, nranks)
 
     if rank == 0:
         runtime_script = (end_script - start_script) / 60.0
