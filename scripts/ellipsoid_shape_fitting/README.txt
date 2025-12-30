@@ -1,0 +1,1 @@
+These scripts are used to fit parameters of models for axis ratios of disks and bulges
