@@ -5,11 +5,13 @@ from collections import namedtuple
 from importlib.resources import files
 
 import numpy as np
+from jax import random as jran
+
 from diffsky.data_loaders import io_utils
 from diffsky.ellipsoidal_shapes import disk_opt
 from diffsky.ellipsoidal_shapes import disk_shapes as dshape
+from diffsky.ellipsoidal_shapes.diagnostics import plot_b_over_a_rp13 as pbarp13
 from diffsky.mass_functions.fitting_utils.fitting_helpers import jax_adam_wrapper
-from jax import random as jran
 
 _SUBDRN_RP13_TDATA = os.path.join("ellipsoidal_shapes", "tests", "testing_data")
 BNAME_TDATA = "spiral_b_over_a_pdf_rodriguez_padilla_2013.txt"
@@ -65,3 +67,7 @@ if __name__ == "__main__":
 
     fn_out = os.path.join(args.drn_out, "DiskAxisRatioParams_rp13_bestfit.hdf5")
     io_utils.write_namedtuple_to_hdf5(disk_params_best, fn_out)
+
+    pbarp13.make_disk_rp13_comparison_plot(
+        disk_params=disk_params_best, fname="disk_axis_ratio_rp13_comparison.png"
+    )
