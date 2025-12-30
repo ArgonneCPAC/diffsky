@@ -6,7 +6,7 @@ import numpy as np
 from jax import random as jran
 from matplotlib import pyplot as plt
 
-from .. import bulge_shapes as shape_model
+from .. import bulge_shapes
 from .. import ellipse_proj_kernels as eproj
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
@@ -16,10 +16,10 @@ DRN_RP13_TDATA = os.path.join(DRN_ESHAPES, "tests", "testing_data")
 BNAME_TDATA = "ellipsoid_b_over_a_pdf_rodriguez_padilla_2013.txt"
 
 
-def make_rp13_comparison_plot(
+def make_bulge_rp13_comparison_plot(
     ngals=50_000,
     drn_tdata=DRN_RP13_TDATA,
-    bulge_params=shape_model.DEFAULT_BULGE_PARAMS,
+    bulge_params=bulge_shapes.DEFAULT_BULGE_PARAMS,
     fname=None,
 ):
     ran_key = jran.key(0)
@@ -39,7 +39,7 @@ def make_rp13_comparison_plot(
 
     ran_key, bulge_key = jran.split(ran_key, 2)
 
-    axis_ratios = shape_model.sample_bulge_axis_ratios(bulge_key, ngals, bulge_params)
+    axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_key, ngals, bulge_params)
     a = np.ones(ngals)
     b = a * axis_ratios.b_over_a
     c = a * axis_ratios.c_over_a
