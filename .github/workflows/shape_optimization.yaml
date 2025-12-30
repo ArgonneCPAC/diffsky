@@ -1,0 +1,85 @@
+name: Test script for optimizing galaxy shapes
+
+on:
+  workflow_dispatch: null
+  schedule:
+    # Runs "every Monday & Thursday at 3:05am Central"
+    - cron: '5 8 * * 1,4'
+  push:
+    branches:
+      - main
+  pull_request: null
+
+jobs:
+  mock-generation:
+    name: python fit_bulge_shapes_to_rp13.py
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: free disk space
+        uses: endersonmenezes/free-disk-space@v3
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+          rm_cmd: "rmz"
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: 3.11
+          channels: conda-forge
+          channel-priority: strict
+          show-channel-urls: true
+          miniforge-version: latest
+
+      - name: configure conda and install code
+        shell: bash -l {0}
+        env:
+          GITHUB_TOKEN: ${{ secrets.CPAC_PRIVATE_REPO_TOKEN }}
+          GITHUB_USER: ${{ secrets.GH_USR_TESTING_TOKEN }}
+
+        run: |
+          conda config --set always_yes yes
+          conda install --quiet \
+            --file=requirements.txt
+          conda install --quiet \
+            pip \
+            setuptools \
+            "setuptools_scm>=7,<8" \
+            matplotlib \
+            astropy \
+            h5py \
+            mpi4py \
+            mpich
+          conda uninstall diffmah --force
+          conda uninstall diffstar --force
+          conda uninstall dsps --force
+          pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffmah.git
+          pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffstar.git
+          pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/dsps.git
+          python -m pip install --no-build-isolation --no-deps -e .
+
+      - name: run disk optimization script
+        shell: bash -l {0}
+        run: |
+          python scripts/ellipsoid_shape_fitting/fit_disk_shapes_to_rp13.py -nsteps 20
+
+      - name: verify disk script completed
+        shell: bash -l {0}
+        run: |
+          echo "Disk optimization script completed successfully"
+
+      - name: run bulge optimization script
+        shell: bash -l {0}
+        run: |
+          python scripts/ellipsoid_shape_fitting/fit_bulge_shapes_to_rp13.py -nsteps 20
+
+      - name: verify bulge script completed
+        shell: bash -l {0}
+        run: |
+          echo "Bulge optimization script completed successfully"
+

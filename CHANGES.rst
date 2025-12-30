@@ -1,3 +1,20 @@
+0.3.3 (unreleased)
+-------------------
+- Fix bug in elliptical projections
+    - https://github.com/ArgonneCPAC/diffsky/pull/297
+- Reoptimize disk/bulge shapes
+    - https://github.com/ArgonneCPAC/diffsky/pull/301
+- Implement automated plot-generating scripts comparing cosmos to different diffsky models
+    - https://github.com/ArgonneCPAC/diffsky/pull/291
+- Improve bookkeeping in cross-matching jobs
+    - https://github.com/ArgonneCPAC/diffsky/pull/293
+    - https://github.com/ArgonneCPAC/diffsky/pull/294
+    - https://github.com/ArgonneCPAC/diffsky/pull/299
+    - https://github.com/ArgonneCPAC/diffsky/pull/300
+- Compute photometry in batches when making mocks
+    - https://github.com/ArgonneCPAC/diffsky/pull/295
+
+
 0.3.2 (2025-12-04)
 -------------------
 - Resolve bug in the treatment of scatter in the SSP errors.
