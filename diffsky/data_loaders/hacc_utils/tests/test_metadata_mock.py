@@ -6,6 +6,9 @@ from .. import metadata_mock
 
 try:
     from astropy import units as u
+    from astropy.cosmology import units as cu
+
+    u.add_enabled_units(cu)
 
     HAS_ASTROPY = True
 except ImportError:

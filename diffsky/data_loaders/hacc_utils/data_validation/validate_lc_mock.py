@@ -93,17 +93,38 @@ def check_all_columns_are_finite(fn_lc_mock, data=None):
 
 def check_all_data_columns_have_metadata(fn_lc_mock):
 
+    try:
+        from astropy import units as u
+        from astropy.cosmology import units as cu
+
+        u.add_enabled_units(cu)
+
+    except ImportError:
+        raise ImportError("Must have astropy installed to attach units to metadata")
+
     msg = []
     with h5py.File(fn_lc_mock, "r") as hdf:
 
         for key in hdf["data"].keys():
             try:
-                unit = hdf["data/" + key].attrs["unit"]
-                assert len(unit) > 0
+                unit_string = hdf["data/" + key].attrs["unit"]
+                u.Unit(unit_string)
+
+            except (KeyError,):
+                s = f"{key} is missing metadata unit"
+                msg.append(s)
+            except (AssertionError, ValueError):
+                s = f"Units not recognized in metadata for `{key}` column"
+                msg.append(s)
+
+            try:
                 description = hdf["data/" + key].attrs["description"]
                 assert len(description) > 0
-            except (KeyError, AssertionError):
-                s = f"{key} is missing metadata"
+            except (KeyError,):
+                s = f"{key} is missing metadata description"
+                msg.append(s)
+            except (AssertionError, ValueError):
+                s = f"No metadata description of `{key}` column"
                 msg.append(s)
     return msg
 
