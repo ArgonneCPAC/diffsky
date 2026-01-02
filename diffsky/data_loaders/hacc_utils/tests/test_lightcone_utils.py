@@ -170,3 +170,19 @@ def test_estimate_nhalos_sky_patch():
 
         nhalos2 = hlu._estimate_nhalos_sky_patch("LastJourney", stepnum2)
         assert nhalos2 < nhalos1, stepnum
+
+
+def test_get_ra_dec_from_theta_phi():
+    ran_key = jran.key(0)
+
+    n = 50_000
+
+    theta_key, phi_key = jran.split(ran_key, 2)
+    theta = jran.uniform(theta_key, minval=0, maxval=np.pi, shape=(n,))
+    phi = jran.uniform(phi_key, minval=0, maxval=2 * np.pi, shape=(n,))
+    ra, dec = hlu.get_ra_dec_from_theta_phi(theta, phi)
+    assert np.all(ra >= 0)
+    assert np.all(ra <= 360)
+
+    assert np.all(dec >= -90)
+    assert np.all(dec <= 90)
