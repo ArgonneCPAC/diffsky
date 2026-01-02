@@ -192,6 +192,10 @@ def get_metadata_all_columns():
         str(u.km / u.s),
         "Comoving peculiar velocity in z-direction",
     )
+    metadata_all_columns["msk_v0"] = (
+        str(u.dimensionless_unscaled),
+        "Boolean mask is True when the original core velocity on the lightcone was exactly zero and was overwritten",
+    )
 
     metadata_all_columns["top_host_infall_fof_halo_eigS1X"] = (
         str(unit_mpch),

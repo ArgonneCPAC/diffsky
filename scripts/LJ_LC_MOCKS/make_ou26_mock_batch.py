@@ -2,8 +2,6 @@
 
 To run a unit test of this script:
 
-python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.01 0.5 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 11.5 -lgmp_max 13.5
-
 python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
 
 python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
@@ -371,6 +369,11 @@ if __name__ == "__main__":
             n_gals_batch = len(lc_data_batch["core_tag"])
             lc_data_batch["stepnum"] = np.zeros(n_gals_batch).astype(int) + stepnum
             lc_data_batch["lc_patch"] = np.zeros(n_gals_batch).astype(int) + lc_patch
+
+            batch_key, vzero_key = jran.split(batch_key, 2)
+            diffsky_data_batch = lcmp_repro.add_peculiar_velocity_to_mock(
+                diffsky_data_batch, ran_key=vzero_key, impute_vzero=True
+            )
 
             batch_key, dbk_phot_key = jran.split(batch_key, 2)
             args = (
