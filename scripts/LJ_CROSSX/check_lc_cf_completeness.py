@@ -173,3 +173,11 @@ if __name__ == "__main__":
                 mock = load_flat_hdf5(fn, keys=["core_tag"])
                 if len(mock["core_tag"]) > 0:
                     report[lc_patch] = missing_stepnums
+
+    msg_success = (
+        f"All sky patches have all timesteps in the range {z_min:.2f}<z<{z_max:.2f}"
+    )
+    if len(report) == 0:
+        print(msg_success)
+    else:
+        print(f"Some missing timesteps in {report.keys()}")
