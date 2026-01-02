@@ -29,7 +29,7 @@ from diffsky.data_loaders.hacc_utils import lc_mock as lcmp_repro
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
 from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
-from diffsky.data_loaders.hacc_utils import metadata_sfh_mock
+from diffsky.data_loaders.hacc_utils import metadata_mock
 from diffsky.data_loaders.mock_utils import get_mock_version_name
 from diffsky.experimental import mc_lightcone_halos as mclh
 from diffsky.experimental import precompute_ssp_phot as psspp
@@ -455,7 +455,7 @@ if __name__ == "__main__":
         gc.collect()
         jax.clear_caches()
 
-        metadata_sfh_mock.append_metadata(
+        metadata_mock.append_metadata(
             fn_out,
             sim_name,
             mock_version_name,
