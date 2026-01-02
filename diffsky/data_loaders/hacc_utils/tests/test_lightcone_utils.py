@@ -3,7 +3,7 @@
 import os
 
 import numpy as np
-from dsps.cosmology import flat_wcdm
+from dsps.cosmology import DEFAULT_COSMOLOGY, flat_wcdm
 from jax import random as jran
 
 from .. import haccsims
@@ -186,6 +186,24 @@ def test_get_ra_dec_from_theta_phi():
 
     assert np.all(dec >= -90)
     assert np.all(dec <= 90)
+
+
+def test_get_xyz_mpc_is_inverse_of_get_ra_dec():
+    ran_key = jran.key(0)
+    n_gals = 20_000
+    ra_min, ra_max = 0, 360
+    dec_min, dec_max = -90, 90
+    z_min, z_max = 0.001, 4.0
+
+    ran_key, ra_key, dec_key, z_key = jran.split(ran_key, 4)
+
+    ra = jran.uniform(ra_key, minval=ra_min, maxval=ra_max, shape=(n_gals,))
+    dec = jran.uniform(dec_key, minval=dec_min, maxval=dec_max, shape=(n_gals,))
+    redshift = jran.uniform(z_key, minval=z_min, maxval=z_max, shape=(n_gals,))
+    x_mpc, y_mpc, z_mpc = hlu.get_xyz_mpc(ra, dec, redshift, DEFAULT_COSMOLOGY)
+    ra_inferred, dec_inferred = hlu.get_ra_dec(x_mpc, y_mpc, z_mpc)
+    assert np.allclose(ra, ra_inferred, rtol=1e-3)
+    assert np.allclose(dec, dec_inferred, rtol=1e-3)
 
 
 def test_get_theta_phi_from_ra_dec_inverts_get_ra_dec_from_theta_phi():

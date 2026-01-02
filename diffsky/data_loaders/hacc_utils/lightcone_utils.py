@@ -142,6 +142,21 @@ def get_ra_dec(x, y, z):
 
 
 @jjit
+def get_xyz_mpc(ra, dec, redshift, cosmo_params):
+    """Get Cartesian coordinates xyz from lightcone coordinates {ra, dec, redshift}"""
+    r_mpc = flat_wcdm.comoving_distance(
+        redshift, cosmo_params.Om0, cosmo_params.w0, cosmo_params.wa, cosmo_params.h
+    )
+    theta, phi = get_theta_phi_from_ra_dec(ra, dec)
+
+    x_mpc = r_mpc * jnp.sin(theta) * jnp.cos(phi - jnp.pi)
+    y_mpc = r_mpc * jnp.sin(theta) * jnp.sin(phi - jnp.pi)
+    z_mpc = r_mpc * jnp.cos(theta)
+
+    return x_mpc, y_mpc, z_mpc
+
+
+@jjit
 def get_ra_dec_from_theta_phi(theta, phi):
     """Change sky coordinates from {theta, phi} (radians) to {ra, dec} (degrees)"""
     return _get_lon_lat_from_theta_phi(theta, phi)
