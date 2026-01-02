@@ -516,18 +516,19 @@ def collate_rank_data(drn_in, drn_out, drn_lc, lc_patches, nranks, cleanup=True)
                     msg = f"{bn} is not empty but {fname_in} does not exist"
                     raise ValueError(msg)
 
-        # Initialize output data
-        example_key = LC_PATCH_OUT_KEYS[0]
-        n_patch = data_collector[0][example_key].size
-        data_out = initialize_lc_patch_data_out(n_patch)
+        if len(data_collector) > 0:
+            # Initialize output data
+            example_key = LC_PATCH_OUT_KEYS[0]
+            n_patch = data_collector[0][example_key].size
+            data_out = initialize_lc_patch_data_out(n_patch)
 
-        # Write collated data to disk in a single file
-        fn_patch_out = os.path.join(drn_out, bn_patch_out)
-        with h5py.File(fn_patch_out, "w") as hdf_out:
-            for key in LC_PATCH_OUT_KEYS:
-                for rank_data in data_collector:
-                    data_out[key] = data_out[key] + rank_data[key]
-                hdf_out[key] = data_out[key]
+            # Write collated data to disk in a single file
+            fn_patch_out = os.path.join(drn_out, bn_patch_out)
+            with h5py.File(fn_patch_out, "w") as hdf_out:
+                for key in LC_PATCH_OUT_KEYS:
+                    for rank_data in data_collector:
+                        data_out[key] = data_out[key] + rank_data[key]
+                    hdf_out[key] = data_out[key]
 
         # Delete temporary files created by each rank
         if cleanup:

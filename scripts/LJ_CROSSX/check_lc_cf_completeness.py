@@ -7,6 +7,7 @@ from glob import glob
 
 import numpy as np
 
+from diffsky.data_loaders import load_flat_hdf5
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
 BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
@@ -72,6 +73,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "-lc_patch_list_cfg", help="fname to ASCII with list of sky patches", default=""
     )
+    parser.add_argument(
+        "-drn_cf", help="Name of the directory storing coreforest", default=DRN_LC_CORES
+    )
+
     args = parser.parse_args()
     drn = args.drn
     z_min = args.z_min
@@ -80,6 +85,8 @@ if __name__ == "__main__":
     lc_patch_list_cfg = args.lc_patch_list_cfg
     istart = args.istart
     iend = args.iend
+
+    drn_cf = args.drn_cf
 
     if lc_patch_list_cfg == "":
         if iend == -1:
@@ -148,3 +155,29 @@ if __name__ == "__main__":
         pickle.dump(
             patches_with_missing_stepnums, handle, protocol=pickle.HIGHEST_PROTOCOL
         )
+
+    complete_stepnums = hlu.get_timesteps_in_zrange("LastJourney", 0, 3)
+    final_step = complete_stepnums[-1]
+    report = dict()
+    for lc_patch, missing_stepnums in patches_with_missing_stepnums.items():
+        if len(missing_stepnums) > 1:
+            report[lc_patch] = missing_stepnums
+        else:
+            missing_step = missing_stepnums[0]
+            if missing_step != final_step:
+                report[lc_patch] = missing_stepnums
+            else:
+                bn = BNPAT.format(missing_step, lc_patch)
+                bn = bn.replace("diffsky_data.hdf5", "hdf5")
+                fn = os.path.join(drn_cf, bn)
+                mock = load_flat_hdf5(fn, keys=["core_tag"])
+                if len(mock["core_tag"]) > 0:
+                    report[lc_patch] = missing_stepnums
+
+    msg_success = (
+        f"All sky patches have all timesteps in the range {z_min:.2f}<z<{z_max:.2f}"
+    )
+    if len(report) == 0:
+        print(msg_success)
+    else:
+        print(f"Some missing timesteps in {report.keys()}")
