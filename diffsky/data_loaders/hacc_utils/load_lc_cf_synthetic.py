@@ -7,6 +7,7 @@ import numpy as np
 from diffmah import logmh_at_t_obs
 from jax import random as jran
 
+from ...experimental import lc_utils
 from ...experimental import mc_lightcone_halos as mclh
 from . import haccsims, lc_mock
 from . import lightcone_utils as hlu
@@ -48,9 +49,26 @@ def load_lc_diffsky_patch_data(
     diffsky_data["redshift_true"] = diffsky_data["z_obs"]
     del diffsky_data["z_obs"]
 
-    diffsky_data["top_host_idx"] = np.arange(len(diffsky_data["redshift_true"])).astype(
-        int
+    n_gals = len(diffsky_data["redshift_true"])
+
+    theta_lo, theta_hi, phi_lo, phi_hi = [
+        patch_decomposition[lc_patch, i] for i in range(1, 5)
+    ]
+    ra_lo, ra_hi, dec_lo, dec_hi = hlu._get_ra_dec_bounds(
+        theta_lo, theta_hi, phi_lo, phi_hi
     )
+    ran_key, ra_dec_key = jran.split(ran_key, 2)
+    ra, dec = lc_utils.mc_lightcone_random_ra_dec(
+        ra_dec_key, n_gals, ra_lo, ra_hi, dec_lo, dec_hi
+    )
+    diffsky_data["ra"] = ra
+    diffsky_data["dec"] = dec
+    theta, phi = hlu.get_theta_phi_from_ra_dec(ra, dec)
+    diffsky_data["theta"] = theta
+    diffsky_data["phi"] = phi
+
+    diffsky_data["top_host_idx"] = np.arange(n_gals).astype(int)
+
     for key in diffsky_data["mah_params"]._fields:
         diffsky_data[key] = getattr(diffsky_data["mah_params"], key)
 
@@ -70,19 +88,8 @@ def load_lc_diffsky_patch_data(
     for n in (1, 2, 3):
         for s in ("X", "Y", "Z"):
             eigh_collector.append(eigh_pat.format(n, s))
-    for key in (
-        *posvel_collector,
-        "x_host",
-        "y_host",
-        "z_host",
-        "ra",
-        "dec",
-        *eigh_collector,
-    ):
+    for key in (*posvel_collector, "x_host", "y_host", "z_host", *eigh_collector):
         diffsky_data[key] = np.zeros(len(diffsky_data["redshift_true"])) - 1.0
-
-    n_gals = len(diffsky_data["redshift_true"])
-    ZZ = np.zeros(n_gals)
 
     ran_key, pos_key, vel_key = jran.split(ran_key, 3)
     pos = jran.uniform(pos_key, minval=-1000, maxval=-999.9, shape=(n_gals, 3))
@@ -92,6 +99,8 @@ def load_lc_diffsky_patch_data(
     diffsky_data["x_host"] = pos[:, 0]
     diffsky_data["y_host"] = pos[:, 1]
     diffsky_data["z_host"] = pos[:, 2]
+
+    ZZ = np.zeros(n_gals)
 
     _res = lc_mock.get_imputed_velocity(ZZ, ZZ, ZZ, vel_key)
     vx_imputed, vy_imputed, vz_imputed, msk_imputed = _res
@@ -105,8 +114,6 @@ def load_lc_diffsky_patch_data(
     diffsky_data["loss"] = ZZ + 1e-5
     diffsky_data["central"] = ZZ.astype(int) + 1
 
-    diffsky_data["theta"] = ZZ - 1.0
-    diffsky_data["phi"] = ZZ - 1.0
     diffsky_data["stepnum"] = ZZ.astype(int) + stepnum
 
     lc_data = diffsky_data
