@@ -186,3 +186,18 @@ def test_get_ra_dec_from_theta_phi():
 
     assert np.all(dec >= -90)
     assert np.all(dec <= 90)
+
+
+def test_get_theta_phi_from_ra_dec_inverts_get_ra_dec_from_theta_phi():
+
+    ran_key = jran.key(0)
+
+    n = 50_000
+
+    theta_key, phi_key = jran.split(ran_key, 2)
+    theta = jran.uniform(theta_key, minval=0, maxval=np.pi, shape=(n,))
+    phi = jran.uniform(phi_key, minval=0, maxval=2 * np.pi, shape=(n,))
+    ra, dec = hlu.get_ra_dec_from_theta_phi(theta, phi)
+    theta2, phi2 = hlu.get_theta_phi_from_ra_dec(ra, dec)
+    assert np.allclose(theta, theta2, rtol=1e-4)
+    assert np.allclose(phi, phi2, rtol=1e-4)

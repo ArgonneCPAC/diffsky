@@ -148,6 +148,14 @@ def get_ra_dec_from_theta_phi(theta, phi):
 
 
 @jjit
+def get_theta_phi_from_ra_dec(ra, dec):
+    """Change sky coordinates from {ra, dec} (degrees) to {theta, phi} (radians)"""
+    theta = jnp.deg2rad(90.0 - dec)
+    phi = jnp.deg2rad(ra)
+    return theta, phi
+
+
+@jjit
 def _get_lon_lat_from_theta_phi(theta, phi):
     lon = jnp.degrees(phi)
     lat = 90.0 - jnp.degrees(theta)
