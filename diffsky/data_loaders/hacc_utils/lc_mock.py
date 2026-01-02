@@ -37,6 +37,7 @@ from ...experimental.kernels import mc_phot_kernels as mcpk
 from ...experimental.size_modeling import disk_bulge_sizes as dbs
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
+from ...fake_sats import vector_utilities as vecu
 from .. import load_flat_hdf5
 from . import lightcone_utils as hlu
 from . import load_lc_cf
@@ -97,6 +98,8 @@ DIFFSKY_DATA_KEYS_OUT = (
     "vx",
     "vy",
     "vz",
+    "vpec",
+    "msk_v0",
     "has_diffmah_fit",
     "logmp0",
     "logmp_obs",
@@ -268,6 +271,18 @@ def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
             hdf_out[key_out] = diffsky_data[key]
 
 
+def get_imputed_velocity(vx, vy, vz, ran_key, std_v=500.0):
+    """Overwrite zero-valued velocities with random normal data"""
+    msk_imputed = (vx == 0) & (vy == 0) & (vz == 0)
+    vran = jran.normal(ran_key, (vx.size, 3)) * std_v
+    v = np.array((vx, vy, vz)).T
+    imputed_v = np.where(msk_imputed.reshape((-1, 1)), vran, v)
+    vx_imputed = imputed_v[:, 0]
+    vy_imputed = imputed_v[:, 1]
+    vz_imputed = imputed_v[:, 2]
+    return vx_imputed, vy_imputed, vz_imputed, msk_imputed
+
+
 def write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
     """"""
     write_batched_mock_data(fnout, lc_data, LC_DATA_KEYS_OUT, dataset="data")
@@ -356,6 +371,35 @@ def write_batched_lc_dbk_sed_mock_to_disk(
     write_batched_mock_data(
         fnout, dbk_phot_dict, list(dbk_phot_dict.keys()), dataset="data"
     )
+
+
+def add_peculiar_velocity_to_mock(
+    lc_data, diffsky_data, ran_key=None, impute_vzero=True
+):
+    # Patch v==0 galaxies
+    if impute_vzero:
+        assert ran_key is not None, "Must pass ran_key when impute_vzero=True"
+
+        vx, vy, vz, msk_imputed = get_imputed_velocity(
+            diffsky_data["vx"], diffsky_data["vy"], diffsky_data["vz"], ran_key
+        )
+    else:
+        vx = diffsky_data["vx"]
+        vy = diffsky_data["vy"]
+        vz = diffsky_data["vz"]
+        msk_imputed = np.zeros(len(vx)).astype(bool)
+
+    diffsky_data["vx"] = vx
+    diffsky_data["vy"] = vy
+    diffsky_data["vz"] = vz
+    diffsky_data["msk_v0"] = msk_imputed
+
+    X = np.array((lc_data["x"], lc_data["y"], lc_data["z"])).T
+    V = np.array((diffsky_data["vx"], diffsky_data["vy"], diffsky_data["vz"])).T
+    Xnorm = vecu.normalized_vectors(X)
+    diffsky_data["vpec"] = vecu.elementwise_dot(V, Xnorm)
+
+    return diffsky_data
 
 
 def add_diffmah_properties_to_mock(diffsky_data, redshift_true, sim_info, ran_key):
