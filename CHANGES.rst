@@ -13,6 +13,8 @@
     - https://github.com/ArgonneCPAC/diffsky/pull/300
 - Compute photometry in batches when making mocks
     - https://github.com/ArgonneCPAC/diffsky/pull/295
+- Adopt astropy units in mock metadata
+    - https://github.com/ArgonneCPAC/diffsky/pull/303
 
 
 0.3.2 (2025-12-04)
