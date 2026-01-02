@@ -9,12 +9,14 @@ from jax import random as jran
 
 from ...experimental import lc_utils
 from ...experimental import mc_lightcone_halos as mclh
-from . import haccsims, lc_mock
+from . import haccsims
 from . import lightcone_utils as hlu
 from . import load_lc_cf as llcf
 
 LCPKEYS = ("z_lo", "z_hi", "ra_lo", "ra_hi", "dec_lo", "dec_hi", "sky_area_degsq")
 LCPatchInfo = namedtuple("LCPatchInfo", LCPKEYS)
+
+STDVEL_COSMIC = 500.0
 
 
 def load_lc_diffsky_patch_data(
@@ -81,32 +83,37 @@ def load_lc_diffsky_patch_data(
 
     diffsky_data.pop("mah_params")
 
-    posvel_collector = ("x", "y", "z", "vx", "vy", "vz")
-
     eigh_pat = "top_host_infall_fof_halo_eigS{0}{1}"
     eigh_collector = []
     for n in (1, 2, 3):
         for s in ("X", "Y", "Z"):
             eigh_collector.append(eigh_pat.format(n, s))
-    for key in (*posvel_collector, "x_host", "y_host", "z_host", *eigh_collector):
-        diffsky_data[key] = np.zeros(len(diffsky_data["redshift_true"])) - 1.0
+    for key in (*eigh_collector,):
+        diffsky_data[key] = np.zeros(n_gals) - 1.0
 
-    ran_key, pos_key, vel_key = jran.split(ran_key, 3)
-    pos = jran.uniform(pos_key, minval=-1000, maxval=-999.9, shape=(n_gals, 3))
-    diffsky_data["x"] = pos[:, 0]
-    diffsky_data["y"] = pos[:, 1]
-    diffsky_data["z"] = pos[:, 2]
-    diffsky_data["x_host"] = pos[:, 0]
-    diffsky_data["y_host"] = pos[:, 1]
-    diffsky_data["z_host"] = pos[:, 2]
+    x_mpc, y_mpc, z_mpc = hlu.get_xyz_mpc(
+        diffsky_data["ra"],
+        diffsky_data["dec"],
+        diffsky_data["redshift_true"],
+        sim_info.cosmo_params,
+    )
+    x_mpch = x_mpc * sim_info.cosmo_params.h
+    y_mpch = y_mpc * sim_info.cosmo_params.h
+    z_mpch = z_mpc * sim_info.cosmo_params.h
+    diffsky_data["x"] = x_mpch
+    diffsky_data["y"] = y_mpch
+    diffsky_data["z"] = z_mpch
+    diffsky_data["x_host"] = x_mpch
+    diffsky_data["y_host"] = y_mpch
+    diffsky_data["z_host"] = z_mpch
 
     ZZ = np.zeros(n_gals)
 
-    _res = lc_mock.get_imputed_velocity(ZZ, ZZ, ZZ, vel_key)
-    vx_imputed, vy_imputed, vz_imputed, msk_imputed = _res
-    diffsky_data["vx"] = vx_imputed
-    diffsky_data["vy"] = vy_imputed
-    diffsky_data["vz"] = vz_imputed
+    ran_key, vel_key = jran.split(ran_key, 2)
+    v_xyz = jran.normal(vel_key, shape=(n_gals, 3)) * STDVEL_COSMIC
+    diffsky_data["vx"] = v_xyz[:, 0]
+    diffsky_data["vy"] = v_xyz[:, 1]
+    diffsky_data["vz"] = v_xyz[:, 2]
 
     diffsky_data["core_tag"] = -np.ones(len(diffsky_data["redshift_true"])).astype(int)
     diffsky_data["has_diffmah_fit"] = ZZ.astype(int) + 1

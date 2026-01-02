@@ -45,3 +45,9 @@ def test_load_lc_diffsky_patch_data():
 
             assert np.all(diffsky_data["dec"] >= dec_lo)
             assert np.all(diffsky_data["dec"] <= dec_hi)
+
+            ra_inferred, dec_inferred = hlu.get_ra_dec(
+                lc_data["x"], lc_data["y"], lc_data["z"]
+            )
+            assert np.allclose(ra_inferred, diffsky_data["ra"], rtol=1e-3)
+            assert np.allclose(dec_inferred, diffsky_data["dec"], rtol=1e-3)
