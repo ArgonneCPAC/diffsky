@@ -37,6 +37,7 @@ from ...experimental.kernels import mc_phot_kernels as mcpk
 from ...experimental.size_modeling import disk_bulge_sizes as dbs
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
+from ...fake_sats import vector_utilities as vecu
 from .. import load_flat_hdf5
 from . import lightcone_utils as hlu
 from . import load_lc_cf
@@ -97,6 +98,7 @@ DIFFSKY_DATA_KEYS_OUT = (
     "vx",
     "vy",
     "vz",
+    "vpec",
     "msk_v0",
     "has_diffmah_fit",
     "logmp0",
@@ -371,7 +373,9 @@ def write_batched_lc_dbk_sed_mock_to_disk(
     )
 
 
-def add_peculiar_velocity_to_mock(diffsky_data, ran_key=None, impute_vzero=True):
+def add_peculiar_velocity_to_mock(
+    lc_data, diffsky_data, ran_key=None, impute_vzero=True
+):
     # Patch v==0 galaxies
     if impute_vzero:
         assert ran_key is not None, "Must pass ran_key when impute_vzero=True"
@@ -389,6 +393,12 @@ def add_peculiar_velocity_to_mock(diffsky_data, ran_key=None, impute_vzero=True)
     diffsky_data["vy"] = vy
     diffsky_data["vz"] = vz
     diffsky_data["msk_v0"] = msk_imputed
+
+    X = np.array((lc_data["x"], lc_data["y"], lc_data["z"])).T
+    V = np.array((diffsky_data["vx"], diffsky_data["vy"], diffsky_data["vz"])).T
+    Xnorm = vecu.normalized_vectors(X)
+    diffsky_data["vpec"] = vecu.elementwise_dot(V, Xnorm)
+
     return diffsky_data
 
 

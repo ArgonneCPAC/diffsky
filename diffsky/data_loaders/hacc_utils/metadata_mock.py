@@ -180,17 +180,21 @@ def get_metadata_all_columns():
         "Comoving coord with NFW-repositioned satellites",
     )
 
+    metadata_all_columns["vpec"] = (
+        str(u.km / u.s),
+        "Comoving peculiar velocity along line-of-sight to galaxy",
+    )
     metadata_all_columns["vx"] = (
         str(u.km / u.s),
-        "Comoving peculiar velocity in x-direction",
+        "Comoving peculiar velocity in Cartesian x-direction",
     )
     metadata_all_columns["vy"] = (
         str(u.km / u.s),
-        "Comoving peculiar velocity in y-direction",
+        "Comoving peculiar velocity in Cartesian y-direction",
     )
     metadata_all_columns["vz"] = (
         str(u.km / u.s),
-        "Comoving peculiar velocity in z-direction",
+        "Comoving peculiar velocity in Cartesian z-direction",
     )
     metadata_all_columns["msk_v0"] = (
         str(u.dimensionless_unscaled),

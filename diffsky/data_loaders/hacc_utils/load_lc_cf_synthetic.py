@@ -5,9 +5,10 @@ from collections import namedtuple
 
 import numpy as np
 from diffmah import logmh_at_t_obs
+from jax import random as jran
 
 from ...experimental import mc_lightcone_halos as mclh
-from . import haccsims
+from . import haccsims, lc_mock
 from . import lightcone_utils as hlu
 from . import load_lc_cf as llcf
 
@@ -33,8 +34,9 @@ def load_lc_diffsky_patch_data(
 
     z_min = 1 / a_max - 1
     z_max = 1 / a_min - 1
+    ran_key, mah_key = jran.split(ran_key, 2)
     args = (
-        ran_key,
+        mah_key,
         lgmp_min,
         z_min,
         z_max,
@@ -79,7 +81,24 @@ def load_lc_diffsky_patch_data(
     ):
         diffsky_data[key] = np.zeros(len(diffsky_data["redshift_true"])) - 1.0
 
-    ZZ = np.zeros(len(diffsky_data["redshift_true"]))
+    n_gals = len(diffsky_data["redshift_true"])
+    ZZ = np.zeros(n_gals)
+
+    ran_key, pos_key, vel_key = jran.split(ran_key, 3)
+    pos = jran.uniform(pos_key, minval=-1000, maxval=-999.9, shape=(n_gals, 3))
+    diffsky_data["x"] = pos[:, 0]
+    diffsky_data["y"] = pos[:, 1]
+    diffsky_data["z"] = pos[:, 2]
+    diffsky_data["x_host"] = pos[:, 0]
+    diffsky_data["y_host"] = pos[:, 1]
+    diffsky_data["z_host"] = pos[:, 2]
+
+    _res = lc_mock.get_imputed_velocity(ZZ, ZZ, ZZ, vel_key)
+    vx_imputed, vy_imputed, vz_imputed, msk_imputed = _res
+    diffsky_data["vx"] = vx_imputed
+    diffsky_data["vy"] = vy_imputed
+    diffsky_data["vz"] = vz_imputed
+
     diffsky_data["core_tag"] = -np.ones(len(diffsky_data["redshift_true"])).astype(int)
     diffsky_data["has_diffmah_fit"] = ZZ.astype(int) + 1
     diffsky_data["n_points_per_fit"] = ZZ.astype(int) + 10_000

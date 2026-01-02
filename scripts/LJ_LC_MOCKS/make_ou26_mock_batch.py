@@ -372,7 +372,7 @@ if __name__ == "__main__":
 
             batch_key, vzero_key = jran.split(batch_key, 2)
             diffsky_data_batch = lcmp_repro.add_peculiar_velocity_to_mock(
-                diffsky_data_batch, ran_key=vzero_key, impute_vzero=True
+                lc_data_batch, diffsky_data_batch, ran_key=vzero_key, impute_vzero=True
             )
 
             batch_key, dbk_phot_key = jran.split(batch_key, 2)
