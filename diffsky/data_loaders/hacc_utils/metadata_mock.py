@@ -431,6 +431,15 @@ def get_metadata_all_columns():
 
 
 def append_metadata(fnout, sim_name, mock_version_name, z_phot_table, filter_nicknames):
+    try:
+        from astropy import units as u
+        from astropy.cosmology import units as cu
+
+    except ImportError:
+        raise ImportError("Must have astropy installed to attach units to metadata")
+
+    u.add_enabled_units(cu)
+
     column_metadata = get_column_metadata()
 
     with h5py.File(fnout, "r+") as hdf_out:
@@ -488,7 +497,7 @@ def append_metadata(fnout, sim_name, mock_version_name, z_phot_table, filter_nic
             key_out = "data/" + nickname
             assert key_out in hdf_out.keys(), f"{key_out} is missing from {fnout}"
 
-            hdf_out[key_out].attrs["unit"] = ""
+            hdf_out[key_out].attrs["unit"] = str(u.ABmag)
             hdf_out[key_out].attrs["description"] = COMPOSITE_MAG_MSG
 
             # Component magnitudes
@@ -497,7 +506,7 @@ def append_metadata(fnout, sim_name, mock_version_name, z_phot_table, filter_nic
                 assert key_out in hdf_out.keys(), f"{key_out} is missing from {fnout}"
 
                 msg = COMPONENT_MAG_MSG_PAT.format(component)
-                hdf_out[key_out].attrs["unit"] = ""
+                hdf_out[key_out].attrs["unit"] = str(u.ABmag)
                 hdf_out[key_out].attrs["description"] = msg
 
 
