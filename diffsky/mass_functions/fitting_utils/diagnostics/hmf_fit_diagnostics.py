@@ -1,17 +1,26 @@
 """"""
 
 import numpy as np
-from matplotlib import cm
-from matplotlib import lines as mlines
-from matplotlib import pyplot as plt
 
 from diffsky.mass_functions.hmf_model import predict_cuml_hmf
+
+try:
+    from matplotlib import cm
+    from matplotlib import lines as mlines
+    from matplotlib import pyplot as plt
+
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
 
 MRED = "#d62728"
 MBLUE = "#1f77b4"
 
 
 def make_hmf_fit_plot(loss_data_collector, p_best, figname="hmf_diagnostic.png"):
+    """"""
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
     colors = cm.coolwarm(np.linspace(1, 0, len(loss_data_collector)))  # red first
 

@@ -1,9 +1,16 @@
 """ """
 
 import numpy as np
-from matplotlib import pyplot as plt
 
 from ..funopop_simple import DEFAULT_FUNOPOP_PARAMS, get_funo_from_funopop_params
+
+try:
+    from matplotlib import pyplot as plt
+
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
 
 
 def make_funopop_comparison_plot(
@@ -28,6 +35,8 @@ def make_funopop_comparison_plot(
         filename of the output figure
 
     """
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+
     nsm, nsfr = 250, 250
     logsm_grid = np.linspace(7, 12, nsm)
     logssfr_grid = np.linspace(-13, -8, nsfr)

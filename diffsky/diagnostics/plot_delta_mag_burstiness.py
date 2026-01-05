@@ -27,6 +27,7 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
 
 try:
     DEFAULT_DSPS_DRN = os.environ["DSPS_DRN"]
@@ -48,6 +49,9 @@ mpurple, mgreen, morange = ("#9467bd", "#2ca02c", "#ff7f0e")
 def get_burstiness_delta_mag_quantities(
     z_obs, drn_ssp_data=DEFAULT_DSPS_DRN, n_halos=2_000
 ):
+    """"""
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+
     ran_key = jran.key(0)
     try:
         ssp_data = load_ssp_templates(drn=drn_ssp_data)
@@ -162,8 +166,8 @@ def get_burstiness_delta_mag_quantities(
 
 
 def plot_delta_mag_lsst_vs_logsm(z_obs, n_halos=2_000, drn_ssp_data=DEFAULT_DSPS_DRN):
-    if not HAS_MATPLOTLIB:
-        raise ImportError("Must have matplotlib installed to use this function")
+    """"""
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
     _res = get_burstiness_delta_mag_quantities(
         z_obs, n_halos=n_halos, drn_ssp_data=drn_ssp_data
@@ -216,8 +220,8 @@ def plot_delta_mag_lsst_vs_ssfr(
     n_halos=2_000,
     drn_ssp_data=DEFAULT_DSPS_DRN,
 ):
-    if not HAS_MATPLOTLIB:
-        raise ImportError("Must have matplotlib installed to use this function")
+    """"""
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
     _res = get_burstiness_delta_mag_quantities(
         z_obs, n_halos=n_halos, drn_ssp_data=drn_ssp_data

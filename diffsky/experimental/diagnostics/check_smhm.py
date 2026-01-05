@@ -14,6 +14,7 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
 
 try:
     from scipy.stats import binned_statistic
@@ -32,6 +33,8 @@ def plot_diffstarpop_insitu_smhm(
     fname="diffstarpop_insitu_smhm_lc_kern_check.png",
 ):
     """Make plots comparing the SMHM of two diffstarpop models"""
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+
     ran_key = jran.key(0)
     lgmp_min = 11.0
     sky_area_degsq = 20.0

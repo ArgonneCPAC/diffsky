@@ -2,11 +2,19 @@
 
 import os
 
-from ..plot_funopop_simple import DEFAULT_FUNOPOP_PARAMS, make_funopop_comparison_plot
+import pytest
+
+from ..plot_funopop_simple import (
+    DEFAULT_FUNOPOP_PARAMS,
+    HAS_MATPLOTLIB,
+    MATPLOTLIB_MSG,
+    make_funopop_comparison_plot,
+)
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 
 
+@pytest.mark.skipif(not HAS_MATPLOTLIB, reason=MATPLOTLIB_MSG)
 def test_make_freqburst_comparison_plot():
     fn = os.path.join(_THIS_DRNAME, "dummy.png")
     make_funopop_comparison_plot(DEFAULT_FUNOPOP_PARAMS, fname=fn)

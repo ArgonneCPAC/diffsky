@@ -16,6 +16,7 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
 
 try:
     from scipy.stats import binned_statistic
@@ -32,6 +33,9 @@ def plot_diffstar_frac_quenched(
     n_halos=100_000,
     ssfr_cut=-11.0,
 ):
+    """"""
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+
     ran_key = jran.key(0)
     hosts_logmh_at_z = np.linspace(10, 15, n_halos)
     z_obs = 0.0
