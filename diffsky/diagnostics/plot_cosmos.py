@@ -30,6 +30,7 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
 
 try:
     from astropy.table import Table
@@ -277,8 +278,7 @@ def plot_app_mag_func(
         The model_nickname will be part of the output filename of the plot.
 
     """
-    if not HAS_MATPLOTLIB:
-        raise ImportError("Must have matplotlib installed to make diagnostic plots")
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
     os.makedirs(drn_out, exist_ok=True)
 
@@ -397,8 +397,7 @@ def plot_color_pdf(
         The model_nickname will be part of the output filename of the plot.
 
     """
-    if not HAS_MATPLOTLIB:
-        raise ImportError("Must have matplotlib installed to make diagnostic plots")
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
     os.makedirs(drn_out, exist_ok=True)
 
@@ -488,6 +487,8 @@ def make_color_mag_diagnostic_plots(
         Output directory to store plots
 
     """
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+
     if pdata is None:
         pdata = get_plotting_data(
             seed=0, **param_collection._asdict(), cosmo_params=cosmo_params, fb=fb

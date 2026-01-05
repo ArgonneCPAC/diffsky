@@ -2,11 +2,19 @@
 
 import os
 
-from ..plot_avpop_flex import DEFAULT_AVPOP_PARAMS, make_avpop_flex_comparison_plots
+import pytest
+
+from ..plot_avpop_flex import (
+    DEFAULT_AVPOP_PARAMS,
+    HAS_MATPLOTLIB,
+    MATPLOTLIB_MSG,
+    make_avpop_flex_comparison_plots,
+)
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 
 
+@pytest.mark.skipif(not HAS_MATPLOTLIB, reason=MATPLOTLIB_MSG)
 def test_make_freqburst_comparison_plot():
     fn = os.path.join(_THIS_DRNAME, "dummy.png")
     _res = make_avpop_flex_comparison_plots(DEFAULT_AVPOP_PARAMS, fname=fn)

@@ -4,10 +4,17 @@ import os
 
 import numpy as np
 from jax import random as jran
-from matplotlib import pyplot as plt
 
 from .. import bulge_shapes, disk_shapes
 from .. import ellipse_proj_kernels as eproj
+
+try:
+    from matplotlib import pyplot as plt
+
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 DRN_ESHAPES = os.path.dirname(_THIS_DRNAME)
@@ -29,6 +36,9 @@ def make_bulge_rp13_comparison_plot(
     fname=None,
     enforce_tol=float("inf"),
 ):
+    """"""
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+
     ran_key = jran.key(0)
 
     ran_key, mu_key, phi_key = jran.split(ran_key, 3)
@@ -87,6 +97,9 @@ def make_disk_rp13_comparison_plot(
     fname=None,
     enforce_tol=float("inf"),
 ):
+    """"""
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+
     ran_key = jran.key(0)
 
     ran_key, mu_key, phi_key = jran.split(ran_key, 3)

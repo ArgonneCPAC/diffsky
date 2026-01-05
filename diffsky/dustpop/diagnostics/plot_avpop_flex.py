@@ -5,7 +5,6 @@ import os
 import numpy as np
 from jax import jit as jjit
 from jax import vmap
-from matplotlib import pyplot as plt
 
 from ..avpop_flex import DEFAULT_AVPOP_PARAMS, get_av_from_avpop_params_scalar
 
@@ -13,6 +12,15 @@ _A = (None, 0, None, None, None)
 _B = (None, None, 0, None, None)
 _C = (None, 0, 0, None, None)
 get_av_kern = jjit(vmap(vmap(get_av_from_avpop_params_scalar, in_axes=_C), in_axes=_C))
+
+
+try:
+    from matplotlib import pyplot as plt
+
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
 
 
 def make_avpop_flex_comparison_plots(
@@ -37,6 +45,8 @@ def make_avpop_flex_comparison_plots(
         filename of the output figure
 
     """
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+
     nsm, nsfr = 250, 250
     logsm_grid = np.linspace(7, 12, nsm)
     logssfr_grid = np.linspace(-13, -8, nsfr)

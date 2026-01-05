@@ -1,16 +1,26 @@
 """ """
 
-import matplotlib.cm as cm
 import numpy as np
-from matplotlib import pyplot as plt
 
 from .. import merging_model as mmod
+
+try:
+    from matplotlib import cm
+    from matplotlib import pyplot as plt
+
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
+
 
 mred = "#d62728"
 mblue = "#1f77b4"
 
 
 def make_pmerge_vs_time_plot(params=mmod.DEFAULT_MERGE_PARAMS, fname=None):
+    """"""
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
     ncolors = 200
     colors = cm.coolwarm(np.linspace(1, 0, ncolors))  # red first

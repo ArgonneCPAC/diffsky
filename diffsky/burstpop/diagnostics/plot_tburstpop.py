@@ -2,10 +2,17 @@
 
 import numpy as np
 from dsps.sfh import diffburst
-from matplotlib import lines as mlines
-from matplotlib import pyplot as plt
 
 from .. import tburstpop as tbp
+
+try:
+    from matplotlib import lines as mlines
+    from matplotlib import pyplot as plt
+
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
 
 
 def make_tburstpop_comparison_plot(
@@ -30,6 +37,7 @@ def make_tburstpop_comparison_plot(
         filename of the output figure
 
     """
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
     lgyrarr = np.linspace(5, 9.05, 100)
 
     logsmarr = np.array((9.0, 9.0, 12.0, 12.0))

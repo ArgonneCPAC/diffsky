@@ -15,13 +15,20 @@ import argparse
 import os
 from glob import glob
 
-import matplotlib.cm as cm
 import numpy as np
-from matplotlib import pyplot as plt
 
 from diffsky.data_loaders.hacc_utils import get_diffsky_info_from_hacc_sim
 from diffsky.mass_functions import hmf_model
 from diffsky.mass_functions.fitting_utils import fit_hmf_model
+
+try:
+    from matplotlib import cm
+    from matplotlib import pyplot as plt
+
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+MATPLOTLIB_MSG = "Must have matplotlib installed to use this function"
 
 DEFAULT_NCHUNKS = 10
 
@@ -52,6 +59,8 @@ if __name__ == "__main__":
     fit_type = args.fit_type
     fname_params_out = args.fname_params_out
     nchunks = args.nchunks
+
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
     Z_TABLE = np.load(os.path.join(drn_target_data, "redshift_bins.npy"))
     LOGMP_BINS = np.load(os.path.join(drn_target_data, "logmp_bins.npy"))
