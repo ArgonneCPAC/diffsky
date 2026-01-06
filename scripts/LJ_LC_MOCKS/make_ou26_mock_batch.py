@@ -2,7 +2,9 @@
 
 To run a unit test of this script:
 
-python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
+python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
+
+python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -cosmos_fit cosmos260105 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
 
 python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
 
@@ -31,10 +33,7 @@ from diffsky.data_loaders.hacc_utils import metadata_mock
 from diffsky.data_loaders.mock_utils import get_mock_version_name
 from diffsky.experimental import mc_lightcone_halos as mclh
 from diffsky.experimental import precompute_ssp_phot as psspp
-from diffsky.experimental.sfh_model_calibrations import (
-    load_diffsky_sfh_model_calibrations as ldup,
-)
-from diffsky.param_utils import diffsky_param_wrapper as dpw
+from diffsky.param_utils import get_mock_params as gmp
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -49,11 +48,6 @@ DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
 
 
 SIM_NAME = "LastJourney"
-DIFFSTARPOP_CALIBRATIONS = [
-    "smdpl_dr1",
-    "tng",
-    "galacticus_in_plus_ex_situ",
-]
 
 ROMAN_HLTDS_PATCHES = [157, 158, 118, 119]
 
@@ -110,16 +104,9 @@ if __name__ == "__main__":
         "--lsst_only", help="Use only LSST bandpasses", action="store_true"
     )
 
+    parser.add_argument("-cosmos_fit", help="Best-fit diffsky parameters", default="")
     parser.add_argument(
-        "-fn_u_params",
-        help="Best-fit diffsky parameters. Set to `sfh_model` to use a few specific calibrations",
-        default="",
-    )
-    parser.add_argument(
-        "-sfh_model",
-        help="Assumed SFH model in diffsky calibration",
-        default="tng",
-        choices=DIFFSTARPOP_CALIBRATIONS,
+        "-sfh_model", help="Assumed SFH model in diffsky calibration", default="tng"
     )
 
     parser.add_argument(
@@ -155,7 +142,7 @@ if __name__ == "__main__":
     roman_hltds = args.roman_hltds
     lsst_ddf = args.lsst_ddf
     lsst_only = args.lsst_only
-    fn_u_params = args.fn_u_params
+    cosmos_fit = args.cosmos_fit
     itest = args.itest
     sim_name = args.sim_name
     synthetic_cores = args.synthetic_cores
@@ -179,8 +166,13 @@ if __name__ == "__main__":
             msg += "must specify lgmp_min and lgmp_max"
             raise ValueError(msg)
 
-    if fn_u_params == "sfh_model":
-        drn_out = os.path.join(drn_out, sfh_model)
+    if cosmos_fit != "":
+        subdrn = cosmos_fit
+    elif sfh_model != "":
+        subdrn = sfh_model
+    else:
+        subdrn = "default_model"
+    drn_out = os.path.join(drn_out, subdrn)
     os.makedirs(drn_out, exist_ok=True)
 
     if machine == "poboy":
@@ -222,41 +214,9 @@ if __name__ == "__main__":
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
     ssp_data = load_ssp_templates()
-
-    #  Load diffsky model parameters
-    if fn_u_params == "":
-        param_collection = dpw.DEFAULT_PARAM_COLLECTION
-        if rank == 0:
-            print(
-                "No input params detected. "
-                "Using default diffsky model parameters DEFAULT_PARAM_COLLECTION"
-            )
-    elif fn_u_params == "sfh_model":
-        u_param_arr = ldup.load_diffsky_u_params_for_sfh_model(sfh_model)
-        u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
-        param_collection = dpw.get_param_collection_from_u_param_collection(
-            *u_param_collection
-        )
-        if True:  # always do this for now
-            if rank == 0:
-                print("Ignoring pre-computed fit of SPS parameters")
-            diffstarpop_sfh_model = param_collection[0]
-            param_collection = dpw.ParamCollection(
-                diffstarpop_sfh_model,
-                *dpw.DEFAULT_PARAM_COLLECTION[1:],
-            )
-
-    else:
-        if rank == 0:
-            print(
-                f"Reading diffsky parameter array from disk. Filename = {fn_u_params}"
-            )
-        u_param_arr = np.loadtxt(fn_u_params)
-        u_param_collection = dpw.get_u_param_collection_from_u_param_array(u_param_arr)
-        param_collection = dpw.get_param_collection_from_u_param_collection(
-            *u_param_collection
-        )
-
+    param_collection = gmp.get_param_collection_for_mock(
+        cosmos_fit=cosmos_fit, sfh_model=sfh_model, rank=0
+    )
     n_z_phot_table = 15
 
     tcurves = lcmp_repro.get_dsps_transmission_curves(OUTPUT_FILTER_NICKNAMES)
