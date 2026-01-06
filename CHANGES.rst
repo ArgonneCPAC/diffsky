@@ -1,4 +1,8 @@
-0.3.3 (unreleased)
+0.3.4 (unreleased)
+-------------------
+
+
+0.3.3 (2026-01-06)
 -------------------
 - Fix bug in elliptical projections
     - https://github.com/ArgonneCPAC/diffsky/pull/297
