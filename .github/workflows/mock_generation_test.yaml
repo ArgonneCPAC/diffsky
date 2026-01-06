@@ -86,7 +86,7 @@ jobs:
           export DSPS_DRN="${GITHUB_WORKSPACE}/dsps_drn"
           echo "DSPS_DRN=${DSPS_DRN}" >> $GITHUB_ENV
 
-      - name: run mock generation script
+      - name: create mock with sfh_model option
         shell: bash -l {0}
         run: |
           # Create output directory
@@ -101,7 +101,6 @@ jobs:
             1 \
             ci_test_output \
             ci_test_mock \
-            -fn_u_params sfh_model \
             -sfh_model smdpl_dr1 \
             -synthetic_cores 1 \
             -lgmp_min 12.0 \
@@ -111,10 +110,51 @@ jobs:
       - name: verify script completed
         shell: bash -l {0}
         run: |
-          echo "Mock generation script completed successfully"
+          echo "sfh_model mock generated successfully"
 
       - name: validate mock
         shell: bash -l {0}
         run: |
           python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
+
+      - name: remove sfh_model mock
+        shell: bash -l {0}
+        run: |
+          rm -rf ci_test_output
+
+      - name: create mock with cosmos_fit option
+        shell: bash -l {0}
+        run: |
+          # Create output directory
+          mkdir -p ci_test_output
+
+          # Run mock production script
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py \
+            poboy \
+            0.01 \
+            0.2 \
+            0 \
+            1 \
+            ci_test_output \
+            ci_test_mock \
+            -cosmos_fit cosmos260105 \
+            -synthetic_cores 1 \
+            -lgmp_min 12.0 \
+            -lgmp_max 13.0 \
+            --lsst_only
+
+      - name: verify script completed
+        shell: bash -l {0}
+        run: |
+          echo "sfh_model mock generated successfully"
+
+      - name: validate mock
+        shell: bash -l {0}
+        run: |
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos260105
+
+      - name: remove cosmos_fit mock
+        shell: bash -l {0}
+        run: |
+          rm -rf ci_test_output
 
