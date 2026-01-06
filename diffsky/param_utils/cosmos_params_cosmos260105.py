@@ -4,6 +4,7 @@ from . import diffsky_param_wrapper as dpw
 
 default = dpw.DEFAULT_PARAM_COLLECTION
 
+COSMOS_PARAM_FITS = dict()
 cosmos260105 = default._replace(
     diffstarpop_params=default.diffstarpop_params._replace(
         delta_uqt_k=0.6313618464470242,
@@ -234,3 +235,6 @@ cosmos260105 = default._replace(
         z1p1_dur_ylo=-0.6280987246936542,
     ),
 )
+
+
+COSMOS_PARAM_FITS["cosmos260105"] = cosmos260105
