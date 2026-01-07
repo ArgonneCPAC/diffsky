@@ -19,7 +19,6 @@ from diffstar.diffstarpop.defaults import DEFAULT_DIFFSTARPOP_PARAMS
 from diffstar.utils import cumulative_mstar_formed_galpop
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
-from dsps.metallicity import umzr
 from dsps.sed import metallicity_weights as zmetw
 from dsps.sed.stellar_age_weights import calc_age_weights_from_sfh_table
 from jax import jit as jjit
@@ -30,7 +29,6 @@ from jax.scipy.interpolate import RegularGridInterpolator
 from scipy.stats import qmc
 
 from ..burstpop import diffqburstpop_mono
-from ..dustpop import tw_dustpop_mono_noise
 from ..mass_functions import hmf_model, mc_hosts
 from ..phot_utils import get_wave_eff_table
 from . import precompute_ssp_phot as psspp
@@ -860,140 +858,6 @@ def sobol_lightcone_diffstar_cens(
         cenpop_out[key] = value
 
     return cenpop_out
-
-
-def mc_lightcone_diffstar_stellar_ages_cens(
-    ran_key,
-    lgmp_min,
-    z_min,
-    z_max,
-    sky_area_degsq,
-    ssp_data,
-    cosmo_params=flat_wcdm.PLANCK15,
-    hmf_params=mc_hosts.DEFAULT_HMF_PARAMS,
-    diffmahpop_params=DEFAULT_DIFFMAHPOP_PARAMS,
-    diffstarpop_params=DEFAULT_DIFFSTARPOP_PARAMS,
-    n_hmf_grid=N_HMF_GRID,
-    n_sfh_table=N_SFH_TABLE,
-    return_internal_quantities=False,
-):
-    """
-    Generate halo MAH and galaxy SFH and stellar age weights
-    for host halos sampled from a lightcone
-
-    Parameters
-    ----------
-    ran_key : jran.key
-
-    lgmp_min : float
-       Base-10 log of minimum halo mass in units of Msun (not Msun/h)
-
-    z_min, z_max : float
-
-    sky_area_degsq : float
-        Sky area in units of deg^2
-
-    cosmo_params : namedtuple
-        dsps.cosmology.flat_wcdm cosmology
-        cosmo_params = (Om0, w0, wa, h)
-
-    Returns
-    -------
-    cenpop : dict
-
-        z_obs : narray, shape (n_halos, )
-            Lightcone redshift
-
-        logmp_obs : narray, shape (n_halos, )
-            Halo mass at the lightcone redshift
-
-        mah_params : namedtuple of diffmah params
-            Each tuple entry is an ndarray with shape (n_halos, )
-
-        logmp0 : narray, shape (n_halos, )
-            Base-10 log of halo mass in units of Msun at z=0
-
-        logsm_obs : narray, shape (n_halos, )
-            log10(Mstar) at the time of observation
-
-        logssfr_obs : narray, shape (n_halos, )
-            log10(SFR/Mstar) at the time of observation
-
-        sfh_params : namedtuple
-            Diffstar params for every galaxy
-
-        sfh_table : narray, shape (n_halos, n_times)
-            Star formation rate in Msun/yr
-
-        t_table : narray, shape (n_times, )
-
-        diffstarpop_data : dict
-            ancillary diffstarpop data such as frac_q
-
-        age_weights : ndarray, shape (n_halos, n_ages)
-            Stellar age PDF, P(τ), for every galaxy
-
-        ssp_lg_age_gyr : ndarray, shape (n_ages, )
-            log10 stellar age grid in Gyr
-
-    Notes
-    -----
-    All mass quantities quoted in Msun (not Msun/h)
-
-    """
-    cenpop = mc_lightcone_diffstar_cens(
-        ran_key,
-        lgmp_min,
-        z_min,
-        z_max,
-        sky_area_degsq,
-        cosmo_params=cosmo_params,
-        hmf_params=hmf_params,
-        diffmahpop_params=diffmahpop_params,
-        diffstarpop_params=diffstarpop_params,
-        n_hmf_grid=n_hmf_grid,
-        n_sfh_table=n_sfh_table,
-        return_internal_quantities=return_internal_quantities,
-    )
-    age_weights_galpop = calc_age_weights_from_sfh_table_vmap(
-        cenpop["t_table"], cenpop["sfh_table"], ssp_data.ssp_lg_age_gyr, cenpop["t_obs"]
-    )
-    fields = (*cenpop.keys(), "age_weights", "ssp_lg_age_gyr")
-    values = (*cenpop.values(), age_weights_galpop, ssp_data.ssp_lg_age_gyr)
-
-    if return_internal_quantities:
-        age_weights_galpop_ms = calc_age_weights_from_sfh_table_vmap(
-            cenpop["t_table"],
-            cenpop["sfh_table_ms"],
-            ssp_data.ssp_lg_age_gyr,
-            cenpop["t_obs"],
-        )
-        age_weights_galpop_q = calc_age_weights_from_sfh_table_vmap(
-            cenpop["t_table"],
-            cenpop["sfh_table_q"],
-            ssp_data.ssp_lg_age_gyr,
-            cenpop["t_obs"],
-        )
-
-        fields = (*fields, "age_weights_ms", "age_weights_q")
-        values = (*values, age_weights_galpop_ms, age_weights_galpop_q)
-
-    cenpop_out = dict()
-    for key, value in zip(fields, values):
-        cenpop_out[key] = value
-
-    return cenpop_out
-
-
-_D = (None, 0, None, None, None, None, None, None, None, None)
-vmap_kern1 = jjit(
-    vmap(
-        tw_dustpop_mono_noise.calc_ftrans_singlegal_singlewave_from_dustpop_params,
-        in_axes=_D,
-    )
-)
-_E = (None, 0, 0, 0, 0, None, 0, 0, 0, None)
-calc_dust_ftrans_vmap = jjit(vmap(vmap_kern1, in_axes=_E))
 
 
 def get_nhalo_from_grid_interp(
