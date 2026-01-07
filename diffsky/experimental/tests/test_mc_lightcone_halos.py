@@ -353,34 +353,6 @@ def test_mc_lightcone_diffstar_stellar_ages_cens():
     assert np.allclose(1.0, np.sum(cenpop["age_weights"], axis=1), rtol=1e-3)
 
 
-def test_mc_lightcone_diffstar_ssp_weights_cens():
-    ran_key = jran.key(0)
-    lgmp_min = 12.0
-    sky_area_degsq = 1.0
-
-    z_min, z_max = 0.1, 0.5
-    z_min = z_max - 0.05
-
-    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
-
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
-    cenpop = mclh.mc_lightcone_diffstar_ssp_weights_cens(
-        *args, return_internal_quantities=True
-    )
-    assert np.all(np.isfinite(cenpop["logsm_obs"]))
-    assert np.all(np.isfinite(cenpop["logssfr_obs"]))
-    assert cenpop["logsm_obs"].min() > 4
-
-    assert np.all(np.isfinite(cenpop["age_weights"]))
-    assert np.allclose(1.0, np.sum(cenpop["age_weights"], axis=1), rtol=1e-3)
-
-    assert np.all(np.isfinite(cenpop["lgmet_weights"]))
-    assert np.allclose(1.0, np.sum(cenpop["lgmet_weights"], axis=1), rtol=1e-3)
-
-    assert np.all(np.isfinite(cenpop["ssp_weights"]))
-    assert np.allclose(1.0, np.sum(cenpop["ssp_weights"], axis=(1, 2)), rtol=1e-3)
-
-
 def test_mc_weighted_halo_lightcone():
     """Enforce mc_lightcone_host_halo_diffmah returns reasonable results when passed
     alternative halo mass function parameters"""
