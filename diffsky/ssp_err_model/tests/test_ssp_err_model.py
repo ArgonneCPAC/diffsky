@@ -1,52 +1,48 @@
 """ """
 
 import numpy as np
-
 from jax import random as jran
 
-from ..ssp_err_model import (
-    DEFAULT_SSPERR_PARAMS,
-    DEFAULT_SSPERR_PDICT,
-    DEFAULT_SSPERR_U_PARAMS,
-    SSPERR_PBOUNDS_PDICT,
-    F_sps_err_lambda_galpop,
-    compute_delta_mags_all_bands,
-    delta_mag_from_lambda_rest,
-    get_bounded_ssperr_params,
-    get_unbounded_ssperr_params,
-    add_delta_mag_to_photometry,
-    noisy_delta_mag,
-    compute_delta_scatter,
-)
+from .. import defaults as ssp_err_defaults
+from .. import ssp_err_model
 
 TOL = 1e-2
 
 
 def test_default_params_are_in_bounds():
-    for key in DEFAULT_SSPERR_PDICT.keys():
-        bounds = SSPERR_PBOUNDS_PDICT[key]
-        val = DEFAULT_SSPERR_PDICT[key]
+    for key in ssp_err_model.DEFAULT_SSPERR_PARAMS._fields:
+        bounds = getattr(ssp_err_model.SSPERR_PBOUNDS, key)
+        val = getattr(ssp_err_model.DEFAULT_SSPERR_PARAMS, key)
         assert bounds[0] < val < bounds[1], key
 
 
 def test_param_u_param_names_propagate_properly():
-    gen = zip(DEFAULT_SSPERR_U_PARAMS._fields, DEFAULT_SSPERR_PARAMS._fields)
+    gen = zip(
+        ssp_err_model.DEFAULT_SSPERR_U_PARAMS._fields,
+        ssp_err_model.DEFAULT_SSPERR_PARAMS._fields,
+    )
     for u_key, key in gen:
         assert u_key[:2] == "u_"
         assert u_key[2:] == key
 
-    inferred_default_params = get_bounded_ssperr_params(DEFAULT_SSPERR_U_PARAMS)
-    assert set(inferred_default_params._fields) == set(DEFAULT_SSPERR_PARAMS._fields)
+    inferred_default_params = ssp_err_model.get_bounded_ssperr_params(
+        ssp_err_model.DEFAULT_SSPERR_U_PARAMS
+    )
+    assert set(inferred_default_params._fields) == set(
+        ssp_err_model.DEFAULT_SSPERR_PARAMS._fields
+    )
 
-    inferred_default_u_params = get_unbounded_ssperr_params(DEFAULT_SSPERR_PARAMS)
+    inferred_default_u_params = ssp_err_model.get_unbounded_ssperr_params(
+        ssp_err_model.DEFAULT_SSPERR_PARAMS
+    )
     assert set(inferred_default_u_params._fields) == set(
-        DEFAULT_SSPERR_U_PARAMS._fields
+        ssp_err_model.DEFAULT_SSPERR_U_PARAMS._fields
     )
 
 
 def test_get_bounded_ssperr_params_fails_when_passing_params():
     try:
-        get_bounded_ssperr_params(DEFAULT_SSPERR_PARAMS)
+        ssp_err_model.get_bounded_ssperr_params(ssp_err_model.DEFAULT_SSPERR_PARAMS)
         raise NameError("get_bounded_ssperr_params should not accept u_params")
     except AttributeError:
         pass
@@ -54,7 +50,7 @@ def test_get_bounded_ssperr_params_fails_when_passing_params():
 
 def test_get_unbounded_ssperr_params_fails_when_passing_u_params():
     try:
-        get_unbounded_ssperr_params(DEFAULT_SSPERR_U_PARAMS)
+        ssp_err_model.get_unbounded_ssperr_params(ssp_err_model.DEFAULT_SSPERR_U_PARAMS)
         raise NameError("get_unbounded_ssperr_params should not accept u_params")
     except AttributeError:
         pass
@@ -72,7 +68,7 @@ def test_compute_delta_mags_all_bands():
     i_orig = np.random.uniform(0, 1, 1)
 
     mags_orig = (fuv_orig, nuv_orig, u_orig, g_orig, r_orig, i_orig)
-    dmag_params = DEFAULT_SSPERR_PARAMS._replace(
+    dmag_params = ssp_err_model.DEFAULT_SSPERR_PARAMS._replace(
         z0p0_dgr_yhi=0.4,
         z0p5_dgr_yhi=0.4,
         z1p1_dgr_yhi=0.4,
@@ -80,7 +76,7 @@ def test_compute_delta_mags_all_bands():
 
     z_obs = 0.4
 
-    delta_mags = compute_delta_mags_all_bands(logsm, z_obs, dmag_params)
+    delta_mags = ssp_err_model.compute_delta_mags_all_bands(logsm, z_obs, dmag_params)
 
     mags_orig = np.array(mags_orig)
     mags_new = mags_orig + delta_mags
@@ -88,124 +84,88 @@ def test_compute_delta_mags_all_bands():
     assert not np.allclose(mags_new, mags_orig)
 
 
-def test_F_ssp_err_lambda():
-
-    n_gals = 2_000
-    logsmarr = np.linspace(8, 12, n_gals)
-
-    wavelength = np.array([5200.0, 5400.0, 5800.0, 6300.0])
-    wave_eff_rest = np.array([3000.0, 4000.0, 5000.0, 5500.0, 6000.0, 6500.0])
-
-    z_obs = 0.4
-
-    F_sps_err = F_sps_err_lambda_galpop(
-        DEFAULT_SSPERR_PARAMS, logsmarr, z_obs, wavelength, wave_eff_rest
+def test_frac_ssp_err_at_z_obs_singlegal():
+    logsm = 10.0
+    z_obs = 1.0
+    wave_obs = 2000.0
+    frac_ssp_err_z_obs = ssp_err_model.frac_ssp_err_at_z_obs_singlegal(
+        ssp_err_model.DEFAULT_SSPERR_PARAMS, logsm, z_obs, wave_obs
     )
-
-    assert len(F_sps_err) == n_gals
-    assert np.all(~np.isnan(F_sps_err))
+    assert np.all(np.isfinite(frac_ssp_err_z_obs))
 
 
-def test_delta_mag_from_lambda_rest():
+def test_frac_ssp_err_at_z_obs_galpop():
+    ran_key = jran.key(0)
+    n_gals = 10_000
+    ZZ = np.zeros(n_gals)
+    logsm = 10.0 + ZZ
+    z_obs = 1.0 + ZZ
+    wave_obs = np.array((2_000, 5_000, 7_000))
+    wave_obs_galpop = np.tile(wave_obs, n_gals).reshape((n_gals, wave_obs.size))
+    assert wave_obs_galpop.shape == (n_gals, wave_obs.size)
 
-    n_gals = 2_000
-    logsmarr = np.linspace(8, 12, n_gals)
+    frac_min = 10 ** (-0.4 * ssp_err_defaults.DMAG_BOUNDS[1])
+    frac_max = 10 ** (-0.4 * ssp_err_defaults.DMAG_BOUNDS[0])
 
-    wavelength = 5800.0
-    wave_eff_rest = np.array([3000.0, 4000.0, 5000.0, 5500.0, 6000.0, 6500.0])
+    n_tests = 100
+    for __ in range(n_tests):
+        ran_key, test_key = jran.split(ran_key, 2)
+        uran = jran.uniform(test_key, shape=(len(ssp_err_model.DEFAULT_SSPERR_PARAMS),))
+        gen = zip(uran, ssp_err_model.DEFAULT_SSPERR_U_PARAMS)
+        u_params = ssp_err_model.DEFAULT_SSPERR_U_PARAMS._make([x + u for x, u in gen])
+        params = ssp_err_model.get_bounded_ssperr_params(u_params)
 
-    z_obs = 0.4
+        frac_ssp_err_z_obs = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
+            params, logsm, z_obs, wave_obs_galpop
+        )
+        assert frac_ssp_err_z_obs.shape == (n_gals, 3)
+        assert np.all(np.isfinite(frac_ssp_err_z_obs))
+        assert np.all(frac_ssp_err_z_obs >= frac_min)
+        assert np.all(frac_ssp_err_z_obs <= frac_max)
 
-    delta_mag = delta_mag_from_lambda_rest(
-        DEFAULT_SSPERR_PARAMS, z_obs, logsmarr, wavelength, wave_eff_rest
-    )
+        # Test that zero-scatter results are unchanged
+        delta_rest_mags_scatter = np.zeros((n_gals, ssp_err_model.LAMBDA_REST.size))
+        frac_ssp_err_z_obs2, frac_ssp_err_z_obs2_nonoise = (
+            ssp_err_model.get_noisy_frac_ssp_err_galpop(
+                params, logsm, z_obs, wave_obs_galpop, delta_rest_mags_scatter
+            )
+        )
+        assert frac_ssp_err_z_obs2.shape == frac_ssp_err_z_obs.shape
+        assert np.allclose(frac_ssp_err_z_obs2, frac_ssp_err_z_obs, rtol=1e-4)
+        assert np.allclose(frac_ssp_err_z_obs2, frac_ssp_err_z_obs2_nonoise, rtol=1e-4)
 
-    assert np.all(~np.isnan(delta_mag))
-    assert delta_mag.shape == (n_gals,)
+        delta_rest_mags_scatter = (
+            np.zeros((n_gals, ssp_err_model.LAMBDA_REST.size)) + 0.1
+        )
+        frac_ssp_err_z_obs2, frac_ssp_err_z_obs2_nonoise = (
+            ssp_err_model.get_noisy_frac_ssp_err_galpop(
+                params, logsm, z_obs, wave_obs_galpop, delta_rest_mags_scatter
+            )
+        )
+        assert not np.allclose(
+            frac_ssp_err_z_obs2, frac_ssp_err_z_obs2_nonoise, rtol=1e-4
+        )
 
+        ran_key, scatter_key = jran.split(ran_key, 2)
+        _res = ssp_err_model.frac_ssp_err_lambda_scatter_galpop(
+            params, logsm, z_obs, wave_obs_galpop, scatter_key
+        )
+        frac_ssp_err_z_obs3, frac_ssp_err_z_obs3_nonoise, delta_rest_mags_scatter = _res
+        assert frac_ssp_err_z_obs3.shape == (n_gals, 3)
+        assert delta_rest_mags_scatter.shape == (n_gals, 6)
 
-def test_compute_delta_scatter():
+        assert np.all(np.isfinite(frac_ssp_err_z_obs3))
+        assert np.allclose(
+            frac_ssp_err_z_obs3_nonoise, frac_ssp_err_z_obs2_nonoise, rtol=1e-4
+        )
+        assert not np.allclose(
+            frac_ssp_err_z_obs3, frac_ssp_err_z_obs3_nonoise, atol=0.001
+        )
 
-    ran_key = jran.PRNGKey(0)
-
-    n_gals = 2_000
-    logsmarr = np.linspace(8, 12, n_gals)
-    n_filters = 4
-
-    z_obs = 0.4
-
-    wavelength = np.array((3800.0, 4800.0, 5800.0, 6200.0))
-
-    wave_eff_rest = np.array([3000.0, 4000.0, 5000.0, 5500.0, 6000.0, 6500.0])
-
-    delta_mag = delta_mag_from_lambda_rest(
-        DEFAULT_SSPERR_PARAMS, z_obs, logsmarr, wavelength, wave_eff_rest
-    )
-
-    delta_scatter = compute_delta_scatter(ran_key, delta_mag)
-
-    assert np.all(~np.isnan(delta_scatter))
-    assert delta_scatter.shape == (n_gals, n_filters)
-
-
-def test_noisy_delta_mag():
-
-    n_gals = 2_000
-    logsmarr = np.linspace(8, 12, n_gals)
-
-    n_filters = 4
-
-    z_obs = 0.4
-
-    wavelength = np.array((3800.0, 4800.0, 5800.0, 6200.0))
-
-    wave_eff_rest = np.array([3000.0, 4000.0, 5000.0, 5500.0, 6000.0, 6500.0])
-
-    ran_key = jran.PRNGKey(0)
-
-    noisy_dmag = noisy_delta_mag(
-        DEFAULT_SSPERR_PARAMS, z_obs, logsmarr, wavelength, wave_eff_rest, ran_key
-    )
-
-    assert np.all(~np.isnan(noisy_dmag))
-    assert noisy_dmag.shape == (n_gals, n_filters)
-
-
-def test_add_delta_mag_to_photometry():
-
-    n_gals = 2_000
-    logsmarr = np.linspace(8, 12, n_gals)
-    n_filters = 4
-    m = np.linspace(18, 24, n_filters)
-    M = np.tile(m, n_gals)
-    mags = M.reshape(n_gals, n_filters)
-
-    wavelength = np.array((3800.0, 4800.0, 5800.0, 6200.0))
-
-    wave_eff_rest = np.array([3000.0, 4000.0, 5000.0, 5500.0, 6000.0, 6500.0])
-
-    z_obs = 0.4
-
-    ran_key = jran.PRNGKey(0)
-
-    q_key, ms_key = jran.split(ran_key, 2)
-
-    res = add_delta_mag_to_photometry(
-        DEFAULT_SSPERR_PARAMS,
-        z_obs,
-        logsmarr,
-        logsmarr,
-        wavelength,
-        wave_eff_rest,
-        q_key,
-        ms_key,
-        mags,
-        mags,
-        mags,
-        mags,
-    )
-
-    (new_mags_q_smooth, new_mags_q_bursty, new_mags_ms_smooth, new_mags_ms_bursty) = res
-
-    assert np.all(~np.isnan(new_mags_q_smooth))
-    assert new_mags_q_smooth.shape == (n_gals, n_filters)
+        frac_ssp_err_z_obs3b, frac_ssp_err_z_obs3b_nonoise = (
+            ssp_err_model.get_noisy_frac_ssp_err_galpop(
+                params, logsm, z_obs, wave_obs_galpop, delta_rest_mags_scatter
+            )
+        )
+        assert np.allclose(frac_ssp_err_z_obs3b, frac_ssp_err_z_obs3, rtol=1e-4)
+        assert np.allclose(frac_ssp_err_z_obs3b_nonoise, frac_ssp_err_z_obs, rtol=1e-4)

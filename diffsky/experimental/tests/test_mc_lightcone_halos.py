@@ -11,7 +11,6 @@ from jax import random as jran
 from ...mass_functions import mc_hosts
 from ...mass_functions.fitting_utils.calibrations import hacc_core_shmf_params as hcshmf
 from .. import mc_lightcone_halos as mclh
-from .. import precompute_ssp_phot as psspp
 
 SSP_DATA = retrieve_fake_fsps_data.load_fake_ssp_data()
 
@@ -329,109 +328,6 @@ def test_mc_lightcone_diffstar_cens():
     assert np.all(np.isfinite(cenpop["diffstarpop_data"]["sfh_q"]))
     assert np.all(cenpop["diffstarpop_data"]["frac_q"] >= 0)
     assert np.all(cenpop["diffstarpop_data"]["frac_q"] <= 1)
-
-
-def test_mc_lightcone_diffstar_stellar_ages_cens():
-    """Enforce mc_lightcone_diffstar_stellar_ages_cens returns reasonable results"""
-    ran_key = jran.key(0)
-    lgmp_min = 12.0
-    sky_area_degsq = 1.0
-
-    z_min, z_max = 0.1, 0.5
-    z_min = z_max - 0.05
-
-    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
-
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
-    cenpop = mclh.mc_lightcone_diffstar_stellar_ages_cens(
-        *args, return_internal_quantities=True
-    )
-    assert np.all(np.isfinite(cenpop["logsm_obs"]))
-    assert np.all(np.isfinite(cenpop["logssfr_obs"]))
-    assert cenpop["logsm_obs"].min() > 4
-
-    assert np.all(np.isfinite(cenpop["age_weights"]))
-    assert np.allclose(1.0, np.sum(cenpop["age_weights"], axis=1), rtol=1e-3)
-
-
-def test_mc_lightcone_diffstar_ssp_weights_cens():
-    ran_key = jran.key(0)
-    lgmp_min = 12.0
-    sky_area_degsq = 1.0
-
-    z_min, z_max = 0.1, 0.5
-    z_min = z_max - 0.05
-
-    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
-
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq, ssp_data)
-    cenpop = mclh.mc_lightcone_diffstar_ssp_weights_cens(
-        *args, return_internal_quantities=True
-    )
-    assert np.all(np.isfinite(cenpop["logsm_obs"]))
-    assert np.all(np.isfinite(cenpop["logssfr_obs"]))
-    assert cenpop["logsm_obs"].min() > 4
-
-    assert np.all(np.isfinite(cenpop["age_weights"]))
-    assert np.allclose(1.0, np.sum(cenpop["age_weights"], axis=1), rtol=1e-3)
-
-    assert np.all(np.isfinite(cenpop["lgmet_weights"]))
-    assert np.allclose(1.0, np.sum(cenpop["lgmet_weights"], axis=1), rtol=1e-3)
-
-    assert np.all(np.isfinite(cenpop["ssp_weights"]))
-    assert np.allclose(1.0, np.sum(cenpop["ssp_weights"], axis=(1, 2)), rtol=1e-3)
-
-
-def test_mc_lightcone_obs_mags_cens():
-    ran_key = jran.key(0)
-    lgmp_min = 12.0
-    sky_area_degsq = 1.0
-
-    z_min, z_max = 0.1, 0.5
-    z_min = z_max - 0.05
-
-    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
-    _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
-    wave, u, g, r, i, z, y = _res
-
-    tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
-    n_bands = len(tcurves)
-
-    n_z_phot_table = 15
-    z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
-    cosmo_params = flat_wcdm.PLANCK15
-    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table, cosmo_params
-    )
-
-    args = (
-        ran_key,
-        lgmp_min,
-        z_min,
-        z_max,
-        sky_area_degsq,
-        ssp_data,
-        tcurves,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-    )
-    cenpop = mclh.mc_lightcone_obs_mags_cens(*args, return_internal_quantities=True)
-    n_gals = cenpop["logsm_obs"].size
-
-    assert np.all(np.isfinite(cenpop["obs_mags"]))
-    assert cenpop["wave_eff"].shape == (n_gals, n_bands)
-    assert np.all(np.isfinite(cenpop["wave_eff"]))
-    assert np.all(cenpop["wave_eff"] > 100)
-    assert np.all(cenpop["wave_eff"] < 1e5)
-
-    assert cenpop["obs_mags_nodust_noerr"].shape == (n_gals, n_bands)
-    assert cenpop["obs_mags"].shape == (n_gals, n_bands)
-    assert np.all(cenpop["obs_mags_noerr"] >= cenpop["obs_mags_nodust_noerr"])
-
-    assert np.all(cenpop["ftrans"] >= 0)
-    assert np.all(cenpop["ftrans"] <= 1)
-    assert np.any(cenpop["ftrans"] > 0)
-    assert np.any(cenpop["ftrans"] < 1)
 
 
 def test_mc_weighted_halo_lightcone():
