@@ -50,6 +50,38 @@ def _get_weighted_lc_data_for_unit_testing(num_halos=75, ssp_data=SSP_DATA):
     return lc_data, tcurves
 
 
+def _get_unweighted_lc_data_for_unit_testing(ssp_data=SSP_DATA):
+    ran_key = jran.key(0)
+
+    lgmp_min = 12.2
+    z_min, z_max = 0.1, 0.2
+    sky_area_degsq = 1.0
+
+    _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
+    wave, u, g, r, i, z, y = _res
+
+    tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+    names = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
+    TransmissionCurves = namedtuple("TransmissionCurves", names)
+    tcurves = TransmissionCurves(*tcurves)
+
+    z_phot_table = 10 ** np.linspace(np.log10(z_min), np.log10(z_max), 30)
+
+    args = (
+        ran_key,
+        z_min,
+        z_max,
+        lgmp_min,
+        sky_area_degsq,
+        ssp_data,
+        tcurves,
+        z_phot_table,
+    )
+    lc_data = mclh.mc_lightcone_data(*args)
+
+    return lc_data, tcurves
+
+
 def test_estimate_nhalos_in_lightcone_always_returns_positive():
     ran_key = jran.key(0)
     n_tests = 10
@@ -68,6 +100,13 @@ def test_estimate_nhalos_in_lightcone_always_returns_positive():
 
 def test_get_weighted_lc_data_for_unit_testing():
     lc_data, tcurves = _get_weighted_lc_data_for_unit_testing()
+    assert np.all(np.isfinite(lc_data.logmp0))
+    for x in lc_data.mah_params:
+        assert np.all(np.isfinite(x))
+
+
+def test_get_unweighted_lc_data_for_unit_testing():
+    lc_data, tcurves = _get_unweighted_lc_data_for_unit_testing()
     assert np.all(np.isfinite(lc_data.logmp0))
     for x in lc_data.mah_params:
         assert np.all(np.isfinite(x))

@@ -127,3 +127,12 @@ def test_mc_lc_dbk_sed(num_halos=50):
     assert np.all(np.isfinite(dbk_sed_info["rest_sed_bulge"]))
     assert np.all(np.isfinite(dbk_sed_info["rest_sed_disk"]))
     assert np.all(np.isfinite(dbk_sed_info["rest_sed_knots"]))
+
+
+def test_unweighted_mc_lc_dbk_sed():
+    ran_key = jran.key(0)
+    lc_data, tcurves = tmclh._get_unweighted_lc_data_for_unit_testing()
+    dbk_sed_info = mc_phot.mc_lc_dbk_sed(ran_key, lc_data)
+    assert np.all(np.isfinite(dbk_sed_info["rest_sed_bulge"]))
+    assert np.all(np.isfinite(dbk_sed_info["rest_sed_disk"]))
+    assert np.all(np.isfinite(dbk_sed_info["rest_sed_knots"]))
