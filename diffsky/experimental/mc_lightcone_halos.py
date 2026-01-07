@@ -1529,6 +1529,43 @@ def mc_weighted_lightcone_data(
     logmp_cutoff=11.0,
     cosmo_params=flat_wcdm.PLANCK15,
 ):
+    """Monte Carlo generator of a weighted lightcone of halos
+
+    Parameters
+    ----------
+    ran_key : jran.key
+
+    num_halos : int
+        Number of halos in the weighted grid
+
+    lgmp_min, lgmp_max : float
+        Minimum and maximum halo mass in units of Msun (not Msun/h)
+
+    z_min, z_max : float
+
+    sky_area_degsq : float
+        Sky area in units of deg^2
+
+    ssp_data : namedtuple
+
+    tcurves : list
+
+    z_phot_table : ndarray, shape (n_phot_table, )
+
+    logmp_cutoff : float, optional
+        Minimum halo mass for which DiffmahPop is used to generate MAHs.
+        For logmp < logmp_cutoff, P(θ_MAH | logmp) = P(θ_MAH | logmp_cutoff)
+
+    cosmo_params : namedtuple, optional
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    Returns
+    -------
+    lc_data : namedtuple
+        Stores all the data necessary to compute photometry
+
+    """
     args = (
         ran_key,
         num_halos,
@@ -1556,6 +1593,77 @@ def mc_weighted_lightcone_data(
         lc_grid["t_obs"],
         lc_grid["mah_params"],
         lc_grid["logmp0"],
+        t_table,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        logmp_obs,
+    )
+    return lc_data
+
+
+def mc_lightcone_data(
+    ran_key,
+    z_min,
+    z_max,
+    lgmp_min,
+    sky_area_degsq,
+    ssp_data,
+    tcurves,
+    z_phot_table,
+    cosmo_params=flat_wcdm.PLANCK15,
+):
+    """Monte Carlo generator of a lightcone of halos (unweighted)
+
+    Parameters
+    ----------
+    ran_key : jran.key
+
+    lgmp_min : float
+        Minimum halo mass in units of Msun (not Msun/h)
+
+    z_min, z_max : float
+
+    sky_area_degsq : float
+        Sky area in units of deg^2
+
+    ssp_data : namedtuple
+
+    tcurves : list
+
+    z_phot_table : ndarray, shape (n_phot_table, )
+
+    cosmo_params : namedtuple, optional
+        dsps.cosmology.flat_wcdm cosmology
+        cosmo_params = (Om0, w0, wa, h)
+
+    Returns
+    -------
+    lc_data : namedtuple
+        Stores all the data necessary to compute photometry
+
+    """
+    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
+    cenpop = mc_lightcone_host_halo_diffmah(*args)
+    n_gals = len(cenpop["logmp0"])
+    cenpop["nhalos"] = np.ones(n_gals).astype(int)
+
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+    logmp_obs = logmh_at_t_obs(cenpop["mah_params"], cenpop["t_obs"], jnp.log10(t0))
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    lc_data = LCData(
+        cenpop["nhalos"],
+        cenpop["z_obs"],
+        cenpop["t_obs"],
+        cenpop["mah_params"],
+        cenpop["logmp0"],
         t_table,
         ssp_data,
         precomputed_ssp_mag_table,
