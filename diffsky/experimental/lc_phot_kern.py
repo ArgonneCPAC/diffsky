@@ -24,7 +24,7 @@ from ..burstpop import diffqburstpop_mono, freqburst_mono
 from ..dustpop import tw_dustpop_mono_noise
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..phot_utils import get_wave_eff_table
-from ..ssp_err_model2 import ssp_err_model
+from ..ssp_err_model import ssp_err_model
 from . import mc_lightcone_halos as mclh
 from . import photometry_interpolation as photerp
 from . import precompute_ssp_phot as psspp

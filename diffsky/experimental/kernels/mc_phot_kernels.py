@@ -11,7 +11,7 @@ from jax import random as jran
 from jax import vmap
 
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
-from ...ssp_err_model2 import ssp_err_model
+from ...ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
 from .. import photometry_interpolation as photerp
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
