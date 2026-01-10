@@ -18,7 +18,7 @@ MRED = "#d62728"
 MBLUE = "#1f77b4"
 
 
-def make_hmf_fit_plot(loss_data_collector, p_best, figname="hmf_diagnostic.png"):
+def make_hmf_fit_plot(loss_data_collector, p_best, fname="hmf_diagnostic.png"):
     """"""
     assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
@@ -47,5 +47,5 @@ def make_hmf_fit_plot(loss_data_collector, p_best, figname="hmf_diagnostic.png")
     ax.legend(handles=[solid_line, dashed_line], loc="lower left", frameon=False)
 
     fig.savefig(
-        figname, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
+        fname, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )

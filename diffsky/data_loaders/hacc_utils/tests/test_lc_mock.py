@@ -42,7 +42,7 @@ POBOY_MSG = "This test only runs on poboy machine with haccytrees installed"
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 
 
-def test_load_diffsky_param_collection():
+def test_load_diffsky_param_collection(tmp_path):
     all_params_flat = dpw.unroll_param_collection_into_flat_array(
         *dpw.DEFAULT_PARAM_COLLECTION
     )
@@ -51,13 +51,13 @@ def test_load_diffsky_param_collection():
     Params = namedtuple("Params", all_pnames)
     all_named_params = Params(*all_params_flat)
 
-    drn_mock = ""
     mock_version_name = "unit_testing"
-    fn = lcmp_repro.BNPAT_PARAM_COLLECTION.format(mock_version_name)
+    bn = lcmp_repro.BNPAT_PARAM_COLLECTION.format(mock_version_name)
+    fn = os.path.join(tmp_path, bn)
     iou.write_namedtuple_to_hdf5(all_named_params, fn)
 
     param_collection = lcmp_repro.load_diffsky_param_collection(
-        drn_mock, mock_version_name
+        tmp_path, mock_version_name
     )
     all_params_flat2 = dpw.unroll_param_collection_into_flat_array(*param_collection)
 

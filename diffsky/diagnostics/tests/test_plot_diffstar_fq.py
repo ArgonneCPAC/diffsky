@@ -1,5 +1,7 @@
 """ """
 
+import os
+
 import pytest
 
 from .. import plot_diffstar_fq as pdq
@@ -9,5 +11,8 @@ MSG_DEPS = "Must have matplotlib and scipy installed to run this test"
 
 
 @pytest.mark.skipif(not HAS_DEPENDENCIES, reason=MSG_DEPS)
-def test_plot_diffstar_frac_quenched():
-    pdq.plot_diffstar_frac_quenched(n_halos=2_000)
+def test_plot_diffstar_frac_quenched(tmp_path):
+    pdq.plot_diffstar_frac_quenched(
+        n_halos=2_000,
+        fname=os.path.join(tmp_path, "prob_quenched_vs_mstar_diffstarpop_cens.png"),
+    )
