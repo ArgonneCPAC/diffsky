@@ -12,6 +12,7 @@ from jax import vmap
 N_Z_GRID = 2_000
 FULL_SKY_AREA = (4 * jnp.pi) * (180 / jnp.pi) ** 2
 
+C_SPEED = 299792458.0  # m/s
 
 _Z = (0, None, None, None, None)
 d_Rcom_dz_func = jjit(
@@ -133,3 +134,37 @@ def spherical_shell_comoving_volume(z_grid, cosmo_params):
     # vol_shell_grid = 4π*R*R*ΔR
     vol_shell_grid = 4 * jnp.pi * r_grid * r_grid * d_r_grid
     return vol_shell_grid
+
+
+@jjit
+def get_z_obs_from_z_true(z_true, v_pec_kms):
+    """Calculate the observed redshift accounting for peculiar velocity
+
+    Parameters
+    ----------
+    z_true : array
+        True redshift
+
+    v_pec_kms : array
+        Peculiar velocity in units of km/s
+
+    Returns
+    -------
+    z_obs : array
+        Observed redshift, accounting for peculiar velocity
+
+    Notes
+    -----
+    (1+z_obs) = (1+z_true) * (1+z_pec)
+
+    1+z_pec = sqrt( (1+v/c) / (1-v/c) )
+
+    """
+    c_speed_kms = C_SPEED / 1000.0
+    x = v_pec_kms / c_speed_kms
+    num, denom = 1 - x, 1 + x
+    z_true_plus1 = 1.0 + z_true
+    zpec_plus1 = jnp.sqrt(num / denom)
+    zobs_plus1 = z_true_plus1 * zpec_plus1
+    z_obs = zobs_plus1 - 1.0
+    return z_obs

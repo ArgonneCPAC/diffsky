@@ -45,3 +45,18 @@ def test_mc_lightcone_random_ra_dec():
     assert np.all(ra < ra_max)
     assert np.all(dec > dec_min)
     assert np.all(dec < dec_max)
+
+
+def test_get_z_obs_from_z_true():
+    ran_key = jran.key(0)
+    n = 5_000
+    ran_key, z_key, v_key = jran.split(ran_key, 3)
+
+    z_true = jran.uniform(z_key, minval=0, maxval=5, shape=(n,))
+    v_pec_kms = jran.uniform(v_key, minval=-500, maxval=500, shape=(n,))
+
+    z_obs = lcu.get_z_obs_from_z_true(z_true, v_pec_kms)
+
+    dz = z_obs - z_true
+    assert np.allclose(np.mean(dz), 0.0, atol=1e-3)
+    assert np.std(z_obs - z_true) < 0.01
