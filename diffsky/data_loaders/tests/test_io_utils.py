@@ -1,5 +1,6 @@
 """ """
 
+import os
 from collections import namedtuple
 
 import numpy as np
@@ -8,7 +9,7 @@ from jax import random as jran
 from .. import io_utils as iou
 
 
-def test_namedtuple_to_hdf5():
+def test_namedtuple_to_hdf5(tmp_path):
     ran_key = jran.key(0)
     KEYS = ("a", "b", "c", "d", "e", "f", "g")
     NDIM = len(KEYS)
@@ -24,7 +25,7 @@ def test_namedtuple_to_hdf5():
         Params = namedtuple("Params", pnames)
         params = Params(*pvals)
 
-        fn = "dummy.hdf5"
+        fn = os.path.join(tmp_path, "dummy.hdf5")
         iou.write_namedtuple_to_hdf5(params, fn)
 
         params2 = iou.load_namedtuple_from_hdf5(fn)
