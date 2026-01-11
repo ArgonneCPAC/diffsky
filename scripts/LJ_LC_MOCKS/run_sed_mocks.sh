@@ -21,5 +21,5 @@ rsync /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/make_ou
 mpirun -n 16 python make_ou26_mock_batch.py lcrc 0 3.0 0 1 /lcrc/project/halotools/random_data/0111 cosmos260105 -cosmos_fit cosmos260105 --no_dbk
 mpirun -n 16 python make_ou26_mock_batch.py lcrc 0 3.0 0 1 /lcrc/project/halotools/random_data/0111 cosmos260105 -cosmos_fit cosmos260105 -synthetic_cores 1 -lgmp_min 10.75 -lgmp_max 11.1 --no_dbk
 
-python /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/inspect_lc_mock.py /lcrc/project/halotools/random_data/0111/cosmos260105/
-python /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/inspect_lc_mock.py /lcrc/project/halotools/random_data/0111/synthetic_cores/cosmos260105/
+python /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/inspect_lc_mock.py /lcrc/project/halotools/random_data/0111/cosmos260105 --no_dbk
+python /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/inspect_lc_mock.py /lcrc/project/halotools/random_data/0111/synthetic_cores/cosmos260105 --no_dbk
