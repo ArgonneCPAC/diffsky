@@ -27,7 +27,10 @@ COMPOSITE_MAG_MSG = "Apparent magnitude of composite galaxy"
 COMPONENT_MAG_MSG_PAT = "Apparent magnitude of {0} component"
 
 
-def get_column_metadata(column_names=None):
+def get_column_metadata(column_names=None, *, no_dbk=False):
+    if no_dbk:
+        raise NotImplementedError("no_dbk option not implemented yet")
+
     metadata_all_columns = get_metadata_all_columns()
     if column_names is None:
         column_names = list(metadata_all_columns.keys())
@@ -523,7 +526,9 @@ def add_metadata_lc_core_data_columns(metadata):
     return metadata
 
 
-def append_metadata(fnout, sim_name, mock_version_name, z_phot_table, filter_nicknames):
+def append_metadata(
+    fnout, sim_name, mock_version_name, z_phot_table, filter_nicknames, *, no_dbk=False
+):
     try:
         from astropy import units as u
         from astropy.cosmology import units as cu
@@ -533,7 +538,7 @@ def append_metadata(fnout, sim_name, mock_version_name, z_phot_table, filter_nic
 
     u.add_enabled_units(cu)
 
-    column_metadata = get_column_metadata()
+    column_metadata = get_column_metadata(no_dbk=no_dbk)
 
     with h5py.File(fnout, "r+") as hdf_out:
 
@@ -594,13 +599,18 @@ def append_metadata(fnout, sim_name, mock_version_name, z_phot_table, filter_nic
             hdf_out[key_out].attrs["description"] = COMPOSITE_MAG_MSG
 
             # Component magnitudes
-            for component in ("bulge", "disk", "knots"):
-                key_out = "data/" + "_".join((nickname, component))
-                assert key_out in hdf_out.keys(), f"{key_out} is missing from {fnout}"
+            if no_dbk:
+                pass  # skip dbk metadata
+            else:
+                for component in ("bulge", "disk", "knots"):
+                    key_out = "data/" + "_".join((nickname, component))
+                    assert (
+                        key_out in hdf_out.keys()
+                    ), f"{key_out} is missing from {fnout}"
 
-                msg = COMPONENT_MAG_MSG_PAT.format(component)
-                hdf_out[key_out].attrs["unit"] = str(u.ABmag)
-                hdf_out[key_out].attrs["description"] = msg
+                    msg = COMPONENT_MAG_MSG_PAT.format(component)
+                    hdf_out[key_out].attrs["unit"] = str(u.ABmag)
+                    hdf_out[key_out].attrs["description"] = msg
 
 
 def get_dependency_versions():
