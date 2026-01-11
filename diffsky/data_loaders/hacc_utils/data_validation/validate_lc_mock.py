@@ -49,6 +49,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if len(msg) > 0:
         report["column_metadata"] = msg
 
+    msg = check_column_shapes(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["column_shapes"] = msg
+
     if no_dbk or no_sed:
         pass
     else:
@@ -293,6 +297,25 @@ def check_consistent_disk_bulge_knot_luminosities(
     if mean_diff > mean_diff_tol:
         s = "disk/bulge/knot luminosities inconsistent with total"
         msg.append(s)
+    return msg
+
+
+def check_column_shapes(fn_lc_mock, data=None):
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    msg = []
+    allowed_multdim_columns = ("delta_mag_ssp_scatter",)
+
+    shapes = [data[key].shape for key in data.keys()]
+    for key, shape in zip(data.keys(), shapes):
+        if len(shape) > 1:
+            if key in allowed_multdim_columns:
+                pass
+            else:
+                s = f"`{key}` column has unexpected shape={shape}"
+                msg.append(s)
+
     return msg
 
 
