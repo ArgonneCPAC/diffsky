@@ -385,13 +385,27 @@ if __name__ == "__main__":
                     )
                 )
 
-            lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
-                fn_out,
-                phot_info_batch,
-                lc_data_batch,
-                diffsky_data_batch,
-                OUTPUT_FILTER_NICKNAMES,
-            )
+            if no_sed:
+                raise NotImplementedError(
+                    "SFH-only mock production not implemented yet"
+                )
+            else:
+                if no_dbk:
+                    lcmp_repro.write_batched_lc_sed_mock_to_disk(
+                        fn_out,
+                        phot_info_batch,
+                        lc_data_batch,
+                        diffsky_data_batch,
+                        OUTPUT_FILTER_NICKNAMES,
+                    )
+                else:
+                    lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
+                        fn_out,
+                        phot_info_batch,
+                        lc_data_batch,
+                        diffsky_data_batch,
+                        OUTPUT_FILTER_NICKNAMES,
+                    )
 
             if synthetic_cores == 1:
                 batch_key, nfw_key = jran.split(batch_key, 2)
