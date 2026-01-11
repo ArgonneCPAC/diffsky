@@ -269,41 +269,41 @@ def add_metadata_inertia_tensor_columns(metadata):
 
     metadata["top_host_infall_fof_halo_eigS1X"] = (
         str(unit_mpch),
-        "x-component of first eigendirection of halo shape (unreduced intertia tensor)",
+        "x-component of first eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS1Y"] = (
         str(unit_mpch),
-        "y-component of first eigendirection of halo shape (unreduced intertia tensor)",
+        "y-component of first eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS1Z"] = (
         str(unit_mpch),
-        "z-component of first eigendirection of halo shape (unreduced intertia tensor)",
+        "z-component of first eigendirection of halo shape (unreduced inertia tensor)",
     )
 
     metadata["top_host_infall_fof_halo_eigS2X"] = (
         str(unit_mpch),
-        "x-component of second eigendirection of halo shape (unreduced intertia tensor)",
+        "x-component of second eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS2Y"] = (
         str(unit_mpch),
-        "y-component of second eigendirection of halo shape (unreduced intertia tensor)",
+        "y-component of second eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS2Z"] = (
         str(unit_mpch),
-        "z-component of second eigendirection of halo shape (unreduced intertia tensor)",
+        "z-component of second eigendirection of halo shape (unreduced inertia tensor)",
     )
 
     metadata["top_host_infall_fof_halo_eigS3X"] = (
         str(unit_mpch),
-        "x-component of third eigendirection of halo shape (unreduced intertia tensor)",
+        "x-component of third eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS3Y"] = (
         str(unit_mpch),
-        "y-component of third eigendirection of halo shape (unreduced intertia tensor)",
+        "y-component of third eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS3Z"] = (
         str(unit_mpch),
-        "z-component of third eigendirection of halo shape (unreduced intertia tensor)",
+        "z-component of third eigendirection of halo shape (unreduced inertia tensor)",
     )
     return metadata
 
