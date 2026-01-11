@@ -8,6 +8,9 @@ python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smd
 python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -cosmos_fit cosmos260105 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
 python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos260105
 
+python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -cosmos_fit cosmos260105 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5 --no_dbk
+python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos260105 --no_dbk
+
 
 """  # noqa
 

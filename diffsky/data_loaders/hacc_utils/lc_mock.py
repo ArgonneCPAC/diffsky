@@ -104,8 +104,6 @@ DIFFSKY_DATA_KEYS_OUT = (
     "logmp_obs",
     *TOP_HOST_SHAPE_KEYS,
     *DEFAULT_MAH_PARAMS._fields,
-    *SIZE_KEYS,
-    *ORIENTATION_KEYS,
 )
 
 PHOT_INFO_KEYS_OUT = (
@@ -126,7 +124,13 @@ BLACK_HOLE_KEYS_OUT = (
     "black_hole_accretion_rate",
 )
 
-DBK_KEYS = (*ORIENTATION_KEYS, *SIZE_KEYS, *MORPH_KEYS_OUT, *BLACK_HOLE_KEYS_OUT)
+DBK_KEYS = (
+    "fknot",
+    *ORIENTATION_KEYS,
+    *SIZE_KEYS,
+    *MORPH_KEYS_OUT,
+    *BLACK_HOLE_KEYS_OUT,
+)
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
@@ -323,7 +327,12 @@ def write_batched_lc_dbk_sed_mock_to_disk(
         fnout, dbk_phot_dict, list(dbk_phot_dict.keys()), dataset="data"
     )
 
-    diffsky_data_colnames = [*MORPH_KEYS_OUT, *BLACK_HOLE_KEYS_OUT]
+    diffsky_data_colnames = [
+        *MORPH_KEYS_OUT,
+        *BLACK_HOLE_KEYS_OUT,
+        *ORIENTATION_KEYS,
+        *SIZE_KEYS,
+    ]
     write_batched_mock_data(fnout, diffsky_data, diffsky_data_colnames, dataset="data")
 
 

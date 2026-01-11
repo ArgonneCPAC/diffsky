@@ -15,11 +15,23 @@ if __name__ == "__main__":
     parser.add_argument("drn_mock", help="Directory storing lightcone mock")
     parser.add_argument("-bnpat", help="Basename pattern", default=BN_GLOBPAT_LC_MOCK)
     parser.add_argument("-drn_report", help="Directory to write report", default="")
+    parser.add_argument(
+        "--no_dbk",
+        help="disk/bulge/knot quantities are not in the mock",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--no_sed",
+        help="SEDs are not in the mock (SFH-only mocks)",
+        action="store_true",
+    )
 
     args = parser.parse_args()
     drn_mock = args.drn_mock
     bnpat = args.bnpat
     drn_report = args.drn_report
+    no_dbk = args.no_dbk
+    no_sed = args.no_sed
 
     fn_pat = os.path.join(drn_mock, bnpat)
     fn_lc_mock_list = glob(fn_pat)
@@ -33,7 +45,11 @@ if __name__ == "__main__":
         bn_lc_mock = os.path.basename(fn_lc_mock)
 
         try:
-            report = vlcm.get_lc_mock_data_report(fn_lc_mock)
+            report = vlcm.get_lc_mock_data_report(
+                fn_lc_mock,
+                no_dbk=no_dbk,
+                no_sed=no_sed,
+            )
             all_good = len(report) == 0
             if not all_good:
                 vlcm.write_lc_mock_report_to_disk(report, fn_lc_mock, drn_report)
