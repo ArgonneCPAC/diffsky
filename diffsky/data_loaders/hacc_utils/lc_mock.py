@@ -304,9 +304,6 @@ def write_batched_lc_sed_mock_to_disk(
     ]
     write_batched_mock_data(fnout, phot_info, phot_info_colnames, dataset="data")
 
-    diffsky_data_colnames = [*MORPH_KEYS_OUT, *BLACK_HOLE_KEYS_OUT]
-    write_batched_mock_data(fnout, diffsky_data, diffsky_data_colnames, dataset="data")
-
 
 def write_batched_lc_dbk_sed_mock_to_disk(
     fnout, phot_info, lc_data, diffsky_data, filter_nicknames
@@ -314,6 +311,7 @@ def write_batched_lc_dbk_sed_mock_to_disk(
     write_batched_lc_sed_mock_to_disk(
         fnout, phot_info, lc_data, diffsky_data, filter_nicknames
     )
+
     dbk_phot_dict = dict()
     for iband, name in enumerate(filter_nicknames):
         dbk_phot_dict[name + "_bulge"] = phot_info["obs_mags_bulge"][:, iband]
@@ -323,6 +321,9 @@ def write_batched_lc_dbk_sed_mock_to_disk(
     write_batched_mock_data(
         fnout, dbk_phot_dict, list(dbk_phot_dict.keys()), dataset="data"
     )
+
+    diffsky_data_colnames = [*MORPH_KEYS_OUT, *BLACK_HOLE_KEYS_OUT]
+    write_batched_mock_data(fnout, diffsky_data, diffsky_data_colnames, dataset="data")
 
 
 def add_peculiar_velocity_to_mock(
