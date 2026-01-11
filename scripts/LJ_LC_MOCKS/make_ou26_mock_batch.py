@@ -458,12 +458,19 @@ if __name__ == "__main__":
         gc.collect()
         jax.clear_caches()
 
+        if no_dbk:
+            exclude_colnames = lcmp_repro.DBK_KEYS
+        else:
+            exclude_colnames = []
+
         metadata_mock.append_metadata(
             fn_out,
             sim_name,
             mock_version_name,
             z_phot_table,
             OUTPUT_FILTER_NICKNAMES,
+            exclude_colnames=exclude_colnames,
+            no_dbk=no_dbk,
         )
 
         if rank == 0:

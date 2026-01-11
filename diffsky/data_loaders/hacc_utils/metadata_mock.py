@@ -27,19 +27,6 @@ COMPOSITE_MAG_MSG = "Apparent magnitude of composite galaxy"
 COMPONENT_MAG_MSG_PAT = "Apparent magnitude of {0} component"
 
 
-def get_column_metadata(column_names=None, *, no_dbk=False):
-    if no_dbk:
-        raise NotImplementedError("no_dbk option not implemented yet")
-
-    metadata_all_columns = get_metadata_all_columns()
-    if column_names is None:
-        column_names = list(metadata_all_columns.keys())
-    column_metadata = {
-        key: value for key, value in metadata_all_columns.items() if key in column_names
-    }
-    return column_metadata
-
-
 def add_metadata_diffmah_columns(metadata):
     if not HAS_ASTROPY:
         raise ImportError("Must have astropy installed to attach units to metadata")
@@ -527,7 +514,14 @@ def add_metadata_lc_core_data_columns(metadata):
 
 
 def append_metadata(
-    fnout, sim_name, mock_version_name, z_phot_table, filter_nicknames, *, no_dbk=False
+    fnout,
+    sim_name,
+    mock_version_name,
+    z_phot_table,
+    filter_nicknames,
+    *,
+    exclude_colnames=[],
+    no_dbk=False,
 ):
     try:
         from astropy import units as u
@@ -538,7 +532,10 @@ def append_metadata(
 
     u.add_enabled_units(cu)
 
-    column_metadata = get_column_metadata(no_dbk=no_dbk)
+    column_metadata = get_metadata_all_columns()
+
+    for colname in exclude_colnames:
+        column_metadata.pop(colname)
 
     with h5py.File(fnout, "r+") as hdf_out:
 

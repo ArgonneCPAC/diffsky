@@ -126,6 +126,7 @@ BLACK_HOLE_KEYS_OUT = (
     "black_hole_accretion_rate",
 )
 
+DBK_KEYS = (*ORIENTATION_KEYS, *SIZE_KEYS, *MORPH_KEYS_OUT, *BLACK_HOLE_KEYS_OUT)
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
