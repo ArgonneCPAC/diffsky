@@ -1,24 +1,21 @@
 # flake8: noqa: E402
 """Kernels used to produce the SFH mock lightcone"""
+import jax
+
+jax.config.update("jax_enable_x64", True)
 
 import os
 from collections import namedtuple
 
-import jax
-from dsps.data_loaders import load_transmission_curve
-from dsps.data_loaders.load_filter_data import TransmissionCurve
-from dsps.data_loaders.load_ssp_data import SSPData
-
-from ...param_utils import diffsky_param_wrapper as dpw
-from .. import io_utils as iou
-
-jax.config.update("jax_enable_x64", True)
 import h5py
 import numpy as np
 from diffmah import DEFAULT_MAH_PARAMS, logmh_at_t_obs
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.defaults import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
+from dsps.data_loaders import load_transmission_curve
+from dsps.data_loaders.load_filter_data import TransmissionCurve
+from dsps.data_loaders.load_ssp_data import SSPData
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
@@ -38,6 +35,8 @@ from ...experimental.size_modeling import disk_bulge_sizes as dbs
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...fake_sats import vector_utilities as vecu
+from ...param_utils import diffsky_param_wrapper as dpw
+from .. import io_utils as iou
 from .. import load_flat_hdf5
 from . import lightcone_utils as hlu
 from . import load_lc_cf
