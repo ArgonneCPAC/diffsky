@@ -135,6 +135,16 @@ BNPAT_SSP_DATA = "diffsky_{0}_ssp_data.hdf5"
 BNPAT_PARAM_COLLECTION = "diffsky_{0}_param_collection.hdf5"
 
 
+def get_output_mock_columns(no_dbk, no_sed):
+    if no_sed:
+        raise NotImplementedError("sfh-only mock")
+    else:
+        if no_dbk:
+            raise NotImplementedError("SED-only mock")
+        else:
+            raise NotImplementedError("DBK SED mock")
+
+
 def write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data):
     """"""
     bn_ssp_data = BNPAT_SSP_DATA.format(mock_version_name)
@@ -252,24 +262,6 @@ def load_diffsky_z_phot_table(fn_mock):
     return z_phot_table
 
 
-def write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
-    with h5py.File(fnout, "w") as hdf_out:
-
-        hdf_out.require_group("data")
-
-        ra, dec = hlu._get_lon_lat_from_theta_phi(lc_data["theta"], lc_data["phi"])
-        hdf_out["data/ra"] = ra
-        hdf_out["data/dec"] = dec
-
-        for key in LC_DATA_KEYS_OUT:
-            key_out = "data/" + key
-            hdf_out[key_out] = lc_data[key]
-
-        for key in DIFFSKY_DATA_KEYS_OUT:
-            key_out = "data/" + key
-            hdf_out[key_out] = diffsky_data[key]
-
-
 def get_imputed_velocity(vx, vy, vz, ran_key, std_v=500.0):
     """Overwrite zero-valued velocities with random normal data"""
     msk_imputed = (vx == 0) & (vy == 0) & (vz == 0)
@@ -314,45 +306,6 @@ def write_batched_lc_sed_mock_to_disk(
 
     diffsky_data_colnames = [*MORPH_KEYS_OUT, *BLACK_HOLE_KEYS_OUT]
     write_batched_mock_data(fnout, diffsky_data, diffsky_data_colnames, dataset="data")
-
-
-def write_lc_sed_mock_to_disk(
-    fnout, phot_info, lc_data, diffsky_data, filter_nicknames
-):
-    write_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data)
-
-    with h5py.File(fnout, "a") as hdf_out:
-        for iband, name in enumerate(filter_nicknames):
-            hdf_out["data"][name] = phot_info["obs_mags"][:, iband]
-
-        for burst_pname in DEFAULT_BURST_PARAMS._fields:
-            hdf_out["data"][burst_pname] = phot_info[burst_pname]
-
-        for dust_pname in DEFAULT_DUST_PARAMS._fields:
-            hdf_out["data"][dust_pname] = phot_info[dust_pname]
-
-        hdf_out["data"]["mc_sfh_type"] = phot_info["mc_sfh_type"]
-
-        for name in PHOT_INFO_KEYS_OUT:
-            hdf_out["data"][name] = phot_info[name]
-
-        for name in MORPH_KEYS_OUT:
-            hdf_out["data"][name] = diffsky_data[name]
-
-        for name in BLACK_HOLE_KEYS_OUT:
-            hdf_out["data"][name] = diffsky_data[name]
-
-
-def write_lc_dbk_sed_mock_to_disk(
-    fnout, phot_info, lc_data, diffsky_data, filter_nicknames
-):
-    write_lc_sed_mock_to_disk(fnout, phot_info, lc_data, diffsky_data, filter_nicknames)
-    with h5py.File(fnout, "a") as hdf_out:
-        for iband, name in enumerate(filter_nicknames):
-            hdf_out["data"][name + "_bulge"] = phot_info["obs_mags_bulge"][:, iband]
-            hdf_out["data"][name + "_disk"] = phot_info["obs_mags_disk"][:, iband]
-            hdf_out["data"][name + "_knots"] = phot_info["obs_mags_knots"][:, iband]
-        hdf_out["data"]["fknot"] = phot_info["fknot"]
 
 
 def write_batched_lc_dbk_sed_mock_to_disk(
