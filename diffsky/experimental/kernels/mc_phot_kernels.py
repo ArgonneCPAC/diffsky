@@ -198,6 +198,13 @@ def _phot_kern(
     )
     # dust_frac_trans.shape = (n_gals, n_bands, n_age)
 
+    # Throw out redundant dust params repeated at each λ_eff
+    dust_params = dust_params._replace(
+        av=dust_params.av[:, 0, :],
+        delta=dust_params.delta[:, 0],
+        funo=dust_params.funo[:, 0],
+    )
+
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
     frac_ssp_errors_nonoise = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
@@ -296,6 +303,11 @@ def _sed_kern(
         wave_eff_galpop,
         spspop_params.dustpop_params,
         scatter_params,
+    )
+    dust_params = dust_params._replace(
+        av=dust_params.av[:, 0, :],
+        delta=dust_params.delta[:, 0],
+        funo=dust_params.funo[:, 0],
     )
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
@@ -459,6 +471,11 @@ def _mc_lc_dbk_sed_kern(
         wave_eff_galpop,
         spspop_params.dustpop_params,
         scatter_params,
+    )
+    dust_params = dust_params._replace(
+        av=dust_params.av[:, 0, :],
+        delta=dust_params.delta[:, 0],
+        funo=dust_params.funo[:, 0],
     )
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
