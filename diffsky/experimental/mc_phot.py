@@ -157,7 +157,7 @@ def mc_lc_dbk_phot(
         Contains info about disk/bulge/knot photometry
 
     """
-    dbk_phot_info, dbk_weights = mcpk._mc_lc_dbk_phot_kern(
+    dbk_phot_info, dbk_weights = mcpk._mc_dbk_phot_kern(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,

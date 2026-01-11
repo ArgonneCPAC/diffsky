@@ -402,7 +402,7 @@ def add_dbk_phot_quantities_to_mock(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    dbk_phot_info, dbk_weights = mcpk._mc_lc_dbk_phot_kern(
+    dbk_phot_info, dbk_weights = mcpk._mc_dbk_phot_kern(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],

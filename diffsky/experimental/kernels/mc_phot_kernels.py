@@ -363,7 +363,7 @@ def _get_dbk_phot_from_dbk_weights(
     return obs_mags_bulge, obs_mags_disk, obs_mags_knots
 
 
-def _mc_lc_dbk_phot_kern(
+def _mc_dbk_phot_kern(
     ran_key,
     z_obs,
     t_obs,
