@@ -129,6 +129,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "-lgmp_max", help="High-mass cutoff for synthetic cores", type=float, default=-1
     )
+    parser.add_argument(
+        "--no_dbk",
+        help="Exclude disk/bulge/knot SEDs in output mock",
+        action="store_false",
+    )
+    parser.add_argument(
+        "--no_sed",
+        help="Exclude SEDs in output mock (use for SFH-only mocks)",
+        action="store_false",
+    )
 
     args = parser.parse_args()
     machine = args.machine
@@ -150,6 +160,8 @@ if __name__ == "__main__":
     lgmp_min = args.lgmp_min
     lgmp_max = args.lgmp_max
     batch_size = args.batch_size
+    no_dbk = args.no_dbk
+    no_sed = args.no_sed
 
     mock_version_name = get_mock_version_name(mock_nickname)
 
