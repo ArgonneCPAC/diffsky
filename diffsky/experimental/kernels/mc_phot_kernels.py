@@ -94,7 +94,6 @@ def _dbk_kern(
 @partial(jjit, static_argnames=["n_t_table"])
 def _mc_phot_kern(
     ran_key,
-    diffstarpop_params,
     z_obs,
     t_obs,
     mah_params,
@@ -102,6 +101,7 @@ def _mc_phot_kern(
     precomputed_ssp_mag_table,
     z_phot_table,
     wave_eff_table,
+    diffstarpop_params,
     mzr_params,
     spspop_params,
     scatter_params,
@@ -383,7 +383,6 @@ def _mc_lc_dbk_phot_kern(
     phot_key, dbk_key = jran.split(ran_key, 2)
     phot_kern_results, phot_randoms = _mc_phot_kern(
         phot_key,
-        diffstarpop_params,
         z_obs,
         t_obs,
         mah_params,
@@ -391,6 +390,7 @@ def _mc_lc_dbk_phot_kern(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
+        diffstarpop_params,
         mzr_params,
         spspop_params,
         scatter_params,
