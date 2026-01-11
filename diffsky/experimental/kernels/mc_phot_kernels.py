@@ -200,7 +200,7 @@ def _phot_kern(
 
     # Throw out redundant dust params repeated at each λ_eff
     dust_params = dust_params._replace(
-        av=dust_params.av[:, 0, :],
+        av=dust_params.av[:, 0, -1],
         delta=dust_params.delta[:, 0],
         funo=dust_params.funo[:, 0],
     )
@@ -305,7 +305,7 @@ def _sed_kern(
         scatter_params,
     )
     dust_params = dust_params._replace(
-        av=dust_params.av[:, 0, :],
+        av=dust_params.av[:, 0, -1],
         delta=dust_params.delta[:, 0],
         funo=dust_params.funo[:, 0],
     )
@@ -473,7 +473,7 @@ def _mc_lc_dbk_sed_kern(
         scatter_params,
     )
     dust_params = dust_params._replace(
-        av=dust_params.av[:, 0, :],
+        av=dust_params.av[:, 0, -1],
         delta=dust_params.delta[:, 0],
         funo=dust_params.funo[:, 0],
     )
