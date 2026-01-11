@@ -132,12 +132,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--no_dbk",
         help="Exclude disk/bulge/knot SEDs in output mock",
-        action="store_false",
+        action="store_true",
     )
     parser.add_argument(
         "--no_sed",
         help="Exclude SEDs in output mock (use for SFH-only mocks)",
-        action="store_false",
+        action="store_true",
     )
 
     args = parser.parse_args()
@@ -348,29 +348,42 @@ if __name__ == "__main__":
                 lc_data_batch, diffsky_data_batch, ran_key=vzero_key, impute_vzero=True
             )
 
-            batch_key, dbk_phot_key = jran.split(batch_key, 2)
-            args = (
-                sim_info,
-                lc_data_batch,
-                diffsky_data_batch,
-                ssp_data,
-                param_collection,
-                precomputed_ssp_mag_table,
-                z_phot_table,
-                wave_eff_table,
-                dbk_phot_key,
-            )
-            _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
-            phot_info_batch, lc_data_batch, diffsky_data_batch = _res
+            batch_key, phot_key = jran.split(batch_key, 2)
+            if no_sed:
+                raise NotImplementedError(
+                    "SFH-only mock production not implemented yet"
+                )
+            else:
+                args = (
+                    sim_info,
+                    lc_data_batch,
+                    diffsky_data_batch,
+                    ssp_data,
+                    param_collection,
+                    precomputed_ssp_mag_table,
+                    z_phot_table,
+                    wave_eff_table,
+                    phot_key,
+                )
+                _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
+                phot_info_batch, lc_data_batch, diffsky_data_batch = _res
 
-            batch_key, morph_key = jran.split(batch_key, 2)
-            diffsky_data_batch = lcmp_repro.add_morphology_quantities_to_diffsky_data(
-                sim_info, phot_info_batch, lc_data_batch, diffsky_data_batch, morph_key
-            )
+                batch_key, morph_key = jran.split(batch_key, 2)
+                diffsky_data_batch = (
+                    lcmp_repro.add_morphology_quantities_to_diffsky_data(
+                        sim_info,
+                        phot_info_batch,
+                        lc_data_batch,
+                        diffsky_data_batch,
+                        morph_key,
+                    )
+                )
 
-            diffsky_data_batch = lcmp_repro.add_black_hole_quantities_to_diffsky_data(
-                lc_data_batch, diffsky_data_batch, phot_info_batch
-            )
+                diffsky_data_batch = (
+                    lcmp_repro.add_black_hole_quantities_to_diffsky_data(
+                        lc_data_batch, diffsky_data_batch, phot_info_batch
+                    )
+                )
 
             lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
                 fn_out,
