@@ -427,6 +427,51 @@ def add_dbk_phot_quantities_to_mock(
     return dbk_phot_info, lc_data, diffsky_data
 
 
+def add_phot_quantities_to_mock(
+    sim_info,
+    lc_data,
+    diffsky_data,
+    ssp_data,
+    param_collection,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    ran_key,
+):
+    ran_key, mah_key = jran.split(ran_key, 2)
+    diffsky_data = add_diffmah_properties_to_mock(
+        diffsky_data, lc_data["redshift_true"], sim_info, mah_key
+    )
+
+    mah_params = DEFAULT_MAH_PARAMS._make(
+        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+    )
+
+    phot_info, phot_randoms = mcpk._mc_phot_kern(
+        ran_key,
+        lc_data["redshift_true"],
+        diffsky_data["t_obs"],
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        param_collection.diffstarpop_params,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        sim_info.cosmo_params,
+        sim_info.fb,
+    )
+
+    # Discard columns storing non-tabular data
+    phot_info = phot_info._asdict()
+    phot_info.pop("t_table")
+
+    return phot_info, lc_data, diffsky_data
+
+
 def add_morphology_quantities_to_diffsky_data(
     sim_info, phot_info, lc_data, diffsky_data, morph_key
 ):
