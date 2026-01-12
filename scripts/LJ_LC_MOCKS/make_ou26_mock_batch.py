@@ -3,10 +3,14 @@
 To run a unit test of this script:
 
 python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
+python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
 
 python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -cosmos_fit cosmos260105 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
+python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos260105
 
-python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
+python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -cosmos_fit cosmos260105 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5 --no_dbk
+python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos260105 --no_dbk
+
 
 """  # noqa
 
@@ -128,6 +132,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "-lgmp_max", help="High-mass cutoff for synthetic cores", type=float, default=-1
     )
+    parser.add_argument(
+        "--no_dbk",
+        help="Exclude disk/bulge/knot SEDs in output mock",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--no_sed",
+        help="Exclude SEDs in output mock (use for SFH-only mocks)",
+        action="store_true",
+    )
 
     args = parser.parse_args()
     machine = args.machine
@@ -149,6 +163,8 @@ if __name__ == "__main__":
     lgmp_min = args.lgmp_min
     lgmp_max = args.lgmp_max
     batch_size = args.batch_size
+    no_dbk = args.no_dbk
+    no_sed = args.no_sed
 
     mock_version_name = get_mock_version_name(mock_nickname)
 
@@ -335,37 +351,64 @@ if __name__ == "__main__":
                 lc_data_batch, diffsky_data_batch, ran_key=vzero_key, impute_vzero=True
             )
 
-            batch_key, dbk_phot_key = jran.split(batch_key, 2)
-            args = (
-                sim_info,
-                lc_data_batch,
-                diffsky_data_batch,
-                ssp_data,
-                param_collection,
-                precomputed_ssp_mag_table,
-                z_phot_table,
-                wave_eff_table,
-                dbk_phot_key,
-            )
-            _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
-            phot_info_batch, lc_data_batch, diffsky_data_batch = _res
+            batch_key, phot_key = jran.split(batch_key, 2)
+            if no_sed:
+                raise NotImplementedError(
+                    "SFH-only mock production not implemented yet"
+                )
+            else:
+                args = (
+                    sim_info,
+                    lc_data_batch,
+                    diffsky_data_batch,
+                    ssp_data,
+                    param_collection,
+                    precomputed_ssp_mag_table,
+                    z_phot_table,
+                    wave_eff_table,
+                    phot_key,
+                )
+                _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
+                phot_info_batch, lc_data_batch, diffsky_data_batch = _res
 
-            batch_key, morph_key = jran.split(batch_key, 2)
-            diffsky_data_batch = lcmp_repro.add_morphology_quantities_to_diffsky_data(
-                sim_info, phot_info_batch, lc_data_batch, diffsky_data_batch, morph_key
-            )
+                batch_key, morph_key = jran.split(batch_key, 2)
+                diffsky_data_batch = (
+                    lcmp_repro.add_morphology_quantities_to_diffsky_data(
+                        sim_info,
+                        phot_info_batch,
+                        lc_data_batch,
+                        diffsky_data_batch,
+                        morph_key,
+                    )
+                )
 
-            diffsky_data_batch = lcmp_repro.add_black_hole_quantities_to_diffsky_data(
-                lc_data_batch, diffsky_data_batch, phot_info_batch
-            )
+                diffsky_data_batch = (
+                    lcmp_repro.add_black_hole_quantities_to_diffsky_data(
+                        lc_data_batch, diffsky_data_batch, phot_info_batch
+                    )
+                )
 
-            lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
-                fn_out,
-                phot_info_batch,
-                lc_data_batch,
-                diffsky_data_batch,
-                OUTPUT_FILTER_NICKNAMES,
-            )
+            if no_sed:
+                raise NotImplementedError(
+                    "SFH-only mock production not implemented yet"
+                )
+            else:
+                if no_dbk:
+                    lcmp_repro.write_batched_lc_sed_mock_to_disk(
+                        fn_out,
+                        phot_info_batch,
+                        lc_data_batch,
+                        diffsky_data_batch,
+                        OUTPUT_FILTER_NICKNAMES,
+                    )
+                else:
+                    lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
+                        fn_out,
+                        phot_info_batch,
+                        lc_data_batch,
+                        diffsky_data_batch,
+                        OUTPUT_FILTER_NICKNAMES,
+                    )
 
             if synthetic_cores == 1:
                 batch_key, nfw_key = jran.split(batch_key, 2)
@@ -418,12 +461,19 @@ if __name__ == "__main__":
         gc.collect()
         jax.clear_caches()
 
+        if no_dbk:
+            exclude_colnames = lcmp_repro.DBK_KEYS
+        else:
+            exclude_colnames = []
+
         metadata_mock.append_metadata(
             fn_out,
             sim_name,
             mock_version_name,
             z_phot_table,
             OUTPUT_FILTER_NICKNAMES,
+            exclude_colnames=exclude_colnames,
+            no_dbk=no_dbk,
         )
 
         if rank == 0:

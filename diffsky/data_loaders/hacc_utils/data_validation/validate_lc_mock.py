@@ -29,7 +29,7 @@ BNPAT_LC_MOCK = "data-{0}.{1}.diffsky_gals.hdf5"
 HLINE = "----------"
 
 
-def get_lc_mock_data_report(fn_lc_mock):
+def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     report = dict()
     data = load_flat_hdf5(fn_lc_mock, dataset="data")
 
@@ -49,17 +49,27 @@ def get_lc_mock_data_report(fn_lc_mock):
     if len(msg) > 0:
         report["column_metadata"] = msg
 
-    msg = check_consistent_disk_bulge_knot_luminosities(fn_lc_mock, data=data)
+    msg = check_column_shapes(fn_lc_mock, data=data)
     if len(msg) > 0:
-        report["disk_bulge_knot_inconsistency"] = msg
+        report["column_shapes"] = msg
 
-    msg = check_recomputed_photometry(fn_lc_mock)
-    if len(msg) > 0:
-        report["recomputed_photometry"] = msg
+    if no_dbk or no_sed:
+        pass
+    else:
+        msg = check_consistent_disk_bulge_knot_luminosities(fn_lc_mock, data=data)
+        if len(msg) > 0:
+            report["disk_bulge_knot_inconsistency"] = msg
 
-    msg = check_has_t_table(fn_lc_mock)
-    if len(msg) > 0:
-        report["t_table_metadata"] = msg
+        msg = check_has_t_table(fn_lc_mock)
+        if len(msg) > 0:
+            report["t_table_metadata"] = msg
+
+    if no_sed:
+        pass
+    else:
+        msg = check_recomputed_photometry(fn_lc_mock, no_dbk=no_dbk)
+        if len(msg) > 0:
+            report["recomputed_photometry"] = msg
 
     return report
 
@@ -290,7 +300,28 @@ def check_consistent_disk_bulge_knot_luminosities(
     return msg
 
 
-def check_recomputed_photometry(fn_lc_mock, n_test=200, return_results=False):
+def check_column_shapes(fn_lc_mock, data=None):
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    msg = []
+    allowed_multdim_columns = ("delta_mag_ssp_scatter",)
+
+    shapes = [data[key].shape for key in data.keys()]
+    for key, shape in zip(data.keys(), shapes):
+        if len(shape) > 1:
+            if key in allowed_multdim_columns:
+                pass
+            else:
+                s = f"`{key}` column has unexpected shape={shape}"
+                msg.append(s)
+
+    return msg
+
+
+def check_recomputed_photometry(
+    fn_lc_mock, n_test=200, return_results=False, *, no_dbk=False
+):
     """Recompute first N_TEST=50 galaxies photometry and enforce agreement"""
     with h5py.File(fn_lc_mock, "r") as hdf:
         mock_version_name = hdf["metadata"].attrs["mock_version_name"]
@@ -320,42 +351,70 @@ def check_recomputed_photometry(fn_lc_mock, n_test=200, return_results=False):
     )
 
     mc_is_q = np.where(mock["mc_sfh_type"] == 0, True, False)
-    args = (
-        mc_is_q,
-        mock["uran_av"],
-        mock["uran_delta"],
-        mock["uran_funo"],
-        mock["uran_pburst"],
-        mock["delta_mag_ssp_scatter"],
-        sfh_params,
-        mock["redshift_true"],
-        t_obs,
-        mah_params,
-        mock["fknot"],
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
-        param_collection.mzr_params,
-        param_collection.spspop_params,
-        param_collection.scatter_params,
-        param_collection.ssperr_params,
-        sim_info.cosmo_params,
-        sim_info.fb,
-    )
-    _res = dbk_phot_from_mock._reproduce_mock_dbk_kern(*args)
-    (
-        phot_info,
-        phot_randoms,
-        disk_bulge_history,
-        obs_mags_bulge,
-        obs_mags_disk,
-        obs_mags_knots,
-    ) = _res
-    phot_info = phot_info._asdict()
-    phot_info["obs_mags_bulge"] = obs_mags_bulge
-    phot_info["obs_mags_disk"] = obs_mags_disk
-    phot_info["obs_mags_knots"] = obs_mags_knots
+    if no_dbk:
+        args = (
+            mc_is_q,
+            mock["uran_av"],
+            mock["uran_delta"],
+            mock["uran_funo"],
+            mock["uran_pburst"],
+            mock["delta_mag_ssp_scatter"],
+            sfh_params,
+            mock["redshift_true"],
+            t_obs,
+            mah_params,
+            ssp_data,
+            precomputed_ssp_mag_table,
+            z_phot_table,
+            wave_eff_table,
+            param_collection.mzr_params,
+            param_collection.spspop_params,
+            param_collection.scatter_params,
+            param_collection.ssperr_params,
+            sim_info.cosmo_params,
+            sim_info.fb,
+        )
+        _res = dbk_phot_from_mock._reproduce_mock_phot_kern(*args)
+        phot_info, phot_randoms = _res
+        phot_info = phot_info._asdict()
+
+    else:
+        args = (
+            mc_is_q,
+            mock["uran_av"],
+            mock["uran_delta"],
+            mock["uran_funo"],
+            mock["uran_pburst"],
+            mock["delta_mag_ssp_scatter"],
+            sfh_params,
+            mock["redshift_true"],
+            t_obs,
+            mah_params,
+            mock["fknot"],
+            ssp_data,
+            precomputed_ssp_mag_table,
+            z_phot_table,
+            wave_eff_table,
+            param_collection.mzr_params,
+            param_collection.spspop_params,
+            param_collection.scatter_params,
+            param_collection.ssperr_params,
+            sim_info.cosmo_params,
+            sim_info.fb,
+        )
+        _res = dbk_phot_from_mock._reproduce_mock_dbk_kern(*args)
+        (
+            phot_info,
+            phot_randoms,
+            disk_bulge_history,
+            obs_mags_bulge,
+            obs_mags_disk,
+            obs_mags_knots,
+        ) = _res
+        phot_info = phot_info._asdict()
+        phot_info["obs_mags_bulge"] = obs_mags_bulge
+        phot_info["obs_mags_disk"] = obs_mags_disk
+        phot_info["obs_mags_knots"] = obs_mags_knots
 
     if return_results:
         return mock, phot_info, tcurves
@@ -410,5 +469,10 @@ def check_recomputed_photometry(fn_lc_mock, n_test=200, return_results=False):
             )
         except AssertionError:
             msg.append("Inconsistent recalculation of disk/bulge/knot obs_mags")
+        except KeyError:
+            if no_dbk is True:
+                pass
+            else:
+                msg.append("Missing disk/bulge/knot photometry")
 
     return msg

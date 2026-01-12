@@ -94,7 +94,6 @@ def _dbk_kern(
 @partial(jjit, static_argnames=["n_t_table"])
 def _mc_phot_kern(
     ran_key,
-    diffstarpop_params,
     z_obs,
     t_obs,
     mah_params,
@@ -102,6 +101,7 @@ def _mc_phot_kern(
     precomputed_ssp_mag_table,
     z_phot_table,
     wave_eff_table,
+    diffstarpop_params,
     mzr_params,
     spspop_params,
     scatter_params,
@@ -197,6 +197,13 @@ def _phot_kern(
         scatter_params,
     )
     # dust_frac_trans.shape = (n_gals, n_bands, n_age)
+
+    # Throw out redundant dust params repeated at each λ_eff
+    dust_params = dust_params._replace(
+        av=dust_params.av[:, 0, -1],
+        delta=dust_params.delta[:, 0],
+        funo=dust_params.funo[:, 0],
+    )
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
@@ -297,6 +304,11 @@ def _sed_kern(
         spspop_params.dustpop_params,
         scatter_params,
     )
+    dust_params = dust_params._replace(
+        av=dust_params.av[:, 0, -1],
+        delta=dust_params.delta[:, 0],
+        funo=dust_params.funo[:, 0],
+    )
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
@@ -363,7 +375,7 @@ def _get_dbk_phot_from_dbk_weights(
     return obs_mags_bulge, obs_mags_disk, obs_mags_knots
 
 
-def _mc_lc_dbk_phot_kern(
+def _mc_dbk_phot_kern(
     ran_key,
     z_obs,
     t_obs,
@@ -383,7 +395,6 @@ def _mc_lc_dbk_phot_kern(
     phot_key, dbk_key = jran.split(ran_key, 2)
     phot_kern_results, phot_randoms = _mc_phot_kern(
         phot_key,
-        diffstarpop_params,
         z_obs,
         t_obs,
         mah_params,
@@ -391,6 +402,7 @@ def _mc_lc_dbk_phot_kern(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
+        diffstarpop_params,
         mzr_params,
         spspop_params,
         scatter_params,
@@ -459,6 +471,11 @@ def _mc_lc_dbk_sed_kern(
         wave_eff_galpop,
         spspop_params.dustpop_params,
         scatter_params,
+    )
+    dust_params = dust_params._replace(
+        av=dust_params.av[:, 0, -1],
+        delta=dust_params.delta[:, 0],
+        funo=dust_params.funo[:, 0],
     )
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy

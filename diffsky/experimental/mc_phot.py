@@ -43,7 +43,6 @@ def mc_lc_phot(
     """
     phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         ran_key,
-        diffstarpop_params,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
@@ -51,6 +50,7 @@ def mc_lc_phot(
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
+        diffstarpop_params,
         mzr_params,
         spspop_params,
         scatter_params,
@@ -92,7 +92,6 @@ def mc_lc_sed(
     """
     phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         ran_key,
-        diffstarpop_params,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
@@ -100,6 +99,7 @@ def mc_lc_sed(
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
+        diffstarpop_params,
         mzr_params,
         spspop_params,
         scatter_params,
@@ -157,7 +157,7 @@ def mc_lc_dbk_phot(
         Contains info about disk/bulge/knot photometry
 
     """
-    dbk_phot_info, dbk_weights = mcpk._mc_lc_dbk_phot_kern(
+    dbk_phot_info, dbk_weights = mcpk._mc_dbk_phot_kern(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,

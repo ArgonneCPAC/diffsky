@@ -158,3 +158,39 @@ jobs:
         run: |
           rm -rf ci_test_output
 
+      - name: create mock with no_dbk option
+        shell: bash -l {0}
+        run: |
+          # Create output directory
+          mkdir -p ci_test_output
+
+          # Run mock production script
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py \
+            poboy \
+            0.01 \
+            0.2 \
+            0 \
+            1 \
+            ci_test_output \
+            ci_test_mock \
+            -cosmos_fit cosmos260105 \
+            -synthetic_cores 1 \
+            -lgmp_min 12.0 \
+            -lgmp_max 13.0 \
+            --lsst_only --no_dbk
+
+      - name: verify script completed
+        shell: bash -l {0}
+        run: |
+          echo "sfh_model mock generated successfully"
+
+      - name: validate mock
+        shell: bash -l {0}
+        run: |
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos260105 --no_dbk
+
+      - name: remove cosmos_fit mock
+        shell: bash -l {0}
+        run: |
+          rm -rf ci_test_output
+

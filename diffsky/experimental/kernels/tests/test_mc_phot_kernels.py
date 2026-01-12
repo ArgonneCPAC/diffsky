@@ -26,7 +26,6 @@ def test_sed_kern(num_halos=250):
 
     phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         phot_key,
-        dpw.DEFAULT_PARAM_COLLECTION[0],
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
@@ -34,7 +33,7 @@ def test_sed_kern(num_halos=250):
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION[1:],
+        *dpw.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
     )
@@ -84,7 +83,6 @@ def test_mc_dbk_kern(num_halos=50):
 
     phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         phot_key,
-        dpw.DEFAULT_PARAM_COLLECTION[0],
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
@@ -92,7 +90,7 @@ def test_mc_dbk_kern(num_halos=50):
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION[1:],
+        *dpw.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
     )

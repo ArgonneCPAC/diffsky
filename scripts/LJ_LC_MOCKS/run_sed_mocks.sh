@@ -16,10 +16,10 @@ source ~/.bash_profile
 conda activate improv311
 
 cd $PBS_O_WORKDIR
-rsync /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/make_dbk_sed_lc_mock_lj.py ./
+rsync /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py ./
 
-mpirun -n 16 python make_dbk_sed_lc_mock_lj.py lcrc 0 3.0 0 2 /lcrc/project/halotools/random_data/1116 smdpl_dr1 -fn_u_params sfh_model -sfh_model smdpl_dr1
-mpirun -n 16 python make_dbk_sed_lc_mock_lj.py lcrc 0 3.0 0 2 /lcrc/project/halotools/random_data/1116 smdpl_dr1 -fn_u_params sfh_model -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 10.75 -lgmp_max 11.1
+mpirun -n 16 python make_ou26_mock_batch.py lcrc 0 3.0 0 1 /lcrc/project/halotools/random_data/0111 cosmos260105 -cosmos_fit cosmos260105 --no_dbk
+mpirun -n 16 python make_ou26_mock_batch.py lcrc 0 3.0 0 1 /lcrc/project/halotools/random_data/0111 cosmos260105 -cosmos_fit cosmos260105 -synthetic_cores 1 -lgmp_min 10.75 -lgmp_max 11.1 --no_dbk
 
-python /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/inspect_lc_mock.py /lcrc/project/halotools/random_data/1116/smdpl_dr1/
-python /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/inspect_lc_mock.py /lcrc/project/halotools/random_data/1116/synthetic_cores/smdpl_dr1/
+python /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/inspect_lc_mock.py /lcrc/project/halotools/random_data/0111/cosmos260105 --no_dbk
+python /home/ahearin/work/repositories/python/diffsky/scripts/LJ_LC_MOCKS/inspect_lc_mock.py /lcrc/project/halotools/random_data/0111/synthetic_cores/cosmos260105 --no_dbk
