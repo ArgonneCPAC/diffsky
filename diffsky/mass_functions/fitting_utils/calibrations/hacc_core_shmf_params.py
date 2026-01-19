@@ -5,7 +5,7 @@ Analogous to the unevolved subhalo function.
 These best-fitting parameters were derived with the fit_subhalo_hmf_to_discovery.ipynb
 notebook"""
 
-from diffsky.mass_functions.hmf_model import DEFAULT_HMF_PARAMS
+from ....mass_functions.hmf_model import DEFAULT_HMF_PARAMS
 
 ytp_params = DEFAULT_HMF_PARAMS.ytp_params._replace(
     ytp_ytp=-5.568,

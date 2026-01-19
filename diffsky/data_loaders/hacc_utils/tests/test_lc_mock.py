@@ -13,13 +13,12 @@ from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
-from diffsky.param_utils import diffsky_param_wrapper as dpw
-
 from ....experimental import precompute_ssp_phot as psspp
 from ....experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
 from ....experimental.disk_bulge_modeling import mc_disk_bulge as mcdb
 from ....experimental.lc_phot_kern import get_wave_eff_table
 from ....experimental.tests import test_mc_lightcone_halos as tmclh
+from ....param_utils import diffsky_param_wrapper as dpw
 from ... import io_utils as iou
 from .. import lc_mock as lcmp_repro
 from .. import load_lc_cf
