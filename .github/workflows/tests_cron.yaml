@@ -50,6 +50,7 @@ jobs:
             "setuptools_scm>=7,<8" \
             matplotlib \
             astropy \
+            readme_renderer \
             python-build
           pip uninstall diffmah --yes
           pip uninstall diffstar --yes

@@ -1,16 +1,15 @@
-# Configuration file for the Sphinx documentation builder.
-#
-"""
-"""
-from pkg_resources import DistributionNotFound, get_distribution
+""" """
+
+import importlib.metadata
 
 try:
-    __version__ = get_distribution("diffsky").version
-except DistributionNotFound:
+    __version__ = importlib.metadata.version("diffsky")
+except importlib.metadata.PackageNotFoundError:
     __version__ = "unknown version"
 
+
 project = "diffsky"
-copyright = "2022, Andrew Hearin"
+copyright = "2026, Andrew Hearin"
 author = "Andrew Hearin"
 version = __version__
 release = __version__

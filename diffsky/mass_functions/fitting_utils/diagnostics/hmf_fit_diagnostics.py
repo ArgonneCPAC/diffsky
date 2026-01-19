@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from diffsky.mass_functions.hmf_model import predict_cuml_hmf
+from ...hmf_model import predict_cuml_hmf
 
 try:
     from matplotlib import cm

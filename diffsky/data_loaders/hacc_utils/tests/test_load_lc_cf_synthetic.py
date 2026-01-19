@@ -3,8 +3,7 @@
 import numpy as np
 from jax import random as jran
 
-from diffsky.data_loaders.hacc_utils import haccsims
-
+from ...hacc_utils import haccsims
 from .. import lightcone_utils as hlu
 from .. import load_lc_cf_synthetic as llcs
 

@@ -12,6 +12,7 @@ scripts/*.cfg
 scripts/*.cfg~
 
 .DS_Store
+**/.DS_Store
 
 docs/source/drn_dsps_temp/*
 
