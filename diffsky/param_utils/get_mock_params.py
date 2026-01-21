@@ -7,7 +7,7 @@ from . import diffsky_param_wrapper as dpw
 from .cosmos_calibrations import COSMOS_PARAM_FITS
 
 
-def get_param_collection_for_mock(cosmos_fit="", sfh_model="", rank=0):
+def get_param_collection_for_mock(*, cosmos_fit="", sfh_model="", rank=0):
     """Load diffsky model parameters"""
     if cosmos_fit != "":
         if rank == 0:

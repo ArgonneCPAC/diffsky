@@ -3,6 +3,7 @@
 from ...experimental.sfh_model_calibrations import (
     load_diffsky_sfh_model_calibrations as ldup,
 )
+from .. import COSMOS_PARAM_FITS
 from .. import diffsky_param_wrapper as dpw
 from .. import get_mock_params as gmp
 
@@ -16,10 +17,9 @@ def test_get_param_collection_for_mock_sfh_model_options():
 
 
 def test_get_param_collection_for_mock_cosmos_fit_options():
-    param_collection = gmp.get_param_collection_for_mock(
-        cosmos_fit="cosmos_260105", rank=0
-    )
-    assert param_collection._fields == dpw.ParamCollection._fields
+    for key in COSMOS_PARAM_FITS.keys():
+        param_collection = gmp.get_param_collection_for_mock(cosmos_fit=key, rank=0)
+        assert param_collection._fields == dpw.ParamCollection._fields
 
 
 def test_get_param_collection_for_mock_defaults():
