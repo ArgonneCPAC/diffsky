@@ -137,7 +137,7 @@ jobs:
             1 \
             ci_test_output \
             ci_test_mock \
-            -cosmos_fit cosmos260105 \
+            -cosmos_fit cosmos_260120_UM \
             -synthetic_cores 1 \
             -lgmp_min 12.0 \
             -lgmp_max 13.0 \
@@ -151,7 +151,7 @@ jobs:
       - name: validate mock
         shell: bash -l {0}
         run: |
-          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos260105
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos_260120_UM
 
       - name: remove cosmos_fit mock
         shell: bash -l {0}
@@ -173,7 +173,7 @@ jobs:
             1 \
             ci_test_output \
             ci_test_mock \
-            -cosmos_fit cosmos260105 \
+            -cosmos_fit cosmos_260120_UM \
             -synthetic_cores 1 \
             -lgmp_min 12.0 \
             -lgmp_max 13.0 \
@@ -187,7 +187,7 @@ jobs:
       - name: validate mock
         shell: bash -l {0}
         run: |
-          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos260105 --no_dbk
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos_260120_UM --no_dbk
 
       - name: remove cosmos_fit mock
         shell: bash -l {0}

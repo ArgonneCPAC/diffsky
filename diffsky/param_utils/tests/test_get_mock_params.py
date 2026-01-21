@@ -17,7 +17,7 @@ def test_get_param_collection_for_mock_sfh_model_options():
 
 def test_get_param_collection_for_mock_cosmos_fit_options():
     param_collection = gmp.get_param_collection_for_mock(
-        cosmos_fit="cosmos260105", rank=0
+        cosmos_fit="cosmos_260105", rank=0
     )
     assert param_collection._fields == dpw.ParamCollection._fields
 

@@ -4,7 +4,7 @@ from ..experimental.sfh_model_calibrations import (
     load_diffsky_sfh_model_calibrations as ldup,
 )
 from . import diffsky_param_wrapper as dpw
-from .cosmos_params_cosmos260105 import COSMOS_PARAM_FITS
+from .cosmos_calibrations import COSMOS_PARAM_FITS
 
 
 def get_param_collection_for_mock(cosmos_fit="", sfh_model="", rank=0):
