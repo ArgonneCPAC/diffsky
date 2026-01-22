@@ -103,8 +103,8 @@ if __name__ == "__main__":
 
     end = time()
     runtime = (end - start) / 60.0
-    print(f"Checked {n_files_to_check}/{n_files_tot} files in {runtime:.1f} minutes")
+    print(f"\nChecked {n_files_to_check}/{n_files_tot} files in {runtime:.1f} minutes")
     if all_pass:
-        print("Every lc_mock data file passes all tests")
+        print("\nEvery lc_mock data file passes all tests\n")
     else:
-        raise ValueError("Some lightcone readiness tests fail")
+        raise ValueError("\nSome lightcone readiness tests fail\n")
