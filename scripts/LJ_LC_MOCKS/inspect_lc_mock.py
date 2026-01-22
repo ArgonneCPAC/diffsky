@@ -31,7 +31,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-n_files_to_check",
         help="Number of randomly selected files to check",
-        default=10,
+        default=5,
         type=int,
     )
 
