@@ -3,6 +3,7 @@
 import argparse
 import os
 from glob import glob
+from time import time
 
 import numpy as np
 
@@ -56,6 +57,7 @@ if __name__ == "__main__":
     for bn in bn_list_mocks_to_test:
         print("       " + bn)
 
+    start = time()
     all_good = True
     failure_collector = []
     no_report_collector = []
@@ -99,7 +101,9 @@ if __name__ == "__main__":
                 fn_lc_mock = os.path.join(drn_mock, no_report_bn)
                 fout.write(fn_lc_mock + "\n")
 
-    print(f"Checked {n_files_to_check}/{n_files_tot} mock files")
+    end = time()
+    runtime = (end - start) / 60.0
+    print(f"Checked {n_files_to_check}/{n_files_tot} files in {runtime:.1f} minutes")
     if all_pass:
         print("Every lc_mock data file passes all tests")
     else:
