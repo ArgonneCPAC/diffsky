@@ -51,6 +51,10 @@ if __name__ == "__main__":
     fn_list_mocks_to_test = np.random.choice(
         fn_list_all_mocks, n_files_to_check, replace=False
     )
+    bn_list_mocks_to_test = [os.path.basename(fn) for fn in fn_list_mocks_to_test]
+    print("\n Testing the following mocks:")
+    for bn in bn_list_mocks_to_test:
+        print(bn + "\n")
 
     all_good = True
     failure_collector = []
@@ -94,6 +98,8 @@ if __name__ == "__main__":
             for no_report_bn in no_report_collector:
                 fn_lc_mock = os.path.join(drn_mock, no_report_bn)
                 fout.write(fn_lc_mock + "\n")
+
+    print(f"Checked {n_files_to_check}/{n_files_tot} mock files")
     if all_pass:
         print("Every lc_mock data file passes all tests")
     else:
