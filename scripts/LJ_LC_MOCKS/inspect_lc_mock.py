@@ -52,9 +52,9 @@ if __name__ == "__main__":
         fn_list_all_mocks, n_files_to_check, replace=False
     )
     bn_list_mocks_to_test = [os.path.basename(fn) for fn in fn_list_mocks_to_test]
-    print("\n Testing the following mocks:")
+    print("\nTesting the following mocks:")
     for bn in bn_list_mocks_to_test:
-        print(bn + "\n")
+        print("       " + bn)
 
     all_good = True
     failure_collector = []
