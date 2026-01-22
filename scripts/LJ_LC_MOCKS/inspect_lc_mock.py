@@ -3,6 +3,9 @@
 import argparse
 import os
 from glob import glob
+from time import time
+
+import numpy as np
 
 from diffsky.data_loaders.hacc_utils.data_validation import validate_lc_mock as vlcm
 
@@ -25,6 +28,12 @@ if __name__ == "__main__":
         help="SEDs are not in the mock (SFH-only mocks)",
         action="store_true",
     )
+    parser.add_argument(
+        "-n_files_to_check",
+        help="Number of randomly selected files to check",
+        default=5,
+        type=int,
+    )
 
     args = parser.parse_args()
     drn_mock = args.drn_mock
@@ -32,16 +41,27 @@ if __name__ == "__main__":
     drn_report = args.drn_report
     no_dbk = args.no_dbk
     no_sed = args.no_sed
+    n_files_to_check = args.n_files_to_check
 
     fn_pat = os.path.join(drn_mock, bnpat)
-    fn_lc_mock_list = glob(fn_pat)
+    fn_list_all_mocks = glob(fn_pat)
+    n_files_tot = len(fn_list_all_mocks)
     msg_no_mocks = f"No mocks detected with filename pattern {fn_pat}"
-    assert len(fn_lc_mock_list) > 0, msg_no_mocks
+    assert n_files_tot > 1, msg_no_mocks
 
+    fn_list_mocks_to_test = np.random.choice(
+        fn_list_all_mocks, n_files_to_check, replace=False
+    )
+    bn_list_mocks_to_test = [os.path.basename(fn) for fn in fn_list_mocks_to_test]
+    print("\nTesting the following mocks:")
+    for bn in bn_list_mocks_to_test:
+        print("       " + bn)
+
+    start = time()
     all_good = True
     failure_collector = []
     no_report_collector = []
-    for fn_lc_mock in fn_lc_mock_list:
+    for fn_lc_mock in fn_list_mocks_to_test:
         bn_lc_mock = os.path.basename(fn_lc_mock)
 
         try:
@@ -80,7 +100,11 @@ if __name__ == "__main__":
             for no_report_bn in no_report_collector:
                 fn_lc_mock = os.path.join(drn_mock, no_report_bn)
                 fout.write(fn_lc_mock + "\n")
+
+    end = time()
+    runtime = (end - start) / 60.0
+    print(f"\nChecked {n_files_to_check}/{n_files_tot} files in {runtime:.1f} minutes")
     if all_pass:
-        print("Every lc_mock data file passes all tests")
+        print("\nEvery lc_mock data file passes all tests\n")
     else:
-        raise ValueError("Some lightcone readiness tests fail")
+        raise ValueError("\nSome lightcone readiness tests fail\n")

@@ -156,7 +156,7 @@ if __name__ == "__main__":
             patches_with_missing_stepnums, handle, protocol=pickle.HIGHEST_PROTOCOL
         )
 
-    complete_stepnums = hlu.get_timesteps_in_zrange("LastJourney", 0, 3)
+    complete_stepnums = hlu.get_timesteps_in_zrange("LastJourney", z_min, z_max)
     final_step = complete_stepnums[-1]
     report = dict()
     for lc_patch, missing_stepnums in patches_with_missing_stepnums.items():
