@@ -35,9 +35,13 @@ if __name__ == "__main__":
 
     step_collector = np.unique([get_stepnum_and_patch(bn)[0] for bn in bn_list])
     patch_collector = np.unique([get_stepnum_and_patch(bn)[1] for bn in bn_list])
+    n_patches = len(patch_collector)
 
     complete_stepnums = hlu.get_timesteps_in_zrange("LastJourney", z_min, z_max)
 
+    print(
+        f"Running checks on each of the {n_patches} sky patches has a complete set of redshifts"
+    )
     msg_patch = f"lc_patch={0} is missing some timesteps"
     for patch in patch_collector:
         fn_pat_patch = os.path.join(drn, BN_PAT.format("*", patch))
