@@ -5,13 +5,13 @@ import numpy as np
 import opencosmo as oc
 import pytest
 
-from diffsky.data_loaders.opencosmo_utils.compute import (
+from diffsky.data_loaders.opencosmo_utils import (
     compute_dbk_phot_from_diffsky_mocks,
     compute_dbk_seds_from_diffsky_mocks,
     compute_phot_from_diffsky_mocks,
     compute_seds_from_diffsky_mocks,
+    load_diffsky_mock,
 )
-from diffsky.data_loaders.opencosmo_utils.load import load_diffsky_mock
 
 
 @pytest.fixture
@@ -54,8 +54,7 @@ def test_compute_dbk_photometry(test_data_dir):
     )
     original_data = catalog.select(results.keys()).get_data("numpy")
     for name, computed_values in results.items():
-        print(computed_values)
-        print(original_data[name])
+        assert np.allclose(computed_values, original_data[name], rtol=1e-4)
 
 
 def test_compute_seds(test_data_dir):
@@ -64,13 +63,7 @@ def test_compute_seds(test_data_dir):
 
     catalog, aux_data = load_diffsky_mock(test_data_dir)
     results = compute_seds_from_diffsky_mocks(catalog, aux_data, z_phots, insert=False)
-    print(results)
-    assert False
-
-    bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
-    original_data = catalog.select(bands).get_data("numpy")
-    for name, band_result in results.items():
-        assert False
+    raise NotImplementedError
 
 
 def test_compute_dbk_seds(test_data_dir):
@@ -81,10 +74,4 @@ def test_compute_dbk_seds(test_data_dir):
     results = compute_dbk_seds_from_diffsky_mocks(
         catalog, aux_data, z_phots, insert=False
     )
-    print(results)
-    assert False
-
-    bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
-    original_data = catalog.select(bands).get_data("numpy")
-    for name, band_result in results.items():
-        assert False
+    raise NotImplementedError

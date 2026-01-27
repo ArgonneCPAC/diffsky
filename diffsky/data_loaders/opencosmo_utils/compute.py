@@ -92,7 +92,7 @@ def compute_dbk_seds_from_diffsky_mocks(
     bands: list[str] = ["u", "g", "r", "i", "z", "y"],
     insert: bool = True,
 ):
-    cosmology_parameters = prep_cosmology_parameters(catalog.cosmology)
+    cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
     dbk_phot_info = compute_dbk_phot_from_diffsky_mocks(
         catalog,
         aux_data,
@@ -106,7 +106,7 @@ def compute_dbk_seds_from_diffsky_mocks(
         age_at_z_, vectorize=True, cosmology=cosmology_parameters
     )
     return catalog.evaluate(
-        compute_dbk_sed_managed,
+        __compute_dbk_sed_managed,
         dbk_phot_info=dbk_phot_info,
         ssp_data=aux_data["ssp_data"],
         param_collection=aux_data["param_collection"],
@@ -116,8 +116,8 @@ def compute_dbk_seds_from_diffsky_mocks(
     )
 
 
-def __unpack_photometry(data, band_names):
-    return __unpack_photometry_array(data[0].obs_mags)
+def __unpack_photometry(data, band_names, *args):
+    return __unpack_photometry_array(data[0].obs_mags, band_names)
 
 
 def __unpack_dbk_photometry(data, band_names, include_extras):
@@ -175,7 +175,7 @@ def __run_photometry(
     tcurves = Tcurves(**data)
 
     wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
-    cosmology_parameters = prep_cosmology_parameters(catalog.cosmology)
+    cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
     precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
         tcurves, aux_data["ssp_data"], z_phot_table, cosmology_parameters
     )
@@ -183,7 +183,7 @@ def __run_photometry(
         age_at_z_, vectorize=True, cosmology=cosmology_parameters
     )
     return catalog.evaluate(
-        compute_photometry_managed,
+        __compute_photometry_managed,
         to_compute=function,
         unpack_func=unpack_func,
         band_names=band_names,
@@ -202,7 +202,7 @@ def __run_photometry(
     )
 
 
-def prep_cosmology_parameters(cosmology):
+def __prep_cosmology_parameters(cosmology):
     try:
         w0 = cosmology.wo
         wa = cosmology.wa
@@ -221,7 +221,7 @@ def age_at_z_(redshift, cosmology):
     }
 
 
-def compute_dbk_sed_managed(
+def __compute_dbk_sed_managed(
     t_obs,
     fknot,
     uran_av,
@@ -287,7 +287,7 @@ def compute_dbk_sed_managed(
     return dbk_sed_info
 
 
-def compute_photometry_managed(
+def __compute_photometry_managed(
     to_compute,
     unpack_func,
     band_names,
