@@ -1,4 +1,5 @@
 from collections import namedtuple
+from typing import Callable
 
 import numpy as np
 import opencosmo as oc
@@ -14,10 +15,50 @@ from diffsky.experimental import precompute_ssp_phot as psspp
 def compute_phot_from_diffsky_mocks(
     catalog: oc.Lightcone,
     aux_data: dict,
+    z_phot_table: np.ndarray,
     survey_name: str = "lsst",
     bands: list[str] = ["u", "g", "r", "i", "z", "y"],
     insert: bool = True,
 ):
+    func = dbk_phot_from_mock._reproduce_mock_phot_kern
+    return __run_photometry(
+        func, catalog, aux_data, z_phot_table, survey_name, bands, insert
+    )
+
+
+def __unpack_seds(data):
+    phot_info, _, sed_kern_results = data
+    sed_info = phot_info._asdict()
+    rest_sed = sed_kern_results[0]
+    sed_info["rest_sed"] = rest_sed
+    return sed_info
+
+
+def compute_seds_from_diffsky_mocks(
+    catalog: oc.Lightcone,
+    aux_data: dict,
+    z_phot_table: np.ndarray,
+    survey_name: str = "lsst",
+    bands: list[str] = ["u", "g", "r", "i", "z", "y"],
+    insert: bool = True,
+):
+    func = dbk_phot_from_mock._reproduce_mock_sed_kern
+    return __run_photometry(
+        func, __unpack_seds, catalog, aux_data, z_phot_table, survey_name, bands, insert
+    )
+
+
+def __run_photometry(
+    function: Callable,
+    unpack_func: Callable,
+    catalog: oc.Lightcone,
+    aux_data: dict,
+    z_phot_table: np.ndarray,
+    survey_name: str,
+    bands: list[str],
+    insert: bool = True,
+):
+    print(bands)
     band_names = set(map(lambda band: f"{survey_name}_{band}", bands))
     if "tcurves" not in aux_data:
         raise ValueError("Missing transmission curves in auxiliary data!")
@@ -31,9 +72,6 @@ def compute_phot_from_diffsky_mocks(
     data = {bn: getattr(aux_data["tcurves"], bn) for bn in band_names}
     tcurves = Tcurves(**data)
 
-    z_range = catalog.z_range
-    z_phot_table = np.linspace(*z_range, 10)
-
     wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
     cosmology_parameters = prep_cosmology_parameters(catalog.cosmology)
     precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
@@ -42,18 +80,21 @@ def compute_phot_from_diffsky_mocks(
     catalog = catalog.evaluate(
         age_at_z_, vectorize=True, cosmology=cosmology_parameters
     )
-
     return catalog.evaluate(
         compute_photometry_managed,
+        to_compute=function,
+        unpack_func=unpack_func,
+        band_names=band_names,
         cosmology=cosmology_parameters,
         ssp_data=aux_data["ssp_data"],
         precomputed_ssp_mag_table=precomputed_ssp_mag_table,
         wave_eff_table=wave_eff_table,
         param_collection=aux_data["param_collection"],
         z_phot_table=z_phot_table,
-        insert=insert,
         Ob0=catalog.cosmology.Ob0,
+        insert=insert,
         vectorize=True,
+        format="numpy",
     )
 
 
@@ -77,6 +118,9 @@ def age_at_z_(redshift, cosmology):
 
 
 def compute_photometry_managed(
+    to_compute,
+    unpack_func,
+    band_names,
     logm0,
     logtc,
     early_index,
@@ -93,8 +137,8 @@ def compute_photometry_managed(
     uran_av,
     uran_delta,
     uran_funo,
-    uran_pburst,
-    delta_mag_ssp_scatter,  # ¯\_(ツ)_/¯ (I am not a real astrophysicist)
+    uran_pburst,  # ¯\_(ツ)_/¯ (I am not a real astrophysicist)
+    delta_mag_ssp_scatter,
     redshift,
     t_obs,
     mc_sfh_type,
@@ -125,7 +169,7 @@ def compute_photometry_managed(
         lg_rejuv=lg_rejuv,
     )
 
-    result = dbk_phot_from_mock._reproduce_mock_phot_kern(
+    result = to_compute(
         mc_is_q,
         uran_av,
         uran_delta,
@@ -146,5 +190,5 @@ def compute_photometry_managed(
         param_collection.ssperr_params,
         cosmology,
         Ob0 / cosmology.Om0,
-    )[0]
-    return result.obs_mags
+    )
+    return unpack_func(result)

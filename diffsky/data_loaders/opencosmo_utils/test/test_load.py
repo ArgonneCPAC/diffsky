@@ -1,9 +1,13 @@
 from pathlib import Path
 
+import h5py
 import opencosmo as oc
 import pytest
 
-from diffsky.data_loaders.opencosmo_utils.compute import compute_phot_from_diffsky_mocks
+from diffsky.data_loaders.opencosmo_utils.compute import (
+    compute_phot_from_diffsky_mocks,
+    compute_seds_from_diffsky_mocks,
+)
 from diffsky.data_loaders.opencosmo_utils.load import load_diffsky_mock
 
 
@@ -24,6 +28,31 @@ def test_load(test_data_dir):
     assert isinstance(aux_data_synths, dict)
 
 
-def test_compute(test_data_dir):
+def test_compute_phtometry(test_data_dir):
+    with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
+        z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
+
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_phot_from_diffsky_mocks(catalog, aux_data, insert=False)
+    results = compute_phot_from_diffsky_mocks(catalog, aux_data, z_phots, insert=False)
+
+    bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
+    original_data = catalog.select(bands).get_data("numpy")
+    for name, band_result in results.items():
+        print(band_result)
+        print(original_data[name])
+        assert False
+
+
+def test_compute_seds(test_data_dir):
+    with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
+        z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
+
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+    results = compute_seds_from_diffsky_mocks(catalog, aux_data, z_phots, insert=False)
+    print(results)
+    assert False
+
+    bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
+    original_data = catalog.select(bands).get_data("numpy")
+    for name, band_result in results.items():
+        assert False
