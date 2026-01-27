@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import h5py
+import numpy as np
 import opencosmo as oc
 import pytest
 
@@ -28,7 +29,7 @@ def test_load(test_data_dir):
     assert isinstance(aux_data_synths, dict)
 
 
-def test_compute_phtometry(test_data_dir):
+def test_compute_photometry(test_data_dir):
     with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
         z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
 
@@ -38,9 +39,7 @@ def test_compute_phtometry(test_data_dir):
     bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     original_data = catalog.select(bands).get_data("numpy")
     for name, band_result in results.items():
-        print(band_result)
-        print(original_data[name])
-        assert False
+        assert np.all(np.isclose(band_result, original_data[name], rtol=1e-4))
 
 
 def test_compute_seds(test_data_dir):
