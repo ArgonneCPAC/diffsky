@@ -32,6 +32,7 @@ def compute_phot_from_diffsky_mocks(
         survey_name,
         bands,
         None,
+        False,
         insert,
     )
 
@@ -70,7 +71,16 @@ def compute_seds_from_diffsky_mocks(
 ):
     func = dbk_phot_from_mock._reproduce_mock_sed_kern
     return __run_photometry(
-        func, __unpack_seds, catalog, aux_data, z_phot_table, survey_name, bands, insert
+        func,
+        __unpack_seds,
+        catalog,
+        aux_data,
+        z_phot_table,
+        survey_name,
+        bands,
+        None,
+        False,
+        insert,
     )
 
 
@@ -131,7 +141,7 @@ def __unpack_photometry_array(data, band_names):
     return {name: to_unpack[i] for i, name in enumerate(band_names)}
 
 
-def __unpack_seds(data, band_names):
+def __unpack_seds(data, band_names, _):
     phot_info, _, sed_kern_results = data
     sed_info = phot_info._asdict()
     rest_sed = sed_kern_results[0]
