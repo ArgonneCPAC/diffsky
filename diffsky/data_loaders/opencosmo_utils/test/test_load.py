@@ -6,6 +6,8 @@ import opencosmo as oc
 import pytest
 
 from diffsky.data_loaders.opencosmo_utils.compute import (
+    compute_dbk_phot_from_diffsky_mocks,
+    compute_dbk_seds_from_diffsky_mocks,
     compute_phot_from_diffsky_mocks,
     compute_seds_from_diffsky_mocks,
 )
@@ -42,12 +44,43 @@ def test_compute_photometry(test_data_dir):
         assert np.all(np.isclose(band_result, original_data[name], rtol=1e-4))
 
 
+def test_compute_dbk_photometry(test_data_dir):
+    with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
+        z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
+
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+    results = compute_dbk_phot_from_diffsky_mocks(
+        catalog, aux_data, z_phots, insert=False
+    )
+    original_data = catalog.select(results.keys()).get_data("numpy")
+    for name, computed_values in results.items():
+        print(computed_values)
+        print(original_data[name])
+
+
 def test_compute_seds(test_data_dir):
     with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
         z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
 
     catalog, aux_data = load_diffsky_mock(test_data_dir)
     results = compute_seds_from_diffsky_mocks(catalog, aux_data, z_phots, insert=False)
+    print(results)
+    assert False
+
+    bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
+    original_data = catalog.select(bands).get_data("numpy")
+    for name, band_result in results.items():
+        assert False
+
+
+def test_compute_dbk_seds(test_data_dir):
+    with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
+        z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
+
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+    results = compute_dbk_seds_from_diffsky_mocks(
+        catalog, aux_data, z_phots, insert=False
+    )
     print(results)
     assert False
 
