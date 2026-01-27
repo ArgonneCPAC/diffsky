@@ -22,16 +22,15 @@ def compute_phot_from_diffsky_mocks(
 ):
     func = dbk_phot_from_mock._reproduce_mock_phot_kern
     return __run_photometry(
-        func, catalog, aux_data, z_phot_table, survey_name, bands, insert
+        func,
+        __unpack_photometry,
+        catalog,
+        aux_data,
+        z_phot_table,
+        survey_name,
+        bands,
+        insert,
     )
-
-
-def __unpack_seds(data):
-    phot_info, _, sed_kern_results = data
-    sed_info = phot_info._asdict()
-    rest_sed = sed_kern_results[0]
-    sed_info["rest_sed"] = rest_sed
-    return sed_info
 
 
 def compute_seds_from_diffsky_mocks(
@@ -46,6 +45,19 @@ def compute_seds_from_diffsky_mocks(
     return __run_photometry(
         func, __unpack_seds, catalog, aux_data, z_phot_table, survey_name, bands, insert
     )
+
+
+def __unpack_photometry(data, band_names):
+    photometry = data[0].obs_mags.T
+    return {name: photometry[i] for i, name in enumerate(band_names)}
+
+
+def __unpack_seds(data, band_names):
+    phot_info, _, sed_kern_results = data
+    sed_info = phot_info._asdict()
+    rest_sed = sed_kern_results[0]
+    sed_info["rest_sed"] = rest_sed
+    return sed_info
 
 
 def __run_photometry(
@@ -191,4 +203,4 @@ def compute_photometry_managed(
         cosmology,
         Ob0 / cosmology.Om0,
     )
-    return unpack_func(result)
+    return unpack_func(result, band_names)
