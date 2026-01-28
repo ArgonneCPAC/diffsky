@@ -1,0 +1,77 @@
+from pathlib import Path
+
+import h5py
+import numpy as np
+import opencosmo as oc
+import pytest
+
+from diffsky.data_loaders.opencosmo_utils import (
+    compute_dbk_phot_from_diffsky_mocks,
+    compute_dbk_seds_from_diffsky_mocks,
+    compute_phot_from_diffsky_mocks,
+    compute_seds_from_diffsky_mocks,
+    load_diffsky_mock,
+)
+
+
+@pytest.fixture
+def test_data_dir():
+    return Path(__file__).parent / "test_data"
+
+
+def test_load(test_data_dir):
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+    catalog_synths, aux_data_synths = load_diffsky_mock(test_data_dir, synth_cores=True)
+
+    assert isinstance(catalog, oc.Lightcone)
+    assert isinstance(catalog_synths, oc.Lightcone)
+    assert len(catalog_synths) > len(catalog)
+
+    assert isinstance(aux_data, dict)
+    assert isinstance(aux_data_synths, dict)
+
+
+def test_compute_photometry(test_data_dir):
+    with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
+        z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
+
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+    results = compute_phot_from_diffsky_mocks(catalog, aux_data, z_phots, insert=False)
+
+    bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
+    original_data = catalog.select(bands).get_data("numpy")
+    for name, band_result in results.items():
+        assert np.all(np.isclose(band_result, original_data[name], rtol=1e-4))
+
+
+def test_compute_dbk_photometry(test_data_dir):
+    with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
+        z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
+
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+    results = compute_dbk_phot_from_diffsky_mocks(
+        catalog, aux_data, z_phots, insert=False
+    )
+    original_data = catalog.select(results.keys()).get_data("numpy")
+    for name, computed_values in results.items():
+        assert np.allclose(computed_values, original_data[name], rtol=1e-4)
+
+
+def test_compute_seds(test_data_dir):
+    with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
+        z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
+
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+    results = compute_seds_from_diffsky_mocks(catalog, aux_data, z_phots, insert=False)
+    raise NotImplementedError
+
+
+def test_compute_dbk_seds(test_data_dir):
+    with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
+        z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
+
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+    results = compute_dbk_seds_from_diffsky_mocks(
+        catalog, aux_data, z_phots, insert=False
+    )
+    raise NotImplementedError
