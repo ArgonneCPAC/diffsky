@@ -1,3 +1,11 @@
+try:
+    import opencosmo
+except ImportError:
+    raise ImportError(
+        "The opencosmo_utils module requires opencosmo to be installed in your "
+        "environment. You can install it from pip or conda-forge"
+    )
+
 from .compute import (
     compute_dbk_phot_from_diffsky_mocks,
     compute_dbk_seds_from_diffsky_mocks,

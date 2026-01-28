@@ -5,7 +5,7 @@ from pathlib import Path
 import h5py
 import opencosmo as oc
 
-from diffsky.data_loaders.hacc_utils.lc_mock import (
+from ..hac_utils.lc_mock import (
     load_diffsky_param_collection,
     load_diffsky_ssp_data,
     load_diffsky_t_table,
