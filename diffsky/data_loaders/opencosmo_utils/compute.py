@@ -8,10 +8,10 @@ from diffstar import DiffstarParams
 from dsps.cosmology import age_at_z
 from dsps.sfh.diffburst import BurstParams
 
-from diffsky import phot_utils
-from diffsky.experimental import dbk_phot_from_mock
-from diffsky.experimental import precompute_ssp_phot as psspp
-from diffsky.experimental.kernels import mc_phot_kernels as mcpk
+from ... import phot_utils
+from ...experimental import dbk_phot_from_mock
+from ...experimental import precompute_ssp_phot as psspp
+from ...experimental.kernels import mc_phot_kernels as mcpk
 
 
 def compute_phot_from_diffsky_mocks(
@@ -213,12 +213,15 @@ def __prep_cosmology_parameters(cosmology):
     return Cosmology_t(cosmology.Om0, w0, wa, cosmology.h)
 
 
-def age_at_z_(redshift, cosmology):
-    return {
+def age_at_z_(redshift_true, cosmology):
+    result = {
         "t_obs": np.array(
-            age_at_z(redshift, cosmology.Om0, cosmology.w0, cosmology.wa, cosmology.h)
+            age_at_z(
+                redshift_true, cosmology.Om0, cosmology.w0, cosmology.wa, cosmology.h
+            )
         )
     }
+    return result
 
 
 def __compute_dbk_sed_managed(
@@ -233,7 +236,7 @@ def __compute_dbk_sed_managed(
     logsm_obs,
     logssfr_obs,
     delta_mag_ssp_scatter,
-    redshift,
+    redshift_true,
     dbk_phot_info,
     ssp_data,
     param_collection,
@@ -273,7 +276,7 @@ def __compute_dbk_sed_managed(
     sed_bulge, sed_disk, sed_knots = mcpk._mc_lc_dbk_sed_kern(
         dbk_phot_info,
         dbk_weights,
-        redshift,
+        redshift_true,
         ssp_data,
         param_collection.spspop_params,
         param_collection.scatter_params,
@@ -309,7 +312,7 @@ def __compute_photometry_managed(
     uran_funo,
     uran_pburst,  # ¯\_(ツ)_/¯ (I am not a real astrophysicist)
     delta_mag_ssp_scatter,
-    redshift,
+    redshift_true,
     t_obs,
     mc_sfh_type,
     fknot,
@@ -355,7 +358,7 @@ def __compute_photometry_managed(
         uran_pburst,
         delta_mag_ssp_scatter,
         sfh_params,
-        redshift,
+        redshift_true,
         t_obs,
         mah_params,
         *fknot_arg,
