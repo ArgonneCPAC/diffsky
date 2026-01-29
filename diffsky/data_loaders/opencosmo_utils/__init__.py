@@ -3,7 +3,7 @@ try:
 except ImportError:
     raise ImportError(
         "The opencosmo_utils module requires opencosmo to be installed in your "
-        "environment. You can install it from pip or conda-forge"
+        "environment. You can install it with pip or conda-forge"
     )
 
 from .compute import (
@@ -12,7 +12,7 @@ from .compute import (
     compute_phot_from_diffsky_mocks,
     compute_seds_from_diffsky_mocks,
 )
-from .load import load_diffsky_mock
+from .load import add_transmission_curves, load_diffsky_mock
 
 __all__ = [
     "load_diffsky_mock",
@@ -20,4 +20,5 @@ __all__ = [
     "compute_dbk_seds_from_diffsky_mocks",
     "compute_phot_from_diffsky_mocks",
     "compute_seds_from_diffsky_mocks",
+    "add_transmission_curves",
 ]
