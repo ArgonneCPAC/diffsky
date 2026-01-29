@@ -19,6 +19,21 @@ from .versions import check_versions
 def load_diffsky_mock(
     path: str | Path, synth_cores: bool = False
 ) -> tuple[oc.Lightcone, dict | None]:
+    """
+    Load a diffsky mock catalog stored in the given directory in opencosmo format.
+    This function returns a tuple of type (opencosmo.Lightcone, dict),
+    where the Lightcone contains the data of the catalog and the dictionary stores
+    auxilliary data needed by the library to compute photometry or SEDs.
+
+    Parameters:
+    -----------
+    path: str | pathlib.Path
+        Path to the folder containing the mock catalog
+
+    synth_cores: bool, default = False
+        Whether to include synthetic cores when loading the catalog. Ignored if the
+        catalog does not contain catalog.
+    """
     path = Path(path)
     if not path.exists() or not path.is_dir():
         raise NotADirectoryError(path)
@@ -53,7 +68,24 @@ def add_transmission_curves(
 ):
     """
     Add new tranmission curves to the diffsky metadata. These new curves can then be
-    used to compute photometry.
+    used to compute photometry. This method will throw an error if the new transmission
+    curves already exist in aux_data.
+
+    Parameters
+    ----------
+
+    aux_data: dict
+        Auxillary data loaded with
+        :py:meth:`diffsky.data_loaders.opencosmo_utils.load_diffsky_mock`
+
+    **transmission_curves: tuple[np.array, nparray]
+        Tuple of (wavelength, transmission_curve) pairs to add.
+
+    Returns
+    -------
+
+    new_aux_data; dict
+        The auxillary data with the new transmission curves added.
 
     """
     TransmissionCurve = namedtuple("TransmissionCurve", ("wave", "transmission"))
