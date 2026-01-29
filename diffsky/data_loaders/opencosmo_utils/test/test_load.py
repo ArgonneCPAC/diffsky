@@ -4,8 +4,10 @@ import h5py
 import numpy as np
 import opencosmo as oc
 import pytest
+from jax.scipy.stats import norm as jnorm
 
 from diffsky.data_loaders.opencosmo_utils import (
+    add_transmission_curves,
     compute_dbk_phot_from_diffsky_mocks,
     compute_dbk_seds_from_diffsky_mocks,
     compute_phot_from_diffsky_mocks,
@@ -42,6 +44,28 @@ def test_compute_photometry(test_data_dir):
     original_data = catalog.select(bands).get_data("numpy")
     for name, band_result in results.items():
         assert np.all(np.isclose(band_result, original_data[name], rtol=1e-4))
+
+
+def test_compute_photometry_custom_bands(test_data_dir):
+    with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
+        z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
+
+    wave = np.linspace(200, 8_000, 500)
+    fake_tcurve1 = jnorm.pdf(wave, loc=3_000.0, scale=500.0)
+    fake_tcurve2 = jnorm.pdf(wave, loc=5_000.0, scale=500.0)
+
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+
+    aux_data = add_transmission_curves(
+        aux_data, fake_tcurve_1=(wave, fake_tcurve1), fake_tcurve_2=(wave, fake_tcurve2)
+    )
+
+    results = compute_phot_from_diffsky_mocks(
+        catalog, aux_data, z_phots, ["fake_tcurve_1", "fake_tcurve_2"], insert=False
+    )
+    raise NotImplementedError(
+        "Need to figure out how to test that this actually worked"
+    )
 
 
 def test_compute_dbk_photometry(test_data_dir):
