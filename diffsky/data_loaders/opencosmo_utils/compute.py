@@ -14,7 +14,7 @@ from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import mc_phot_kernels as mcpk
 
 
-def compute_phot_from_diffsky_mocks(
+def compute_phot_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
@@ -71,7 +71,7 @@ def compute_phot_from_diffsky_mocks(
     )
 
 
-def compute_dbk_phot_from_diffsky_mocks(
+def compute_dbk_phot_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
@@ -131,7 +131,7 @@ def compute_dbk_phot_from_diffsky_mocks(
     )
 
 
-def compute_seds_from_diffsky_mocks(
+def compute_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
@@ -189,7 +189,7 @@ def compute_seds_from_diffsky_mocks(
     )
 
 
-def compute_dbk_seds_from_diffsky_mocks(
+def compute_dbk_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
@@ -234,7 +234,7 @@ def compute_dbk_seds_from_diffsky_mocks(
 
     """
     cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
-    dbk_phot_info = compute_dbk_phot_from_diffsky_mocks(
+    dbk_phot_info = compute_dbk_phot_from_diffsky_mock(
         catalog,
         aux_data,
         z_phot_table,
@@ -283,10 +283,8 @@ def __unpack_photometry_array(data, band_names):
 
 def __unpack_seds(data, band_names, _):
     phot_info, _, sed_kern_results = data
-    sed_info = phot_info._asdict()
     rest_sed = sed_kern_results[0]
-    sed_info["rest_sed"] = rest_sed
-    return sed_info
+    return {"rest_sed": rest_sed}
 
 
 def __run_photometry(
