@@ -320,6 +320,9 @@ if __name__ == "__main__":
 
         print(f"Looping over {nhalos_estimate} halos with batch_size={batch_size}")
         for istart in range(0, nhalos_estimate, batch_size):
+            jax.clear_caches()
+            gc.collect()
+
             iend = min(istart + batch_size, nhalos_estimate)
 
             patch_key, batch_key = jran.split(patch_key)
