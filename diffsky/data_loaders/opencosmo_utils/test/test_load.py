@@ -8,10 +8,10 @@ from jax.scipy.stats import norm as jnorm
 
 from diffsky.data_loaders.opencosmo_utils import (
     add_transmission_curves,
-    compute_dbk_phot_from_diffsky_mocks,
-    compute_dbk_seds_from_diffsky_mocks,
-    compute_phot_from_diffsky_mocks,
-    compute_seds_from_diffsky_mocks,
+    compute_dbk_phot_from_diffsky_mock,
+    compute_dbk_seds_from_diffsky_mock,
+    compute_phot_from_diffsky_mock,
+    compute_seds_from_diffsky_mock,
     load_diffsky_mock,
 )
 
@@ -38,7 +38,7 @@ def test_compute_photometry(test_data_dir):
         z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
 
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_phot_from_diffsky_mocks(catalog, aux_data, z_phots, insert=False)
+    results = compute_phot_from_diffsky_mock(catalog, aux_data, z_phots, insert=False)
 
     bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     original_data = catalog.select(bands).get_data("numpy")
@@ -60,7 +60,7 @@ def test_compute_photometry_custom_bands(test_data_dir):
         aux_data, fake_tcurve_1=(wave, fake_tcurve1), fake_tcurve_2=(wave, fake_tcurve2)
     )
 
-    results = compute_phot_from_diffsky_mocks(
+    results = compute_phot_from_diffsky_mock(
         catalog, aux_data, z_phots, ["fake_tcurve_1", "fake_tcurve_2"], insert=False
     )
     raise NotImplementedError(
@@ -73,7 +73,7 @@ def test_compute_dbk_photometry(test_data_dir):
         z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
 
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_dbk_phot_from_diffsky_mocks(
+    results = compute_dbk_phot_from_diffsky_mock(
         catalog, aux_data, z_phots, insert=False
     )
     original_data = catalog.select(results.keys()).get_data("numpy")
@@ -86,7 +86,8 @@ def test_compute_seds(test_data_dir):
         z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
 
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_seds_from_diffsky_mocks(catalog, aux_data, z_phots, insert=False)
+    results = compute_seds_from_diffsky_mock(catalog, aux_data, z_phots, insert=False)
+    print(results["seds"][0, :])
     raise NotImplementedError
 
 
@@ -95,7 +96,7 @@ def test_compute_dbk_seds(test_data_dir):
         z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
 
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_dbk_seds_from_diffsky_mocks(
+    results = compute_dbk_seds_from_diffsky_mock(
         catalog, aux_data, z_phots, insert=False
     )
     raise NotImplementedError
