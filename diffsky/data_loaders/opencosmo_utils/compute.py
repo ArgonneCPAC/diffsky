@@ -14,14 +14,50 @@ from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import mc_phot_kernels as mcpk
 
 
+def add_transmission_curves(
+    aux_data: dict, **transmission_curves: tuple[np.ndarray, np.ndarray]
+):
+    """
+    Add new tranmission curves to the diffsky metadata. These new curves can then be
+    used to compute photometry.
+
+    """
+    TransmissionCurve = namedtuple("TransmissionCurve", ("wave", "transmission"))
+    known_tcurves = aux_data["tcurves"]._fields
+
+    overwrites = set(known_tcurves).intersection(transmission_curves.keys())
+    if overwrites:
+        raise ValueError(
+            f"Tried to add transmission curves that already exist: {overwrites}"
+        )
+
+    new_curves = {}
+    for name, curve in transmission_curves.items():
+        wave = curve[0]
+        tcurve = curve[1]
+        if not np.all(wave[1:] > wave[:-1]):
+            raise ValueError(
+                "Transmission curve wavelength specifications should always go from low to high"
+            )
+        new_curves[name] = TransmissionCurve(wave, tcurve)
+
+    new_filter_nicknames = (*known_tcurves, *tuple(new_curves.keys()))
+    TCurves = namedtuple("TCurves", new_filter_nicknames)
+    new_tcurves = TCurves(*aux_data["tcurves"], *tuple(new_curves.values()))
+    new_aux_data = {**aux_data, "tcurves": new_tcurves}
+    return new_aux_data
+
+
 def compute_phot_from_diffsky_mocks(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
-    survey_name: str = "lsst",
-    bands: list[str] = ["u", "g", "r", "i", "z", "y"],
+    bands: list[str] = ["lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y"],
     insert: bool = True,
 ):
+    """
+    Compute photometry in a set of bands given
+    """
     func = dbk_phot_from_mock._reproduce_mock_phot_kern
     return __run_photometry(
         func,
@@ -29,7 +65,6 @@ def compute_phot_from_diffsky_mocks(
         catalog,
         aux_data,
         z_phot_table,
-        survey_name,
         bands,
         None,
         False,
@@ -41,8 +76,7 @@ def compute_dbk_phot_from_diffsky_mocks(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
-    survey_name: str = "lsst",
-    bands: list[str] = ["u", "g", "r", "i", "z", "y"],
+    bands: list[str] = ["lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y"],
     include_extras: Optional[list] = None,
     insert: bool = True,
 ):
@@ -53,7 +87,6 @@ def compute_dbk_phot_from_diffsky_mocks(
         catalog,
         aux_data,
         z_phot_table,
-        survey_name,
         bands,
         include_extras,
         True,
@@ -65,8 +98,7 @@ def compute_seds_from_diffsky_mocks(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
-    survey_name: str = "lsst",
-    bands: list[str] = ["u", "g", "r", "i", "z", "y"],
+    bands: list[str] = ["lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y"],
     insert: bool = True,
 ):
     func = dbk_phot_from_mock._reproduce_mock_sed_kern
@@ -76,7 +108,6 @@ def compute_seds_from_diffsky_mocks(
         catalog,
         aux_data,
         z_phot_table,
-        survey_name,
         bands,
         None,
         False,
@@ -88,8 +119,7 @@ def compute_dbk_seds_from_diffsky_mocks(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
-    survey_name: str = "lsst",
-    bands: list[str] = ["u", "g", "r", "i", "z", "y"],
+    bands: list[str] = ["lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y"],
     insert: bool = True,
 ):
     cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
@@ -97,7 +127,6 @@ def compute_dbk_seds_from_diffsky_mocks(
         catalog,
         aux_data,
         z_phot_table,
-        survey_name,
         bands,
         ["t_table", "sfh_table", "lgmet_weights"],
         False,
@@ -155,18 +184,16 @@ def __run_photometry(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
-    survey_name: str,
-    bands: list[str],
+    band_names: list[str],
     include_extras: Optional[list],
     do_decomp: bool = False,
     insert: bool = True,
 ):
-    band_names = set(map(lambda band: f"{survey_name}_{band}", bands))
     if "tcurves" not in aux_data:
         raise ValueError("Missing transmission curves in auxiliary data!")
 
     known_tcurves = aux_data["tcurves"]._fields
-    missing_tcurves = band_names.difference(known_tcurves)
+    missing_tcurves = set(band_names).difference(known_tcurves)
     if missing_tcurves:
         raise ValueError(f"Missing transmission curves for bands {missing_tcurves}")
 

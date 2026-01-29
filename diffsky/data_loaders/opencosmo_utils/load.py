@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+from collections import namedtuple
 from pathlib import Path
 
 import h5py
+import numpy as np
 import opencosmo as oc
 
-from ..hac_utils.lc_mock import (
+from ..hacc_utils.lc_mock import (
     load_diffsky_param_collection,
     load_diffsky_ssp_data,
     load_diffsky_t_table,
     load_diffsky_tcurves,
 )
+from .versions import check_versions
 
 
 def load_diffsky_mock(
@@ -40,7 +43,43 @@ def load_diffsky_mock(
     except FileNotFoundError:
         aux_data = None
     catalog = oc.open(data_files, synth_cores=synth_cores)
+    check_versions(catalog)
+
     return catalog, aux_data
+
+
+def add_transmission_curves(
+    aux_data: dict, **transmission_curves: tuple[np.ndarray, np.ndarray]
+):
+    """
+    Add new tranmission curves to the diffsky metadata. These new curves can then be
+    used to compute photometry.
+
+    """
+    TransmissionCurve = namedtuple("TransmissionCurve", ("wave", "transmission"))
+    known_tcurves = aux_data["tcurves"]._fields
+
+    overwrites = set(known_tcurves).intersection(transmission_curves.keys())
+    if overwrites:
+        raise ValueError(
+            f"Tried to add transmission curves that already exist: {overwrites}"
+        )
+
+    new_curves = {}
+    for name, curve in transmission_curves.items():
+        wave = curve[0]
+        tcurve = curve[1]
+        if not np.all(wave[1:] > wave[:-1]):
+            raise ValueError(
+                "Transmission curve wavelength specifications should always go from low to high"
+            )
+        new_curves[name] = TransmissionCurve(wave, tcurve)
+
+    new_filter_nicknames = (*known_tcurves, *tuple(new_curves.keys()))
+    TCurves = namedtuple("TCurves", new_filter_nicknames)
+    new_tcurves = TCurves(*aux_data["tcurves"], *tuple(new_curves.values()))
+    new_aux_data = {**aux_data, "tcurves": new_tcurves}
+    return new_aux_data
 
 
 def __load_aux_data(path: Path, mock_name: str):
