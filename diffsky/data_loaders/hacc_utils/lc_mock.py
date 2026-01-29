@@ -339,6 +339,8 @@ def write_batched_lc_dbk_sed_mock_to_disk(
 def add_peculiar_velocity_to_mock(
     lc_data, diffsky_data, ran_key=None, impute_vzero=True
 ):
+    n = diffsky_data["vy"].size
+    print(f"Number of galaxies seen by add_peculiar_velocity_to_mock = {n:_}")
     # Patch v==0 galaxies
     if impute_vzero:
         assert ran_key is not None, "Must pass ran_key when impute_vzero=True"
