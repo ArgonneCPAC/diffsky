@@ -110,6 +110,7 @@ def load_lc_diffsky_patch_data(
     ZZ = np.zeros(n_gals)
 
     ran_key, vel_key = jran.split(ran_key, 2)
+    print(f"Generating velocities for {n_gals:_} galaxies")
     v_xyz = jran.normal(vel_key, shape=(n_gals, 3)) * STDVEL_COSMIC
     diffsky_data["vx"] = v_xyz[:, 0]
     diffsky_data["vy"] = v_xyz[:, 1]
