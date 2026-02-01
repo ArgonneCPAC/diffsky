@@ -18,7 +18,7 @@ from jax import random as jran
 from jax.scipy.stats import norm
 
 from ..data_loaders import cosmos20_loader as c20
-from ..data_loaders.hacc_utils.load_lc_mock import load_lc_patch_collection
+from ..data_loaders.hacc_utils import load_lc_mock
 from ..experimental import precompute_ssp_phot as psspp
 from ..experimental.mc_lightcone_halos import mc_weighted_lightcone_data
 from ..experimental.mc_phot import mc_lc_phot
@@ -92,7 +92,6 @@ def get_plotting_data_mock(
     spspop_params=None,
     scatter_params=None,
     ssperr_params=None,
-    cosmo_params=None,
     fb=None,
     cosmos=None,
     tcurves=None,
@@ -136,9 +135,32 @@ def get_plotting_data_mock(
     fn_list = sorted(glob(os.path.join(drn_mock, bnpat)))
     fn_list_synthetic = glob(os.path.join(drn_synthetic_halos, bnpat))
 
-    mock = Table(load_lc_patch_collection(fn_list, keys))
+    metadata = load_lc_mock.load_mock_metadata(fn_list[0])
+    if ssp_data is None:
+        ssp_data = metadata["ssp_data"]
+    elif ssp_data == "random":
+        ssp_data = load_fake_ssp_data()
+
+    dsps_cosmo_mock = DEFAULT_COSMOLOGY._make(
+        [metadata["cosmology"][key] for key in DEFAULT_COSMOLOGY._fields]
+    )
+    if fb is None:
+        fb = metadata["cosmology"]["Ob0"] / metadata["cosmology"]["Om0"]
+
+    if diffstarpop_params is None:
+        diffstarpop_params = metadata["param_collection"].diffstarpop_params
+    if mzr_params is None:
+        mzr_params = metadata["param_collection"].mzr_params
+    if spspop_params is None:
+        spspop_params = metadata["param_collection"].spspop_params
+    if scatter_params is None:
+        scatter_params = metadata["param_collection"].scatter_params
+    if ssperr_params is None:
+        ssperr_params = metadata["param_collection"].ssperr_params
+
+    mock = Table(load_lc_mock.load_lc_patch_collection(fn_list, keys))
     mock["synthetic"] = False
-    mock2 = Table(load_lc_patch_collection(fn_list_synthetic, keys))
+    mock2 = Table(load_lc_mock.load_lc_patch_collection(fn_list_synthetic, keys))
     mock2["synthetic"] = True
 
     n_tot = len(mock) + len(mock2)
@@ -147,30 +169,38 @@ def get_plotting_data_mock(
     n_mock = len(mock)
 
     mock["t_obs"] = flat_wcdm.age_at_z(
-        np.array(mock["redshift_true"]), *DEFAULT_COSMOLOGY
+        np.array(mock["redshift_true"]), *dsps_cosmo_mock
     )
     mah_params = DEFAULT_MAH_PARAMS._make(
         [np.array(mock[key]) for key in DEFAULT_MAH_PARAMS._fields]
     )
-    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    t0 = flat_wcdm.age_at_z0(*dsps_cosmo_mock)
     lgt0 = np.log10(t0)
     logmp0 = logmh_at_t_obs(mah_params, np.zeros(n_mock) + t0, lgt0)
     logmp_obs = logmh_at_t_obs(mah_params, np.zeros(n_mock) + mock["t_obs"], lgt0)
 
     t_table = np.linspace(T_TABLE_MIN, t0, n_sfh_table)
 
-    n_z_phot_table = 15
+    n_z_phot_table = 25
+    EPS = 1e-3
+    z_min = max(mock["redshift_true"].min() - EPS, EPS)
+    z_max = mock["redshift_true"].max() + EPS
     z_phot_table = np.linspace(z_min, z_max, n_z_phot_table)
 
+    if tcurves is None:
+        tcurves = _get_cosmos_dsps_tcurves()
+    elif tcurves == "random":
+        tcurves = _get_random_tcurves()
+
     precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table, cosmo_params
+        tcurves, ssp_data, z_phot_table, dsps_cosmo_mock
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
     lc_data_dict = dict(
-        nhalos=np.ones(n_mock).astype(int),
+        nhalos=np.ones(n_mock).astype(float) * downsample_factor,
         z_obs=np.array(mock["redshift_true"]),
-        t_obs=flat_wcdm.age_at_z(np.array(mock["redshift_true"]), *DEFAULT_COSMOLOGY),
+        t_obs=np.array(mock["t_obs"]),
         mah_params=mah_params,
         logmp0=logmp0,
         t_table=t_table,
@@ -199,16 +229,6 @@ def get_plotting_data_mock(
     msk_is_not_uvista_outlier.mean(), msk_is_not_hsc_outlier.mean()
     cosmos = cosmos[msk_is_not_hsc_outlier & msk_is_not_uvista_outlier]
 
-    if tcurves is None:
-        tcurves = _get_cosmos_dsps_tcurves()
-    elif tcurves == "random":
-        tcurves = _get_random_tcurves()
-
-    if ssp_data is None:
-        ssp_data = ddl.load_ssp_templates()
-    elif ssp_data == "random":
-        ssp_data = load_fake_ssp_data()
-
     filter_dict = dict()
     for i, cosmos_key in enumerate(c20.COSMOS_TARGET_MAGS):
         filter_dict[cosmos_key] = i, COSMOS_FILTER_BNAMES[i]
@@ -222,7 +242,7 @@ def get_plotting_data_mock(
         spspop_params=spspop_params,
         scatter_params=scatter_params,
         ssperr_params=ssperr_params,
-        cosmo_params=cosmo_params,
+        cosmo_params=dsps_cosmo_mock,
         fb=fb,
     )
     diffsky_data["filter_dict"] = filter_dict

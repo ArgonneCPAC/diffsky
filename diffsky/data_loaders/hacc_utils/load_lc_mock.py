@@ -20,7 +20,7 @@ from . import hacc_core_utils as hcu
 from . import lc_mock as lcmp
 
 
-def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list):
+def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list, keys=None):
     fn_list_all = glob(os.path.join(drn, lcmp.LC_MOCK_BNPAT.format("*", "*")))
     bn_list_all = [os.path.basename(fn) for fn in fn_list_all]
     patch_info_all = [lcmp.get_patch_info_from_mock_basename(bn) for bn in bn_list_all]
@@ -39,7 +39,7 @@ def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list):
 
     data_collector = []
     for fn in fn_collector:
-        lc_diffsky_data = load_flat_hdf5(fn, dataset="data")
+        lc_diffsky_data = load_flat_hdf5(fn, dataset="data", keys=keys)
         data_collector.append(lc_diffsky_data)
 
     diffsky_data = dict()
@@ -47,6 +47,53 @@ def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list):
         diffsky_data[key] = np.concatenate([x[key] for x in data_collector])
 
     return diffsky_data
+
+
+def load_mock_metadata(fn_mock):
+    metadata_dict = dict()
+
+    hacc_cosmology = dict()
+    nbody_info = dict()
+    software_info = dict()
+
+    with h5py.File(fn_mock, "r") as hdf:
+        for key, val in hdf["metadata"].attrs.items():
+            metadata_dict[key] = val
+
+            for cosmo_pname, cosmo_pval in hdf["metadata"]["cosmology"].attrs.items():
+                hacc_cosmology[cosmo_pname] = cosmo_pval
+            metadata_dict["cosmology"] = hacc_cosmology
+
+            for nbody_key, nbody_val in hdf["metadata"]["nbody_info"].attrs.items():
+                nbody_info[nbody_key] = nbody_val
+            metadata_dict["nbody_info"] = nbody_info
+
+            for soft_key, soft_val in hdf["metadata"][
+                "software_version_info"
+            ].attrs.items():
+                software_info[soft_key] = soft_val
+            metadata_dict["software_version_info"] = software_info
+
+            z_phot_table = hdf["metadata"]["z_phot_table"][...]
+            metadata_dict["z_phot_table"] = z_phot_table
+
+    drn_mock = os.path.dirname(fn_mock)
+
+    ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, metadata_dict["mock_version_name"])
+    metadata_dict["ssp_data"] = ssp_data
+
+    tcurves = lcmp.load_diffsky_tcurves(drn_mock, metadata_dict["mock_version_name"])
+    metadata_dict["tcurves"] = tcurves
+
+    sim_info = lcmp.load_diffsky_sim_info(fn_mock)
+    metadata_dict["sim_info"] = sim_info
+
+    param_collection = lcmp.load_diffsky_param_collection(
+        drn_mock, metadata_dict["mock_version_name"]
+    )
+    metadata_dict["param_collection"] = param_collection
+
+    return metadata_dict
 
 
 def load_lc_patch_collection(fn_list, keys):
