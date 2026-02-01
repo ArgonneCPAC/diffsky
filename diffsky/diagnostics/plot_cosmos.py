@@ -18,6 +18,7 @@ from jax import random as jran
 from jax.scipy.stats import norm
 
 from ..data_loaders import cosmos20_loader as c20
+from ..data_loaders.hacc_utils import lightcone_utils as hlu
 from ..data_loaders.hacc_utils import load_lc_mock
 from ..experimental import precompute_ssp_phot as psspp
 from ..experimental.mc_lightcone_halos import mc_weighted_lightcone_data
@@ -84,7 +85,7 @@ Z_MAGI_PAIRS = (
 def get_plotting_data_mock(
     *,
     drn_mock,
-    drn_synthetic_halos,
+    drn_synthetic_cores,
     lc_patch,
     seed=0,
     diffstarpop_params=None,
@@ -133,7 +134,7 @@ def get_plotting_data_mock(
 
     bnpat = f"lc_cores-*.{lc_patch}.diffsky_gals.hdf5"
     fn_list = sorted(glob(os.path.join(drn_mock, bnpat)))
-    fn_list_synthetic = glob(os.path.join(drn_synthetic_halos, bnpat))
+    fn_list_synthetic = glob(os.path.join(drn_synthetic_cores, bnpat))
 
     metadata = load_lc_mock.load_mock_metadata(fn_list[0])
     if ssp_data is None:
@@ -148,15 +149,25 @@ def get_plotting_data_mock(
         fb = metadata["cosmology"]["Ob0"] / metadata["cosmology"]["Om0"]
 
     if diffstarpop_params is None:
-        diffstarpop_params = metadata["param_collection"].diffstarpop_params
+        diffstarpop_params = dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params._make(
+            metadata["param_collection"].diffstarpop_params
+        )
     if mzr_params is None:
-        mzr_params = metadata["param_collection"].mzr_params
+        mzr_params = dpw.DEFAULT_PARAM_COLLECTION.mzr_params._make(
+            metadata["param_collection"].mzr_params
+        )
     if spspop_params is None:
-        spspop_params = metadata["param_collection"].spspop_params
+        spspop_params = dpw.DEFAULT_PARAM_COLLECTION.spspop_params._make(
+            metadata["param_collection"].spspop_params
+        )
     if scatter_params is None:
-        scatter_params = metadata["param_collection"].scatter_params
+        scatter_params = dpw.DEFAULT_PARAM_COLLECTION.scatter_params._make(
+            metadata["param_collection"].scatter_params
+        )
     if ssperr_params is None:
-        ssperr_params = metadata["param_collection"].ssperr_params
+        ssperr_params = dpw.DEFAULT_PARAM_COLLECTION.ssperr_params._make(
+            metadata["param_collection"].ssperr_params
+        )
 
     mock = Table(load_lc_mock.load_lc_patch_collection(fn_list, keys))
     mock["synthetic"] = False
@@ -177,7 +188,9 @@ def get_plotting_data_mock(
     t0 = flat_wcdm.age_at_z0(*dsps_cosmo_mock)
     lgt0 = np.log10(t0)
     logmp0 = logmh_at_t_obs(mah_params, np.zeros(n_mock) + t0, lgt0)
-    logmp_obs = logmh_at_t_obs(mah_params, np.zeros(n_mock) + mock["t_obs"], lgt0)
+    logmp_obs = logmh_at_t_obs(
+        mah_params, np.zeros(n_mock) + np.array(mock["t_obs"]), lgt0
+    )
 
     t_table = np.linspace(T_TABLE_MIN, t0, n_sfh_table)
 
@@ -246,7 +259,9 @@ def get_plotting_data_mock(
         fb=fb,
     )
     diffsky_data["filter_dict"] = filter_dict
-    diffsky_data["sky_area_degsq"] = sky_area_degsq
+    _res = hlu.read_hacc_lc_patch_decomposition(metadata["nbody_info"]["sim_name"])
+    patch_decomposition, sky_frac, solid_angles = _res
+    diffsky_data["sky_area_degsq"] = solid_angles[lc_patch]
 
     PlottingData = namedtuple("PlottingData", ("cosmos", "lc_data", "diffsky_data"))
     pdata = PlottingData(cosmos, lc_data, diffsky_data)
