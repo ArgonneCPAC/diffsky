@@ -238,6 +238,55 @@ def _phot_kern(
     return phot_kern_results
 
 
+@partial(jjit, static_argnames=["n_t_table"])
+def _specphot_kern(
+    phot_randoms,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    ssp_mag_table,
+    ssp_lineflux_table,
+    z_phot_table,
+    wave_eff_table,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    cosmo_params,
+    fb,
+    n_t_table=mcdw.N_T_TABLE,
+):
+    pk_res = _phot_kern(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+        n_t_table=n_t_table,
+    )
+
+    gal_linefluxes = sspwk._compute_obs_flux_from_weights(
+        pk_res.logsm_obs,
+        dust_frac_trans,
+        frac_ssp_errors,
+        ssp_lineflux_table,
+        pk_res.ssp_weights,
+    )
+    return pk_res, gal_linefluxes
+
+
 @jjit
 def _mc_dbk_kern(
     t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_key
