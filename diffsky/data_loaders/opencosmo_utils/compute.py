@@ -18,7 +18,7 @@ def compute_phot_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
-    bands: list[str] = ["lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y"],
+    bands: list[str],
     insert: bool = True,
 ):
     """
@@ -58,7 +58,7 @@ def compute_phot_from_diffsky_mock(
 
     """
     func = dbk_phot_from_mock._reproduce_mock_phot_kern
-    return __run_photometry(
+    result = __run_photometry(
         func,
         __unpack_photometry,
         catalog,
@@ -67,15 +67,18 @@ def compute_phot_from_diffsky_mock(
         bands,
         None,
         False,
-        insert,
+        insert=False,
     )
+    if insert:
+        return catalog.with_new_columns(**result)
+    return result
 
 
 def compute_dbk_phot_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
-    bands: list[str] = ["lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y"],
+    bands: list[str],
     include_extras: Optional[list] = None,
     insert: bool = True,
 ):
@@ -118,7 +121,7 @@ def compute_dbk_phot_from_diffsky_mock(
     """
 
     func = dbk_phot_from_mock._reproduce_mock_dbk_kern
-    return __run_photometry(
+    result = __run_photometry(
         func,
         __unpack_dbk_photometry,
         catalog,
@@ -127,15 +130,18 @@ def compute_dbk_phot_from_diffsky_mock(
         bands,
         include_extras,
         True,
-        insert,
+        insert=False,
     )
+    if insert:
+        return catalog.with_new_columns(**result)
+    return result
 
 
 def compute_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
-    bands: list[str] = ["lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y"],
+    bands: list[str],
     insert: bool = True,
 ):
     """
@@ -176,7 +182,7 @@ def compute_seds_from_diffsky_mock(
     """
 
     func = dbk_phot_from_mock._reproduce_mock_sed_kern
-    return __run_photometry(
+    result = __run_photometry(
         func,
         __unpack_seds,
         catalog,
@@ -185,15 +191,18 @@ def compute_seds_from_diffsky_mock(
         bands,
         None,
         False,
-        insert,
+        insert=False,
     )
+    if insert:
+        return catalog.with_new_columns(result)
+    return result
 
 
 def compute_dbk_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     z_phot_table: np.ndarray,
-    bands: list[str] = ["lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y"],
+    bands: list[str],
     insert: bool = True,
 ):
     """
@@ -245,15 +254,18 @@ def compute_dbk_seds_from_diffsky_mock(
     catalog = catalog.evaluate(
         age_at_z_, vectorize=True, cosmology=cosmology_parameters
     )
-    return catalog.evaluate(
+    result = catalog.evaluate(
         __compute_dbk_sed_managed,
         dbk_phot_info=dbk_phot_info,
         ssp_data=aux_data["ssp_data"],
         param_collection=aux_data["param_collection"],
         cosmology=cosmology_parameters,
-        insert=insert,
+        insert=False,
         vectorize=True,
     )
+    if insert is True:
+        return catalog.with_new_columns(**result)
+    return result
 
 
 def __unpack_photometry(data, band_names, *args):
@@ -284,7 +296,7 @@ def __unpack_photometry_array(data, band_names):
 def __unpack_seds(data, band_names, _):
     phot_info, _, sed_kern_results = data
     rest_sed = sed_kern_results[0]
-    return {"rest_sed": rest_sed}
+    return {"rest_sed": rest_sed.T}
 
 
 def __run_photometry(
