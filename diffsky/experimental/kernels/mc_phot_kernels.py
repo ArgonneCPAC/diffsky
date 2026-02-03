@@ -238,6 +238,75 @@ def _phot_kern(
     return phot_kern_results
 
 
+@partial(jjit, static_argnames=["n_t_table"])
+def _mc_specphot_kern(
+    ran_key,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    precomputed_ssp_lineflux_cgs_table,
+    z_phot_table,
+    wave_eff_table,
+    line_wave_table,
+    diffstarpop_params,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    cosmo_params,
+    fb,
+    n_t_table=mcdw.N_T_TABLE,
+):
+    phot_kern_results, phot_randoms = _mc_phot_kern(
+        ran_key,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+        n_t_table=n_t_table,
+    )
+
+    _dust_res = sspwk.compute_dust_attenuation_lines(
+        phot_randoms.uran_av,
+        phot_randoms.uran_delta,
+        phot_randoms.uran_funo,
+        phot_kern_results.logsm_obs,
+        phot_kern_results.logssfr_obs,
+        ssp_data,
+        z_obs,
+        line_wave_table,
+        spspop_params.dustpop_params,
+        scatter_params,
+    )
+    dust_ftrans_lines = _dust_res[0]
+
+    n_lines, n_met, n_age = precomputed_ssp_lineflux_cgs_table.shape
+    _s = (1, n_lines, n_met, n_age)
+    precomputed_ssp_lineflux_cgs_table_galpop = (
+        precomputed_ssp_lineflux_cgs_table.reshape(_s)
+    )
+
+    gal_linefluxes = sspwk._compute_lineflux_from_weights(
+        phot_kern_results.logsm_obs,
+        dust_ftrans_lines,
+        precomputed_ssp_lineflux_cgs_table_galpop,
+        phot_kern_results.ssp_weights,
+    )
+    return phot_kern_results, phot_randoms, gal_linefluxes
+
+
 @jjit
 def _mc_dbk_kern(
     t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_key

@@ -46,6 +46,9 @@ vmap_kern1 = jjit(
 _E = (None, 0, 0, 0, 0, None, 0, 0, 0, None)
 calc_dust_ftrans_vmap = jjit(vmap(vmap_kern1, in_axes=_E))
 
+_F = (None, None, 0, 0, 0, None, 0, 0, 0, None)
+calc_dust_ftrans_lines_vmap = jjit(vmap(vmap_kern1, in_axes=_F))
+
 
 MSQ = namedtuple("MSQ", ("ms", "q"))
 QMSB = namedtuple("QMSB", ("q", "smooth_ms", "bursty_ms"))
@@ -202,11 +205,57 @@ def compute_dust_attenuation(
 
 
 @jjit
+def compute_dust_attenuation_lines(
+    uran_av,
+    uran_delta,
+    uran_funo,
+    logsm_obs,
+    logssfr_obs,
+    ssp_data,
+    z_obs,
+    line_waves,
+    dustpop_params,
+    scatter_params,
+):
+
+    # Calculate fraction of flux transmitted through dust for each galaxy
+    # Note that F_trans(λ_eff, τ_age) varies with stellar age τ_age
+    ftrans_args = (
+        dustpop_params,
+        line_waves,
+        logsm_obs,
+        logssfr_obs,
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        scatter_params,
+    )
+    _res = calc_dust_ftrans_lines_vmap(*ftrans_args)
+    frac_trans = _res[1]  # ftrans_q.shape = (n_gals, n_bands, n_age)
+    dust_params = _res[3]  # fields = ('av', 'delta', 'funo')
+
+    return frac_trans, dust_params
+
+
+@jjit
 def _compute_obs_mags_from_weights(
     logsm_obs, frac_trans, frac_ssp_err, ssp_photflux_table, ssp_weights
 ):
+    photflux_galpop = _compute_obs_flux_from_weights(
+        logsm_obs, frac_trans, frac_ssp_err, ssp_photflux_table, ssp_weights
+    )
+    obs_mags = -2.5 * jnp.log10(photflux_galpop)
+    return obs_mags
+
+
+@jjit
+def _compute_obs_flux_from_weights(
+    logsm_obs, frac_trans, frac_ssp_err, ssp_photflux_table, ssp_weights
+):
     n_gals = logsm_obs.size
-    n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
+    n_bands, n_met, n_age = ssp_photflux_table.shape[1:]
 
     # Reshape arrays before calculating galaxy magnitudes
     _ferr_ssp = frac_ssp_err.reshape((n_gals, n_bands, 1, 1))
@@ -217,9 +266,27 @@ def _compute_obs_mags_from_weights(
     # Calculate galaxy magnitudes as PDF-weighted sums
     integrand = ssp_photflux_table * _weights * _ftrans * _ferr_ssp
     photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * _mstar
-    obs_mags = -2.5 * jnp.log10(photflux_galpop)
 
-    return obs_mags
+    return photflux_galpop
+
+
+@jjit
+def _compute_lineflux_from_weights(
+    logsm_obs, frac_trans, ssp_photflux_table, ssp_weights
+):
+    n_gals = logsm_obs.size
+    n_bands, n_met, n_age = ssp_photflux_table.shape[1:]
+
+    # Reshape arrays before calculating galaxy magnitudes
+    _ftrans = frac_trans.reshape((n_gals, n_bands, 1, n_age))
+    _weights = ssp_weights.reshape((n_gals, 1, n_met, n_age))
+    _mstar = 10 ** logsm_obs.reshape((n_gals, 1))
+
+    # Calculate galaxy magnitudes as PDF-weighted sums
+    integrand = ssp_photflux_table * _weights * _ftrans
+    lineflux_galpop = jnp.sum(integrand, axis=(2, 3)) * _mstar
+
+    return lineflux_galpop
 
 
 @jjit

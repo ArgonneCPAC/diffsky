@@ -9,6 +9,7 @@ from jax import random as jran
 from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper as dpw
+from ....utils import emline_utils
 from ...tests import test_mc_lightcone_halos as tmclh
 from ...tests import test_mc_phot
 from .. import mc_phot_kernels as mcpk
@@ -170,3 +171,52 @@ def test_mc_dbk_kern(num_halos=50):
 
     std_magdiff = np.std(magdiff, axis=0)
     assert np.all(std_magdiff < 0.01)
+
+
+def test_specphot_kern(num_halos=250):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
+
+    fb = 0.156
+    ran_key, phot_key = jran.split(ran_key, 2)
+
+    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
+        phot_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpw.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+
+    n_lines = 3
+    single_lineflux_table = emline_utils.fake_lineflux_table_cgs(
+        lc_data.ssp_data.ssp_lgmet, lc_data.ssp_data.ssp_lg_age_gyr
+    )
+    precomputed_ssp_lineflux_cgs_table = np.array([single_lineflux_table] * n_lines)
+    line_wave_table = np.linspace(1_000, 10_000, n_lines)
+
+    _specphot_res = mcpk._mc_specphot_kern(
+        phot_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        precomputed_ssp_lineflux_cgs_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        line_wave_table,
+        *dpw.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+    phot_kern_results2, phot_randoms2, gal_linefluxes = _specphot_res
+    assert np.allclose(
+        phot_kern_results.obs_mags, phot_kern_results2.obs_mags, rtol=1e-4
+    )
