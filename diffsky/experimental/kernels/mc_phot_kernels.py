@@ -278,7 +278,7 @@ def _mc_specphot_kern(
         n_t_table=n_t_table,
     )
 
-    dust_ftrans_lines = sspwk.compute_dust_attenuation_lines(
+    _dust_res = sspwk.compute_dust_attenuation_lines(
         phot_randoms.uran_av,
         phot_randoms.uran_delta,
         phot_randoms.uran_funo,
@@ -289,13 +289,17 @@ def _mc_specphot_kern(
         line_wave_table,
         spspop_params.dustpop_params,
         scatter_params,
-    )[0]
+    )
+    dust_ftrans_lines = _dust_res[0]
 
-    gal_linefluxes = sspwk._compute_obs_flux_from_weights(
+    n_lines, n_met, n_age = ssp_lineflux_table.shape
+    _s = (1, n_lines, n_met, n_age)
+    ssp_lineflux_table_galpop = ssp_lineflux_table.reshape(_s)
+
+    gal_linefluxes = sspwk._compute_lineflux_from_weights(
         phot_kern_results.logsm_obs,
         dust_ftrans_lines,
-        frac_ssp_errors,
-        ssp_lineflux_table,
+        ssp_lineflux_table_galpop,
         phot_kern_results.ssp_weights,
     )
     return phot_kern_results, phot_randoms, gal_linefluxes

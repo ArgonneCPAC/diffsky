@@ -196,7 +196,7 @@ def test_specphot_kern(num_halos=250):
     n_met = lc_data.ssp_data.ssp_lgmet.size
     n_age = lc_data.ssp_data.ssp_lg_age_gyr.size
     n_lines = 3
-    ssp_lineflux_table = np.ones((n_met, n_age, n_lines))
+    ssp_lineflux_table = np.ones((n_lines, n_met, n_age))
     line_wave_table = np.linspace(1_000, 10_000, n_lines)
     _specphot_res = mcpk._mc_specphot_kern(
         phot_key,
@@ -212,4 +212,8 @@ def test_specphot_kern(num_halos=250):
         *dpw.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
+    )
+    phot_kern_results2, phot_randoms2, gal_linefluxes = _specphot_res
+    assert np.allclose(
+        phot_kern_results.obs_mags, phot_kern_results2.obs_mags, rtol=1e-4
     )
