@@ -197,6 +197,7 @@ def test_specphot_kern(num_halos=250):
     n_age = lc_data.ssp_data.ssp_lg_age_gyr.size
     n_lines = 3
     ssp_lineflux_table = np.ones((n_met, n_age, n_lines))
+    line_wave_table = np.linspace(1_000, 10_000, n_lines)
     _specphot_res = mcpk._mc_specphot_kern(
         phot_key,
         lc_data.z_obs,
@@ -207,6 +208,7 @@ def test_specphot_kern(num_halos=250):
         ssp_lineflux_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
+        line_wave_table,
         *dpw.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,

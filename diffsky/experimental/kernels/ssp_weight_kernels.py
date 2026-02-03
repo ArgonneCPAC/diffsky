@@ -46,6 +46,9 @@ vmap_kern1 = jjit(
 _E = (None, 0, 0, 0, 0, None, 0, 0, 0, None)
 calc_dust_ftrans_vmap = jjit(vmap(vmap_kern1, in_axes=_E))
 
+_F = (None, None, 0, 0, 0, None, 0, 0, 0, None)
+calc_dust_ftrans_lines_vmap = jjit(vmap(vmap_kern1, in_axes=_F))
+
 
 MSQ = namedtuple("MSQ", ("ms", "q"))
 QMSB = namedtuple("QMSB", ("q", "smooth_ms", "bursty_ms"))
@@ -195,6 +198,41 @@ def compute_dust_attenuation(
         scatter_params,
     )
     _res = calc_dust_ftrans_vmap(*ftrans_args)
+    frac_trans = _res[1]  # ftrans_q.shape = (n_gals, n_bands, n_age)
+    dust_params = _res[3]  # fields = ('av', 'delta', 'funo')
+
+    return frac_trans, dust_params
+
+
+@jjit
+def compute_dust_attenuation_lines(
+    uran_av,
+    uran_delta,
+    uran_funo,
+    logsm_obs,
+    logssfr_obs,
+    ssp_data,
+    z_obs,
+    line_waves,
+    dustpop_params,
+    scatter_params,
+):
+
+    # Calculate fraction of flux transmitted through dust for each galaxy
+    # Note that F_trans(λ_eff, τ_age) varies with stellar age τ_age
+    ftrans_args = (
+        dustpop_params,
+        line_waves,
+        logsm_obs,
+        logssfr_obs,
+        z_obs,
+        ssp_data.ssp_lg_age_gyr,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        scatter_params,
+    )
+    _res = calc_dust_ftrans_lines_vmap(*ftrans_args)
     frac_trans = _res[1]  # ftrans_q.shape = (n_gals, n_bands, n_age)
     dust_params = _res[3]  # fields = ('av', 'delta', 'funo')
 
