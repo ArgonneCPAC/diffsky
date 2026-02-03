@@ -246,7 +246,7 @@ def _mc_specphot_kern(
     mah_params,
     ssp_data,
     precomputed_ssp_mag_table,
-    ssp_lineflux_table,
+    precomputed_ssp_lineflux_cgs_table,
     z_phot_table,
     wave_eff_table,
     line_wave_table,
@@ -292,14 +292,16 @@ def _mc_specphot_kern(
     )
     dust_ftrans_lines = _dust_res[0]
 
-    n_lines, n_met, n_age = ssp_lineflux_table.shape
+    n_lines, n_met, n_age = precomputed_ssp_lineflux_cgs_table.shape
     _s = (1, n_lines, n_met, n_age)
-    ssp_lineflux_table_galpop = ssp_lineflux_table.reshape(_s)
+    precomputed_ssp_lineflux_cgs_table_galpop = (
+        precomputed_ssp_lineflux_cgs_table.reshape(_s)
+    )
 
     gal_linefluxes = sspwk._compute_lineflux_from_weights(
         phot_kern_results.logsm_obs,
         dust_ftrans_lines,
-        ssp_lineflux_table_galpop,
+        precomputed_ssp_lineflux_cgs_table_galpop,
         phot_kern_results.ssp_weights,
     )
     return phot_kern_results, phot_randoms, gal_linefluxes
