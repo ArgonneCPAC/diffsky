@@ -105,6 +105,7 @@ def compute_phot_from_diffsky_mock(
 def compute_dbk_phot_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
+    z_phot_table: np.ndarray,
     bands: list[str],
     include_extras: Optional[list] = None,
     insert: bool = True,
@@ -174,6 +175,7 @@ def compute_dbk_phot_from_diffsky_mock(
 def compute_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
+    z_phot_table: np.ndarray,
     bands: list[str],
     insert: bool = True,
     batch_size: int = -1,
