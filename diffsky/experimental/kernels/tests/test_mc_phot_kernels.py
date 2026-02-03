@@ -178,10 +178,8 @@ def test_specphot_kern(num_halos=250):
 
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)
-    n_lines = 3
-    n_gals = lc_data.z_obs.size
 
-    phot_kern_results, phot_randoms = mcpk._phot_kern(
+    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -195,8 +193,11 @@ def test_specphot_kern(num_halos=250):
         fb,
     )
 
-    ssp_lineflux_table = np.ones((n_gals, n_lines))
-    (phot_kern_results2, phot_randoms2), gal_linefluxes = mcpk._specphot_kern(
+    n_met = lc_data.ssp_data.ssp_lgmet.size
+    n_age = lc_data.ssp_data.ssp_lg_age_gyr.size
+    n_lines = 3
+    ssp_lineflux_table = np.ones((n_met, n_age, n_lines))
+    _specphot_res = mcpk._mc_specphot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,

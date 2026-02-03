@@ -239,17 +239,17 @@ def _phot_kern(
 
 
 @partial(jjit, static_argnames=["n_t_table"])
-def _specphot_kern(
-    phot_randoms,
-    sfh_params,
+def _mc_specphot_kern(
+    ran_key,
     z_obs,
     t_obs,
     mah_params,
     ssp_data,
-    ssp_mag_table,
+    precomputed_ssp_mag_table,
     ssp_lineflux_table,
     z_phot_table,
     wave_eff_table,
+    diffstarpop_params,
     mzr_params,
     spspop_params,
     scatter_params,
@@ -258,16 +258,16 @@ def _specphot_kern(
     fb,
     n_t_table=mcdw.N_T_TABLE,
 ):
-    pk_res = _phot_kern(
-        phot_randoms,
-        sfh_params,
+    phot_kern_results, phot_randoms = _mc_phot_kern(
+        ran_key,
         z_obs,
         t_obs,
         mah_params,
         ssp_data,
-        ssp_mag_table,
+        precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
+        diffstarpop_params,
         mzr_params,
         spspop_params,
         scatter_params,
@@ -278,13 +278,13 @@ def _specphot_kern(
     )
 
     gal_linefluxes = sspwk._compute_obs_flux_from_weights(
-        pk_res.logsm_obs,
+        phot_kern_results.logsm_obs,
         dust_frac_trans,
         frac_ssp_errors,
         ssp_lineflux_table,
-        pk_res.ssp_weights,
+        phot_kern_results.ssp_weights,
     )
-    return pk_res, gal_linefluxes
+    return phot_kern_results, phot_randoms, gal_linefluxes
 
 
 @jjit
