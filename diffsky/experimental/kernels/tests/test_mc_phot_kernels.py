@@ -9,6 +9,7 @@ from jax import random as jran
 from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper as dpw
+from ....utils import emline_utils
 from ...tests import test_mc_lightcone_halos as tmclh
 from ...tests import test_mc_phot
 from .. import mc_phot_kernels as mcpk
@@ -193,11 +194,13 @@ def test_specphot_kern(num_halos=250):
         fb,
     )
 
-    n_met = lc_data.ssp_data.ssp_lgmet.size
-    n_age = lc_data.ssp_data.ssp_lg_age_gyr.size
     n_lines = 3
-    ssp_lineflux_table = np.ones((n_lines, n_met, n_age))
+    single_lineflux_table = emline_utils.fake_lineflux_table(
+        lc_data.ssp_data.ssp_lgmet, lc_data.ssp_data.ssp_lg_age_gyr
+    )
+    ssp_lineflux_table = np.array([single_lineflux_table] * n_lines)
     line_wave_table = np.linspace(1_000, 10_000, n_lines)
+
     _specphot_res = mcpk._mc_specphot_kern(
         phot_key,
         lc_data.z_obs,

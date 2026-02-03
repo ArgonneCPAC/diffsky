@@ -20,7 +20,7 @@ _fake_lineflux_table = jjit(vmap(vmap(_fake_lineflux_kern, in_axes=_B), in_axes=
 
 
 @jjit
-def fake_lineflux_table(ssp_lgmet, ssp_lg_age_gyr):
+def fake_lineflux_table_cgs(ssp_lgmet, ssp_lg_age_gyr):
     """Load dummy lineflux data for unit testing
 
     Parameters
@@ -32,7 +32,7 @@ def fake_lineflux_table(ssp_lgmet, ssp_lg_age_gyr):
     Returns
     -------
     lineflux_table : array, shape (n_met, n_age)
-        Units of Lsun/Msun
+        Line luminosity in erg/s/Msun
 
     """
-    return _fake_lineflux_table(ssp_lgmet, ssp_lg_age_gyr)
+    return _fake_lineflux_table(ssp_lgmet, ssp_lg_age_gyr) * L_SUN_CGS
