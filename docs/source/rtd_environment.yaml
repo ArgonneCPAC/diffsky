@@ -11,7 +11,7 @@ dependencies:
   - matplotlib
   - sphinx=7.2.4
   - sphinx-copybutton
-  - numpy
+  - numpy>=2
   - jax
   - jaxlib
   - diffmah>=0.7.2
