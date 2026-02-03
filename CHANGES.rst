@@ -2,6 +2,7 @@
 -------------------
 - Reduce mock filesize by 10x by omitting redundant dust parameters (https://github.com/ArgonneCPAC/diffsky/pull/317)
 - Add feature to make mocks with/out disk/bulge/knot decomposition (https://github.com/ArgonneCPAC/diffsky/pull/317)
+- Require Numpy>=2 (https://github.com/ArgonneCPAC/diffsky/pull/331)
 
 
 0.3.3 (2026-01-06)
