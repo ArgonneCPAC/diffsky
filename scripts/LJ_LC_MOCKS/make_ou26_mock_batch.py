@@ -393,6 +393,7 @@ if __name__ == "__main__":
                     )
                 )
 
+            lineflux_nicknames = ssp_data.emlines._fields
             if no_sed:
                 raise NotImplementedError(
                     "SFH-only mock production not implemented yet"
@@ -405,6 +406,7 @@ if __name__ == "__main__":
                         lc_data_batch,
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
+                        lineflux_nicknames,
                     )
                 else:
                     lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
@@ -413,6 +415,7 @@ if __name__ == "__main__":
                         lc_data_batch,
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
+                        lineflux_nicknames,
                     )
 
             if synthetic_cores == 1:
@@ -477,6 +480,7 @@ if __name__ == "__main__":
             mock_version_name,
             z_phot_table,
             OUTPUT_FILTER_NICKNAMES,
+            lineflux_nicknames,
             exclude_colnames=exclude_colnames,
             no_dbk=no_dbk,
         )
