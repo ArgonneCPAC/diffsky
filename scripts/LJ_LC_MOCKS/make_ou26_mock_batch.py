@@ -23,12 +23,11 @@ from time import sleep, time
 import h5py
 import jax
 import numpy as np
-from dsps.data_loaders import load_ssp_templates
 from jax import random as jran
 from mpi4py import MPI
 
 from diffsky import phot_utils
-from diffsky.data_loaders import load_flat_hdf5, mpi_utils
+from diffsky.data_loaders import load_flat_hdf5, load_ssp_templates, mpi_utils
 from diffsky.data_loaders.hacc_utils import lc_mock as lcmp_repro
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf

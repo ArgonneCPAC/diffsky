@@ -49,6 +49,7 @@ if __name__ == "__main__":
     msg_no_mocks = f"No mocks detected with filename pattern {fn_pat}"
     assert n_files_tot > 1, msg_no_mocks
 
+    n_files_to_check = min(n_files_to_check, n_files_tot)
     fn_list_mocks_to_test = np.random.choice(
         fn_list_all_mocks, n_files_to_check, replace=False
     )

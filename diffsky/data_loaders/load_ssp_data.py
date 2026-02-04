@@ -55,3 +55,21 @@ def load_ssp_templates(fn=None, drn=None, bn=DEFAULT_DIFFSKY_SSP_BNAME):
     ssp_data = SSPData(**ssp_data_dict)
 
     return ssp_data
+
+
+def write_ssp_templates_to_disk(fn, ssp_data):
+
+    with h5py.File(fn, "w") as hdf_out:
+        for name, arr in zip(ssp_data._fields, ssp_data):
+            if name != "emlines":
+                hdf_out[name] = arr
+
+        if "emlines" in ssp_data._fields:
+            grp = hdf_out.create_group("emlines")
+
+            # Store each line's wavelength and flux table
+            gen = zip(ssp_data.emlines._fields, ssp_data.emlines)
+            for line_name, emline in gen:
+                line_grp = grp.create_group(line_name)
+                line_grp["line_wave"] = emline.line_wave
+                line_grp["line_flux"] = emline.line_flux
