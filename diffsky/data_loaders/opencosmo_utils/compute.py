@@ -14,10 +14,30 @@ from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import mc_phot_kernels as mcpk
 
 
+def __get_z_phot_tables(catalog: oc.Lightcone):
+    """
+    In the future, this method will iterate through the catalogs, retrieve the min+max
+    z_phot, and construct a redshift-slice-specific z_phot table. For the moment,
+    it just looks at the min and max redshift of the slice, widens it a bit,
+    and constructs a table. Beta software stuff.
+    """
+    z_phot_tables = {}
+    for slice_name, dataset in catalog.items():
+        if isinstance(dataset, oc.Dataset):
+            min_z, max_z = dataset.header.lightcone["z_range"]
+        elif isinstance(dataset, oc.Lightcone):
+            min_z, max_z = dataset.z_range
+
+        if min_z != 0.0:
+            min_z = 0.98 * min_z
+        max_z = 1.02 * max_z
+        z_phot_tables[slice_name] = np.linspace(min_z, max_z, 15)
+    return z_phot_tables
+
+
 def compute_phot_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
-    z_phot_table: np.ndarray,
     bands: list[str],
     insert: bool = True,
 ):
@@ -58,16 +78,22 @@ def compute_phot_from_diffsky_mock(
 
     """
     func = dbk_phot_from_mock._reproduce_mock_phot_kern
+    z_phot_tables = __get_z_phot_tables(catalog)
+    suffix = ""
+    if set(bands).intersection(catalog.columns):
+        suffix = "_new"
+
     result = __run_photometry(
         func,
         __unpack_photometry,
         catalog,
         aux_data,
-        z_phot_table,
+        z_phot_tables,
         bands,
         None,
         False,
         insert=False,
+        suffix=suffix,
     )
     if insert:
         return catalog.with_new_columns(**result)
@@ -77,7 +103,6 @@ def compute_phot_from_diffsky_mock(
 def compute_dbk_phot_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
-    z_phot_table: np.ndarray,
     bands: list[str],
     include_extras: Optional[list] = None,
     insert: bool = True,
@@ -120,17 +145,22 @@ def compute_dbk_phot_from_diffsky_mock(
 
     """
 
+    suffix = ""
+    if set(bands).intersection(catalog.columns):
+        suffix = "_new"
+    z_phot_tables = __get_z_phot_tables(catalog)
     func = dbk_phot_from_mock._reproduce_mock_dbk_kern
     result = __run_photometry(
         func,
         __unpack_dbk_photometry,
         catalog,
         aux_data,
-        z_phot_table,
+        z_phot_tables,
         bands,
         include_extras,
         True,
         insert=False,
+        suffix=suffix,
     )
     if insert:
         return catalog.with_new_columns(**result)
@@ -140,7 +170,6 @@ def compute_dbk_phot_from_diffsky_mock(
 def compute_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
-    z_phot_table: np.ndarray,
     bands: list[str],
     insert: bool = True,
 ):
@@ -181,13 +210,14 @@ def compute_seds_from_diffsky_mock(
 
     """
 
+    z_phot_tables = __get_z_phot_tables(catalog)
     func = dbk_phot_from_mock._reproduce_mock_sed_kern
     result = __run_photometry(
         func,
         __unpack_seds,
         catalog,
         aux_data,
-        z_phot_table,
+        z_phot_tables,
         bands,
         None,
         False,
@@ -201,7 +231,6 @@ def compute_seds_from_diffsky_mock(
 def compute_dbk_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
-    z_phot_table: np.ndarray,
     bands: list[str],
     insert: bool = True,
 ):
@@ -242,11 +271,11 @@ def compute_dbk_seds_from_diffsky_mock(
 
 
     """
+    z_phot_tables = __get_z_phot_tables(catalog)
     cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
     dbk_phot_info = compute_dbk_phot_from_diffsky_mock(
         catalog,
         aux_data,
-        z_phot_table,
         bands,
         ["t_table", "sfh_table", "lgmet_weights"],
         False,
@@ -268,19 +297,19 @@ def compute_dbk_seds_from_diffsky_mock(
     return result
 
 
-def __unpack_photometry(data, band_names, *args):
-    return __unpack_photometry_array(data[0].obs_mags, band_names)
+def __unpack_photometry(data, band_names, suffix, *args):
+    return __unpack_photometry_array(data[0].obs_mags, band_names, suffix)
 
 
-def __unpack_dbk_photometry(data, band_names, include_extras):
+def __unpack_dbk_photometry(data, band_names, suffix, include_extras):
     (phot_info, _, _, obs_mag_bulge, obs_mag_disk, obs_mag_knots) = data
     bulge_bands = [f"{bn}_bulge" for bn in band_names]
     disk_bands = [f"{bn}_disk" for bn in band_names]
     knot_bands = [f"{bn}_knots" for bn in band_names]
 
-    output = __unpack_photometry_array(obs_mag_bulge, bulge_bands)
-    output |= __unpack_photometry_array(obs_mag_disk, disk_bands)
-    output |= __unpack_photometry_array(obs_mag_knots, knot_bands)
+    output = __unpack_photometry_array(obs_mag_bulge, bulge_bands, suffix)
+    output |= __unpack_photometry_array(obs_mag_disk, disk_bands, suffix)
+    output |= __unpack_photometry_array(obs_mag_knots, knot_bands, suffix)
     if include_extras is not None:
         phot_info = phot_info._asdict()
         output |= {name: phot_info[name] for name in include_extras}
@@ -288,15 +317,15 @@ def __unpack_dbk_photometry(data, band_names, include_extras):
     return output
 
 
-def __unpack_photometry_array(data, band_names):
+def __unpack_photometry_array(data, band_names, suffix):
     to_unpack = np.array(data).T
-    return {name: to_unpack[i] for i, name in enumerate(band_names)}
+    return {f"{name}{suffix}": to_unpack[i] for i, name in enumerate(band_names)}
 
 
-def __unpack_seds(data, band_names, _):
+def __unpack_seds(data, band_names, *args):
     phot_info, _, sed_kern_results = data
     rest_sed = sed_kern_results[0]
-    return {"rest_sed": rest_sed.T}
+    return {"rest_sed": rest_sed}
 
 
 def __run_photometry(
@@ -304,11 +333,12 @@ def __run_photometry(
     unpack_func: Callable,
     catalog: oc.Lightcone,
     aux_data: dict,
-    z_phot_table: np.ndarray,
+    z_phot_tables: dict[str | float, np.ndarray],
     band_names: list[str],
     include_extras: Optional[list],
     do_decomp: bool = False,
     insert: bool = True,
+    suffix: str = "",
 ):
     if "tcurves" not in aux_data:
         raise ValueError("Missing transmission curves in auxiliary data!")
@@ -322,7 +352,11 @@ def __run_photometry(
     data = {bn: getattr(aux_data["tcurves"], bn) for bn in band_names}
     tcurves = Tcurves(**data)
 
-    wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
+    wave_eff_tables = {}
+    for slice_name, z_phot_table in z_phot_tables.items():
+        wave_eff_tables[slice_name] = phot_utils.get_wave_eff_table(
+            z_phot_table, tcurves
+        )
     cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
     precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
         tcurves, aux_data["ssp_data"], z_phot_table, cosmology_parameters
@@ -338,12 +372,13 @@ def __run_photometry(
         cosmology=cosmology_parameters,
         ssp_data=aux_data["ssp_data"],
         precomputed_ssp_mag_table=precomputed_ssp_mag_table,
-        wave_eff_table=wave_eff_table,
+        wave_eff_table=wave_eff_tables,
         param_collection=aux_data["param_collection"],
-        z_phot_table=z_phot_table,
+        z_phot_table=z_phot_tables,
         Ob0=catalog.cosmology.Ob0,
         include_extras=include_extras,
         do_decomp=do_decomp,
+        suffix=suffix,
         insert=insert,
         vectorize=True,
         format="numpy",
@@ -389,6 +424,7 @@ def __compute_dbk_sed_managed(
     ssp_data,
     param_collection,
     cosmology,
+    suffix="",
 ):
     burst_params = BurstParams(
         lgfburst=lgfburst, lgyr_peak=lgyr_peak, lgyr_max=lgyr_max
@@ -473,6 +509,7 @@ def __compute_photometry_managed(
     Ob0,
     include_extras,
     do_decomp=False,
+    suffix="",
 ):
     mc_is_q = mc_sfh_type == 0
     mah_params = DiffmahParams(
@@ -522,4 +559,4 @@ def __compute_photometry_managed(
         Ob0 / cosmology.Om0,
     )
     result = to_compute(*args)
-    return unpack_func(result, band_names, include_extras)
+    return unpack_func(result, band_names, suffix, include_extras)

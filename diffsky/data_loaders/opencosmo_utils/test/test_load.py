@@ -39,13 +39,13 @@ def test_compute_photometry(test_data_dir):
 
     bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_phot_from_diffsky_mock(
-        catalog, aux_data, z_phots, bands, insert=False
-    )
+    results = compute_phot_from_diffsky_mock(catalog, aux_data, bands, insert=False)
 
     original_data = catalog.select(bands).get_data("numpy")
-    for name, band_result in results.items():
-        assert np.all(np.isclose(band_result, original_data[name], atol=1e-2))
+    for band in bands:
+        assert np.all(
+            np.isclose(results[f"{band}_new"], original_data[band], atol=1e-2)
+        )
 
 
 def test_compute_photometry_custom_bands(test_data_dir):
@@ -63,7 +63,7 @@ def test_compute_photometry_custom_bands(test_data_dir):
     )
 
     results = compute_phot_from_diffsky_mock(
-        catalog, aux_data, z_phots, ["fake_tcurve_1", "fake_tcurve_2"], insert=False
+        catalog, aux_data, ["fake_tcurve_1", "fake_tcurve_2"], insert=False
     )
     raise NotImplementedError(
         "Need to figure out how to test that this actually worked"
@@ -85,7 +85,7 @@ def test_compute_photometry_custom_bands_insert(test_data_dir):
     )
 
     results = compute_phot_from_diffsky_mock(
-        catalog, aux_data, z_phots, ["fake_tcurve_1", "fake_tcurve_2"], insert=True
+        catalog, aux_data, ["fake_tcurve_1", "fake_tcurve_2"], insert=True
     )
     raise NotImplementedError(
         "Need to figure out how to test that this actually worked"
@@ -97,9 +97,7 @@ def test_compute_dbk_photometry(test_data_dir):
         z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
 
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_dbk_phot_from_diffsky_mock(
-        catalog, aux_data, z_phots, insert=False
-    )
+    results = compute_dbk_phot_from_diffsky_mock(catalog, aux_data, insert=False)
     original_data = catalog.select(results.keys()).get_data("numpy")
     for name, computed_values in results.items():
         assert np.allclose(computed_values, original_data[name], atol=1e-2)
@@ -111,9 +109,7 @@ def test_compute_seds(test_data_dir):
 
     bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_seds_from_diffsky_mock(
-        catalog, aux_data, z_phots, bands, insert=False
-    )
+    results = compute_seds_from_diffsky_mock(catalog, aux_data, bands, insert=False)
     raise NotImplementedError
 
 
@@ -123,9 +119,7 @@ def test_compute_seds_insert(test_data_dir):
 
     bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_seds_from_diffsky_mock(
-        catalog, aux_data, z_phots, bands, insert=True
-    )
+    results = compute_seds_from_diffsky_mock(catalog, aux_data, bands, insert=True)
     raise NotImplementedError
 
 
@@ -135,7 +129,5 @@ def test_compute_dbk_seds(test_data_dir):
 
     bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_dbk_seds_from_diffsky_mock(
-        catalog, aux_data, z_phots, bands, insert=False
-    )
+    results = compute_dbk_seds_from_diffsky_mock(catalog, aux_data, bands, insert=False)
     raise NotImplementedError
