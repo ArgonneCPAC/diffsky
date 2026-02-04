@@ -29,8 +29,8 @@ def __get_z_phot_tables(catalog: oc.Lightcone):
             min_z, max_z = dataset.z_range
 
         if min_z != 0.0:
-            min_z = 0.98 * min_z
-        max_z = 1.02 * max_z
+            min_z = 0.95 * min_z
+        max_z = 1.05 * max_z
         z_phot_tables[slice_name] = np.linspace(min_z, max_z, 15)
     return z_phot_tables
 
@@ -352,15 +352,19 @@ def __run_photometry(
     data = {bn: getattr(aux_data["tcurves"], bn) for bn in band_names}
     tcurves = Tcurves(**data)
 
+    cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
     wave_eff_tables = {}
+    precomputed_ssp_mag_tables = {}
     for slice_name, z_phot_table in z_phot_tables.items():
         wave_eff_tables[slice_name] = phot_utils.get_wave_eff_table(
             z_phot_table, tcurves
         )
-    cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
-    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        tcurves, aux_data["ssp_data"], z_phot_table, cosmology_parameters
-    )
+        precomputed_ssp_mag_tables[slice_name] = (
+            psspp.get_precompute_ssp_mag_redshift_table(
+                tcurves, aux_data["ssp_data"], z_phot_table, cosmology_parameters
+            )
+        )
+
     catalog = catalog.evaluate(
         age_at_z_, vectorize=True, cosmology=cosmology_parameters
     )
@@ -371,7 +375,7 @@ def __run_photometry(
         band_names=band_names,
         cosmology=cosmology_parameters,
         ssp_data=aux_data["ssp_data"],
-        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
+        precomputed_ssp_mag_table=precomputed_ssp_mag_tables,
         wave_eff_table=wave_eff_tables,
         param_collection=aux_data["param_collection"],
         z_phot_table=z_phot_tables,
