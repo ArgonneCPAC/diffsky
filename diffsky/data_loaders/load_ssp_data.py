@@ -14,7 +14,13 @@ DEFAULT_DIFFSKY_SSP_BNAME = "ssp_data_fsps_v3.2_emlines.hdf5"
 
 
 def load_ssp_templates(fn=None, drn=None, bn=DEFAULT_DIFFSKY_SSP_BNAME):
-    """Load SSP templates, optionally including emission lines if present"""
+    """Load SSP templates, optionally including emission lines if present
+
+    For emission lines, note that line_flux is stored on disk in units of Lsun/Msun.
+    But load_ssp_templates converts to cgs units after reading from disk.
+    And write_ssp_templates_to_disk converts back to Lsun/Msun before writing to disk.
+
+    """
 
     if fn is None:
         if drn is None:
@@ -58,6 +64,13 @@ def load_ssp_templates(fn=None, drn=None, bn=DEFAULT_DIFFSKY_SSP_BNAME):
 
 
 def write_ssp_templates_to_disk(fn, ssp_data):
+    """Write the SSP data to disk
+
+    For emission lines, note that line_flux is stored on disk in units of Lsun/Msun.
+    But load_ssp_templates converts to cgs units after reading from disk.
+    And write_ssp_templates_to_disk converts back to Lsun/Msun before writing to disk.
+
+    """
 
     with h5py.File(fn, "w") as hdf_out:
         for name, arr in zip(ssp_data._fields, ssp_data):
@@ -72,4 +85,4 @@ def write_ssp_templates_to_disk(fn, ssp_data):
             for line_name, emline in gen:
                 line_grp = grp.create_group(line_name)
                 line_grp["line_wave"] = emline.line_wave
-                line_grp["line_flux"] = emline.line_flux
+                line_grp["line_flux"] = emline.line_flux / L_SUN_CGS
