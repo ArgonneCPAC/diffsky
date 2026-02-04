@@ -23,12 +23,11 @@ from time import sleep, time
 import h5py
 import jax
 import numpy as np
-from dsps.data_loaders import load_ssp_templates
 from jax import random as jran
 from mpi4py import MPI
 
 from diffsky import phot_utils
-from diffsky.data_loaders import load_flat_hdf5, mpi_utils
+from diffsky.data_loaders import load_flat_hdf5, load_ssp_templates, mpi_utils
 from diffsky.data_loaders.hacc_utils import lc_mock as lcmp_repro
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
@@ -71,6 +70,9 @@ ROMAN_FILTER_NICKNAMES = (
     "roman_Grism_0thOrder",
 )
 OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES, *ROMAN_FILTER_NICKNAMES)
+
+SSP_SED_BNAME = "ssp_data_fsps_v3.2_lgmet_age.h5"
+
 
 if __name__ == "__main__":
     comm = MPI.COMM_WORLD
@@ -229,7 +231,7 @@ if __name__ == "__main__":
 
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
-    ssp_data = load_ssp_templates()
+    ssp_data = load_ssp_templates(bn=SSP_SED_BNAME)
     param_collection = gmp.get_param_collection_for_mock(
         cosmos_fit=cosmos_fit, sfh_model=sfh_model, rank=0
     )

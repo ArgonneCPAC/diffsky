@@ -15,12 +15,13 @@ from diffstar.defaults import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
 from dsps.data_loaders import load_transmission_curve
 from dsps.data_loaders.load_filter_data import TransmissionCurve
-from dsps.data_loaders.load_ssp_data import SSPData
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
+
+from diffsky.data_loaders import load_ssp_data
 
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...ellipsoidal_shapes import bulge_shapes, disk_shapes, ellipse_proj_kernels
@@ -37,7 +38,6 @@ from ...fake_sats import nfw_config_space as nfwcs
 from ...fake_sats import vector_utilities as vecu
 from ...param_utils import diffsky_param_wrapper as dpw
 from .. import io_utils as iou
-from .. import load_flat_hdf5
 from . import lightcone_utils as hlu
 from . import load_lc_cf
 
@@ -153,17 +153,14 @@ def get_output_mock_columns(no_dbk, no_sed):
 def write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data):
     """"""
     bn_ssp_data = BNPAT_SSP_DATA.format(mock_version_name)
-    with h5py.File(os.path.join(drn_out, bn_ssp_data), "w") as hdf_out:
-        for name, arr in zip(ssp_data._fields, ssp_data):
-            hdf_out[name] = arr
+    fn_ssp_data = os.path.join(drn_out, bn_ssp_data)
+    load_ssp_data.write_ssp_templates_to_disk(fn_ssp_data, ssp_data)
 
 
 def load_diffsky_ssp_data(drn_mock, mock_version_name):
     bn_ssp_data = BNPAT_SSP_DATA.format(mock_version_name)
     fn_ssp_data = os.path.join(drn_mock, bn_ssp_data)
-    ssp_data_dict = load_flat_hdf5(fn_ssp_data)
-
-    ssp_data = SSPData(*[ssp_data_dict[key] for key in SSPData._fields])
+    ssp_data = load_ssp_data.load_ssp_templates(fn=fn_ssp_data)
     return ssp_data
 
 
