@@ -63,10 +63,14 @@ def test_compute_photometry_with_batch(test_data_dir):
     results = compute_phot_from_diffsky_mock(
         catalog, aux_data, z_phots, bands, insert=False
     )
+=======
+>>>>>>> c312d17 (Generate fake z_phot tables for beta testing)
 
     original_data = catalog.select(bands).get_data("numpy")
-    for name, band_result in results.items():
-        assert np.all(np.isclose(band_result, original_data[name], atol=1e-2))
+    for band in bands:
+        assert np.all(
+            np.isclose(results[f"{band}_new"], original_data[band], atol=1e-2)
+        )
 
 
 def test_compute_photometry_custom_bands(test_data_dir):
@@ -128,7 +132,7 @@ def test_compute_photometry_custom_bands_insert(test_data_dir):
     )
 
     results = compute_phot_from_diffsky_mock(
-        catalog, aux_data, z_phots, ["fake_tcurve_1", "fake_tcurve_2"], insert=True
+        catalog, aux_data, ["fake_tcurve_1", "fake_tcurve_2"], insert=True
     )
     raise NotImplementedError(
         "Need to figure out how to test that this actually worked"

@@ -28,8 +28,7 @@ def __get_z_phot_tables(catalog: oc.Lightcone):
         elif isinstance(dataset, oc.Lightcone):
             min_z, max_z = dataset.z_range
 
-        if min_z != 0.0:
-            min_z = 0.95 * min_z
+        min_z = 0.95 * min_z
         max_z = 1.05 * max_z
         z_phot_tables[slice_name] = np.linspace(min_z, max_z, 15)
     return z_phot_tables
@@ -105,7 +104,6 @@ def compute_phot_from_diffsky_mock(
 def compute_dbk_phot_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
-    z_phot_table: np.ndarray,
     bands: list[str],
     include_extras: Optional[list] = None,
     insert: bool = True,
@@ -175,7 +173,6 @@ def compute_dbk_phot_from_diffsky_mock(
 def compute_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
-    z_phot_table: np.ndarray,
     bands: list[str],
     insert: bool = True,
     batch_size: int = -1,
@@ -280,6 +277,7 @@ def compute_dbk_seds_from_diffsky_mock(
 
 
     """
+    z_phot_tables = __get_z_phot_tables(catalog)
     cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
     dbk_phot_info = compute_dbk_phot_from_diffsky_mock(
         catalog,
@@ -363,6 +361,11 @@ def __run_photometry(
     data = {bn: getattr(aux_data["tcurves"], bn) for bn in band_names}
     tcurves = Tcurves(**data)
 
+    wave_eff_tables = {}
+    for slice_name, z_phot_table in z_phot_tables.items():
+        wave_eff_tables[slice_name] = phot_utils.get_wave_eff_table(
+            z_phot_table, tcurves
+        )
     cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
     wave_eff_tables = {}
     precomputed_ssp_mag_tables = {}
