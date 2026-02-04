@@ -24,6 +24,7 @@ Contact: ahearin@anl.gov for questions.
 """
 
 COMPOSITE_MAG_MSG = "Apparent magnitude of composite galaxy"
+LINEFLUX_MSG = "Emission line flux (continuum-subtracted)"
 COMPONENT_MAG_MSG_PAT = "Apparent magnitude of {0} component"
 
 
@@ -519,6 +520,7 @@ def append_metadata(
     mock_version_name,
     z_phot_table,
     filter_nicknames,
+    lineflux_nicknames,
     *,
     exclude_colnames=[],
     no_dbk=False,
@@ -608,6 +610,15 @@ def append_metadata(
                     msg = COMPONENT_MAG_MSG_PAT.format(component)
                     hdf_out[key_out].attrs["unit"] = str(u.ABmag)
                     hdf_out[key_out].attrs["description"] = msg
+
+        # emission line fluxes
+        for linename in lineflux_nicknames:
+
+            key_out = "data/" + linename
+            assert key_out in hdf_out.keys(), f"{key_out} is missing from {fnout}"
+
+            hdf_out[key_out].attrs["unit"] = str(u.erg / u.s)
+            hdf_out[key_out].attrs["description"] = LINEFLUX_MSG
 
 
 def get_dependency_versions():

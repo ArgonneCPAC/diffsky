@@ -67,3 +67,13 @@ def test_write_ssp_templates_to_disk(tmp_path):
         line2 = getattr(ssp_data2.emlines, emline_name)
         assert np.allclose(line.line_wave, line2.line_wave, rtol=1e-3)
         assert np.allclose(line.line_flux, line2.line_flux, rtol=1e-3)
+
+
+def test_load_fake_ssp_data():
+    n_lines = 5
+    ssp_data = load_ssp_data.load_fake_ssp_data(n_lines=n_lines)
+    assert len(ssp_data.emlines) == 5
+
+    emline_names = ["a", "b", "c"]
+    ssp_data = load_ssp_data.load_fake_ssp_data(emline_names=emline_names)
+    assert list(ssp_data.emlines._fields) == list(emline_names)

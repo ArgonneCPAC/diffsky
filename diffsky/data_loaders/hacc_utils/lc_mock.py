@@ -289,14 +289,20 @@ def write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
 
 
 def write_batched_lc_sed_mock_to_disk(
-    fnout, phot_info, lc_data, diffsky_data, filter_nicknames
+    fnout, phot_info, lc_data, diffsky_data, filter_nicknames, lineflux_nicknames
 ):
     write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data)
 
-    phot_dict = dict()
+    specphot_dict = dict()
     for iband, name in enumerate(filter_nicknames):
-        phot_dict[name] = phot_info["obs_mags"][:, iband]
-    write_batched_mock_data(fnout, phot_dict, list(phot_dict.keys()), dataset="data")
+        specphot_dict[name] = phot_info["obs_mags"][:, iband]
+
+    for linename in lineflux_nicknames:
+        specphot_dict[linename] = phot_info[linename]
+
+    write_batched_mock_data(
+        fnout, specphot_dict, list(specphot_dict.keys()), dataset="data"
+    )
 
     phot_info_colnames = [
         *DEFAULT_BURST_PARAMS._fields,
@@ -308,10 +314,10 @@ def write_batched_lc_sed_mock_to_disk(
 
 
 def write_batched_lc_dbk_sed_mock_to_disk(
-    fnout, phot_info, lc_data, diffsky_data, filter_nicknames
+    fnout, phot_info, lc_data, diffsky_data, filter_nicknames, lineflux_nicknames
 ):
     write_batched_lc_sed_mock_to_disk(
-        fnout, phot_info, lc_data, diffsky_data, filter_nicknames
+        fnout, phot_info, lc_data, diffsky_data, filter_nicknames, lineflux_nicknames
     )
 
     dbk_phot_dict = dict()
@@ -410,15 +416,22 @@ def add_dbk_phot_quantities_to_mock(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    dbk_phot_info, dbk_weights = mcpk._mc_dbk_phot_kern(
+    precomputed_ssp_lineflux_cgs_table = np.array(
+        [emline.line_flux for emline in ssp_data.emlines]
+    )
+    line_wave_table = np.array([emline.line_wave for emline in ssp_data.emlines])
+
+    dbk_phot_info, dbk_weights = mcpk._mc_dbk_specphot_kern(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],
         mah_params,
         ssp_data,
         precomputed_ssp_mag_table,
+        precomputed_ssp_lineflux_cgs_table,
         z_phot_table,
         wave_eff_table,
+        line_wave_table,
         param_collection.diffstarpop_params,
         param_collection.mzr_params,
         param_collection.spspop_params,

@@ -70,8 +70,9 @@ ROMAN_FILTER_NICKNAMES = (
     "roman_Grism_0thOrder",
 )
 OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES, *ROMAN_FILTER_NICKNAMES)
+OUTPUT_LINE_NICKNAMES = ("Halpha", "OII", "OIII")
 
-SSP_SED_BNAME = "ssp_data_fsps_v3.2_lgmet_age.h5"
+SSP_SED_BNAME = "ssp_data_fsps_v3.2_emlines.hdf5"
 
 
 if __name__ == "__main__":
@@ -232,6 +233,11 @@ if __name__ == "__main__":
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
     ssp_data = load_ssp_templates(bn=SSP_SED_BNAME)
+
+    # Check that the SSP data includes all necessary lines
+    for line_name in OUTPUT_LINE_NICKNAMES:
+        assert line_name in ssp_data.emlines._fields
+
     param_collection = gmp.get_param_collection_for_mock(
         cosmos_fit=cosmos_fit, sfh_model=sfh_model, rank=0
     )
@@ -405,6 +411,7 @@ if __name__ == "__main__":
                         lc_data_batch,
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
+                        OUTPUT_LINE_NICKNAMES,
                     )
                 else:
                     lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
@@ -413,6 +420,7 @@ if __name__ == "__main__":
                         lc_data_batch,
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
+                        OUTPUT_LINE_NICKNAMES,
                     )
 
             if synthetic_cores == 1:
@@ -477,6 +485,7 @@ if __name__ == "__main__":
             mock_version_name,
             z_phot_table,
             OUTPUT_FILTER_NICKNAMES,
+            OUTPUT_LINE_NICKNAMES,
             exclude_colnames=exclude_colnames,
             no_dbk=no_dbk,
         )
