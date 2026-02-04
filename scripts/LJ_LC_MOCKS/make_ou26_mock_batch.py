@@ -71,7 +71,7 @@ ROMAN_FILTER_NICKNAMES = (
 )
 OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES, *ROMAN_FILTER_NICKNAMES)
 
-SSP_SED_BNAME = "ssp_data_fsps_v3.2_lgmet_age.h5"
+SSP_SED_BNAME = "ssp_data_fsps_v3.2_emlines.hdf5"
 
 
 if __name__ == "__main__":
