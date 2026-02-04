@@ -4,6 +4,7 @@
 - Add feature to make mocks with/out disk/bulge/knot decomposition (https://github.com/ArgonneCPAC/diffsky/pull/317)
 - Require Numpy>=2 (https://github.com/ArgonneCPAC/diffsky/pull/331)
 - Include emission line fluxes in output mock (https://github.com/ArgonneCPAC/diffsky/pull/335)
+- Mock galaxies populating both synthetic and simulated halos are written out to the same directory (https://github.com/ArgonneCPAC/diffsky/pull/336)
 
 
 0.3.3 (2026-01-06)
