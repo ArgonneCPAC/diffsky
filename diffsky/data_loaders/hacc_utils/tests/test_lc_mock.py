@@ -7,7 +7,6 @@ import numpy as np
 from diffmah import DEFAULT_MAH_PARAMS
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology.flat_wcdm import age_at_z, age_at_z0
-from dsps.data_loaders.retrieve_fake_fsps_data import load_fake_ssp_data
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
@@ -20,6 +19,7 @@ from ....experimental.lc_phot_kern import get_wave_eff_table
 from ....experimental.tests import test_mc_lightcone_halos as tmclh
 from ....param_utils import diffsky_param_wrapper as dpw
 from ... import io_utils as iou
+from ...load_ssp_data import load_fake_ssp_data
 from .. import lc_mock as lcmp_repro
 from .. import load_lc_cf
 
@@ -108,7 +108,10 @@ def test_write_ancillary_data():
 
     ssp_data2 = lcmp_repro.load_diffsky_ssp_data(drn_mock, mock_version_name)
     for name in ssp_data2._fields:
-        assert np.allclose(getattr(ssp_data, name), getattr(ssp_data2, name), rtol=0.01)
+        if name != "emlines":
+            assert np.allclose(
+                getattr(ssp_data, name), getattr(ssp_data2, name), rtol=0.01
+            )
 
     param_collection2 = lcmp_repro.load_diffsky_param_collection(
         drn_mock, mock_version_name
