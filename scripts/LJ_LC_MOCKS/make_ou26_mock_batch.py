@@ -93,6 +93,12 @@ if __name__ == "__main__":
     parser.add_argument("mock_nickname", help="Nickname of the mock")
 
     parser.add_argument(
+        "-mock_version_name",
+        help="Version of the mock. Overrides mock_nickname",
+        default="",
+    )
+
+    parser.add_argument(
         "-batch_size", help="Size of photometry batches", type=int, default=20_000
     )
 
@@ -169,7 +175,10 @@ if __name__ == "__main__":
     no_dbk = args.no_dbk
     no_sed = args.no_sed
 
-    mock_version_name = get_mock_version_name(mock_nickname)
+    if args.mock_version_name == "":
+        mock_version_name = get_mock_version_name(mock_nickname)
+    else:
+        mock_version_name = args.mock_version_name
 
     if lsst_only:
         OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES,)
@@ -184,13 +193,7 @@ if __name__ == "__main__":
             msg += "must specify lgmp_min and lgmp_max"
             raise ValueError(msg)
 
-    if cosmos_fit != "":
-        subdrn = cosmos_fit
-    elif sfh_model != "":
-        subdrn = sfh_model
-    else:
-        subdrn = "default_model"
-    drn_out = os.path.join(drn_out, subdrn)
+    drn_out = os.path.join(drn_out, mock_version_name)
     os.makedirs(drn_out, exist_ok=True)
 
     if machine == "poboy":
