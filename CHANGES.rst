@@ -1,3 +1,7 @@
+0.3.5 (unreleased)
+-------------------
+
+
 0.3.4 (2026-02-05)
 -------------------
 - Reduce mock filesize by 10x by omitting redundant dust parameters (https://github.com/ArgonneCPAC/diffsky/pull/317)
