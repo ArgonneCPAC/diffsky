@@ -115,7 +115,7 @@ jobs:
       - name: validate mock
         shell: bash -l {0}
         run: |
-          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/smdpl_dr1
 
       - name: remove sfh_model mock
         shell: bash -l {0}
@@ -151,7 +151,7 @@ jobs:
       - name: validate mock
         shell: bash -l {0}
         run: |
-          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos_260120_UM
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/cosmos_260120_UM
 
       - name: remove cosmos_fit mock
         shell: bash -l {0}
@@ -187,7 +187,7 @@ jobs:
       - name: validate mock
         shell: bash -l {0}
         run: |
-          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos_260120_UM --no_dbk
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/cosmos_260120_UM --no_dbk
 
       - name: remove cosmos_fit mock
         shell: bash -l {0}

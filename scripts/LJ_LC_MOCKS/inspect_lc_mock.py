@@ -9,7 +9,7 @@ import numpy as np
 
 from diffsky.data_loaders.hacc_utils.data_validation import validate_lc_mock as vlcm
 
-BN_GLOBPAT_LC_MOCK = "lc_cores-*.*.diffsky_gals.hdf5"
+BN_GLOBPAT_LC_MOCK = "lc_cores-*.*.diffsky_gals*.hdf5"
 
 
 if __name__ == "__main__":

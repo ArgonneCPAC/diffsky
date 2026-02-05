@@ -1,9 +1,10 @@
-0.3.4 (unreleased)
+0.3.4 (2026-02-05)
 -------------------
 - Reduce mock filesize by 10x by omitting redundant dust parameters (https://github.com/ArgonneCPAC/diffsky/pull/317)
 - Add feature to make mocks with/out disk/bulge/knot decomposition (https://github.com/ArgonneCPAC/diffsky/pull/317)
 - Require Numpy>=2 (https://github.com/ArgonneCPAC/diffsky/pull/331)
 - Include emission line fluxes in output mock (https://github.com/ArgonneCPAC/diffsky/pull/335)
+- Mock galaxies populating both synthetic and simulated halos are written out to the same directory (https://github.com/ArgonneCPAC/diffsky/pull/336)
 
 
 0.3.3 (2026-01-06)

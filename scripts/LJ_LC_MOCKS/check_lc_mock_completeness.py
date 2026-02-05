@@ -8,7 +8,7 @@ import numpy as np
 
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
-BN_PAT = "lc_cores-{0}.{1}.*.hdf5"
+BN_PAT = "lc_cores-{0}.{1}.diffsky_gals.hdf5"
 
 
 def get_stepnum_and_patch(bname):
@@ -29,6 +29,7 @@ if __name__ == "__main__":
     z_min = args.z_min
     z_max = args.z_max
 
+    # Check completeness of simulated halos
     fn_pat = os.path.join(drn, BN_PAT.format("*", "*"))
     fn_list = glob(fn_pat)
     bn_list = [os.path.basename(fn) for fn in fn_list]
@@ -50,3 +51,20 @@ if __name__ == "__main__":
         steps_patch = np.unique([get_stepnum_and_patch(bn)[0] for bn in bn_list_patch])
         assert len(steps_patch) == len(complete_stepnums), msg_patch.format(patch)
         assert np.allclose(steps_patch, complete_stepnums), msg_patch.format(patch)
+    print(f"\nDetected complete set of lc_cores spanning {z_min:.2f}<z<{z_max:.2f}\n")
+
+    # Check each lightcone file has a matching synthetic_halos file
+    unmatched_bn_list = []
+    for fn in fn_list:
+        bn = os.path.basename(fn)
+        bn_synthetic = bn.replace(".hdf5", ".synthetic_halos.hdf5")
+        fn_synthetic = os.path.join(drn, bn_synthetic)
+        if not os.path.isfile(fn_synthetic):
+            unmatched_bn_list.append(bn)
+
+    if len(unmatched_bn_list) > 0:
+        msg = "\nMissing synthetic_halos for some lightcone files\n"
+        msg += f"Example: {unmatched_bn_list[0]} has no synthetic_halos counterpart"
+        print(msg)
+    else:
+        print("\nEach lc_cores file has a synthetic_halos matching counterpart")

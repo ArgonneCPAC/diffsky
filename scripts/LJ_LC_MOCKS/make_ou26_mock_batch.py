@@ -175,7 +175,6 @@ if __name__ == "__main__":
         OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES,)
 
     if synthetic_cores == 1:
-        drn_out = os.path.join(drn_out, "synthetic_cores")
 
         try:
             assert lgmp_min != -1
@@ -283,6 +282,9 @@ if __name__ == "__main__":
         lc_patch_info = llcs.get_lc_patch_info_from_lc_cores(fn_lc_cores, sim_name)
 
         bn_out = lcmp_repro.LC_MOCK_BNPAT.format(stepnum, lc_patch)
+        if synthetic_cores == 1:
+            bn_out = bn_out.replace(".hdf5", ".synthetic_halos.hdf5")
+
         fn_out = os.path.join(drn_out, bn_out)
         if os.path.exists(fn_out):
             os.remove(fn_out)
