@@ -25,3 +25,19 @@ def test_get_param_collection_for_mock_cosmos_fit_options():
 def test_get_param_collection_for_mock_defaults():
     param_collection = gmp.get_param_collection_for_mock()
     assert param_collection._fields == dpw.ParamCollection._fields
+
+
+def test_cosmos_param_fits_are_ok():
+    bad_params = []
+    for key in COSMOS_PARAM_FITS.keys():
+        param_collection = gmp.get_param_collection_for_mock(cosmos_fit=key, rank=0)
+        param_collection_is_ok = dpw.check_param_collection_is_ok(param_collection)
+        if not param_collection_is_ok:
+            bad_params.append(key)
+
+    msg = "Bounding/unbounding failures of some params in dpw.COSMOS_PARAM_FITS\n"
+    if len(bad_params) > 0:
+        print(msg)
+        for bad_param in bad_params:
+            print(f"{bad_param} fails")
+        assert param_collection_is_ok, f"{key} fails check_param_collection_is_ok"
