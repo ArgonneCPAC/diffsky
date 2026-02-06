@@ -137,3 +137,10 @@ def test_unroll_param_collection_into_flat_array():
     param_arr2 = dpw.unroll_param_collection_into_flat_array(*param_collection)
 
     assert np.allclose(param_arr, param_arr2, rtol=1e-4)
+
+
+def test_default_diffsky_params_are_ok():
+    param_collection_is_ok = dpw.check_param_collection_is_ok(
+        dpw.DEFAULT_PARAM_COLLECTION
+    )
+    assert param_collection_is_ok
