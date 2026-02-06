@@ -64,6 +64,61 @@ def mc_lc_phot(
     return phot_kern_results
 
 
+def mc_lc_specphot(
+    ran_key,
+    lc_data,
+    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
+):
+    """Populate the input lightcone with galaxy photometry
+
+    Parameters
+    ----------
+    ran_key : jax.random.key
+
+    lc_data : namedtuple
+        Contains info about the halo lightcone, SED inputs, and diffsky parameters
+
+    Returns
+    -------
+    results : dict
+        Contains info about the galaxy SEDs
+
+    """
+    phot_kern_results, phot_randoms, gal_linefluxes = mcpk._mc_specphot_kern(
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.precomputed_ssp_lineflux_cgs_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        lc_data.line_wave_table,
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        cosmo_params,
+        fb,
+    )
+    phot_kern_results = phot_kern_results._asdict()
+    for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
+        phot_kern_results[key] = val
+
+    for i, emline_name in enumerate(lc_data.ssp_data.emlines._fields):
+        phot_kern_results[emline_name] = gal_linefluxes[:, i]
+
+    return phot_kern_results
+
+
 def mc_lc_sed(
     ran_key,
     lc_data,
