@@ -1,7 +1,5 @@
 """"""
 
-import numpy as np
-
 from ..experimental.sfh_model_calibrations import (
     load_diffsky_sfh_model_calibrations as ldup,
 )
