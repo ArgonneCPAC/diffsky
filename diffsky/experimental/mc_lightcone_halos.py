@@ -1128,6 +1128,20 @@ def mc_weighted_lightcone_data(
         wave_eff_table,
         logmp_obs,
     )
+
+    if hasattr(ssp_data, "emlines"):
+
+        precomputed_ssp_lineflux_cgs_table = np.array(
+            [emline.line_flux for emline in ssp_data.emlines]
+        )
+        line_wave_table = np.array([emline.line_wave for emline in ssp_data.emlines])
+
+        new_fields = ("precomputed_ssp_lineflux_cgs_table", "line_wave_table")
+        new_vals = (precomputed_ssp_lineflux_cgs_table, line_wave_table)
+        fields = (*LCData._fields, *new_fields)
+        values = (*lc_data, *new_vals)
+        lc_data = namedtuple("LCData", fields)(*values)
+
     return lc_data
 
 

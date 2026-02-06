@@ -11,6 +11,7 @@ from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
 from jax import vmap
 
+from ...data_loaders.load_ssp_data import load_fake_ssp_data
 from .. import mc_phot
 from . import test_mc_lightcone_halos as tmclh
 
@@ -136,3 +137,26 @@ def test_unweighted_mc_lc_dbk_sed():
     assert np.all(np.isfinite(dbk_sed_info["rest_sed_bulge"]))
     assert np.all(np.isfinite(dbk_sed_info["rest_sed_disk"]))
     assert np.all(np.isfinite(dbk_sed_info["rest_sed_knots"]))
+
+
+def test_mc_lc_phot_agrees_with_mc_lc_specphot(num_halos=50):
+    ran_key = jran.key(0)
+    ssp_data = load_fake_ssp_data()
+    assert hasattr(ssp_data, "emlines")
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(
+        num_halos=num_halos, ssp_data=ssp_data
+    )
+    assert hasattr(lc_data, "precomputed_ssp_lineflux_cgs_table")
+
+    phot_kern_results = mc_phot.mc_lc_phot(
+        ran_key, lc_data, diffstarpop_params=sfh_models["tng"]
+    )
+    phot_kern_results2 = mc_phot.mc_lc_specphot(
+        ran_key, lc_data, diffstarpop_params=sfh_models["smdpl_dr1"]
+    )
+    assert not np.allclose(
+        phot_kern_results["obs_mags"], phot_kern_results2["obs_mags"], atol=0.1
+    )
+
+    for emline_name in lc_data.ssp_data.emlines._fields:
+        assert np.all(np.isfinite(phot_kern_results2[emline_name]))

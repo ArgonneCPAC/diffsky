@@ -10,6 +10,7 @@ from dsps.data_loaders.defaults import TransmissionCurve
 from dsps.metallicity import umzr
 from jax import random as jran
 
+from ...data_loaders.load_ssp_data import load_fake_ssp_data
 from ...param_utils import diffsky_param_wrapper as dpw
 from ...param_utils import spspop_param_utils as spspu
 from ...ssp_err_model import ssp_err_model
@@ -87,13 +88,16 @@ def test_multiband_lc_phot_kern():
         assert np.all(np.isfinite(arr))
 
 
-def _generate_lc_data():
+def _generate_lc_data(include_emlines=False):
     ran_key = jran.key(0)
     lgmp_min = 12.0
     z_min, z_max = 0.1, 0.5
     sky_area_degsq = 1.0
 
-    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
+    if include_emlines:
+        ssp_data = load_fake_ssp_data()
+    else:
+        ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
 
     _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
     wave, u, g, r, i, z, y = _res
@@ -122,6 +126,15 @@ def test_generate_lc_data():
     assert np.all(np.isfinite(lc_data.logmp0))
     for x in lc_data.mah_params:
         assert np.all(np.isfinite(x))
+
+
+def test_generate_lc_data_emlines():
+    lc_data = _generate_lc_data(include_emlines=True)
+    assert np.all(np.isfinite(lc_data.logmp0))
+    for x in lc_data.mah_params:
+        assert np.all(np.isfinite(x))
+    assert np.all(np.isfinite(lc_data.precomputed_ssp_lineflux_cgs_table))
+    assert np.all(np.isfinite(lc_data.line_wave_table))
 
 
 def test_multiband_lc_phot_kern_u_param_arr():
