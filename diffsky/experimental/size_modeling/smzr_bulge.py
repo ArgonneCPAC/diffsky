@@ -3,8 +3,13 @@
 from collections import namedtuple
 
 from jax import jit as jjit
+from jax import numpy as jnp
+from jax import random as jran
 
 from ...utils import _sig_slope, _sigmoid
+
+R50_MIN, R50_MAX = 0.1, 40.0
+R50_SCATTER = 0.2
 
 XTP = 10.0
 LGM_LGR_SLOPE_K_BULGE = 1.0
@@ -22,6 +27,33 @@ DEFAULT_BULGE_SIZE_PDICT = dict(
 )
 BulgeSizeParams = namedtuple("BulgeSizeParams", list(DEFAULT_BULGE_SIZE_PDICT.keys()))
 DEFAULT_BULGE_SIZE_PARAMS = BulgeSizeParams(**DEFAULT_BULGE_SIZE_PDICT)
+
+
+def mc_r50_bulge_size(logsm, redshift, ran_key, bulge_params=DEFAULT_BULGE_SIZE_PARAMS):
+    """Monte Carlo realization of size--mass relation for bulges
+
+    Parameters
+    ----------
+    logsm: array, shape (Ngal, )
+        Base-10 log of Mstar in units of Msun
+
+    redshift: array, shape (Ngal, )
+
+    Returns
+    -------
+    r50: array, shape (Ngal, )
+        size in units of kpc
+
+    z_score: array, shape (Ngal, )
+        gaussian random used in MC realization
+
+    """
+    logr50_med = _lgr50_kern_bulge(logsm, redshift, bulge_params)
+    logr50_med = jnp.clip(logr50_med, jnp.log10(R50_MIN), jnp.log10(R50_MAX))
+    z_score = jran.normal(ran_key, shape=logr50_med.shape)
+    logr50 = z_score * R50_SCATTER + logr50_med
+    r50 = 10**logr50
+    return r50, z_score
 
 
 @jjit
