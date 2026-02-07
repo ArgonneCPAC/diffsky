@@ -57,3 +57,14 @@ def _x0_redshift_kern(redshift, z_x0_x0, z_x0_lo, z_x0_hi):
 @jjit
 def _slope_redshift_kern(redshift, slope_x0, slope_lo, slope_hi):
     return _sigmoid(redshift, slope_x0, SLOPE_Z_K_BULGE, slope_lo, slope_hi)
+
+
+_DBS_SIZE_PDICT = dict(
+    z_x0_x0=1.0,
+    z_x0_lo=10.2,
+    z_x0_hi=11.6,
+    lgm_ytp=0.2,
+    lgm_slope_lo=0.14,
+    lgm_slope_hi=0.7,
+)
+_DBS_BULGE_SIZE_PARAMS = BulgeSizeParams(**_DBS_SIZE_PDICT)

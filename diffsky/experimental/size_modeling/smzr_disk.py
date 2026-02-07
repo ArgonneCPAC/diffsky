@@ -52,3 +52,15 @@ def _ytp_redshift_kern(redshift, ytp_x0, ytp_lo, ytp_hi):
 @jjit
 def _slope_redshift_kern(redshift, slope_x0, slope_lo, slope_hi):
     return _sigmoid(redshift, slope_x0, SLOPE_Z_K_DISK, slope_lo, slope_hi)
+
+
+_DBS_SIZE_PDICT = dict(
+    ytp_x0=1.6,
+    ytp_lo=0.63,
+    ytp_hi=0.45,
+    slope_x0=0.7,
+    slope_lo=0.21,
+    slope_hi=0.18,
+    lgm_x0=11.0,
+)
+_DBS_DISK_SIZE_PARAMS = DiskSizeParams(**_DBS_SIZE_PDICT)

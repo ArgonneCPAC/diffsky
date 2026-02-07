@@ -21,7 +21,7 @@ def test_lgr50_kern_bulge_default_model():
     for redshift in Z_TABLE:
         lgr50_ek = np.log10(dbs._disk_median_r50(marr, ZZ + redshift))
         lgr50_sig_slope = smzr_disk._lgr50_kern_disk(
-            lgmarr, ZZ + redshift, smzr_disk.DEFAULT_DISK_SIZE_PARAMS
+            lgmarr, ZZ + redshift, smzr_disk._DBS_DISK_SIZE_PARAMS
         )
         mae_diff = _mae(lgr50_ek, lgr50_sig_slope)
         assert mae_diff < 0.15

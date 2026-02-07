@@ -21,7 +21,7 @@ def test_lgr50_kern_bulge_default_model():
     for redshift in Z_TABLE:
         lgr50_ek = np.log10(dbs._bulge_median_r50(marr, ZZ + redshift))
         lgr50_sig_slope = smzr_bulge._lgr50_kern_bulge(
-            lgmarr, ZZ + redshift, smzr_bulge.DEFAULT_BULGE_SIZE_PARAMS
+            lgmarr, ZZ + redshift, smzr_bulge._DBS_BULGE_SIZE_PARAMS
         )
         mae_diff = _mae(lgr50_ek, lgr50_sig_slope)
         assert mae_diff < 0.15
