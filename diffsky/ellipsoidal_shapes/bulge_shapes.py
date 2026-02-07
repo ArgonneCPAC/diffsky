@@ -14,7 +14,7 @@ BulgeAxisRatioParams = namedtuple(
     "BulgeAxisRatioParams", ("ba_peak", "ba_sigma", "ba_min", "ba_max", "c_min")
 )
 DEFAULT_BULGE_PARAMS = BulgeAxisRatioParams(
-    ba_peak=1.7, ba_sigma=0.6, ba_min=0.1, ba_max=1.0, c_min=0.61
+    ba_peak=1.2, ba_sigma=0.9, ba_min=0.05, ba_max=1.0, c_min=0.5
 )
 
 

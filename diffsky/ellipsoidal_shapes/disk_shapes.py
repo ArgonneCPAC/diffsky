@@ -12,7 +12,7 @@ DiskAxisRatioParams = namedtuple(
     "DiskAxisRatioParams", ("ba_min", "ba_max", "c_min", "c_max")
 )
 DEFAULT_DISK_PARAMS = DiskAxisRatioParams(
-    ba_min=0.8, ba_max=1.0, c_min=0.17, c_max=0.85
+    ba_min=0.5, ba_max=0.8, c_min=0.17, c_max=0.85
 )
 
 
