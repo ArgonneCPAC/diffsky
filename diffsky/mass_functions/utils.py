@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ..utils import _sig_slope  # noqa
+from ..utils import _sig_slope, _sigmoid  # noqa
 
 
 def get_1d_arrays(*args):
