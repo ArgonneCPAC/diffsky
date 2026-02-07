@@ -16,9 +16,9 @@ DEFAULT_BULGE_SIZE_PDICT = dict(
     z_x0_x0=1.0,
     z_x0_lo=10.2,
     z_x0_hi=11.6,
-    lgm_ytp=0.2,
+    lgm_ytp=0.3,
     lgm_slope_lo=0.14,
-    lgm_slope_hi=0.7,
+    lgm_slope_hi=0.4,
 )
 BulgeSizeParams = namedtuple("BulgeSizeParams", list(DEFAULT_BULGE_SIZE_PDICT.keys()))
 DEFAULT_BULGE_SIZE_PARAMS = BulgeSizeParams(**DEFAULT_BULGE_SIZE_PDICT)
