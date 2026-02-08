@@ -39,7 +39,7 @@ def test_mc_weighted_lightcone_data():
         tcurves,
         z_phot_table,
     )
-    lc_data = lcg.mc_weighted_lightcone_data(*args)
+    lc_data = lcg.weighted_lc_halos_photdata(*args)
 
     for field in lcg.LCData._fields:
         assert hasattr(lc_data, field)

@@ -1,8 +1,10 @@
-""""""
+"""Wrappers around diffhalos.lightcone_generators that computes additional data
+need to calculate photometry and run gradient descents
+"""
 
 from collections import namedtuple
 
-from diffhalos.lightcone import mc_lightcone_halos as mclh
+from diffhalos.lightcone_generators import mc_lightcone_halos as mclh
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
 from jax import numpy as jnp
@@ -13,7 +15,7 @@ from . import precompute_ssp_phot as psspp
 N_SFH_TABLE = 100
 
 
-def mc_weighted_lightcone_data(
+def weighted_lc_halos_photdata(
     ran_key,
     num_halos,
     z_min,
@@ -28,8 +30,11 @@ def mc_weighted_lightcone_data(
     cosmo_params=flat_wcdm.PLANCK15,
 ):
     """
-    Generate a mass-function-weighted lightcone of host halos,
-    and additional data needed for photometry calculations
+    Generate a weighted lightcone of host halos,
+    and additional data needed for photometry calculations.
+
+    This function is a wrapper around
+    diffhalos.lightcone_generators.mc_lightcone_halos.weighted_lc_halos
 
     Parameters
     ----------
@@ -91,9 +96,6 @@ def mc_weighted_lightcone_data(
 
             logmp0: ndarray of shape (num_halos, )
                 base-10 log of halo mass at z=0, in Msun
-
-            logt0: float
-                Base-10 log of z=0 age of the Universe for the input cosmology
 
             t_table : array
                 Age of the universe in Gyr at which SFH is tabulated
