@@ -17,7 +17,8 @@ def test_mc_weighted_lightcone_data():
     z_min, z_max = 0.1, 3.0
     sky_area_degsq = 100.0
 
-    ssp_data = load_ssp_data.load_fake_ssp_data()
+    EMLINE_NAMES = ("Halpha", "OII", "OIII", "NII")
+    ssp_data = load_ssp_data.load_fake_ssp_data(emline_names=EMLINE_NAMES)
 
     _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
     wave, u, g, r, i, z, y = _res
@@ -58,3 +59,10 @@ def test_mc_weighted_lightcone_data():
     assert lc_data.wave_eff_table.shape == (n_z_phot_table, n_bands)
     assert np.all(lc_data.wave_eff_table > 100)
     assert np.all(lc_data.wave_eff_table < 40_000)
+
+    assert hasattr(lc_data, "precomputed_ssp_lineflux_cgs_table")
+    assert hasattr(lc_data, "line_wave_table")
+
+    n_lines = len(EMLINE_NAMES)
+    assert lc_data.precomputed_ssp_lineflux_cgs_table.shape == (n_lines, n_met, n_age)
+    assert lc_data.line_wave_table.shape == (n_lines,)

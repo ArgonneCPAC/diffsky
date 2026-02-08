@@ -137,6 +137,35 @@ def weighted_lc_halos_photdata(
         z_phot_table,
         wave_eff_table,
     )
+
+    lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
+
+    return lc_data
+
+
+def passively_add_emlines_to_lc_data(ssp_data, lc_data):
+    """Include precomputed emission line fluxes, if they are present in the ssp_data
+
+    If ssp_data.emlines exists, the returned lc_data will have two additional fields:
+
+        precomputed_ssp_lineflux_cgs_table : array, shape (n_lines, n_met, n_age)
+
+        line_wave_table : array, shape (n_lines, )
+
+    """
+    if hasattr(ssp_data, "emlines"):
+
+        precomputed_ssp_lineflux_cgs_table = jnp.array(
+            [emline.line_flux for emline in ssp_data.emlines]
+        )
+        line_wave_table = jnp.array([emline.line_wave for emline in ssp_data.emlines])
+
+        new_fields = ("precomputed_ssp_lineflux_cgs_table", "line_wave_table")
+        new_vals = (precomputed_ssp_lineflux_cgs_table, line_wave_table)
+        fields = (*LCData._fields, *new_fields)
+        values = (*lc_data, *new_vals)
+        lc_data = namedtuple("LCData", fields)(*values)
+
     return lc_data
 
 
