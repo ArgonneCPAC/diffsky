@@ -32,7 +32,7 @@ if __name__ == "__main__":
         "-drn_out", help="Output directory to store best-fit parameters", default=""
     )
     parser.add_argument(
-        "-enforce_tol", help="MAE agreement enforced", default=0.2, type=float
+        "-enforce_tol", help="MAE agreement enforced", default=0.3, type=float
     )
 
     args = parser.parse_args()
