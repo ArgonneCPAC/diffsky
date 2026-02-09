@@ -1,15 +1,8 @@
 """ """
 
 import numpy as np
-from jax import jit as jjit
 
-from ..utils import _sigmoid
-
-
-@jjit
-def _sig_slope(x, xtp, ytp, x0, slope_k, lo, hi):
-    slope = _sigmoid(x, x0, slope_k, lo, hi)
-    return ytp + slope * (x - xtp)
+from ..utils import _sig_slope, _sigmoid  # noqa
 
 
 def get_1d_arrays(*args):

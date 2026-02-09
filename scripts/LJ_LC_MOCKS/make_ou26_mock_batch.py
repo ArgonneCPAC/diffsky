@@ -2,15 +2,8 @@
 
 To run a unit test of this script:
 
-python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
-python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/smdpl_dr1
-
-python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -cosmos_fit cosmos_260120_UM -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5
-python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos_260120_UM
-
-python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -cosmos_fit cosmos_260120_UM -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5 --no_dbk
-python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/synthetic_cores/cosmos_260120_UM --no_dbk
-
+python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5 -mock_version_name dummy_version_name
+python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
 
 """  # noqa
 

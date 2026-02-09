@@ -25,7 +25,7 @@ SizeParamsDisk = ["a_{}", "alpha_{}"]
 NamesDisk = [p.format("disk") for p in SizeParamsDisk]
 DiskSizeParameters = namedtuple("DiskSizeParameters", NamesDisk)
 
-a_disk = SigmoidParameters(1.108, 2.42, 5.94, 3.82)
+a_disk = SigmoidParameters(1.33, 2.42, 5.94, 3.82)
 alpha_disk = SigmoidParameters(0.519, 56.4, 0.207, 0.181)
 
 DISK_SIZE_PARAMETERS = DiskSizeParameters(a_disk, alpha_disk)
@@ -36,7 +36,7 @@ SizeParamsBulge = ["rp_{}", "alpha_{}", "beta_{}", "logmp_{}"]
 NamesBulge = [p.format("bulge") for p in SizeParamsBulge]
 BulgeSizeParameters = namedtuple("BulgeSizeParameters", NamesBulge)
 
-rp_bulge = LinearParameters(2.44, -0.030)
+rp_bulge = LinearParameters(2.93, -0.030)
 alpha_bulge = LinearParameters(0.130, -0.0218)
 beta_bulge = LinearParameters(0.71, 0.055)
 logmp_bulge = LinearParameters(10.0, 0.40)
