@@ -92,7 +92,7 @@ def _get_weighted_lc_photdata_for_unit_testing(num_halos=75):
 def test_weighted_lc_halos_photdata():
     lc_data, tcurves = _get_weighted_lc_halos_photdata_for_unit_testing()
 
-    for field in lcg.LCData._fields:
+    for field in lcg.LCHalosData._fields:
         assert hasattr(lc_data, field)
 
     for arr in lc_data.mah_params:
