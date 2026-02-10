@@ -58,6 +58,9 @@ def test_load_diffsky_param_collection(tmp_path):
     param_collection = lcmp_repro.load_diffsky_param_collection(
         tmp_path, mock_version_name
     )
+    for params in param_collection:
+        pnames = list(params._fields)  # enforce each params is actually a namedtuple
+        assert len(pnames) == len(params)
     all_params_flat2 = dpw.unroll_param_collection_into_flat_array(*param_collection)
 
     assert np.allclose(all_params_flat, all_params_flat2, rtol=1e-5)
