@@ -9,6 +9,8 @@ from jax import random as jran
 
 from ...data_loaders import load_ssp_data
 from .. import lightcone_generators as lcg
+from .. import mc_phot
+from . import test_mc_phot as tmcp
 
 
 def _get_weighted_lc_halos_photdata_for_unit_testing(num_halos=75):
@@ -79,3 +81,10 @@ def test_weighted_lc_halos_photdata():
     n_lines = len(EMLINE_NAMES)
     assert lc_data.precomputed_ssp_lineflux_cgs_table.shape == (n_lines, n_met, n_age)
     assert lc_data.line_wave_table.shape == (n_lines,)
+
+    ran_key = jran.key(1)
+    phot_kern_results = mc_phot.mc_lc_phot(ran_key, lc_data)
+    keys = list(phot_kern_results.keys())
+    phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
+
+    tmcp.check_phot_kern_results(phot_kern_results)
