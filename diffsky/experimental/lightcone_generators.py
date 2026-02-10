@@ -171,7 +171,7 @@ def weighted_lc_photdata(
     ran_key: jran.key
         random key
 
-    num_halos : int
+    n_host_halos : int
         Number of host halos in the weighted lightcone
 
     z_min, z_max : float
@@ -207,25 +207,50 @@ def weighted_lc_photdata(
     Returns
     -------
     lc_data: namedtuple
-        Population of num_halos halos along with data needed to compute photometry
+        Population of n_halos_tot halos along with data needed to compute photometry
 
-            nhalos: ndarray of shape (num_halos, )
-                weight of the (sub)halo
+    halopop: namedtuple
+        Population of n_halos_tot halos and subhalos
+            n_halos_tot = n_sub + n_host_halos
+            n_sub = nsub_per_host * n_host_halos
 
-            z_obs: ndarray of shape (num_halos, )
+        halopop fields:
+            z_obs: ndarray of shape (n_halos_tot, )
                 redshift values
 
-            t_obs: ndarray of shape (num_halos, )
+            t_obs: ndarray of shape (n_halos_tot, )
                 cosmic time at observation, in Gyr
 
-            logmp_obs: ndarray of shape (num_halos, )
+            logmp_obs: ndarray of shape (n_halos_tot, )
                 base-10 log of halo mass at observation, in Msun
 
-            mah_params: namedtuple of ndarrays of shape (num_halos, )
+            mah_params: namedtuple of ndarrays of shape (n_halos_tot, )
                 mah parameters
 
-            logmp0: ndarray of shape (num_halos, )
+            logmp0: ndarray of shape (n_halos_tot, )
                 base-10 log of halo mass at z=0, in Msun
+
+            logt0: float
+                Base-10 log of z=0 age of the Universe for the input cosmology
+
+            nhalos: ndarray of shape (n_halos_tot, )
+                weight of the (sub)halo
+
+            nhalos_host: ndarray of shape (n_halos_tot, )
+                weight of the host halo
+                Equal to nhalos for central halos
+
+            nsub_per_host: int
+                number of subhalos per host halo
+                    n_sub = nsub_per_host * n_host_halos
+                    n_halos_tot = n_sub + n_host_halos
+
+            logmu_obs: ndarray of shape (n_halos_tot, )
+                base-10 log of mu=Msub/Mhost
+
+            halo_indx: ndarray of shape (n_halos_tot, )
+                index of the associated host halo
+                for central halos: halo_indx = range(n_halos_tot)
 
             t_table : array
                 Age of the universe in Gyr at which SFH is tabulated
