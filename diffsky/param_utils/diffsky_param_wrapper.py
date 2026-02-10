@@ -113,9 +113,9 @@ def get_param_collection_from_flat_array(all_params_flat):
     DiffskyParams = namedtuple("DiffskyParams", all_pnames_flat)
     named_params = DiffskyParams(*all_params_flat)
 
-    diffstarpop_params = [
-        getattr(named_params, pname) for pname in DEFAULT_DIFFSTARPOP_PARAMS._fields
-    ]
+    diffstarpop_params = DEFAULT_DIFFSTARPOP_PARAMS._make(
+        [getattr(named_params, pname) for pname in DEFAULT_DIFFSTARPOP_PARAMS._fields]
+    )
     mzr_params = [
         getattr(named_params, pname) for pname in umzr.DEFAULT_MZR_PARAMS._fields
     ]
