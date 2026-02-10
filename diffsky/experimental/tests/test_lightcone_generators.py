@@ -9,7 +9,7 @@ from ...data_loaders import load_ssp_data
 from .. import lightcone_generators as lcg
 
 
-def test_mc_weighted_lightcone_data():
+def test_weighted_lc_halos_photdata():
     ran_key = jran.key(0)
 
     num_halos = 75
