@@ -2,6 +2,7 @@
 
 from collections import namedtuple
 
+import numpy as np
 from diffstar.diffstarpop import (
     DEFAULT_DIFFSTARPOP_PARAMS,
     DEFAULT_DIFFSTARPOP_U_PARAMS,
@@ -378,3 +379,31 @@ PNAMES_FLAT = get_flat_param_names()
 DiffskyParamsFlat = namedtuple("DiffskyParamsFlat", PNAMES_FLAT)
 U_PNAMES_FLAT = ["u_" + name for name in PNAMES_FLAT]
 DiffskyUParamsFlat = namedtuple("DiffskyUParamsFlat", U_PNAMES_FLAT)
+
+
+def check_param_collection_is_ok(param_collection):
+    """Check the input param_collection can be unbounded and rebounded without issues"""
+    param_collection_is_ok = True
+    diffsky_params_flat = unroll_param_collection_into_flat_array(*param_collection)
+
+    if not np.all(np.isfinite(diffsky_params_flat)):
+        param_collection_is_ok = False
+        print("Some non-finite values in param_collection")
+
+    u_param_collection = get_u_param_collection_from_param_collection(*param_collection)
+    diffsky_u_params_flat = unroll_u_param_collection_into_flat_array(
+        *u_param_collection
+    )
+    if not np.all(np.isfinite(diffsky_u_params_flat)):
+        param_collection_is_ok = False
+        print("Some non-finite values in unbounded param_collection")
+
+    param_collection2 = get_param_collection_from_u_param_collection(
+        *u_param_collection
+    )
+    diffsky_params2_flat = unroll_param_collection_into_flat_array(*param_collection2)
+    if not np.allclose(diffsky_params_flat, diffsky_params2_flat, rtol=1e-3):
+        param_collection_is_ok = False
+        print("param_collection is not the same after unbounding and rebounding")
+
+    return param_collection_is_ok

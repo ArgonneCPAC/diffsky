@@ -41,6 +41,11 @@ def mc_lc_phot(
         Contains info about the galaxy SEDs
 
     """
+    param_collection = dpw.ParamCollection(
+        diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
+    )
+    assert dpw.check_param_collection_is_ok(param_collection)
+
     phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         ran_key,
         lc_data.z_obs,
@@ -145,6 +150,11 @@ def mc_lc_sed(
         Contains info about the galaxy SEDs
 
     """
+    param_collection = dpw.ParamCollection(
+        diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
+    )
+    assert dpw.check_param_collection_is_ok(param_collection)
+
     phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         ran_key,
         lc_data.z_obs,
@@ -212,6 +222,11 @@ def mc_lc_dbk_phot(
         Contains info about disk/bulge/knot photometry
 
     """
+    param_collection = dpw.ParamCollection(
+        diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
+    )
+    assert dpw.check_param_collection_is_ok(param_collection)
+
     dbk_phot_info, dbk_weights = mcpk._mc_dbk_phot_kern(
         ran_key,
         lc_data.z_obs,
@@ -266,6 +281,11 @@ def mc_lc_dbk_sed(
         Contains info about disk/bulge/knot SEDs
 
     """
+    param_collection = dpw.ParamCollection(
+        diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
+    )
+    assert dpw.check_param_collection_is_ok(param_collection)
+
     dbk_sed_info, dbk_weights = mc_lc_dbk_phot(
         ran_key,
         lc_data,

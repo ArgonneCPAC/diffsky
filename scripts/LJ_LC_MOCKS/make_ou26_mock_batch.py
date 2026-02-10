@@ -29,6 +29,7 @@ from diffsky.data_loaders.hacc_utils import metadata_mock
 from diffsky.data_loaders.mock_utils import get_mock_version_name
 from diffsky.experimental import mc_lightcone_halos as mclh
 from diffsky.experimental import precompute_ssp_phot as psspp
+from diffsky.param_utils import diffsky_param_wrapper as dpw
 from diffsky.param_utils import get_mock_params as gmp
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
@@ -236,6 +237,8 @@ if __name__ == "__main__":
     param_collection = gmp.get_param_collection_for_mock(
         cosmos_fit=cosmos_fit, sfh_model=sfh_model, rank=0
     )
+    dpw.check_param_collection_is_ok(param_collection)
+
     n_z_phot_table = 15
 
     tcurves = lcmp_repro.get_dsps_transmission_curves(OUTPUT_FILTER_NICKNAMES)
