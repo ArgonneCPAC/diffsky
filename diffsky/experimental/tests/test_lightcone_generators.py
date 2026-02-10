@@ -136,3 +136,10 @@ def test_weighted_lc_photdata():
 
     for arr in lc_data.mah_params:
         assert np.all(np.isfinite(arr))
+
+    ran_key = jran.key(1)
+    phot_kern_results = mc_phot.mc_lc_phot(ran_key, lc_data)
+    keys = list(phot_kern_results.keys())
+    phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
+
+    tmcp.check_phot_kern_results(phot_kern_results)
