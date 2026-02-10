@@ -73,6 +73,7 @@ if __name__ == "__main__":
 
     pbarp13.make_disk_rp13_comparison_plot(
         disk_params=disk_params_best,
+        disk_params2=default_params,
         fname="disk_axis_ratio_rp13_comparison.png",
         enforce_tol=args.enforce_tol,
     )

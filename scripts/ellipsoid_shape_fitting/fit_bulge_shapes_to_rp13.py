@@ -77,6 +77,7 @@ if __name__ == "__main__":
 
     pbarp13.make_bulge_rp13_comparison_plot(
         bulge_params=params_best,
+        bulge_params2=default_params,
         fname="bulge_axis_ratio_rp13_comparison.png",
         enforce_tol=args.enforce_tol,
     )
