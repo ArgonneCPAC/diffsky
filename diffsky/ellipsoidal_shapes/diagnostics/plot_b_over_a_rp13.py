@@ -33,6 +33,7 @@ def make_bulge_rp13_comparison_plot(
     ngals=50_000,
     drn_tdata=DRN_RP13_TDATA,
     bulge_params=bulge_shapes.DEFAULT_BULGE_PARAMS,
+    bulge_params2=bulge_shapes.DEFAULT_BULGE_PARAMS,
     fname=None,
     enforce_tol=float("inf"),
 ):
@@ -54,16 +55,27 @@ def make_bulge_rp13_comparison_plot(
     ba_bins = np.linspace(0.01, 0.99, 50)
     ba_binmids = 0.5 * (ba_bins[:-1] + ba_bins[1:])
 
-    ran_key, bulge_key = jran.split(ran_key, 2)
+    ran_key, bulge_key, bulge_key2 = jran.split(ran_key, 3)
+
+    a = np.ones(ngals)
 
     axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_key, ngals, bulge_params)
-    a = np.ones(ngals)
-    b = a * axis_ratios.b_over_a
-    c = a * axis_ratios.c_over_a
-    bulge_ellipse2d = eproj.compute_ellipse2d(a, b, c, mu_ran, phi_ran)
+    bulge_ellipse2d = eproj.compute_ellipse2d(
+        a, a * axis_ratios.b_over_a, a * axis_ratios.c_over_a, mu_ran, phi_ran
+    )
+    ba_pdf_model, __ = np.histogram(
+        bulge_ellipse2d.beta / bulge_ellipse2d.alpha, ba_bins, density=True
+    )
 
-    ba = bulge_ellipse2d.beta / bulge_ellipse2d.alpha
-    ba_pdf_model, __ = np.histogram(ba, ba_bins, density=True)
+    axis_ratios2 = bulge_shapes.sample_bulge_axis_ratios(
+        bulge_key2, ngals, bulge_params2
+    )
+    bulge2_ellipse2d = eproj.compute_ellipse2d(
+        a, a * axis_ratios2.b_over_a, a * axis_ratios2.c_over_a, mu_ran, phi_ran
+    )
+    ba_pdf_model2, __ = np.histogram(
+        bulge2_ellipse2d.beta / bulge2_ellipse2d.alpha, ba_bins, density=True
+    )
 
     fig, ax = plt.subplots(1, 1)
     ax.set_xlim(-0.01, 1.01)
@@ -75,7 +87,8 @@ def make_bulge_rp13_comparison_plot(
     ax.fill_between(
         ba_pdf_abscissa_target, ba_pdf_target, alpha=0.5, color="gray", label=rp13_label
     )
-    ax.plot(ba_binmids, ba_pdf_model, color="k", label="model bulges")
+    ax.plot(ba_binmids, ba_pdf_model, color="k", label="best-fit model bulges")
+    ax.plot(ba_binmids, ba_pdf_model2, "--", color="k", label="default model bulges")
     ax.legend()
 
     ba_pdf_pred = np.interp(ba_pdf_abscissa_target, ba_binmids, ba_pdf_model)
@@ -94,6 +107,7 @@ def make_disk_rp13_comparison_plot(
     ngals=50_000,
     drn_tdata=DRN_RP13_TDATA,
     disk_params=disk_shapes.DEFAULT_DISK_PARAMS,
+    disk_params2=disk_shapes.DEFAULT_DISK_PARAMS,
     fname=None,
     enforce_tol=float("inf"),
 ):
@@ -115,16 +129,25 @@ def make_disk_rp13_comparison_plot(
     ba_bins = np.linspace(0.01, 0.99, 50)
     ba_binmids = 0.5 * (ba_bins[:-1] + ba_bins[1:])
 
-    ran_key, bulge_key = jran.split(ran_key, 2)
+    ran_key, disk_key, disk_key2 = jran.split(ran_key, 3)
 
-    axis_ratios = disk_shapes.sample_disk_axis_ratios(bulge_key, ngals, disk_params)
     a = np.ones(ngals)
-    b = a * axis_ratios.b_over_a
-    c = a * axis_ratios.c_over_a
-    gal_ellipse2d = eproj.compute_ellipse2d(a, b, c, mu_ran, phi_ran)
 
-    ba = gal_ellipse2d.beta / gal_ellipse2d.alpha
-    ba_pdf_model, __ = np.histogram(ba, ba_bins, density=True)
+    axis_ratios = disk_shapes.sample_disk_axis_ratios(disk_key, ngals, disk_params)
+    gal_ellipse2d = eproj.compute_ellipse2d(
+        a, a * axis_ratios.b_over_a, a * axis_ratios.c_over_a, mu_ran, phi_ran
+    )
+    ba_pdf_model, __ = np.histogram(
+        gal_ellipse2d.beta / gal_ellipse2d.alpha, ba_bins, density=True
+    )
+
+    axis_ratios2 = disk_shapes.sample_disk_axis_ratios(disk_key2, ngals, disk_params2)
+    gal_ellipse2d2 = eproj.compute_ellipse2d(
+        a, a * axis_ratios2.b_over_a, a * axis_ratios2.c_over_a, mu_ran, phi_ran
+    )
+    ba_pdf_model2, __ = np.histogram(
+        gal_ellipse2d2.beta / gal_ellipse2d2.alpha, ba_bins, density=True
+    )
 
     fig, ax = plt.subplots(1, 1)
     ax.set_xlim(-0.01, 1.01)
@@ -136,7 +159,8 @@ def make_disk_rp13_comparison_plot(
     ax.fill_between(
         ba_pdf_abscissa_target, ba_pdf_target, alpha=0.5, color="gray", label=rp13_label
     )
-    ax.plot(ba_binmids, ba_pdf_model, color="k", label="model disks")
+    ax.plot(ba_binmids, ba_pdf_model, color="k", label="best-fit model disks")
+    ax.plot(ba_binmids, ba_pdf_model2, "--", color="k", label="default model disks")
     ax.legend()
 
     ba_pdf_pred = np.interp(ba_pdf_abscissa_target, ba_binmids, ba_pdf_model)
