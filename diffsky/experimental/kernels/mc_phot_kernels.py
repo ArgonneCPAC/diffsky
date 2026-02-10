@@ -11,6 +11,7 @@ from jax import random as jran
 from jax import vmap
 
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
+from ...merging import merging_model
 from ...ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
 from .. import photometry_interpolation as photerp
@@ -236,6 +237,61 @@ def _phot_kern(
         wave_eff_galpop,
     )
     return phot_kern_results
+
+
+@partial(jjit, static_argnames=["n_t_table"])
+def _phot_kern_merging(
+    phot_randoms,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    merge_params,
+    cosmo_params,
+    fb,
+    n_t_table=mcdw.N_T_TABLE,
+):
+    phot_kern_results = _phot_kern(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+        n_t_table=n_t_table,
+    )
+
+    merging_u_params = merging_model.get_unbounded_merge_params(merge_params)
+    merging_args = (
+        merging_u_params,
+        log_mpeak_infall,
+        log_mhost_infall,
+        t_interest,
+        t_infall,
+        upids,
+        sfr,
+        indx_to_deposit,
+        do_merging,
+        MC,
+    )
+    merging_model.merge()
 
 
 @partial(jjit, static_argnames=["n_t_table"])
