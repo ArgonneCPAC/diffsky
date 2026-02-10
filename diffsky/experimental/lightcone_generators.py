@@ -4,6 +4,7 @@ need to calculate photometry and run gradient descents
 
 from collections import namedtuple
 
+from diffhalos.lightcone_generators import mc_lightcone as mcl
 from diffhalos.lightcone_generators import mc_lightcone_halos as mclh
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
@@ -115,6 +116,50 @@ def weighted_lc_halos_photdata(
     """
     args = (ran_key, num_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
     halopop = mclh.weighted_lc_halos(*args, logmp_cutoff=logmp_cutoff)
+
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    lc_data = LCData(
+        halopop.nhalos,
+        halopop.z_obs,
+        halopop.t_obs,
+        halopop.logmp_obs,
+        halopop.mah_params,
+        halopop.logmp0,
+        t_table,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+    )
+
+    lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
+
+    return lc_data
+
+
+def weighted_lc_photdata(
+    ran_key,
+    n_host_halos,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmp_max,
+    sky_area_degsq,
+    ssp_data,
+    tcurves,
+    z_phot_table,
+    *,
+    cosmo_params=flat_wcdm.PLANCK15,
+):
+    args = (ran_key, n_host_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
+    halopop = mclh.weighted_lc_halos(*args, cosmo_params=cosmo_params)
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)

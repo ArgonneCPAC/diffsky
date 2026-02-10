@@ -51,6 +51,44 @@ def _get_weighted_lc_halos_photdata_for_unit_testing(num_halos=75):
     return lc_data, tcurves
 
 
+def _get_weighted_lc_photdata_for_unit_testing(num_halos=75):
+    ran_key = jran.key(0)
+
+    lgmp_min, lgmp_max = 10.0, 15.0
+    z_min, z_max = 0.1, 3.0
+    sky_area_degsq = 100.0
+
+    EMLINE_NAMES = ("Halpha", "OII", "OIII", "NII")
+    ssp_data = load_ssp_data.load_fake_ssp_data(emline_names=EMLINE_NAMES)
+
+    _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
+    wave, u, g, r, i, z, y = _res
+
+    tcurve_list = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+    names = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
+    TransmissionCurves = namedtuple("TransmissionCurves", names)
+    tcurves = TransmissionCurves(*tcurve_list)
+
+    n_z_phot_table = 15
+    z_phot_table = 10 ** np.linspace(np.log10(z_min), np.log10(z_max), n_z_phot_table)
+
+    args = (
+        ran_key,
+        num_halos,
+        z_min,
+        z_max,
+        lgmp_min,
+        lgmp_max,
+        sky_area_degsq,
+        ssp_data,
+        tcurves,
+        z_phot_table,
+    )
+    lc_data = lcg.weighted_lc_photdata(*args)
+
+    return lc_data, tcurves
+
+
 def test_weighted_lc_halos_photdata():
     lc_data, tcurves = _get_weighted_lc_halos_photdata_for_unit_testing()
 
@@ -88,3 +126,13 @@ def test_weighted_lc_halos_photdata():
     phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
 
     tmcp.check_phot_kern_results(phot_kern_results)
+
+
+def test_weighted_lc_photdata():
+    lc_data, tcurves = _get_weighted_lc_photdata_for_unit_testing()
+
+    for field in lcg.LCData._fields:
+        assert hasattr(lc_data, field)
+
+    for arr in lc_data.mah_params:
+        assert np.all(np.isfinite(arr))
