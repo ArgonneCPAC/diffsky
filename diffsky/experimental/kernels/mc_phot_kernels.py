@@ -257,6 +257,11 @@ def _phot_kern_merging(
     merge_params,
     cosmo_params,
     fb,
+    logmp_infall,
+    logmhost_infall,
+    t_infall,
+    is_central,
+    halo_indx,
     n_t_table=mcdw.N_T_TABLE,
 ):
     phot_kern_results = _phot_kern(
@@ -279,19 +284,22 @@ def _phot_kern_merging(
     )
 
     merging_u_params = merging_model.get_unbounded_merge_params(merge_params)
+    upids = jnp.where(is_central, -1.0, 0.0)
+    do_merging = jnp.where(is_central, 0.0, 1.0)
+    MC = 0
     merging_args = (
         merging_u_params,
-        log_mpeak_infall,
-        log_mhost_infall,
-        t_interest,
+        logmp_infall,
+        logmhost_infall,
+        t_obs,
         t_infall,
         upids,
         sfr,
-        indx_to_deposit,
+        halo_indx,
         do_merging,
         MC,
     )
-    merging_model.merge()
+    merging_model.merge(*merging_args)
 
 
 @partial(jjit, static_argnames=["n_t_table"])
