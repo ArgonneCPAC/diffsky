@@ -47,6 +47,7 @@ jobs:
             matplotlib \
             astropy \
             python-build
+          pip install git+https://github.com/ArgonneCPAC/diffhalos.git
           python -m pip install --no-build-isolation --no-deps -e .
 
       - name: test

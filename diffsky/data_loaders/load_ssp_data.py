@@ -98,7 +98,6 @@ def load_fake_ssp_data(n_lines=3, emline_names=None):
     ssp_data = load_fake_ssp_data_dsps()
     n_met, n_age = ssp_data.ssp_flux.shape[:-1]
 
-    line_waves = np.linspace(1_000, 10_000, n_lines)
     characters = string.ascii_letters
 
     if emline_names is None:
@@ -110,6 +109,8 @@ def load_fake_ssp_data(n_lines=3, emline_names=None):
                 emline_names.append(random_string)
     else:
         n_lines = len(emline_names)
+
+    line_waves = np.linspace(1_000, 10_000, n_lines)
 
     emlines_dict = dict()
     for i, linename in enumerate(emline_names):
