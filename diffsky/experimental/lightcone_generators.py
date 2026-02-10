@@ -159,7 +159,7 @@ def weighted_lc_photdata(
     cosmo_params=flat_wcdm.PLANCK15,
 ):
     args = (ran_key, n_host_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
-    halopop = mclh.weighted_lc_halos(*args, cosmo_params=cosmo_params)
+    halopop = mcl.weighted_lc(*args, cosmo_params=cosmo_params)
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
@@ -184,7 +184,6 @@ def weighted_lc_photdata(
     )
 
     lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
-
     return lc_data
 
 
