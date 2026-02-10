@@ -1,5 +1,7 @@
 """"""
 
+from collections import namedtuple
+
 import numpy as np
 from dsps.data_loaders import retrieve_fake_fsps_data
 from dsps.data_loaders.defaults import TransmissionCurve
@@ -9,10 +11,9 @@ from ...data_loaders import load_ssp_data
 from .. import lightcone_generators as lcg
 
 
-def test_weighted_lc_halos_photdata():
+def _get_weighted_lc_halos_photdata_for_unit_testing(num_halos=75):
     ran_key = jran.key(0)
 
-    num_halos = 75
     lgmp_min, lgmp_max = 10.0, 15.0
     z_min, z_max = 0.1, 3.0
     sky_area_degsq = 100.0
@@ -23,7 +24,10 @@ def test_weighted_lc_halos_photdata():
     _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
     wave, u, g, r, i, z, y = _res
 
-    tcurves = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+    tcurve_list = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
+    names = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
+    TransmissionCurves = namedtuple("TransmissionCurves", names)
+    tcurves = TransmissionCurves(*tcurve_list)
 
     n_z_phot_table = 15
     z_phot_table = 10 ** np.linspace(np.log10(z_min), np.log10(z_max), n_z_phot_table)
@@ -42,6 +46,12 @@ def test_weighted_lc_halos_photdata():
     )
     lc_data = lcg.weighted_lc_halos_photdata(*args)
 
+    return lc_data, tcurves
+
+
+def test_weighted_lc_halos_photdata():
+    lc_data, tcurves = _get_weighted_lc_halos_photdata_for_unit_testing()
+
     for field in lcg.LCData._fields:
         assert hasattr(lc_data, field)
 
@@ -51,7 +61,9 @@ def test_weighted_lc_halos_photdata():
     assert np.all(lc_data.logmp0 >= lc_data.logmp_obs)
 
     n_bands = len(tcurves)
-    n_met, n_age = ssp_data.ssp_flux.shape[:-1]
+    n_met, n_age = lc_data.ssp_data.ssp_flux.shape[:-1]
+    n_z_phot_table = lc_data.z_phot_table.size
+
     correct_shape = (n_z_phot_table, n_bands, n_met, n_age)
     assert lc_data.precomputed_ssp_mag_table.shape == correct_shape
     assert np.all(lc_data.precomputed_ssp_mag_table > 0)
@@ -63,6 +75,7 @@ def test_weighted_lc_halos_photdata():
     assert hasattr(lc_data, "precomputed_ssp_lineflux_cgs_table")
     assert hasattr(lc_data, "line_wave_table")
 
+    EMLINE_NAMES = lc_data.ssp_data.emlines._fields
     n_lines = len(EMLINE_NAMES)
     assert lc_data.precomputed_ssp_lineflux_cgs_table.shape == (n_lines, n_met, n_age)
     assert lc_data.line_wave_table.shape == (n_lines,)
