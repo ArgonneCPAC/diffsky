@@ -4,3 +4,4 @@ diffmah>=0.7.3
 diffstar>=1.0.1
 dsps>=0.4.5
 h5py
+diffhalos
