@@ -25,6 +25,7 @@ def mc_lc_phot(
     ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
+    skip_param_check=False,
 ):
     """Populate the input lightcone with galaxy photometry
 
@@ -44,7 +45,8 @@ def mc_lc_phot(
     param_collection = dpw.ParamCollection(
         diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
     )
-    assert dpw.check_param_collection_is_ok(param_collection)
+    if not skip_param_check:
+        assert dpw.check_param_collection_is_ok(param_collection)
 
     phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         ran_key,
@@ -134,6 +136,7 @@ def mc_lc_sed(
     ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
+    skip_param_check=False,
 ):
     """Populate the input lightcone with galaxy SEDs
 
@@ -153,7 +156,8 @@ def mc_lc_sed(
     param_collection = dpw.ParamCollection(
         diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
     )
-    assert dpw.check_param_collection_is_ok(param_collection)
+    if not skip_param_check:
+        assert dpw.check_param_collection_is_ok(param_collection)
 
     phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
         ran_key,
@@ -206,6 +210,7 @@ def mc_lc_dbk_phot(
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
     return_dbk_weights=False,
+    skip_param_check=False,
 ):
     """Populate the input lightcone with disk/bulge/knot photometry
 
@@ -225,7 +230,8 @@ def mc_lc_dbk_phot(
     param_collection = dpw.ParamCollection(
         diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
     )
-    assert dpw.check_param_collection_is_ok(param_collection)
+    if not skip_param_check:
+        assert dpw.check_param_collection_is_ok(param_collection)
 
     dbk_phot_info, dbk_weights = mcpk._mc_dbk_phot_kern(
         ran_key,
@@ -265,6 +271,7 @@ def mc_lc_dbk_sed(
     ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
+    skip_param_check=False,
 ):
     """Populate the input lightcone with disk/bulge/knot SEDs
 
@@ -284,7 +291,8 @@ def mc_lc_dbk_sed(
     param_collection = dpw.ParamCollection(
         diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
     )
-    assert dpw.check_param_collection_is_ok(param_collection)
+    if not skip_param_check:
+        assert dpw.check_param_collection_is_ok(param_collection)
 
     dbk_sed_info, dbk_weights = mc_lc_dbk_phot(
         ran_key,

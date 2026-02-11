@@ -288,6 +288,7 @@ def get_plotting_data(
     sky_area_degsq=None,
     z_min=c20.Z_MIN,
     z_max=c20.Z_MAX,
+    skip_param_check=False,
 ):
     """Generate lightcone halos and galaxy photometry
     to make diagnostic plots for the input model
@@ -366,6 +367,7 @@ def get_plotting_data(
         ssperr_params=ssperr_params,
         cosmo_params=cosmo_params,
         fb=fb,
+        skip_param_check=skip_param_check,
     )
     diffsky_data["filter_dict"] = filter_dict
     diffsky_data["sky_area_degsq"] = sky_area_degsq
@@ -668,6 +670,7 @@ def make_color_mag_diagnostic_plots(
     z_magi_pairs=Z_MAGI_PAIRS,
     color_pairs=COLOR_PAIRS,
     pdata=None,
+    skip_param_check=False,
 ):
     """Generate standard set of diagnostic plots
 
@@ -688,7 +691,11 @@ def make_color_mag_diagnostic_plots(
 
     if pdata is None:
         pdata = get_plotting_data(
-            seed=0, **param_collection._asdict(), cosmo_params=cosmo_params, fb=fb
+            seed=0,
+            **param_collection._asdict(),
+            cosmo_params=cosmo_params,
+            fb=fb,
+            skip_param_check=skip_param_check,
         )
 
     for z_bin in z_bins:
