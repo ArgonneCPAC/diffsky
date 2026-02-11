@@ -623,6 +623,7 @@ def append_metadata(
 
 def get_dependency_versions():
     software_version_info = dict()
+    import diffhalos  # noqa
     import diffmah  # noqa
     import diffstar  # noqa
     import dsps  # noqa
@@ -632,6 +633,7 @@ def get_dependency_versions():
     import diffsky  # noqa
 
     software_version_info["diffmah"] = str(diffmah.__version__)
+    software_version_info["diffhalos"] = str(diffhalos.__version__)
     software_version_info["diffsky"] = str(diffsky.__version__)
     software_version_info["diffstar"] = str(diffstar.__version__)
     software_version_info["dsps"] = str(dsps.__version__)
