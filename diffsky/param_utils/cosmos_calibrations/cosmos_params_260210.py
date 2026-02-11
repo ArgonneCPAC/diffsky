@@ -6,7 +6,7 @@ from .. import diffsky_param_wrapper as dpw
 
 default = deepcopy(dpw.DEFAULT_PARAM_COLLECTION)
 
-cosmos260210 = default._replace(
+cosmos_260210 = default._replace(
     diffstarpop_params=default.diffstarpop_params._replace(
         delta_uqt_k=1.5848508653935445,
         delta_uqt_slope=0.09811402904323795,
