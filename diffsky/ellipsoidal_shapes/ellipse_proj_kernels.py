@@ -27,11 +27,14 @@ def mc_mu_phi(n, ran_key):
 
 def mc_ellipsoid_params(r50, b_over_a, c_over_a, ran_key):
     """Monte Carlo realization of 2d ellipse with random projection angles mu, phi"""
-    mu_ran, phi_ran = mc_mu_phi(r50.size, ran_key)
+    los_key, psi_key = jran.split(ran_key, 2)
+    mu_ran, phi_ran = mc_mu_phi(r50.size, los_key)
     a = r50
     b = b_over_a * a
     c = c_over_a * a
     ellipse2d = compute_ellipse2d(a, b, c, mu_ran, phi_ran)
+    psi = jran.uniform(psi_key, minval=-jnp.pi, maxval=jnp.pi, shape=r50.shape)
+    ellipse2d = ellipse2d._replace(psi=psi)
     return ellipse2d
 
 
