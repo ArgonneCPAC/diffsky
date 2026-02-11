@@ -23,6 +23,7 @@ REQUIRED_SOFTWARE_VERSION_INFO = (
     "dsps",
     "jax",
     "numpy",
+    "diffhalos",
 )
 BNPAT_LC_MOCK = "data-{0}.{1}.diffsky_gals.hdf5"
 
