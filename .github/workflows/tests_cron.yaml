@@ -55,10 +55,11 @@ jobs:
           pip uninstall diffmah --yes
           pip uninstall diffstar --yes
           pip uninstall dsps --yes
+          pip uninstall diffhalos --yes
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffmah.git
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffstar.git
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
-          pip install git+https://github.com/ArgonneCPAC/diffhalos.git
+          pip install --no-deps git+https://github.com/ArgonneCPAC/diffhalos.git
           python -m pip install --no-build-isolation --no-deps -e .
 
       - name: test
