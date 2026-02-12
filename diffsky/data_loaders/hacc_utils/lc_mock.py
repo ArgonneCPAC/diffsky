@@ -79,10 +79,6 @@ _ORIEN_PATS = (
     "alpha_{}",
     "ellipticity_{}",
     "psi_{}",
-    "e_beta_x_{}",
-    "e_beta_y_{}",
-    "e_alpha_x_{}",
-    "e_alpha_y_{}",
 )
 ORIENTATION_KEYS = [pat.format("disk") for pat in _ORIEN_PATS]
 ORIENTATION_KEYS.extend([pat.format("bulge") for pat in _ORIEN_PATS])
@@ -550,20 +546,10 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["ellipticity_disk"] = ellipse2d_disk.ellipticity
     diffsky_data["psi_disk"] = ellipse2d_disk.psi
 
-    diffsky_data["e_beta_x_disk"] = ellipse2d_disk.e_beta[:, 0]
-    diffsky_data["e_beta_y_disk"] = ellipse2d_disk.e_beta[:, 1]
-    diffsky_data["e_alpha_x_disk"] = ellipse2d_disk.e_alpha[:, 0]
-    diffsky_data["e_alpha_y_disk"] = ellipse2d_disk.e_alpha[:, 1]
-
     diffsky_data["beta_bulge"] = ellipse2d_bulge.beta
     diffsky_data["alpha_bulge"] = ellipse2d_bulge.alpha
     diffsky_data["ellipticity_bulge"] = ellipse2d_bulge.ellipticity
     diffsky_data["psi_bulge"] = ellipse2d_bulge.psi
-
-    diffsky_data["e_beta_x_bulge"] = ellipse2d_bulge.e_beta[:, 0]
-    diffsky_data["e_beta_y_bulge"] = ellipse2d_bulge.e_beta[:, 1]
-    diffsky_data["e_alpha_x_bulge"] = ellipse2d_bulge.e_alpha[:, 0]
-    diffsky_data["e_alpha_y_bulge"] = ellipse2d_bulge.e_alpha[:, 1]
 
     return diffsky_data
 
