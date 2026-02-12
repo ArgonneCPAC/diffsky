@@ -33,8 +33,12 @@ def mc_ellipsoid_params(r50, b_over_a, c_over_a, ran_key):
     b = b_over_a * a
     c = c_over_a * a
     ellipse2d = compute_ellipse2d(a, b, c, mu_ran, phi_ran)
+
+    # Overwrite orientation with random angle
     psi = jran.uniform(psi_key, minval=-jnp.pi, maxval=jnp.pi, shape=r50.shape)
-    ellipse2d = ellipse2d._replace(psi=psi)
+    e_alpha, e_beta = _get_xy_coords_of_projected_semi_axes(psi)
+    ellipse2d = ellipse2d._replace(psi=psi, e_alpha=e_alpha, e_beta=e_beta)
+
     return ellipse2d
 
 

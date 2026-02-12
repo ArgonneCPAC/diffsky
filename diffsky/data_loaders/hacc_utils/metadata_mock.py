@@ -419,40 +419,6 @@ def add_metadata_dbk_morphology_columns(metadata):
         "Angular coordinate of projected semi-major axis of the bulge, where 0<ψ<2π",
     )
 
-    metadata["e_beta_x_disk"] = (
-        str(u.dimensionless_unscaled),
-        "x-coord of unit-normalized semi-major axis of the disk",
-    )
-    metadata["e_beta_y_disk"] = (
-        str(u.dimensionless_unscaled),
-        "y-coord of unit-normalized semi-major axis of the disk",
-    )
-    metadata["e_alpha_x_disk"] = (
-        str(u.dimensionless_unscaled),
-        "x-coord of unit-normalized semi-minor axis of the disk",
-    )
-    metadata["e_alpha_y_disk"] = (
-        str(u.dimensionless_unscaled),
-        "y-coord of unit-normalized semi-minor axis of the disk",
-    )
-
-    metadata["e_beta_x_bulge"] = (
-        str(u.dimensionless_unscaled),
-        "x-coord of unit-normalized semi-major axis of the bulge",
-    )
-    metadata["e_beta_y_bulge"] = (
-        str(u.dimensionless_unscaled),
-        "y-coord of unit-normalized semi-major axis of the bulge",
-    )
-    metadata["e_alpha_x_bulge"] = (
-        str(u.dimensionless_unscaled),
-        "x-coord of unit-normalized semi-minor axis of the bulge",
-    )
-    metadata["e_alpha_y_bulge"] = (
-        str(u.dimensionless_unscaled),
-        "y-coord of unit-normalized semi-minor axis of the bulge",
-    )
-
     return metadata
 
 
