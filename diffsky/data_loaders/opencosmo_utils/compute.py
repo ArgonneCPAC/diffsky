@@ -40,6 +40,7 @@ def compute_phot_from_diffsky_mock(
     aux_data: dict,
     bands: list[str],
     insert: bool = True,
+    batch_size: int = -1,
 ):
     """
     Compute photometry for all objects in the catalog for the given bands.
@@ -94,6 +95,7 @@ def compute_phot_from_diffsky_mock(
         False,
         insert=False,
         suffix=suffix,
+        batch_size=batch_size,
     )
     if insert:
         return catalog.with_new_columns(**result)
@@ -106,6 +108,7 @@ def compute_dbk_phot_from_diffsky_mock(
     bands: list[str],
     include_extras: Optional[list] = None,
     insert: bool = True,
+    batch_size: int = -1,
 ):
     """
     Compute photometry for all objects in the catalog for the given bands, including
@@ -161,6 +164,7 @@ def compute_dbk_phot_from_diffsky_mock(
         True,
         insert=False,
         suffix=suffix,
+        batch_size=batch_size,
     )
     if insert:
         return catalog.with_new_columns(**result)
@@ -172,6 +176,7 @@ def compute_seds_from_diffsky_mock(
     aux_data: dict,
     bands: list[str],
     insert: bool = True,
+    batch_size: int = -1,
 ):
     """
     Compute SEDs for all objects in the catalog for the given bands.
@@ -222,6 +227,7 @@ def compute_seds_from_diffsky_mock(
         None,
         False,
         insert=False,
+        batch_size=batch_size,
     )
     if insert:
         return catalog.with_new_columns(result)
@@ -233,6 +239,7 @@ def compute_dbk_seds_from_diffsky_mock(
     aux_data: dict,
     bands: list[str],
     insert: bool = True,
+    batch_size: int = -1,
 ):
     """
     Compute SEDs for all objects in the catalog for the given bands, including
@@ -271,7 +278,6 @@ def compute_dbk_seds_from_diffsky_mock(
 
 
     """
-    z_phot_tables = __get_z_phot_tables(catalog)
     cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
     dbk_phot_info = compute_dbk_phot_from_diffsky_mock(
         catalog,
@@ -279,6 +285,7 @@ def compute_dbk_seds_from_diffsky_mock(
         bands,
         ["t_table", "sfh_table", "lgmet_weights"],
         False,
+        batch_size=batch_size,
     )
     catalog = catalog.evaluate(
         age_at_z_, vectorize=True, cosmology=cosmology_parameters
@@ -291,6 +298,7 @@ def compute_dbk_seds_from_diffsky_mock(
         cosmology=cosmology_parameters,
         insert=False,
         vectorize=True,
+        batch_size=batch_size,
     )
     if insert is True:
         return catalog.with_new_columns(**result)
@@ -339,6 +347,7 @@ def __run_photometry(
     do_decomp: bool = False,
     insert: bool = True,
     suffix: str = "",
+    batch_size: int = -1,
 ):
     if "tcurves" not in aux_data:
         raise ValueError("Missing transmission curves in auxiliary data!")
@@ -386,6 +395,7 @@ def __run_photometry(
         insert=insert,
         vectorize=True,
         format="numpy",
+        batch_size=batch_size,
     )
 
 

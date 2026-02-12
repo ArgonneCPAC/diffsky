@@ -48,6 +48,20 @@ def test_compute_photometry(test_data_dir):
         )
 
 
+def test_compute_photometry_with_batch(test_data_dir):
+    bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+    results = compute_phot_from_diffsky_mock(
+        catalog, aux_data, bands, insert=False, batch_size=1000
+    )
+
+    original_data = catalog.select(bands).get_data("numpy")
+    for band in bands:
+        assert np.all(
+            np.isclose(results[f"{band}_new"], original_data[band], atol=1e-2)
+        )
+
+
 def test_compute_photometry_custom_bands(test_data_dir):
     with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
         z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
@@ -110,6 +124,18 @@ def test_compute_seds(test_data_dir):
     bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     catalog, aux_data = load_diffsky_mock(test_data_dir)
     results = compute_seds_from_diffsky_mock(catalog, aux_data, bands, insert=False)
+    raise NotImplementedError
+
+
+def test_compute_seds_with_batching(test_data_dir):
+    with h5py.File(test_data_dir / "lc_cores-487.diffsky_gals.hdf5") as f:
+        z_phots = f["header"]["catalog_info"]["z_phot_table"][:]
+
+    bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
+    catalog, aux_data = load_diffsky_mock(test_data_dir)
+    results = compute_seds_from_diffsky_mock(
+        catalog, aux_data, bands, insert=False, batch_size=100
+    )
     raise NotImplementedError
 
 
