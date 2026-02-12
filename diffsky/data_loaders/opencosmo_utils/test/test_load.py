@@ -146,6 +146,7 @@ def test_compute_seds_insert(test_data_dir):
     bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     catalog, aux_data = load_diffsky_mock(test_data_dir)
     results = compute_seds_from_diffsky_mock(catalog, aux_data, bands, insert=True)
+    assert "rest_sed" in results.columns
     raise NotImplementedError
 
 
