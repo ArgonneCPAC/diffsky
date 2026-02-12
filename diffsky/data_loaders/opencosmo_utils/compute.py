@@ -230,7 +230,7 @@ def compute_seds_from_diffsky_mock(
         batch_size=batch_size,
     )
     if insert:
-        return catalog.with_new_columns(result)
+        return catalog.with_new_columns(**result)
     return result
 
 
