@@ -28,6 +28,24 @@ def plot_ssp_err_model_delta_mag_vs_wavelength(
     drn_out="",
     model_nickname="default",
 ):
+    """Plot the λ-dependence of the SSP error model for galaxies of different mass.
+
+    Parameters
+    ----------
+    ssp_err_params : namedtuple
+        default is ssp_err_model.DEFAULT_SSPERR_PARAMS
+
+    z_obs : float
+        Redshift of the galaxy population to plot
+
+    drn_out : string
+        Output directory to store plots
+
+    model_nickname : string
+        Nickname of the model being tested. Default is `default`.
+        The model_nickname will be part of the output filename of the plot.
+
+    """
     assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
     if drn_out != "":
