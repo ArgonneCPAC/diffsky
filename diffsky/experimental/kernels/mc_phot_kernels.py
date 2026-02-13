@@ -285,21 +285,24 @@ def _phot_kern_merging(
 
     merging_u_params = merging_model.get_unbounded_merge_params(merge_params)
     upids = jnp.where(is_central, -1.0, 0.0)
-    do_merging = jnp.where(is_central, 0.0, 1.0)
-    MC = 0
-    merging_args = (
+    merge_prob = merging_model.get_p_merge_from_merging_u_params(
         merging_u_params,
         logmp_infall,
         logmhost_infall,
         t_obs,
         t_infall,
         upids,
-        sfr,
-        halo_indx,
-        do_merging,
-        MC,
     )
-    merging_model.merge(*merging_args)
+    flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags)
+    ngals = flux_in_situ.shape[0]
+    indx_to_keep = jnp.arange(ngals).astype("i8")
+    flux_to_deposit = flux_in_situ * merge_prob[:, jnp.newaxis]
+    flux_to_keep = flux_in_situ * (1 - merge_prob)[:, jnp.newaxis]
+    flux_obs = jnp.zeros_like(flux_in_situ)
+    flux_obs = flux_obs.at[halo_indx].add(flux_to_deposit)
+    flux_obs = flux_obs.at[indx_to_keep].add(flux_to_keep)
+
+    return phot_kern_results, flux_obs, merge_prob
 
 
 @partial(jjit, static_argnames=["n_t_table"])
