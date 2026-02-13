@@ -8,8 +8,10 @@ from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import random as jran
 from jax import vmap
 
+from ....merging import merging_model
 from ....param_utils import diffsky_param_wrapper as dpw
 from ....utils import emline_utils
+from ...tests import test_lightcone_generators as tlcg
 from ...tests import test_mc_lightcone_halos as tmclh
 from ...tests import test_mc_phot
 from .. import mc_phot_kernels as mcpk
@@ -220,3 +222,60 @@ def test_specphot_kern(num_halos=250):
     assert np.allclose(
         phot_kern_results.obs_mags, phot_kern_results2.obs_mags, rtol=1e-4
     )
+
+
+def test_phot_kern_merging(num_halos=250):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+
+    fb = 0.156
+    ran_key, phot_key = jran.split(ran_key, 2)
+
+    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
+        phot_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpw.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
+        [getattr(phot_kern_results, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+    )
+
+    phot_kern_results, flux_obs, merge_prob = mcpk._phot_kern_merging(
+        phot_randoms,
+        sfh_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpw.DEFAULT_PARAM_COLLECTION[1:],
+        merging_model.DEFAULT_MERGE_PARAMS,
+        DEFAULT_COSMOLOGY,
+        fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.halo_indx,
+    )
+    assert np.all(merge_prob >= 0)
+    assert np.all(merge_prob <= 1)
+    assert np.any(merge_prob > 0)
+    assert np.any(merge_prob < 1)
+
+    obs_mags_in_situ = -2.5 * np.log10(phot_kern_results.obs_mags)
+
+    assert np.any(obs_mags_in_situ != phot_kern_results.obs_mags)
+    assert np.any(np.allclose(obs_mags_in_situ, phot_kern_results.obs_mags))
