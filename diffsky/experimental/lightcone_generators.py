@@ -274,7 +274,6 @@ def weighted_lc_photdata(
         *args, cosmo_params=cosmo_params, logmp_cutoff=logmp_cutoff
     )
 
-    t_infall = jnp.concatenate((halopop.t_obs, halopop.mah_params.t_peak))
     logmp_infall = halopop.logmp_obs
 
     n_subhalos = halopop.z_obs.size - n_host_halos
@@ -283,7 +282,10 @@ def weighted_lc_photdata(
         [x[halopop.halo_indx] for x in halopop.mah_params]
     )
 
+    n_tot = n_host_halos + n_subhalos
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    t_infall = jnp.where(is_central, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak)
+
     logt0 = jnp.log10(t0)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
 
