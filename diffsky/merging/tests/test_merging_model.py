@@ -1,6 +1,7 @@
 """ """
 
 import numpy as np
+from jax import random as jran
 
 from ..merging_model import (
     DEFAULT_MERGE_PARAMS,
@@ -114,13 +115,20 @@ def test_pinfall_evaluates():
 
 
 def test_pinfall_evaluates_on_lightcone():
+    ran_key = jran.key(0)
+    t_obs_key, t_infall_key = jran.split(ran_key, 2)
+    n_gals = 500
 
-    t_obs = np.linspace(0.1, 13.7, 10)
+    t_obs = jran.uniform(t_obs_key, minval=2.0, maxval=13.5, shape=(n_gals,))
+    t_infall = jran.uniform(t_infall_key, minval=2.0, maxval=13.5, shape=(n_gals,))
+
     k_infall = 1.0
-    t_infall = 1.0
     t_delay = 1.0
     p_max = 0.99
     p = p_infall(t_obs, k_infall, t_infall, t_delay, p_max)
+    assert np.all(~np.isnan(p))
+    assert np.all(p >= 0.0)
+    assert np.all(p <= 1.0)
 
 
 def test_get_p_merge_from_merging_u_params_evaluates():
