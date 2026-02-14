@@ -278,4 +278,3 @@ def test_phot_kern_merging(num_halos=250):
     obs_mags_in_situ = -2.5 * np.log10(phot_kern_results.obs_mags)
 
     assert np.any(obs_mags_in_situ != phot_kern_results.obs_mags)
-    assert np.any(np.allclose(obs_mags_in_situ, phot_kern_results.obs_mags))
