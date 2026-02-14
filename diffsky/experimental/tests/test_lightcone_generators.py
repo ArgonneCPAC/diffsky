@@ -129,7 +129,24 @@ def test_weighted_lc_halos_photdata():
 
 
 def test_weighted_lc_photdata():
-    lc_data, tcurves = _get_weighted_lc_photdata_for_unit_testing()
+    num_halos = 75
+    lc_data, tcurves = _get_weighted_lc_photdata_for_unit_testing(num_halos=num_halos)
+    n_tot = lc_data.z_obs.size
+    shape_ntot_keys = (
+        "z_obs",
+        "t_obs",
+        "logmp_obs",
+        "logmp0",
+        "t_infall",
+        "logmp_infall",
+        "logmhost_infall",
+        "is_central",
+        "halo_indx",
+    )
+    for key in shape_ntot_keys:
+        arr = getattr(lc_data, key)
+        assert arr.shape == (n_tot,), f"lc_data.{key} has the wrong shape"
+        assert np.all(np.isfinite(arr)), f"lc_data.{key} has NaNs"
 
     for field in lcg.LCData._fields:
         assert hasattr(lc_data, field)
