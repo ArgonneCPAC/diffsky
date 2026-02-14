@@ -283,10 +283,9 @@ def _phot_kern_merging(
         n_t_table=n_t_table,
     )
 
-    merging_u_params = merging_model.get_unbounded_merge_params(merge_params)
     upids = jnp.where(is_central, -1.0, 0.0)
-    merge_prob = merging_model.get_p_merge_from_merging_u_params(
-        merging_u_params,
+    merge_prob = merging_model.get_p_merge_from_merging_params(
+        merge_params,
         logmp_infall,
         logmhost_infall,
         t_obs,
