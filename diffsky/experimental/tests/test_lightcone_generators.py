@@ -143,10 +143,10 @@ def test_weighted_lc_photdata():
         "is_central",
         "halo_indx",
     )
-    for key in shape_ntot_keys:
-        arr = getattr(lc_data, key)
-        assert arr.shape == (n_tot,), f"lc_data.{key} has the wrong shape"
-        assert np.all(np.isfinite(arr)), f"lc_data.{key} has NaNs"
+    for lc_key in shape_ntot_keys:
+        arr = getattr(lc_data, lc_key)
+        assert arr.shape == (n_tot,), f"lc_data.{lc_key} has the wrong shape"
+        assert np.all(np.isfinite(arr)), f"lc_data.{lc_key} has NaNs"
 
     for field in lcg.LCData._fields:
         assert hasattr(lc_data, field)

@@ -278,6 +278,7 @@ def weighted_lc_photdata(
 
     n_subhalos = halopop.z_obs.size - n_host_halos
     is_central = jnp.concatenate((jnp.ones(n_host_halos), jnp.zeros(n_subhalos)))
+    is_central = is_central.astype(int)
     mah_params_host = halopop.mah_params._make(
         [x[halopop.halo_indx] for x in halopop.mah_params]
     )
@@ -308,6 +309,7 @@ def weighted_lc_photdata(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
+        halopop.nhalos_host,
         t_infall,
         logmp_infall,
         logmhost_infall,
@@ -362,6 +364,7 @@ LCHalosData = namedtuple("LCHalosData", _LCDHKEYS)
 
 _LCDKEYS = (
     *_LCDHKEYS,
+    "nhalos_host",
     "t_infall",
     "logmp_infall",
     "logmhost_infall",
