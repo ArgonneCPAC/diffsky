@@ -250,7 +250,7 @@ def test_phot_kern_merging(num_halos=250):
         [getattr(phot_kern_results, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
 
-    phot_kern_results, flux_obs, merge_prob = mcpk._phot_kern_merging(
+    phot_kern_results, flux_obs, merge_prob, mstar_obs = mcpk._phot_kern_merging(
         phot_randoms,
         sfh_params,
         lc_data.z_obs,
@@ -268,6 +268,7 @@ def test_phot_kern_merging(num_halos=250):
         lc_data.logmhost_infall,
         lc_data.t_infall,
         lc_data.is_central,
+        lc_data.nhalos,
         lc_data.halo_indx,
     )
     assert np.all(merge_prob >= 0)
@@ -275,6 +276,7 @@ def test_phot_kern_merging(num_halos=250):
     assert np.any(merge_prob > 0)
     assert np.any(merge_prob < 1)
 
-    obs_mags_in_situ = -2.5 * np.log10(phot_kern_results.obs_mags)
+    assert np.all(np.isfinite(mstar_obs))
 
-    assert np.any(obs_mags_in_situ != phot_kern_results.obs_mags)
+    obs_mags_in_plus_ex_situ = -2.5 * np.log10(flux_obs)
+    assert np.any(obs_mags_in_plus_ex_situ != phot_kern_results.obs_mags)
