@@ -240,6 +240,63 @@ def _phot_kern(
 
 
 @partial(jjit, static_argnames=["n_t_table"])
+def _mc_phot_kern_merging(
+    ran_key,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    diffstarpop_params,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    merge_params,
+    cosmo_params,
+    fb,
+    logmp_infall,
+    logmhost_infall,
+    t_infall,
+    is_central,
+    nhalos_weights,
+    halo_indx,
+    n_t_table=mcdw.N_T_TABLE,
+):
+    phot_randoms, sfh_params = get_mc_phot_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params
+    )
+    phot_kern_results, flux_obs, merge_prob, mstar_obs = _phot_kern_merging(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        merge_params,
+        cosmo_params,
+        fb,
+        logmp_infall,
+        logmhost_infall,
+        t_infall,
+        is_central,
+        nhalos_weights,
+        halo_indx,
+        n_t_table=n_t_table,
+    )
+    return phot_kern_results, phot_randoms, flux_obs, merge_prob, mstar_obs
+
+
+@partial(jjit, static_argnames=["n_t_table"])
 def _phot_kern_merging(
     phot_randoms,
     sfh_params,
