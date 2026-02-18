@@ -669,6 +669,8 @@ def make_color_mag_diagnostic_plots(
     m2=c20.UVISTA_MAG_NAMES[1],
     z_magi_pairs=Z_MAGI_PAIRS,
     color_pairs=COLOR_PAIRS,
+    num_halos=20_000,
+    seed=0,
     pdata=None,
     skip_param_check=False,
 ):
@@ -691,11 +693,12 @@ def make_color_mag_diagnostic_plots(
 
     if pdata is None:
         pdata = get_plotting_data(
-            seed=0,
+            seed=seed,
             **param_collection._asdict(),
             cosmo_params=cosmo_params,
             fb=fb,
             skip_param_check=skip_param_check,
+            num_halos=num_halos,
         )
 
     for z_bin in z_bins:
