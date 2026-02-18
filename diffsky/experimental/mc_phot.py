@@ -10,8 +10,10 @@ from collections import namedtuple
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
+from jax import numpy as jnp
 
 from ..param_utils import diffsky_param_wrapper as dpw
+from ..param_utils import diffsky_param_wrapper_merging as dpwm
 from .kernels import mc_phot_kernels as mcpk
 
 
@@ -68,6 +70,67 @@ def mc_lc_phot(
     phot_kern_results = phot_kern_results._asdict()
     for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
         phot_kern_results[key] = val
+    return phot_kern_results
+
+
+def mc_lc_phot_merging(
+    ran_key,
+    lc_data,
+    diffstarpop_params=dpwm.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+    mzr_params=dpwm.DEFAULT_PARAM_COLLECTION.mzr_params,
+    spspop_params=dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
+    scatter_params=dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
+    ssperr_params=dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    merging_params=dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
+    cosmo_params=DEFAULT_COSMOLOGY,
+    fb=FB,
+    skip_param_check=False,
+):
+    param_collection = dpwm.ParamCollection(
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        merging_params,
+    )
+    if not skip_param_check:
+        assert dpwm.check_param_collection_is_ok(param_collection)
+
+    _res = mcpk._mc_phot_kern_merging(
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        merging_params,
+        cosmo_params,
+        fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.nhalos,
+        lc_data.halo_indx,
+    )
+    phot_kern_results, phot_randoms, flux_obs, merge_prob, mstar_obs = _res
+    phot_kern_results = phot_kern_results._asdict()
+    for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
+        phot_kern_results[key] = val
+    phot_kern_results["obs_mags_in_situ"] = phot_kern_results["obs_mags"]
+    phot_kern_results["obs_mags"] = -2.5 * jnp.log10(flux_obs)
+    phot_kern_results["p_merge"] = merge_prob
+    phot_kern_results["logsm_obs_in_situ"] = phot_kern_results["logsm_obs"]
+    phot_kern_results["logsm_obs"] = jnp.log10(mstar_obs)
+
     return phot_kern_results
 
 
