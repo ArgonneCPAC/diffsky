@@ -97,7 +97,7 @@ DEFAULT_MERGE_U_PARAMS = MergeUParams(*get_unbounded_merge_params(DEFAULT_MERGE_
 
 
 @jjit
-def p_infall(t_interest, k_infall, t_infall, t_delay, p_max):
+def p_infall(t_obs, k_infall, t_infall, t_delay, p_max):
     """Return merging probability as a function of infall time
        Merging probability is the softmax function (between 0 and 1)
        of a sigmoid (between -1 and p_max), so that merging probability
@@ -105,17 +105,17 @@ def p_infall(t_interest, k_infall, t_infall, t_delay, p_max):
 
     Parameters
     ----------
-    t_interest : float
-        cosmic time of interest (in Gyr)
+    t_obs : float
+        cosmic time at z_obs [Gyr]
 
     k_infall : float
         slope of merging probability sigmoid
 
     t_infall : float
-        infall time (in Gyr)
+        infall time [Gyr]
 
     t_delay : float
-        delay time (in Gyr)
+        delay time [Gyr]
 
     p_max : float
         maximum merging probability
@@ -128,14 +128,14 @@ def p_infall(t_interest, k_infall, t_infall, t_delay, p_max):
 
     """
     t_start = t_infall + t_delay
-    s = _sigmoid(t_interest, t_start, k_infall, -0.999999, p_max)
+    s = _sigmoid(t_obs, t_start, k_infall, -0.999999, p_max)
     ss = jnp.sqrt(s * s) * _sigmoid(s, 0.05, 20.0, 0.0, 1.0)
     return ss
 
 
 @jjit
 def get_p_merge_from_merging_params(
-    merging_params, log_mpeak_infall, log_mhost_infall, t_interest, t_infall, upids
+    merging_params, log_mpeak_infall, log_mhost_infall, t_obs, t_infall, upids
 ):
     """Return the merging probability of a galaxy
 
@@ -150,11 +150,11 @@ def get_p_merge_from_merging_params(
     log_mhost_infall : float
         host halo peak mass at subhalo's infall time
 
-    t_interest : float
-        cosmic time of interest (in Gyr)
+    t_obs : float
+        cosmic time at z_obs [Gyr]
 
     t_infall : float
-        subhalo infall time (in Gyr)
+        subhalo infall time [Gyr]
 
     upids : int
         uber parent id of galaxy
@@ -193,7 +193,7 @@ def get_p_merge_from_merging_params(
 
     # Merging probability is a function of t_infall,
     # log_mpeak_infall, and log_mhost_infall
-    P = p_infall(t_interest, k_infall, t_infall, t_delay, merging_params.p_max)
+    P = p_infall(t_obs, k_infall, t_infall, t_delay, merging_params.p_max)
 
     # Central galaxies never disrupt, but satellites might!
     p = jnp.where(upids == -1, 0.0, 1.0)
@@ -203,11 +203,11 @@ def get_p_merge_from_merging_params(
 
 @jjit
 def get_p_merge_from_merging_u_params(
-    merging_u_params, log_mpeak_infall, log_mhost_infall, t_interest, t_infall, upids
+    merging_u_params, log_mpeak_infall, log_mhost_infall, t_obs, t_infall, upids
 ):
     merging_params = get_bounded_merge_params(merging_u_params)
     p_merge = get_p_merge_from_merging_params(
-        merging_params, log_mpeak_infall, log_mhost_infall, t_interest, t_infall, upids
+        merging_params, log_mpeak_infall, log_mhost_infall, t_obs, t_infall, upids
     )
 
     return p_merge
@@ -218,7 +218,7 @@ def merge(
     merging_u_params,
     log_mpeak_infall,
     log_mhost_infall,
-    t_interest,
+    t_obs,
     t_infall,
     upids,
     sfr,
@@ -239,11 +239,11 @@ def merge(
     log_mhost_infall : float
         host halo peak mass at subhalo's infall time
 
-    t_interest : float
-        cosmic time of interest (in Gyr)
+    t_obs : float
+        cosmic time at z_obs [Gyr]
 
     t_infall : float
-        subhalo infall time (in Gyr)
+        subhalo infall time [Gyr]
 
     upids : int
         uber parent id of galaxy
@@ -273,7 +273,7 @@ def merge(
         merging_u_params,
         log_mpeak_infall,
         log_mhost_infall,
-        t_interest,
+        t_obs,
         t_infall,
         upids,
     )
@@ -301,7 +301,7 @@ def merge_with_MC_draws(
     merging_u_params,
     log_mpeak_infall,
     log_mhost_infall,
-    t_interest,
+    t_obs,
     t_infall,
     upids,
     sfr,
@@ -324,11 +324,11 @@ def merge_with_MC_draws(
     log_mhost_infall : float
         host halo peak mass at subhalo's infall time
 
-    t_interest : float
-        cosmic time of interest (in Gyr)
+    t_obs : float
+        cosmic time at z_obs [Gyr]
 
     t_infall : float
-        subhalo infall time (in Gyr)
+        subhalo infall time [Gyr]
 
     upids : int
         uber parent id of galaxy
@@ -361,7 +361,7 @@ def merge_with_MC_draws(
         merging_u_params,
         log_mpeak_infall,
         log_mhost_infall,
-        t_interest,
+        t_obs,
         t_infall,
         upids,
     )
@@ -387,7 +387,7 @@ def merge_model_with_preprocessing(
     log_mpeak_ultimate_infall,
     log_mhost_penultimate_infall,
     log_mhost_ultimate_infall,
-    t_interest,
+    t_obs,
     t_penultimate_infall,
     t_ultimate_infall,
     upids,
@@ -416,14 +416,14 @@ def merge_model_with_preprocessing(
     log_mhost_ultimate_infall : float
         ultimate host halo peak mass at subhalo's infall time
 
-    t_interest : float
-        cosmic time of interest (in Gyr)
+    t_obs : float
+        cosmic time at z_obs [Gyr]
 
     t_penultimate_infall : float
-        subhalo's penultimate infall time (in Gyr)
+        subhalo's penultimate infall time [Gyr]
 
     t_ultimate_infall : float
-        subhalo's ultimate infall time (in Gyr)
+        subhalo's ultimate infall time [Gyr]
 
     upids : int
         uber parent id of galaxy
@@ -454,7 +454,7 @@ def merge_model_with_preprocessing(
         merging_u_params,
         log_mpeak_penultimate_infall,
         log_mhost_penultimate_infall,
-        t_interest,
+        t_obs,
         t_penultimate_infall,
         upids,
         sfr,
@@ -469,7 +469,7 @@ def merge_model_with_preprocessing(
         merging_u_params,
         log_mpeak_ultimate_infall,
         log_mhost_ultimate_infall,
-        t_interest,
+        t_obs,
         t_ultimate_infall,
         upids,
         total_sfr_1,
@@ -488,7 +488,7 @@ def merge_model_with_preprocessing_mc_draws(
     log_mpeak_ultimate_infall,
     log_mhost_penultimate_infall,
     log_mhost_ultimate_infall,
-    t_interest,
+    t_obs,
     t_penultimate_infall,
     t_ultimate_infall,
     upids,
@@ -519,14 +519,14 @@ def merge_model_with_preprocessing_mc_draws(
     log_mhost_ultimate_infall : float
         ultimate host halo peak mass at subhalo's infall time
 
-    t_interest : float
-        cosmic time of interest (in Gyr)
+    t_obs : float
+        cosmic time at z_obs [Gyr]
 
     t_penultimate_infall : float
-        subhalo's penultimate infall time (in Gyr)
+        subhalo's penultimate infall time [Gyr]
 
     t_ultimate_infall : float
-        subhalo's ultimate infall time (in Gyr)
+        subhalo's ultimate infall time [Gyr]
 
     upids : int
         uber parent id of galaxy
@@ -561,7 +561,7 @@ def merge_model_with_preprocessing_mc_draws(
         merging_u_params,
         log_mpeak_penultimate_infall,
         log_mhost_penultimate_infall,
-        t_interest,
+        t_obs,
         t_penultimate_infall,
         upids,
         sfr,
@@ -577,7 +577,7 @@ def merge_model_with_preprocessing_mc_draws(
         merging_u_params,
         log_mpeak_ultimate_infall,
         log_mhost_ultimate_infall,
-        t_interest,
+        t_obs,
         t_ultimate_infall,
         upids,
         total_sfr_1,

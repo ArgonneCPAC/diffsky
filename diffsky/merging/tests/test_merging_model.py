@@ -1,23 +1,23 @@
 """ """
 
 import numpy as np
+from jax import random as jran
 
 from ..merging_model import (
-    DEFAULT_MERGE_PDICT,
-    MERGE_PBOUNDS_PDICT,
-    DEFAULT_MERGE_U_PARAMS,
     DEFAULT_MERGE_PARAMS,
+    DEFAULT_MERGE_PDICT,
+    DEFAULT_MERGE_U_PARAMS,
+    MERGE_PBOUNDS_PDICT,
     get_bounded_merge_params,
-    get_unbounded_merge_params,
-    p_infall,
     get_p_merge_from_merging_params,
     get_p_merge_from_merging_u_params,
+    get_unbounded_merge_params,
     merge,
     merge_model_with_preprocessing,
     merge_model_with_preprocessing_mc_draws,
     merge_with_MC_draws,
+    p_infall,
 )
-
 
 TOL = 1e-2
 
@@ -60,18 +60,18 @@ def test_get_unbounded_merge_params_fails_when_passing_u_params():
 
 def test_get_p_merge_from_merging_u_params_fails_when_passing_params():
 
-    log_mpeak_infall = np.array([9.0, 10.0, 11.0, 12.0])
-    log_mhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
-    t_interest = 13.7
+    logmp_infall = np.array([9.0, 10.0, 11.0, 12.0])
+    logmhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
+    t_obs = 13.7
     t_infall = np.array([1.0, 4.0, 7.0, 10.0])
     upids = np.array([1, 1, 1, -1])
 
     try:
         get_p_merge_from_merging_u_params(
             DEFAULT_MERGE_PARAMS,
-            log_mpeak_infall,
-            log_mhost_infall,
-            t_interest,
+            logmp_infall,
+            logmhost_infall,
+            t_obs,
             t_infall,
             upids,
         )
@@ -82,18 +82,18 @@ def test_get_p_merge_from_merging_u_params_fails_when_passing_params():
 
 def test_get_p_merge_from_merging_params_fails_when_passing_u_params():
 
-    log_mpeak_infall = np.array([9.0, 10.0, 11.0, 12.0])
-    log_mhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
-    t_interest = 13.7
+    logmp_infall = np.array([9.0, 10.0, 11.0, 12.0])
+    logmhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
+    t_obs = 13.7
     t_infall = np.array([1.0, 4.0, 7.0, 10.0])
     upids = np.array([1, 1, 1, -1])
 
     try:
         get_p_merge_from_merging_params(
             DEFAULT_MERGE_U_PARAMS,
-            log_mpeak_infall,
-            log_mhost_infall,
-            t_interest,
+            logmp_infall,
+            logmhost_infall,
+            t_obs,
             t_infall,
             upids,
         )
@@ -103,28 +103,63 @@ def test_get_p_merge_from_merging_params_fails_when_passing_u_params():
 
 
 def test_pinfall_evaluates():
-    t_interest = np.linspace(0.1, 13.7, 10)
+    t_obs = np.linspace(0.1, 13.7, 10)
     k_infall = 1.0
     t_infall = 1.0
     t_delay = 1.0
     p_max = 0.99
-    p = p_infall(t_interest, k_infall, t_infall, t_delay, p_max)
+    p = p_infall(t_obs, k_infall, t_infall, t_delay, p_max)
     assert np.all(~np.isnan(p))
     assert np.all(p >= 0.0)
     assert np.all(p <= 1.0)
 
 
+def test_pinfall_evaluates_on_lightcone():
+    ran_key = jran.key(0)
+    t_obs_key, t_infall_key = jran.split(ran_key, 2)
+    n_gals = 500
+
+    t_obs = jran.uniform(t_obs_key, minval=2.0, maxval=13.5, shape=(n_gals,))
+    t_infall = jran.uniform(t_infall_key, minval=2.0, maxval=13.5, shape=(n_gals,))
+
+    k_infall = 1.0
+    t_delay = 1.0
+    p_max = 0.99
+    p = p_infall(t_obs, k_infall, t_infall, t_delay, p_max)
+    assert np.all(~np.isnan(p))
+    assert np.all(p >= 0.0)
+    assert np.all(p <= 1.0)
+
+
+def test_get_p_merge_from_merging_params_evaluates_on_lightcone():
+    ran_key = jran.key(0)
+    t_obs_key, t_infall_key, logmp_key, logmhost_key, upids_key = jran.split(ran_key, 5)
+    n_gals = 500
+
+    t_obs = jran.uniform(t_obs_key, minval=2.0, maxval=13.5, shape=(n_gals,))
+    t_infall = jran.uniform(t_infall_key, minval=2.0, maxval=13.5, shape=(n_gals,))
+    logmp_infall = jran.uniform(logmp_key, minval=10, maxval=15, shape=(n_gals,))
+    logmhost_infall = jran.uniform(logmhost_key, minval=10, maxval=15, shape=(n_gals,))
+    upids = jran.choice(upids_key, np.array((-1, 1)), shape=(n_gals,))
+
+    args = (DEFAULT_MERGE_PARAMS, logmp_infall, logmhost_infall, t_obs, t_infall, upids)
+    p_merge = get_p_merge_from_merging_params(*args)
+    assert np.all(~np.isnan(p_merge))
+    assert np.all(p_merge >= 0.0)
+    assert np.all(p_merge <= 1.0)
+
+
 def test_get_p_merge_from_merging_u_params_evaluates():
-    log_mpeak_infall = np.array([9.0, 10.0, 11.0, 12.0])
-    log_mhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
-    t_interest = 13.7
+    logmp_infall = np.array([9.0, 10.0, 11.0, 12.0])
+    logmhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
+    t_obs = 13.7
     t_infall = np.array([1.0, 4.0, 7.0, 10.0])
     upids = np.array([1, 1, 1, -1])
     p = get_p_merge_from_merging_u_params(
         DEFAULT_MERGE_U_PARAMS,
-        log_mpeak_infall,
-        log_mhost_infall,
-        t_interest,
+        logmp_infall,
+        logmhost_infall,
+        t_obs,
         t_infall,
         upids,
     )
@@ -135,16 +170,16 @@ def test_get_p_merge_from_merging_u_params_evaluates():
 
 
 def test_get_p_merge_from_merging_params_evaluates():
-    log_mpeak_infall = np.array([9.0, 10.0, 11.0, 12.0])
-    log_mhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
-    t_interest = 13.7
+    logmp_infall = np.array([9.0, 10.0, 11.0, 12.0])
+    logmhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
+    t_obs = 13.7
     t_infall = np.array([1.0, 4.0, 7.0, 10.0])
     upids = np.array([1, 1, 1, -1])
     p = get_p_merge_from_merging_params(
         DEFAULT_MERGE_PARAMS,
-        log_mpeak_infall,
-        log_mhost_infall,
-        t_interest,
+        logmp_infall,
+        logmhost_infall,
+        t_obs,
         t_infall,
         upids,
     )
@@ -155,9 +190,9 @@ def test_get_p_merge_from_merging_params_evaluates():
 
 
 def test_merge_evaluates():
-    log_mpeak_infall = np.array([9.0, 10.0, 11.0, 12.0])
-    log_mhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
-    t_interest = 13.7
+    logmp_infall = np.array([9.0, 10.0, 11.0, 12.0])
+    logmhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
+    t_obs = 13.7
     t_infall = np.array([1.0, 4.0, 7.0, 10.0])
     upids = np.array([1, 1, 1, -1])
     sfr = np.array(([1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]))
@@ -167,9 +202,9 @@ def test_merge_evaluates():
     MC = 0
     merged_things = merge(
         DEFAULT_MERGE_U_PARAMS,
-        log_mpeak_infall,
-        log_mhost_infall,
-        t_interest,
+        logmp_infall,
+        logmhost_infall,
+        t_obs,
         t_infall,
         upids,
         sfr,
@@ -184,9 +219,9 @@ def test_merge_evaluates():
 
 
 def test_merge_with_MC_draws_evaluates():
-    log_mpeak_infall = np.array([9.0, 10.0, 11.0, 12.0])
-    log_mhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
-    t_interest = 13.7
+    logmp_infall = np.array([9.0, 10.0, 11.0, 12.0])
+    logmhost_infall = np.array([12.0, 13.0, 14.0, 15.0])
+    t_obs = 13.7
     t_infall = np.array([1.0, 4.0, 7.0, 10.0])
     upids = np.array([1, 1, 1, -1])
     sfr = np.array(([1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]))
@@ -197,9 +232,9 @@ def test_merge_with_MC_draws_evaluates():
     prn = np.array([0.1, 0.1, 0.99, 0.99])
     merged_things = merge_with_MC_draws(
         DEFAULT_MERGE_U_PARAMS,
-        log_mpeak_infall,
-        log_mhost_infall,
-        t_interest,
+        logmp_infall,
+        logmhost_infall,
+        t_obs,
         t_infall,
         upids,
         sfr,
@@ -219,7 +254,7 @@ def test_merge_model_with_preprocessing_evaluates():
     log_mpeak_ultimate_infall = np.array([9.0, 10.0, 11.0, 12.0])
     log_mhost_penultimate_infall = np.array([11.0, 12.0, 13.0, 15.0])
     log_mhost_ultimate_infall = np.array([12.0, 13.0, 14.0, 15.0])
-    t_interest = 13.7
+    t_obs = 13.7
     t_penultimate_infall = np.array([1.0, 4.0, 7.0, 10.0])
     t_ultimate_infall = np.array([2.0, 5.0, 8.0, 10.0])
     upids = np.array([1, 1, 1, -1])
@@ -234,7 +269,7 @@ def test_merge_model_with_preprocessing_evaluates():
         log_mpeak_ultimate_infall,
         log_mhost_penultimate_infall,
         log_mhost_ultimate_infall,
-        t_interest,
+        t_obs,
         t_penultimate_infall,
         t_ultimate_infall,
         upids,
@@ -254,7 +289,7 @@ def test_merge_model_with_preprocessing_mc_draws_evaluates():
     log_mpeak_ultimate_infall = np.array([9.0, 10.0, 11.0, 12.0])
     log_mhost_penultimate_infall = np.array([11.0, 12.0, 13.0, 15.0])
     log_mhost_ultimate_infall = np.array([12.0, 13.0, 14.0, 15.0])
-    t_interest = 13.7
+    t_obs = 13.7
     t_penultimate_infall = np.array([1.0, 4.0, 7.0, 10.0])
     t_ultimate_infall = np.array([2.0, 5.0, 8.0, 10.0])
     upids = np.array([1, 1, 1, -1])
@@ -270,7 +305,7 @@ def test_merge_model_with_preprocessing_mc_draws_evaluates():
         log_mpeak_ultimate_infall,
         log_mhost_penultimate_infall,
         log_mhost_ultimate_infall,
-        t_interest,
+        t_obs,
         t_penultimate_infall,
         t_ultimate_infall,
         upids,

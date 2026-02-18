@@ -6,6 +6,7 @@ from collections import namedtuple
 
 from diffhalos.lightcone_generators import mc_lightcone as mcl
 from diffhalos.lightcone_generators import mc_lightcone_halos as mclh
+from diffmah import logmh_at_t_obs
 from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
 from jax import numpy as jnp
@@ -125,7 +126,7 @@ def weighted_lc_halos_photdata(
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
-    lc_data = LCData(
+    lc_data = LCHalosData(
         halopop.nhalos,
         halopop.z_obs,
         halopop.t_obs,
@@ -273,8 +274,23 @@ def weighted_lc_photdata(
         *args, cosmo_params=cosmo_params, logmp_cutoff=logmp_cutoff
     )
 
+    logmp_infall = halopop.logmp_obs
+
+    n_subhalos = halopop.z_obs.size - n_host_halos
+    is_central = jnp.concatenate((jnp.ones(n_host_halos), jnp.zeros(n_subhalos)))
+    is_central = is_central.astype(int)
+    mah_params_host = halopop.mah_params._make(
+        [x[halopop.halo_indx] for x in halopop.mah_params]
+    )
+
+    n_tot = n_host_halos + n_subhalos
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    t_infall = jnp.where(is_central, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak)
+
+    logt0 = jnp.log10(t0)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+
+    logmhost_infall = logmh_at_t_obs(mah_params_host, halopop.t_obs, logt0)
 
     precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
         tcurves, ssp_data, z_phot_table, cosmo_params
@@ -293,6 +309,12 @@ def weighted_lc_photdata(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
+        halopop.nhalos_host,
+        t_infall,
+        logmp_infall,
+        logmhost_infall,
+        is_central,
+        halopop.halo_indx,
     )
 
     lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
@@ -318,14 +340,14 @@ def passively_add_emlines_to_lc_data(ssp_data, lc_data):
 
         new_fields = ("precomputed_ssp_lineflux_cgs_table", "line_wave_table")
         new_vals = (precomputed_ssp_lineflux_cgs_table, line_wave_table)
-        fields = (*LCData._fields, *new_fields)
+        fields = (*lc_data._fields, *new_fields)
         values = (*lc_data, *new_vals)
-        lc_data = namedtuple("LCData", fields)(*values)
+        lc_data = namedtuple(lc_data.__class__.__name__, fields)(*values)
 
     return lc_data
 
 
-_LCDKEYS = (
+_LCDHKEYS = (
     "nhalos",
     "z_obs",
     "t_obs",
@@ -338,4 +360,15 @@ _LCDKEYS = (
     "z_phot_table",
     "wave_eff_table",
 )
-LCData = namedtuple("LCData", _LCDKEYS)
+LCHalosData = namedtuple("LCHalosData", _LCDHKEYS)
+
+_LCDKEYS = (
+    *_LCDHKEYS,
+    "nhalos_host",
+    "t_infall",
+    "logmp_infall",
+    "logmhost_infall",
+    "is_central",
+    "halo_indx",
+)
+LCData = namedtuple("LCHalosData", _LCDKEYS)

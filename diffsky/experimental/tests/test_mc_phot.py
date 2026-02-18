@@ -13,6 +13,7 @@ from jax import vmap
 
 from ...data_loaders.load_ssp_data import load_fake_ssp_data
 from .. import mc_phot
+from . import test_lightcone_generators as tlcg
 from . import test_mc_lightcone_halos as tmclh
 
 _A = [None, 0, None, None, 0, *[None] * 4]
@@ -160,3 +161,20 @@ def test_mc_lc_phot_agrees_with_mc_lc_specphot(num_halos=50):
 
     for emline_name in lc_data.ssp_data.emlines._fields:
         assert np.all(np.isfinite(phot_kern_results2[emline_name]))
+
+
+def test_mc_lc_phot_merging(num_halos=100):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    phot_kern_results = mc_phot.mc_lc_phot_merging(ran_key, lc_data)
+    keys = list(phot_kern_results.keys())
+    phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
+    check_phot_kern_results(phot_kern_results)
+    assert not np.allclose(
+        phot_kern_results.obs_mags, phot_kern_results.obs_mags_in_situ
+    )
+    assert not np.allclose(
+        phot_kern_results.logsm_obs, phot_kern_results.logsm_obs_in_situ
+    )
