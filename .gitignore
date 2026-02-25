@@ -15,6 +15,7 @@ scripts/*.cfg~
 **/.DS_Store
 
 docs/source/drn_dsps_temp/*
+ci_test_output/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
