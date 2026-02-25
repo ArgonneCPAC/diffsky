@@ -26,6 +26,8 @@ build:
       - cp ci_test_output/dummy_version_name/* docs/source/mock_download_dir/
 
       - mkdir -p docs/source/download_dir
+      - cp ci_test_output/dummy_version_name/* docs/source/download_dir/
+      - rm docs/source/download_dir/lc_cores*.hdf5
       - diffpipe run ci_test_output/dummy_version_name docs/source/download_dir -n 2
 
 conda:
