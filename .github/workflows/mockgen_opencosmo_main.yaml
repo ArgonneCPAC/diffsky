@@ -54,20 +54,17 @@ jobs:
             astropy \
             h5py \
             mpi4py \
-            mpich \
-            opencosmo
+            mpich
           conda uninstall diffmah --force
           conda uninstall diffstar --force
           conda uninstall dsps --force
           conda uninstall diffhalos --force
-          conda uninstall opencosmo --force
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffmah.git
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffstar.git
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/dsps.git
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffhalos.git
 
-          pip install uv
-          pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/opencosmo.git
+          pip install git+https://github.com/ArgonneCPAC/opencosmo.git
 
           python -m pip install --no-build-isolation --no-deps -e .
 
