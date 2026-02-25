@@ -4,8 +4,8 @@ channels:
   - defaults
 dependencies:
   - python=3.11
-  - pip
   - pandoc>=3.1,<4.0
+  - pip
   - nbsphinx
   - jupyter
   - matplotlib
@@ -19,3 +19,7 @@ dependencies:
   - dsps>=0.4.5
   - h5py
   - opencosmo
+  - mpi4py
+  - mpich
+  - pip:
+    - git+https://github.com/AstroPatty/diffpipe.git
