@@ -1,9 +1,11 @@
 """ """
 
 import os
+from glob import glob
 
 import h5py
 import numpy as np
+import yaml
 from diffmah import DEFAULT_MAH_PARAMS
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology.flat_wcdm import age_at_z
@@ -27,12 +29,17 @@ REQUIRED_SOFTWARE_VERSION_INFO = (
 )
 BNPAT_LC_MOCK = "data-{0}.{1}.diffsky_gals.hdf5"
 
+YAML_REQ_LIST = ("drn_out", "z_min", "z_max")
 HLINE = "----------"
 
 
 def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     report = dict()
     data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    msg = check_yaml_config(fn_lc_mock)
+    if len(msg) > 0:
+        report["yaml_config"] = msg
 
     msg = check_all_columns_are_finite(fn_lc_mock, data=data)
     if len(msg) > 0:
@@ -85,6 +92,35 @@ def write_lc_mock_report_to_disk(report, fn_lc_mock, drn_report):
                 for line in test_result:
                     fn_out.write(line + "\n")
                 fn_out.write(HLINE + "\n")
+
+
+def check_yaml_config(fn_lc_mock, yaml_req_list=YAML_REQ_LIST):
+    """Enforce that a single file {basename}.yaml exists in drn_out.
+    Enforce the file contains all required yaml entries"""
+    drn = os.path.dirname(fn_lc_mock)
+    fn_list_yamls = glob(os.path.join(drn, "*.yaml"))
+
+    msg = []
+    if len(fn_list_yamls) == 0:
+        s = f"No yaml file detected in {drn}"
+        msg.append(s)
+
+    elif len(fn_list_yamls) > 1:
+        s = f"Multiple yaml file detected: {fn_list_yamls}"
+        msg.append(s)
+
+    else:
+        fn_config = fn_list_yamls[0]
+        with open(fn_config, "r") as f:
+            config = yaml.safe_load(f)
+
+        yaml_lines = list(set(config.keys()))
+        missing_lines = set(yaml_req_list) - set(yaml_lines)
+        if len(missing_lines) > 0:
+            s = f"{fn_config} is missing the following entries: {missing_lines}"
+            msg.append(s)
+
+    return msg
 
 
 def check_all_columns_are_finite(fn_lc_mock, data=None):
