@@ -19,3 +19,5 @@ dependencies:
   - dsps>=0.4.5
   - h5py
   - opencosmo
+  - mpi4py
+  - mpich
