@@ -107,6 +107,7 @@ if __name__ == "__main__":
     batch_size = config.get("batch_size", 20_000)
     no_dbk = config.get("no_dbk", False)
     no_sed = config.get("no_sed", False)
+    bn_ssp_data = config.get("bn_ssp_data", SSP_SED_BNAME)
 
     if mock_version_name_in == "":
         mock_version_name = get_mock_version_name(mock_nickname)
@@ -170,7 +171,7 @@ if __name__ == "__main__":
 
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
-    ssp_data = load_ssp_templates(bn=SSP_SED_BNAME)
+    ssp_data = load_ssp_templates(bn=bn_ssp_data)
 
     # Check that the SSP data includes all necessary lines
     for line_name in OUTPUT_LINE_NICKNAMES:
