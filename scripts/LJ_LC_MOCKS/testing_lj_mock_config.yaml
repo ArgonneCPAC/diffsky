@@ -10,3 +10,4 @@ synthetic_cores: 1
 lgmp_min: 12.5
 lgmp_max: 13.5
 mock_version_name: "dummy_version_name"
+lsst_only: 1
