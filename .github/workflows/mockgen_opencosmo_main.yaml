@@ -120,7 +120,7 @@ jobs:
         shell: bash -l {0}
         run: |
           mkdir -p ci_test_output/oc_dummy_version_name
-          cp ci_test_output/oc_dummy_version_name/*
+          cp ci_test_output/dummy_version_name/* ci_test_output/oc_dummy_version_name/
           rm -rf ci_test_output/oc_dummy_version_name/lc_cores*.hdf5
           diffpipe run ci_test_output/dummy_version_name ci_test_output/oc_dummy_version_name -n 2
 
