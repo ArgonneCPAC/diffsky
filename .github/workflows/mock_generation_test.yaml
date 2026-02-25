@@ -12,7 +12,7 @@ on:
 
 jobs:
   mock-generation:
-    name: python make_ou26_mock.py -synthetic_cores 1
+    name: python make_lj_mock.py testing_lj_mock_config.yaml
     runs-on: "ubuntu-latest"
 
     steps:
@@ -96,72 +96,27 @@ jobs:
           mkdir -p ci_test_output
 
           # Run mock production script
-          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py \
-            poboy \
-            0.01 \
-            0.2 \
-            0 \
-            1 \
-            ci_test_output \
-            ci_test_mock \
-            -cosmos_fit cosmos_260120_UM \
-            -synthetic_cores 1 \
-            -lgmp_min 12.0 \
-            -lgmp_max 13.0 \
-            --lsst_only \
-            -mock_version_name dummy_version_name
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
 
       - name: verify script completed
         shell: bash -l {0}
         run: |
-          echo "sfh_model mock generated successfully"
+          echo "make_lj_mock.py ran successfully for testing_lj_mock_config.yaml"
 
       - name: validate mock
         shell: bash -l {0}
         run: |
           python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
 
-      - name: remove cosmos_fit mock
-        shell: bash -l {0}
-        run: |
-          rm -rf ci_test_output
-
-      - name: create mock with no_dbk option
-        shell: bash -l {0}
-        run: |
-          # Create output directory
-          mkdir -p ci_test_output
-
-          # Run mock production script
-          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py \
-            poboy \
-            0.01 \
-            0.2 \
-            0 \
-            1 \
-            ci_test_output \
-            ci_test_mock \
-            -cosmos_fit cosmos_260120_UM \
-            -synthetic_cores 1 \
-            -lgmp_min 12.0 \
-            -lgmp_max 13.0 \
-            --lsst_only --no_dbk \
-            -mock_version_name dummy_version_name
-
-      - name: verify script completed
-        shell: bash -l {0}
-        run: |
-          echo "sfh_model mock generated successfully"
-
-      - name: validate mock
-        shell: bash -l {0}
-        run: |
-          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name --no_dbk
-
       - name: Create dummy diffsky galaxies for OpenCosmo
         shell: bash -l {0}
         run: |
           python scripts/LJ_LC_MOCKS/create_dummy_mock_data.py ci_test_output/dummy_version_name
+
+      - name: remove cosmos_fit mock
+        shell: bash -l {0}
+        run: |
+          rm -rf ci_test_output
 
       - name: Clean up mock data
         shell: bash -l {0}

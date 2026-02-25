@@ -2,20 +2,24 @@
 
 To run a unit test of this script:
 
-python scripts/LJ_LC_MOCKS/make_ou26_mock_batch.py  poboy 0.08 0.1 0 1 ci_test_output ci_test_mock -sfh_model smdpl_dr1 -synthetic_cores 1 -lgmp_min 12.5 -lgmp_max 13.5 -mock_version_name dummy_version_name
+python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
 python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
 
-"""  # noqa
+"""
+
+# noqa
 
 import argparse
 import gc
 import os
+import shutil
 import sys
 from time import sleep, time
 
 import h5py
 import jax
 import numpy as np
+import yaml
 from jax import random as jran
 from mpi4py import MPI
 
@@ -75,104 +79,39 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "machine", help="Machine name where script is run", choices=["lcrc", "poboy"]
-    )
-    parser.add_argument("z_min", help="Minimum redshift", type=float)
-    parser.add_argument("z_max", help="Maximum redshift", type=float)
-    parser.add_argument("istart", help="First sky patch", type=int)
-    parser.add_argument("iend", help="Last sky patch", type=int)
+    parser.add_argument("config_yaml", help="YAML configuration file")
 
-    parser.add_argument("drn_out", help="Output directory")
-    parser.add_argument("mock_nickname", help="Nickname of the mock")
+    config_path = parser.parse_args().config_yaml
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
 
-    parser.add_argument(
-        "-mock_version_name",
-        help="Version of the mock. Overrides mock_nickname",
-        default="",
-    )
+    machine = config["machine"]
+    z_min = float(config["z_min"])
+    z_max = float(config["z_max"])
+    istart = int(config["istart"])
+    iend = int(config["iend"])
+    drn_out = config["drn_out"]
+    mock_nickname = config["mock_nickname"]
 
-    parser.add_argument(
-        "-batch_size", help="Size of photometry batches", type=int, default=20_000
-    )
+    mock_version_name_in = config.get("mock_version_name", "")
+    roman_hltds = config.get("roman_hltds", False)
+    lsst_ddf = config.get("lsst_ddf", False)
+    lsst_only = config.get("lsst_only", False)
+    cosmos_fit = config.get("cosmos_fit", "")
+    sfh_model = config.get("sfh_model", "tng")
+    itest = config.get("itest", 0)
+    sim_name = config.get("sim_name", SIM_NAME)
+    synthetic_cores = config.get("synthetic_cores", 0)
+    lgmp_min = config.get("lgmp_min", -1.0)
+    lgmp_max = config.get("lgmp_max", -1.0)
+    batch_size = config.get("batch_size", 20_000)
+    no_dbk = config.get("no_dbk", False)
+    no_sed = config.get("no_sed", False)
 
-    parser.add_argument(
-        "--roman_hltds",
-        help="Use all patches overlapping with Roman HLTDS. Overrides istart and iend",
-        action="store_true",
-    )
-
-    parser.add_argument(
-        "--lsst_ddf",
-        help="Use all patches overlapping with LSST DDF. Overrides istart and iend",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--lsst_only", help="Use only LSST bandpasses", action="store_true"
-    )
-
-    parser.add_argument("-cosmos_fit", help="Best-fit diffsky parameters", default="")
-    parser.add_argument(
-        "-sfh_model", help="Assumed SFH model in diffsky calibration", default="tng"
-    )
-
-    parser.add_argument(
-        "-indir_lc_data",
-        help="Input drn storing lc_cores-*.*.hdf5",
-        default=DRN_LJ_LC_LCRC,
-    )
-    parser.add_argument("-itest", help="Short test run?", type=int, default=0)
-    parser.add_argument("-sim_name", help="Simulation name", default=SIM_NAME)
-    parser.add_argument(
-        "-synthetic_cores",
-        help="Use synthetic cores instead of simulated cores",
-        default=0,
-        type=int,
-    )
-    parser.add_argument(
-        "-lgmp_min", help="Low-mass cutoff for synthetic cores", type=float, default=-1
-    )
-    parser.add_argument(
-        "-lgmp_max", help="High-mass cutoff for synthetic cores", type=float, default=-1
-    )
-    parser.add_argument(
-        "--no_dbk",
-        help="Exclude disk/bulge/knot SEDs in output mock",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--no_sed",
-        help="Exclude SEDs in output mock (use for SFH-only mocks)",
-        action="store_true",
-    )
-
-    args = parser.parse_args()
-    machine = args.machine
-    z_min = args.z_min
-    z_max = args.z_max
-    istart = args.istart
-    iend = args.iend
-    sfh_model = args.sfh_model
-    drn_out = args.drn_out
-    mock_nickname = args.mock_nickname
-
-    roman_hltds = args.roman_hltds
-    lsst_ddf = args.lsst_ddf
-    lsst_only = args.lsst_only
-    cosmos_fit = args.cosmos_fit
-    itest = args.itest
-    sim_name = args.sim_name
-    synthetic_cores = args.synthetic_cores
-    lgmp_min = args.lgmp_min
-    lgmp_max = args.lgmp_max
-    batch_size = args.batch_size
-    no_dbk = args.no_dbk
-    no_sed = args.no_sed
-
-    if args.mock_version_name == "":
+    if mock_version_name_in == "":
         mock_version_name = get_mock_version_name(mock_nickname)
     else:
-        mock_version_name = args.mock_version_name
+        mock_version_name = mock_version_name_in
 
     if lsst_only:
         OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES,)
@@ -188,7 +127,10 @@ if __name__ == "__main__":
             raise ValueError(msg)
 
     drn_out = os.path.join(drn_out, mock_version_name)
-    os.makedirs(drn_out, exist_ok=True)
+    if rank == 0:
+        os.makedirs(drn_out, exist_ok=True)
+        shutil.copy2(config_path, drn_out)
+    comm.Barrier()
 
     if machine == "poboy":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_POBOY
