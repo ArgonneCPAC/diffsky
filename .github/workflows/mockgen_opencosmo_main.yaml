@@ -66,7 +66,7 @@ jobs:
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/dsps.git
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffhalos.git
 
-          pip install --no-deps uv
+          pip install uv
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/opencosmo.git
 
           python -m pip install --no-build-isolation --no-deps -e .
