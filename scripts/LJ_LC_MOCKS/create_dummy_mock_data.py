@@ -12,7 +12,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    fn_list = glob(os.path.join(args.drn, "*diffsky_gals.hdf5"))
+    bn_pat = "*.diffsky_gals.synthetic_halos.hdf5"
+    fn_list = glob(os.path.join(args.drn, bn_pat))
     assert len(fn_list) > 0
     for fn in fn_list:
         bn = os.path.basename(fn)
