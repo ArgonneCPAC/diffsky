@@ -1,4 +1,4 @@
-name: Test mock-production script runs with synthetic halos
+name: Test make_lj_mock.py runs with synthetic halos (main branch of opencosmo)
 
 on:
   workflow_dispatch: null
@@ -60,10 +60,15 @@ jobs:
           conda uninstall diffstar --force
           conda uninstall dsps --force
           conda uninstall diffhalos --force
+          conda uninstall opencosmo --force
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffmah.git
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffstar.git
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/dsps.git
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffhalos.git
+
+          pip install --no-deps uv
+          pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/opencosmo.git
+
           python -m pip install --no-build-isolation --no-deps -e .
 
       - name: download dsps data
