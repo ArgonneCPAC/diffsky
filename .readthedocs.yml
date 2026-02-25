@@ -25,6 +25,9 @@ build:
       - mkdir -p docs/source/mock_download_dir
       - cp ci_test_output/dummy_version_name/* docs/source/mock_download_dir/
 
+      - mkdir -p docs/source/download_dir
+      - diffpipe run ci_test_output/dummy_version_name docs/source/download_dir -n 2
+
 conda:
   environment: docs/source/rtd_environment.yaml
 
