@@ -54,7 +54,8 @@ jobs:
             astropy \
             h5py \
             mpi4py \
-            mpich
+            mpich \
+            opencosmo
           conda uninstall diffmah --force
           conda uninstall diffstar --force
           conda uninstall dsps --force
