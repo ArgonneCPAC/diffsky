@@ -54,7 +54,8 @@ jobs:
             astropy \
             h5py \
             mpi4py \
-            mpich
+            mpich \
+            opencosmo
           conda uninstall diffmah --force
           conda uninstall diffstar --force
           conda uninstall dsps --force
@@ -65,6 +66,7 @@ jobs:
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffhalos.git
 
           pip install git+https://github.com/ArgonneCPAC/opencosmo.git
+          pip install git+https://github.com/AstroPatty/diffpipe.git
 
           python -m pip install --no-build-isolation --no-deps -e .
 
@@ -114,6 +116,20 @@ jobs:
         shell: bash -l {0}
         run: |
           python scripts/LJ_LC_MOCKS/create_dummy_mock_data.py ci_test_output/dummy_version_name
+
+      - name: OpenCosmo toolkit data conversion
+        shell: bash -l {0}
+        run: |
+          mkdir -p ci_test_output/oc_dummy_version_name
+          cp ci_test_output/dummy_version_name/* ci_test_output/oc_dummy_version_name/
+          rm -rf ci_test_output/oc_dummy_version_name/lc_cores*.hdf5
+          diffpipe run ci_test_output/dummy_version_name ci_test_output/oc_dummy_version_name -n 2
+
+      - name: Run tests on OpenCosmo-formatted data
+        shell: bash -l {0}
+        run: |
+          echo "ci_test_output/oc_dummy_version_name ready for testing"
+          # Here we can execute a testing script of ci_test_output/oc_dummy_version_name
 
       - name: remove cosmos_fit mock
         shell: bash -l {0}
