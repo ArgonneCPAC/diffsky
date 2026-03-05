@@ -486,7 +486,7 @@ def __compute_dbk_sed_managed(
         param_collection.ssperr_params,
     )
 
-    dbk_sed_info = dbk_phot_info._asdict()
+    dbk_sed_info = {}
     dbk_sed_info["rest_sed_bulge"] = sed_bulge
     dbk_sed_info["rest_sed_disk"] = sed_disk
     dbk_sed_info["rest_sed_knots"] = sed_knots
