@@ -19,7 +19,7 @@ def test_data_dir():
     return Path(__file__).parent / "test_data"
 
 
-def test_compute_photometry(test_data_dir):
+def test_compute_photometry(opencosmo_data_path):
     bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     catalog, aux_data = load_diffsky_mock(test_data_dir)
     results = compute_phot_from_diffsky_mock(catalog, aux_data, bands, insert=False)
