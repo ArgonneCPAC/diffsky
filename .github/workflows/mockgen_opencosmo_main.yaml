@@ -55,6 +55,7 @@ jobs:
             h5py \
             mpi4py \
             mpich \
+            pytest \
             opencosmo
           conda uninstall diffmah --force
           conda uninstall diffstar --force
