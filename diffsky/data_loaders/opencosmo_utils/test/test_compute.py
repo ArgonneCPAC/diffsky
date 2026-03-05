@@ -91,11 +91,14 @@ def test_compute_photometry_custom_bands_insert(test_data_dir):
 
 
 def test_compute_dbk_photometry(test_data_dir):
+    bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     catalog, aux_data = load_diffsky_mock(test_data_dir)
-    results = compute_dbk_phot_from_diffsky_mock(catalog, aux_data, insert=False)
-    original_data = catalog.select(results.keys()).get_data("numpy")
-    for name, computed_values in results.items():
-        assert np.allclose(computed_values, original_data[name], atol=1e-2)
+    results = compute_dbk_phot_from_diffsky_mock(catalog, aux_data, bands, insert=False)
+    columns = [col.removesuffix("_new") for col in results.keys()]
+
+    original_data = catalog.select(columns).get_data("numpy")
+    for name in columns:
+        assert np.allclose(results[f"{name}_new"], original_data[name], atol=1e-2)
 
 
 def test_compute_seds(test_data_dir):
