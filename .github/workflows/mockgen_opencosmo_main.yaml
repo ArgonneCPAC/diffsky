@@ -130,6 +130,9 @@ jobs:
         run: |
           echo "ci_test_output/oc_dummy_version_name ready for testing"
           # Here we can execute a testing script of ci_test_output/oc_dummy_version_name
+          export RUN_OPENCOSMO_TESTS="True"
+          export OPENCOSMO_DIFFSKY_DATA_PATH="ci_test_output/oc_dummy_version_name"
+          pytest diffsky/data_loaders/opencosmo_utils/test
 
       - name: remove cosmos_fit mock
         shell: bash -l {0}
