@@ -1,21 +1,15 @@
-from pathlib import Path
-
 import opencosmo as oc
-import pytest
 
 from diffsky.data_loaders.opencosmo_utils import (
     load_diffsky_mock,
 )
 
 
-@pytest.fixture
-def test_data_dir():
-    return Path(__file__).parent / "test_data"
-
-
-def test_load(test_data_dir):
-    catalog, aux_data = load_diffsky_mock(test_data_dir)
-    catalog_synths, aux_data_synths = load_diffsky_mock(test_data_dir, synth_cores=True)
+def test_load(opencosmo_data_path):
+    catalog, aux_data = load_diffsky_mock(opencosmo_data_path)
+    catalog_synths, aux_data_synths = load_diffsky_mock(
+        opencosmo_data_path, synth_cores=True
+    )
 
     assert isinstance(catalog, oc.Lightcone)
     assert isinstance(catalog_synths, oc.Lightcone)
