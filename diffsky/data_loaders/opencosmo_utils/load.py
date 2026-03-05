@@ -1,7 +1,6 @@
-from __future__ import annotations
-
 from collections import namedtuple
 from pathlib import Path
+from typing import Optional
 
 import h5py
 import numpy as np
@@ -17,7 +16,9 @@ from .versions import check_versions
 
 
 def load_diffsky_mock(
-    path: str | Path, synth_cores: bool = False
+    path: str | Path,
+    synth_cores: bool = False,
+    version_check: Optional[str] = None,
 ) -> tuple[oc.Lightcone, dict | None]:
     """
     Load a diffsky mock catalog stored in the given directory in opencosmo format.
@@ -58,7 +59,7 @@ def load_diffsky_mock(
     except FileNotFoundError:
         aux_data = None
     catalog = oc.open(data_files, synth_cores=synth_cores)
-    check_versions(catalog)
+    check_versions(catalog, version_check)
 
     return catalog, aux_data
 
