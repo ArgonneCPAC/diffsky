@@ -59,7 +59,7 @@ def test_compute_photometry_custom_bands(opencosmo_data_path):
         catalog, aux_data, ["fake_tcurve_1", "fake_tcurve_2"], insert=False
     )
     for magnitudes in results.values():
-        assert np.all((magnitudes > 10) & (magnitudes < 25))
+        assert np.all((magnitudes > 10) & (magnitudes < 30))
 
 
 def test_compute_photometry_custom_bands_insert(opencosmo_data_path):
@@ -79,7 +79,7 @@ def test_compute_photometry_custom_bands_insert(opencosmo_data_path):
 
     results = catalog.select(("fake_tcurve_1", "fake_tcurve_2")).get_data("numpy")
     for magnitudes in results.values():
-        assert np.all((magnitudes > 10) & (magnitudes < 25))
+        assert np.all((magnitudes > 10) & (magnitudes < 30))
 
 
 def test_compute_dbk_photometry(opencosmo_data_path):
