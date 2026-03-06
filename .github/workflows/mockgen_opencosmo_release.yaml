@@ -57,6 +57,7 @@ jobs:
             mpich \
             pytest \
             opencosmo
+          conda install hdf5plugin=5.0
           conda uninstall diffmah --force
           conda uninstall diffstar --force
           conda uninstall dsps --force

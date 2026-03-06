@@ -1,4 +1,4 @@
-from collections import defaultdict, namedtuple
+from collections import namedtuple
 from typing import Callable, Optional
 
 import numpy as np
@@ -174,7 +174,6 @@ def compute_dbk_phot_from_diffsky_mock(
 def compute_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
-    bands: list[str],
     insert: bool = True,
     batch_size: int = -1,
 ):
@@ -217,6 +216,7 @@ def compute_seds_from_diffsky_mock(
 
     z_phot_tables = __get_z_phot_tables(catalog)
     func = dbk_phot_from_mock._reproduce_mock_sed_kern
+    bands = ["lsst_u"]
     result = __run_photometry(
         func,
         __unpack_seds,
@@ -237,7 +237,6 @@ def compute_seds_from_diffsky_mock(
 def compute_dbk_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
-    bands: list[str],
     insert: bool = True,
     batch_size: int = -1,
 ):
@@ -279,29 +278,25 @@ def compute_dbk_seds_from_diffsky_mock(
 
     """
     cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
-    dbk_phot_info = defaultdict(dict)
 
-    dbk_phot_info = compute_dbk_phot_from_diffsky_mock(
+    bands = ["lsst_u"]
+    catalog = compute_dbk_phot_from_diffsky_mock(
         catalog,
         aux_data,
         bands,
         ["sfh_table", "lgmet_weights"],
-        False,
+        insert=True,
         batch_size=batch_size,
     )
-    splits = np.cumsum([len(c) for c in catalog.values()])[:-1]
-    input_dbk_phot_info = defaultdict(dict)
-    for name, values in dbk_phot_info.items():
-        slices = np.split(values, splits)
-        for i, slice_num in enumerate(catalog.keys()):
-            input_dbk_phot_info[slice_num][name] = slices[i]
 
     catalog = catalog.evaluate(
         age_at_z_, vectorize=True, cosmology=cosmology_parameters
     )
+    components = ["disk", "bulge", "knots"]
+    bands = [f"{band}_{component}" for band in bands for component in components]
+
     result = catalog.evaluate(
         __compute_dbk_sed_managed,
-        dbk_phot_info=input_dbk_phot_info,
         ssp_data=aux_data["ssp_data"],
         param_collection=aux_data["param_collection"],
         t_table=aux_data["t_table"],
@@ -311,7 +306,12 @@ def compute_dbk_seds_from_diffsky_mock(
         format="numpy",
         batch_size=batch_size,
     )
+    # drop new columns
     if insert is True:
+        if "lsst_u_new" in catalog.columns:
+            catalog = catalog.drop("lsst_u_new")
+        else:
+            catalog = catalog.drop("lsst_u")
         return catalog.with_new_columns(**result)
     return result
 
@@ -450,7 +450,8 @@ def __compute_dbk_sed_managed(
     logssfr_obs,
     delta_mag_ssp_scatter,
     redshift_true,
-    dbk_phot_info,
+    sfh_table,
+    lgmet_weights,
     ssp_data,
     param_collection,
     cosmology,
@@ -463,6 +464,7 @@ def __compute_dbk_sed_managed(
 
     DBKRandoms = namedtuple("DBKRandoms", ("fknot",))
     dbk_randoms = DBKRandoms(fknot)
+    dbk_phot_info = {"sfh_table": sfh_table, "lgmet_weights": lgmet_weights}
 
     dbk_phot_info["uran_av"] = uran_av
     dbk_phot_info["uran_delta"] = uran_delta
@@ -475,9 +477,9 @@ def __compute_dbk_sed_managed(
         t_obs,
         ssp_data,
         t_table,
-        dbk_phot_info["sfh_table"],
+        sfh_table,
         burst_params,
-        dbk_phot_info["lgmet_weights"],
+        lgmet_weights,
         dbk_randoms,
     )
 
