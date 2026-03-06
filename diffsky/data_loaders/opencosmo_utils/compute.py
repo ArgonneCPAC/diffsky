@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 from typing import Callable, Optional
 
 import numpy as np
@@ -51,7 +51,7 @@ def compute_phot_from_diffsky_mock(
         The catalog containing the diffsky data
 
     aux_data: dict
-        The auxilliary data loaded with
+    The auxilliary data loaded with
         :py:meth:`diffsky.data_loaders.opencosmo_utils.load_diffsky_mock`
 
     z_phot_table:
@@ -165,6 +165,7 @@ def compute_dbk_phot_from_diffsky_mock(
         suffix=suffix,
         batch_size=batch_size,
     )
+
     if insert:
         return catalog.with_new_columns(**result)
     return result
@@ -277,27 +278,37 @@ def compute_dbk_seds_from_diffsky_mock(
 
 
     """
-    z_phot_tables = __get_z_phot_tables(catalog)
     cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
+    dbk_phot_info = defaultdict(dict)
+
     dbk_phot_info = compute_dbk_phot_from_diffsky_mock(
         catalog,
         aux_data,
         bands,
-        ["t_table", "sfh_table", "lgmet_weights"],
+        ["sfh_table", "lgmet_weights"],
         False,
         batch_size=batch_size,
     )
+    splits = np.cumsum([len(c) for c in catalog.values()])[:-1]
+    input_dbk_phot_info = defaultdict(dict)
+    for name, values in dbk_phot_info.items():
+        slices = np.split(values, splits)
+        for i, slice_num in enumerate(catalog.keys()):
+            input_dbk_phot_info[slice_num][name] = slices[i]
+
     catalog = catalog.evaluate(
         age_at_z_, vectorize=True, cosmology=cosmology_parameters
     )
     result = catalog.evaluate(
         __compute_dbk_sed_managed,
-        dbk_phot_info=dbk_phot_info,
+        dbk_phot_info=input_dbk_phot_info,
         ssp_data=aux_data["ssp_data"],
         param_collection=aux_data["param_collection"],
+        t_table=aux_data["t_table"],
         cosmology=cosmology_parameters,
         insert=False,
         vectorize=True,
+        format="numpy",
         batch_size=batch_size,
     )
     if insert is True:
@@ -320,7 +331,7 @@ def __unpack_dbk_photometry(data, band_names, suffix, include_extras):
     output |= __unpack_photometry_array(obs_mag_knots, knot_bands, suffix)
     if include_extras is not None:
         phot_info = phot_info._asdict()
-        output |= {name: phot_info[name] for name in include_extras}
+        output |= {name: np.array(phot_info[name]) for name in include_extras}
 
     return output
 
@@ -443,6 +454,7 @@ def __compute_dbk_sed_managed(
     ssp_data,
     param_collection,
     cosmology,
+    t_table,
     suffix="",
 ):
     burst_params = BurstParams(
@@ -462,7 +474,7 @@ def __compute_dbk_sed_managed(
     args = (
         t_obs,
         ssp_data,
-        dbk_phot_info["t_table"],
+        t_table,
         dbk_phot_info["sfh_table"],
         burst_params,
         dbk_phot_info["lgmet_weights"],
@@ -486,7 +498,7 @@ def __compute_dbk_sed_managed(
         param_collection.ssperr_params,
     )
 
-    dbk_sed_info = dbk_phot_info._asdict()
+    dbk_sed_info = {}
     dbk_sed_info["rest_sed_bulge"] = sed_bulge
     dbk_sed_info["rest_sed_disk"] = sed_disk
     dbk_sed_info["rest_sed_knots"] = sed_knots
