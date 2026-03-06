@@ -128,7 +128,7 @@ jobs:
       - name: Run tests on OpenCosmo-formatted data
         shell: bash -l {0}
         run: |
-          export RUN_OPENCOSMO_TESTS="True"
+          export RUN_OPENCOSMO_TESTS="true"
           export OPENCOSMO_DIFFSKY_DATA_PATH="ci_test_output/oc_dummy_version_name"
           pytest diffsky/data_loaders/opencosmo_utils/test
           

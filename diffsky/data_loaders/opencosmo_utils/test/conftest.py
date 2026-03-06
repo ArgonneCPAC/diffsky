@@ -14,10 +14,17 @@ def opencosmo_data_path():
     return Path(path)
 
 
+@pytest.fixture
+def version_checking():
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        return "strict"
+    return None
+
+
 def pytest_collection_modifyitems(session, config, items):
     # Define your condition here. For example, skip if an environment variable is not set.
     # The condition can be anything, including checking file paths or system platform.
-    skip_condition = not os.environ.get("RUN_OPENCOSMO_TESTS") == "True"
+    skip_condition = not os.environ.get("RUN_OPENCOSMO_TESTS") == "true"
 
     if skip_condition:
         skip_marker = pytest.mark.skip(

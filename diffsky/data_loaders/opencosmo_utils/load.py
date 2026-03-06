@@ -59,6 +59,8 @@ def load_diffsky_mock(
     except FileNotFoundError:
         aux_data = None
     catalog = oc.open(data_files, synth_cores=synth_cores)
+    print(version_check)
+    assert False
     check_versions(catalog, version_check)
 
     return catalog, aux_data
