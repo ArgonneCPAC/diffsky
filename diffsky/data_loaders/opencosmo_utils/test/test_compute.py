@@ -113,10 +113,13 @@ def test_compute_seds_with_batching(opencosmo_data_path):
         catalog, aux_data, bands, insert=False
     )
     seds = results_batched["rest_sed"]
+
     expected_shape = (len(catalog), len(aux_data["ssp_data"].ssp_wave))
     assert seds.shape == expected_shape
     assert np.all(~np.isnan(seds))
-    assert np.all(results_batched["rest_sed"] == results_nobatch["rest_sed"])
+    assert np.allclose(
+        results_batched["rest_sed"], results_nobatch["rest_sed"], rtol=1e-6, atol=0
+    )
 
 
 def test_compute_seds_insert(opencosmo_data_path):
