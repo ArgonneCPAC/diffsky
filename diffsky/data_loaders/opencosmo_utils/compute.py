@@ -290,7 +290,7 @@ def compute_dbk_seds_from_diffsky_mock(
     )
 
     catalog = catalog.evaluate(
-        age_at_z_, vectorize=True, cosmology=cosmology_parameters
+        age_at_z_, vectorize=True, cosmology=cosmology_parameters, format="numpy"
     )
     components = ["disk", "bulge", "knots"]
     bands = [f"{band}_{component}" for band in bands for component in components]
@@ -391,7 +391,10 @@ def __run_photometry(
         )
 
     catalog = catalog.evaluate(
-        age_at_z_, vectorize=True, cosmology=cosmology_parameters
+        age_at_z_,
+        vectorize=True,
+        cosmology=cosmology_parameters,
+        format="numpy",
     )
     return catalog.evaluate(
         __compute_photometry_managed,
