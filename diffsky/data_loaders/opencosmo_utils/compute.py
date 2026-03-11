@@ -28,10 +28,10 @@ def __get_z_phot_tables(catalog: oc.Lightcone):
 
 
 def __get_z_phot_table_from_dataset(dataset: oc.Dataset):
-    try:
-        return np.array(dataset.header.catalog_info["zphot_table"])
-    except (AttributeError, KeyError):
+    z_phot_table = dataset.header.catalog_info.get("zphot_table")
+    if z_phot_table is None:
         return __estimate_z_phot_table(dataset)
+    return z_phot_table
 
 
 def __estimate_z_phot_table(dataset: oc.Dataset):
