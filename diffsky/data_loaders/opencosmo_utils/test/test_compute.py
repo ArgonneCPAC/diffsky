@@ -5,15 +5,17 @@ import numpy as np
 import pytest
 from jax.scipy.stats import norm as jnorm
 
-oc = find_spec("opencosmo")
+oc_ = find_spec("opencosmo")
 
-if oc is None and os.getenv("RUN_OPENCOSMO_TESTS") == "true":
+if oc_ is None and os.getenv("RUN_OPENCOSMO_TESTS") == "true":
     raise ImportError(
         "You asked to run opencosmo tests, but opencosmo is not installed"
     )
 
 
-elif oc is not None:
+elif oc_ is not None:
+    import opencosmo as oc
+
     from diffsky.data_loaders.opencosmo_utils import (
         add_transmission_curves,
         compute_dbk_phot_from_diffsky_mock,
