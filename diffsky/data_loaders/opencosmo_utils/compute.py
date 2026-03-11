@@ -23,16 +23,13 @@ def __get_z_phot_tables(catalog: oc.Lightcone):
     """
     z_phot_tables = {}
     for slice_name, dataset in catalog.items():
-        if isinstance(dataset, oc.Dataset):
-            z_phot_tables[slice_name] = __get_z_phot_table_from_dataset(dataset)
-        elif isinstance(dataset, oc.Lightcone):
-            z_phot_tables[slice_name] = __get_z_phot_tables(dataset)
+        z_phot_tables[slice_name] = __get_z_phot_table_from_dataset(dataset)
     return z_phot_tables
 
 
 def __get_z_phot_table_from_dataset(dataset: oc.Dataset):
     try:
-        return np.array(dataset.header.catalog_info["z_phot_table"])
+        return np.array(dataset.header.catalog_info["zphot_table"])
     except (AttributeError, KeyError):
         return __estimate_z_phot_table(dataset)
 
@@ -388,31 +385,14 @@ def __run_photometry(
     cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
 
     for slice_name, z_phot_table in z_phot_tables.items():
-        if isinstance(z_phot_table, np.ndarray):
-            wave_eff_tables[slice_name] = phot_utils.get_wave_eff_table(
-                z_phot_table, tcurves
+        wave_eff_tables[slice_name] = phot_utils.get_wave_eff_table(
+            z_phot_table, tcurves
+        )
+        precomputed_ssp_mag_tables[slice_name] = (
+            psspp.get_precompute_ssp_mag_redshift_table(
+                tcurves, aux_data["ssp_data"], z_phot_table, cosmology_parameters
             )
-            precomputed_ssp_mag_tables[slice_name] = (
-                psspp.get_precompute_ssp_mag_redshift_table(
-                    tcurves, aux_data["ssp_data"], z_phot_table, cosmology_parameters
-                )
-            )
-        else:
-            slice_wave_eff = {}
-            slice_ssp_mags = {}
-            for type_name, type_z_phot_table in z_phot_table.items():
-                slice_wave_eff[type_name] = phot_utils.get_wave_eff_table(
-                    type_z_phot_table, tcurves
-                )
-                slice_ssp_mags[type_name] = psspp.get_precompute_ssp_mag_redshift_table(
-                    tcurves,
-                    aux_data["ssp_data"],
-                    type_z_phot_table,
-                    cosmology_parameters,
-                )
-            wave_eff_tables[slice_name] = slice_wave_eff
-            precomputed_ssp_mag_tables[slice_name] = slice_ssp_mags
-
+        )
     catalog = catalog.evaluate(
         age_at_z_,
         vectorize=True,
