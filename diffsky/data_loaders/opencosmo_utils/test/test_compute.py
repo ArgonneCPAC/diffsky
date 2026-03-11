@@ -23,6 +23,9 @@ elif oc_ is not None:
         load_diffsky_mock,
     )
 
+skip_condition = not os.environ.get("RUN_OPENCOSMO_TESTS") == "true"
+pytestmark = pytest.mark.skipif(skip_condition, reason="RUN_OPENCOSMO_TESTS is not set")
+
 
 @pytest.fixture(params=[True, False], ids=["with_synth_cores", "without_synth_cores"])
 def synth_cores(request):
