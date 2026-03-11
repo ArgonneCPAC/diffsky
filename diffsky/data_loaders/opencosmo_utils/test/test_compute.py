@@ -14,8 +14,6 @@ if oc_ is None and os.getenv("RUN_OPENCOSMO_TESTS") == "true":
 
 
 elif oc_ is not None:
-    import opencosmo as oc
-
     from diffsky.data_loaders.opencosmo_utils import (
         add_transmission_curves,
         compute_dbk_phot_from_diffsky_mock,
@@ -37,18 +35,15 @@ def synth_cores(request):
 def test_get_z_phot_tables(opencosmo_data_path, synth_cores):
     catalog, aux_data = load_diffsky_mock(opencosmo_data_path, synth_cores=synth_cores)
     for slice_catalog in catalog.values():
-        if isinstance(slice_catalog, dict):
-            for type_catalog in slice_catalog.values():
-                __verify_z_phot_table(type_catalog)
-        else:
-            __verify_z_phot_table(catalog)
+        __verify_z_phot_table(slice_catalog)
 
 
-def __verify_z_phot_table(ds: oc.Dataset):
-    z_phot_table = ds.header.catalog_info["z_phot_table"]
-    z_range = ds.header.lightcone["z_range"]
+def __verify_z_phot_table(ds):
+    z_phot_table = ds.header.catalog_info["zphot_table"]
+    redshifts = ds.select("redshift_true").get_data("numpy")
+    z_min, z_max = np.min(redshifts), np.max(redshifts)
     assert np.all(np.sort(z_phot_table) == z_phot_table)
-    assert z_phot_table[0] <= z_range[0] and z_phot_table[1] >= z_range[1]
+    assert z_phot_table[0] <= z_min and z_phot_table[-1] >= z_max
 
 
 def test_compute_photometry(opencosmo_data_path, version_checking, synth_cores):
