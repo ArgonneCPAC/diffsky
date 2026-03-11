@@ -32,6 +32,15 @@ def synth_cores(request):
     yield param_value
 
 
+def test_get_z_phot_tables(opencosmo_data_path, synth_cores):
+    catalog, aux_data = load_diffsky_mock(opencosmo_data_path, synth_cores=synth_cores)
+    for slice_catalog in catalog.values():
+        z_phot_table = slice_catalog.header["catalog_info"].z_phot_table
+        z_range = slice_catalog.heeader["lightcone"].z_range
+        assert np.all(np.sort(z_phot_table) == z_phot_table)
+        assert z_phot_table[0] <= z_range[0] and z_phot_table[1] >= z_range[1]
+
+
 def test_compute_photometry(opencosmo_data_path, version_checking, synth_cores):
     bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
     catalog, aux_data = load_diffsky_mock(

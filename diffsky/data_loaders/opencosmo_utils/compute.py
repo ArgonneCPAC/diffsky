@@ -24,14 +24,24 @@ def __get_z_phot_tables(catalog: oc.Lightcone):
     z_phot_tables = {}
     for slice_name, dataset in catalog.items():
         if isinstance(dataset, oc.Dataset):
-            min_z, max_z = dataset.header.lightcone["z_range"]
+            z_phot_tables[slice_name] = __get_z_phot_table_from_dataset(dataset)
         elif isinstance(dataset, oc.Lightcone):
-            min_z, max_z = dataset.z_range
-
-        min_z = 0.95 * min_z
-        max_z = 1.05 * max_z
-        z_phot_tables[slice_name] = np.linspace(min_z, max_z, 15)
+            z_phot_tables[slice_name] = __get_z_phot_tables(dataset)
     return z_phot_tables
+
+
+def __get_z_phot_table_from_dataset(dataset: oc.Dataset):
+    try:
+        return dataset.header.catalog_info["z_phot_table"]
+    except (AttributeError, KeyError):
+        return __estimate_z_phot_table(dataset)
+
+
+def __estimate_z_phot_table(dataset: oc.Dataset):
+    min_z, max_z = dataset.header.lightcone["z_range"]
+    min_z = 0.95 * min_z
+    max_z = 1.05 * max_z
+    return np.linspace(min_z, max_z, 15)
 
 
 def compute_phot_from_diffsky_mock(
