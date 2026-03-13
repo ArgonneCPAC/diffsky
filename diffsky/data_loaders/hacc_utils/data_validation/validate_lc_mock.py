@@ -139,7 +139,6 @@ def check_all_columns_are_finite(fn_lc_mock, data=None):
 
 
 def check_all_data_columns_have_metadata(fn_lc_mock):
-
     try:
         from astropy import units as u
         from astropy.cosmology import units as cu
@@ -151,7 +150,6 @@ def check_all_data_columns_have_metadata(fn_lc_mock):
 
     msg = []
     with h5py.File(fn_lc_mock, "r") as hdf:
-
         for key in hdf["data"].keys():
             try:
                 unit_string = hdf["data/" + key].attrs["unit"]
@@ -177,7 +175,6 @@ def check_all_data_columns_have_metadata(fn_lc_mock):
 
 
 def check_metadata(fn_lc_mock):
-
     msg = []
     with h5py.File(fn_lc_mock, "r") as hdf:
         try:
@@ -219,8 +216,8 @@ def check_metadata(fn_lc_mock):
             assert set(avail_software_versions) == set(REQUIRED_SOFTWARE_VERSION_INFO)
 
             # Check z_phot_table is reasonable
-            # z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
-            # assert z_phot_table.size >= 2
+            z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
+            assert z_phot_table.size >= 2
             # assert np.all(z_phot_table > -1)
             # assert np.all(z_phot_table < 100)
 

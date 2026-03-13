@@ -11,3 +11,4 @@ Diffsky Code Demos
    demo_diffsky_lightcone.ipynb
    demo_diffsky_recompute_from_mock.ipynb
    demo_opencosmo.ipynb
+   demo_diffsky_recompute_from_mock_opencosmo.ipynb
