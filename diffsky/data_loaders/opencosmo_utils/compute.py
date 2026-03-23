@@ -16,10 +16,8 @@ from ...experimental.kernels import mc_phot_kernels as mcpk
 
 def __get_z_phot_tables(catalog: oc.Lightcone):
     """
-    In the future, this method will iterate through the catalogs, retrieve the min+max
-    z_phot, and construct a redshift-slice-specific z_phot table. For the moment,
-    it just looks at the min and max redshift of the slice, widens it a bit,
-    and constructs a table. Beta software stuff.
+    Retrieve z_phot_tables from the underlying catalogs, or construct
+    them if not found.
     """
     z_phot_tables = {}
     for slice_name, dataset in catalog.items():
@@ -86,7 +84,6 @@ def compute_phot_from_diffsky_mock(
     """
     func = dbk_phot_from_mock._reproduce_mock_phot_kern
     z_phot_tables = __get_z_phot_tables(catalog)
-    print(z_phot_tables)
     suffix = ""
     if set(bands).intersection(catalog.columns):
         suffix = "_new"
