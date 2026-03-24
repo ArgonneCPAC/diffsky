@@ -56,7 +56,7 @@ jobs:
             mpi4py \
             mpich \
             pytest \
-            opencosmo>=1.2
+            "opencosmo>=1.2"
           conda install hdf5plugin=5.0
           conda uninstall diffmah --force
           conda uninstall diffstar --force
