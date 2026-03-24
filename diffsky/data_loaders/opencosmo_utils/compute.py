@@ -56,11 +56,8 @@ def compute_phot_from_diffsky_mock(
         The catalog containing the diffsky data
 
     aux_data: dict
-    The auxilliary data loaded with
+        The auxilliary data loaded with
         :py:meth:`diffsky.data_loaders.opencosmo_utils.load_diffsky_mock`
-
-    z_phot_table:
-        Not sure how we want to handle this one (yet)
 
     bands: list[str]
         The bands to compute photometry for. You can determine which bands are
@@ -128,9 +125,6 @@ def compute_dbk_phot_from_diffsky_mock(
         The auxilliary data loaded with
         :py:meth:`diffsky.data_loaders.opencosmo_utils.load_diffsky_mock`
 
-    z_phot_table:
-        Not sure how we want to handle this one (yet)
-
     bands: list[str]
         The bands to compute photometry for. You can determine which bands are
         available with :code:`aux_data["tcurves"]._fields`. If you want to compute
@@ -147,8 +141,6 @@ def compute_dbk_phot_from_diffsky_mock(
     data: opencosmo.Lightcone | dict[str, np.ndarray]
         If insert = True, return the new lightcone with the data inserted. If
         insert = False, return the computed photometry directly.
-
-
 
     """
 
@@ -195,15 +187,6 @@ def compute_seds_from_diffsky_mock(
         The auxilliary data loaded with
         :py:meth:`diffsky.data_loaders.opencosmo_utils.load_diffsky_mock`
 
-    z_phot_table:
-        Not sure how we want to handle this one (yet)
-
-    bands: list[str]
-        The bands to compute photometry for. You can determine which bands are
-        available with :code:`aux_data["tcurves"]._fields`. If you want to compute
-        custom bands, first use
-        :py:meth:`diffsky.data_loaders.opencosmo_utils.add_transmission_curves`
-
     insert: bool, default = True
         Whether or not to insert the computed photometry into the dataset. If true,
         returns a dataset with the photometry inserted as new columns. If false, return
@@ -214,8 +197,6 @@ def compute_seds_from_diffsky_mock(
     data: opencosmo.Lightcone | dict[str, np.ndarray]
         If insert = True, return the new lightcone with the data inserted. If
         insert = False, return the computed photometry directly.
-
-
 
     """
 
@@ -258,15 +239,6 @@ def compute_dbk_seds_from_diffsky_mock(
     aux_data: dict
         The auxilliary data loaded with
         :py:meth:`diffsky.data_loaders.opencosmo_utils.load_diffsky_mock`
-
-    z_phot_table:
-        Not sure how we want to handle this one (yet)
-
-    bands: list[str]
-        The bands to compute photometry for. You can determine which bands are
-        available with :code:`aux_data["tcurves"]._fields`. If you want to compute
-        custom bands, first use
-        :py:meth:`diffsky.data_loaders.opencosmo_utils.add_transmission_curves`
 
     insert: bool, default = True
         Whether or not to insert the computed photometry into the dataset. If true,
