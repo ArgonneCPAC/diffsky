@@ -32,20 +32,9 @@ def _frac_disk_dom_kern(logsm, logssfr):
 
 
 @jjit
-def _get_tcrit(t10, t90):
-    tcrit = t10 + TCRIT_FRAC * (t90 - t10)
-    return tcrit
-
-
-@jjit
-def mc_fbulge_params(ran_key, logsm, logssfr, t10, t90):
-    fbulge_tcrit = _get_tcrit(t10, t90)
-
-    uran = jran.uniform(ran_key, shape=logsm.shape)
-    fdd = _frac_disk_dom_kern(logsm, logssfr)
-    fbulge_early = jnp.where(uran < fdd, FBULGE_EARLY_DD, FBULGE_EARLY_BD)
-    fbulge_late = jnp.where(uran < fdd, FBULGE_LATE_DD, FBULGE_LATE_BD)
-
+def mc_fbulge_params(ran_key, tarr, sfh_pop, t_obs):
+    fbulge_tcrit, logsm_obs, logssfr_obs = get_fbulge_tcrit(tarr, sfh_pop, t_obs)
+    fbulge_early, fbulge_late = mc_fbulge_early_late(ran_key, logsm_obs, logssfr_obs)
     fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(
         (fbulge_tcrit, fbulge_early, fbulge_late)
     )
@@ -53,10 +42,24 @@ def mc_fbulge_params(ran_key, logsm, logssfr, t10, t90):
 
 
 @jjit
+def mc_fbulge_early_late(ran_key, logsm, logssfr):
+    uran = jran.uniform(ran_key, shape=logsm.shape)
+    fdd = _frac_disk_dom_kern(logsm, logssfr)
+    fbulge_early = jnp.where(uran < fdd, FBULGE_EARLY_DD, FBULGE_EARLY_BD)
+    fbulge_late = jnp.where(uran < fdd, FBULGE_LATE_DD, FBULGE_LATE_BD)
+
+    return fbulge_early, fbulge_late
+
+
+@jjit
 def get_fbulge_tcrit(tarr, sfh_pop, t_obs):
     smh_pop = cumulative_mstar_formed_galpop(tarr, sfh_pop)
     logsmh_pop = jnp.log10(smh_pop)
     logsm_obs = interp_vmap(t_obs, tarr, logsmh_pop)
+    sfr_obs = interp_vmap(t_obs, tarr, sfh_pop)
+    ssfr_obs = sfr_obs / 10**logsm_obs
+    logssfr_obs = jnp.log10(ssfr_obs)
+
     logsmh_pop_clipped = jnp.clip(logsmh_pop, max=logsm_obs.reshape((-1, 1)))
     fbulge_tcrit = dbk.calc_tform_pop(tarr, 10**logsmh_pop_clipped, 0.25)
-    return fbulge_tcrit, logsm_obs
+    return fbulge_tcrit, logsm_obs, logssfr_obs

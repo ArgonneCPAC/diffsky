@@ -31,9 +31,24 @@ def test_get_fbulge_tcrit():
     t_obs_min, t_obs_max = 1.0, 13.0
     t_obs = jran.uniform(t_key, minval=t_obs_min, maxval=t_obs_max, shape=(n_gals,))
 
-    tcrit, logsm_obs = dbpop.get_fbulge_tcrit(tarr, sfh_pop, t_obs)
+    tcrit, logsm_obs, logssfr_obs = dbpop.get_fbulge_tcrit(tarr, sfh_pop, t_obs)
     assert np.all(tcrit < t_obs)
     assert np.all(tcrit > 0)
     assert np.all(np.isfinite(logsm_obs))
     assert np.all(logsm_obs > 0)
     assert np.all(logsm_obs < 20)
+    assert np.all(logssfr_obs > -20)
+    assert np.all(logssfr_obs < -5)
+
+
+def test_mc_fbulge_params():
+    ran_key = jran.key(0)
+    n_gals, n_t = 5_000, 100
+    tarr = np.linspace(0.1, 13.8, n_t)
+    t_obs_min, t_obs_max = 1.0, 13.0
+
+    sfh_key, t_key = jran.split(ran_key, 2)
+    sfh_pop = jran.uniform(sfh_key, shape=(n_gals, n_t))
+    t_obs = jran.uniform(t_key, minval=t_obs_min, maxval=t_obs_max, shape=(n_gals,))
+
+    fbulge_params = dbpop.mc_fbulge_params(ran_key, tarr, sfh_pop, t_obs)
