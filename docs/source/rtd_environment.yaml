@@ -18,8 +18,8 @@ dependencies:
   - diffstar>=1.0.0
   - dsps>=0.4.5
   - h5py
-  - opencosmo
   - mpi4py
   - mpich
   - pip:
     - git+https://github.com/AstroPatty/diffpipe.git
+    - git+https://github.com/ArgonneCPAC/opencosmo.git
