@@ -9,7 +9,7 @@ from jax import vmap
 from ...utils import _sigmoid
 from . import disk_bulge_kernels as dbk
 
-FDD_MIN = 0.1
+FDD_MIN = 0.0
 FDD_MAX = 0.9
 
 TCRIT_FRAC = 0.25
@@ -27,8 +27,8 @@ interp_vmap2 = jjit(vmap(jnp.interp, in_axes=(0, 0, None)))
 def _frac_disk_dom_kern(logsm, logssfr):
     delta_fdd = _sigmoid(logssfr, -10.5, 2.0, -0.25, 0.25)
     ylo = jnp.clip(0.9 + delta_fdd, min=FDD_MIN, max=FDD_MAX)
-    yhi = jnp.clip(0.1 + delta_fdd, min=FDD_MIN, max=FDD_MAX)
-    return _sigmoid(logsm, 10.75, 1.5, ylo, yhi)
+    yhi = jnp.clip(0.0, min=FDD_MIN, max=FDD_MAX)
+    return _sigmoid(logsm, 10.25, 2, ylo, yhi)
 
 
 @jjit
