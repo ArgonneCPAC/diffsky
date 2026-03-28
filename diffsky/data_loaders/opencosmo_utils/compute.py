@@ -415,6 +415,7 @@ def age_at_z_(redshift_true, cosmology):
 def __compute_dbk_sed_managed(
     t_obs,
     fknot,
+    uran_fbulge,
     uran_av,
     uran_delta,
     uran_funo,
@@ -437,8 +438,7 @@ def __compute_dbk_sed_managed(
         lgfburst=lgfburst, lgyr_peak=lgyr_peak, lgyr_max=lgyr_max
     )
 
-    DBKRandoms = namedtuple("DBKRandoms", ("fknot",))
-    dbk_randoms = DBKRandoms(fknot)
+    dbk_randoms = mcpk.DBKRandoms(fknot, uran_fbulge)
     dbk_phot_info = {"sfh_table": sfh_table, "lgmet_weights": lgmet_weights}
 
     dbk_phot_info["uran_av"] = uran_av
