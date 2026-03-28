@@ -13,8 +13,8 @@ from jax import random as jran
 from jax import vmap
 
 from ....experimental import precompute_ssp_phot as psspp
+from ....experimental.disk_bulge_modeling import dbpop
 from ....experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ....experimental.disk_bulge_modeling import mc_disk_bulge as mcdb
 from ....experimental.lc_phot_kern import get_wave_eff_table
 from ....experimental.tests import test_mc_lightcone_halos as tmclh
 from ....param_utils import diffsky_param_wrapper as dpw
@@ -172,8 +172,8 @@ def test_add_dbk_phot_quantities_to_mock():
     )
     assert np.allclose(bulge_to_total_recomputed, bulge_to_total_recomputed2, rtol=0.01)
 
-    disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(
-        t_table, phot_info["sfh_table"]
+    disk_bulge_history = dbpop.decompose_sfh_into_disk_bulge_sfh(
+        phot_info["uran_fbulge"], t_table, phot_info["sfh_table"], t_obs
     )
 
     for pname in disk_bulge_history.fbulge_params._fields:
