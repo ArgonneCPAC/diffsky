@@ -47,8 +47,10 @@ def test_mc_fbulge_params():
     tarr = np.linspace(0.1, 13.8, n_t)
     t_obs_min, t_obs_max = 1.0, 13.0
 
-    sfh_key, t_key = jran.split(ran_key, 2)
+    sfh_key, t_key, fbulge_key = jran.split(ran_key, 3)
     sfh_pop = jran.uniform(sfh_key, shape=(n_gals, n_t))
     t_obs = jran.uniform(t_key, minval=t_obs_min, maxval=t_obs_max, shape=(n_gals,))
+    fbulge_uran = jran.uniform(fbulge_key, shape=(n_gals,))
 
-    fbulge_params = dbpop.mc_fbulge_params(ran_key, tarr, sfh_pop, t_obs)
+    fbulge_params = dbpop.get_fbulge_params(fbulge_uran, tarr, sfh_pop, t_obs)
+    assert np.all(fbulge_params.fbulge_early > fbulge_params.fbulge_late)
