@@ -444,6 +444,8 @@ def __compute_dbk_sed_managed(
     dbk_phot_info["uran_av"] = uran_av
     dbk_phot_info["uran_delta"] = uran_delta
     dbk_phot_info["uran_funo"] = uran_funo
+    dbk_phot_info["uran_fbulge"] = uran_fbulge
+
     dbk_phot_info["delta_mag_ssp_scatter"] = delta_mag_ssp_scatter
     dbk_phot_info["logsm_obs"] = logsm_obs
     dbk_phot_info["logssfr_obs"] = logssfr_obs
