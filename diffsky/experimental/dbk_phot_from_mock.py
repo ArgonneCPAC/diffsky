@@ -164,6 +164,7 @@ def _reproduce_mock_dbk_kern(
     t_obs,
     mah_params,
     fknot,
+    uran_fbulge,
     ssp_data,
     precomputed_ssp_mag_table,
     z_phot_table,
@@ -201,7 +202,7 @@ def _reproduce_mock_dbk_kern(
     burst_params = DEFAULT_BURST_PARAMS._make(
         [getattr(phot_kern_results, pname) for pname in DEFAULT_BURST_PARAMS._fields]
     )
-    dbk_randoms = mcpk.DBKRandoms(fknot=fknot)
+    dbk_randoms = mcpk.DBKRandoms(fknot=fknot, uran_fbulge=uran_fbulge)
     _ret2 = mcpk._dbk_kern(
         t_obs,
         ssp_data,

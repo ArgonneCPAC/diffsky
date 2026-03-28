@@ -35,8 +35,8 @@ _DB = (
 DiskBulgeHistory = namedtuple("DiskBulgeSFH", _DB)
 
 
-def decompose_sfh_into_disk_bulge_sfh(fbulge_uran, tarr, sfh_pop, t_obs):
-    fbulge_params = get_fbulge_params(fbulge_uran, tarr, sfh_pop, t_obs)
+def decompose_sfh_into_disk_bulge_sfh(uran_fbulge, tarr, sfh_pop, t_obs):
+    fbulge_params = get_fbulge_params(uran_fbulge, tarr, sfh_pop, t_obs)
     _res = dbk._bulge_sfh_vmap(tarr, sfh_pop, fbulge_params)
     smh, eff_bulge, sfh_bulge, smh_bulge, bth = _res
     return DiskBulgeHistory(fbulge_params, smh, eff_bulge, sfh_bulge, smh_bulge, bth)
@@ -51,10 +51,10 @@ def _frac_disk_dom_kern(logsm, logssfr):
 
 
 @jjit
-def get_fbulge_params(fbulge_uran, tarr, sfh_pop, t_obs):
+def get_fbulge_params(uran_fbulge, tarr, sfh_pop, t_obs):
     fbulge_tcrit, logsm_obs, logssfr_obs = get_fbulge_tcrit(tarr, sfh_pop, t_obs)
     fbulge_early, fbulge_late = get_fbulge_early_late(
-        fbulge_uran, logsm_obs, logssfr_obs
+        uran_fbulge, logsm_obs, logssfr_obs
     )
     fbulge_params = dbk.DEFAULT_FBULGE_PARAMS._make(
         (fbulge_tcrit, fbulge_early, fbulge_late)
@@ -63,10 +63,10 @@ def get_fbulge_params(fbulge_uran, tarr, sfh_pop, t_obs):
 
 
 @jjit
-def get_fbulge_early_late(fbulge_uran, logsm, logssfr):
+def get_fbulge_early_late(uran_fbulge, logsm, logssfr):
     fdd = _frac_disk_dom_kern(logsm, logssfr)
-    fbulge_early = jnp.where(fbulge_uran < fdd, FBULGE_EARLY_DD, FBULGE_EARLY_BD)
-    fbulge_late = jnp.where(fbulge_uran < fdd, FBULGE_LATE_DD, FBULGE_LATE_BD)
+    fbulge_early = jnp.where(uran_fbulge < fdd, FBULGE_EARLY_DD, FBULGE_EARLY_BD)
+    fbulge_late = jnp.where(uran_fbulge < fdd, FBULGE_LATE_DD, FBULGE_LATE_BD)
 
     return fbulge_early, fbulge_late
 
