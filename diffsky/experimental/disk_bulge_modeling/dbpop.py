@@ -1,4 +1,4 @@
-""""""
+"""Population-level model of disk/bulge composition"""
 
 from collections import namedtuple
 
@@ -36,6 +36,23 @@ DiskBulgeHistory = namedtuple("DiskBulgeSFH", _DB)
 
 
 def decompose_sfh_into_disk_bulge_sfh(uran_fbulge, tarr, sfh_pop, t_obs):
+    """Calculate disk/bulge decomposition of composite galaxy SFH
+
+    Parameters
+    ----------
+    uran_bulge : array, shape (n_gals, )
+        Randoms used to stochastically assign galaxy to be disk- or bulge-dominated
+
+    tarr : array, shape (n_t, )
+        Array of cosmic time in Gyr
+
+    sfh_pop : array, shape (n_gals, n_t)
+        Star formation history in Msun/yr
+
+    t_obs : array, shape (n_gals, )
+        Age of the universe at the time of observation in Gyr
+
+    """
     fbulge_params = get_fbulge_params(uran_fbulge, tarr, sfh_pop, t_obs)
     _res = dbk._bulge_sfh_vmap(tarr, sfh_pop, fbulge_params)
     smh, eff_bulge, sfh_bulge, smh_bulge, bth = _res
@@ -44,6 +61,7 @@ def decompose_sfh_into_disk_bulge_sfh(uran_fbulge, tarr, sfh_pop, t_obs):
 
 @jjit
 def _frac_disk_dom_kern(logsm, logssfr):
+    """Fraction of disk-dominated galaxies"""
     delta_fdd = _sigmoid(logssfr, -10.5, 2.0, -0.25, 0.25)
     ylo = jnp.clip(0.9 + delta_fdd, min=FDD_MIN, max=FDD_MAX)
     yhi = jnp.clip(0.0, min=FDD_MIN, max=FDD_MAX)
@@ -52,6 +70,7 @@ def _frac_disk_dom_kern(logsm, logssfr):
 
 @jjit
 def get_fbulge_params(uran_fbulge, tarr, sfh_pop, t_obs):
+    """Calculate parameters that determine how SFH is apportioned into disk/bulge"""
     fbulge_tcrit, logsm_obs, logssfr_obs = get_fbulge_tcrit(tarr, sfh_pop, t_obs)
     fbulge_early, fbulge_late = get_fbulge_early_late(
         uran_fbulge, logsm_obs, logssfr_obs
@@ -64,6 +83,11 @@ def get_fbulge_params(uran_fbulge, tarr, sfh_pop, t_obs):
 
 @jjit
 def get_fbulge_early_late(uran_fbulge, logsm, logssfr):
+    """Calculate sigmoid params that determine time-evolution of bulge formation efficiency
+
+    fbulge_early > fbulge_late ==> bulges are redder than disks within the same galaxy
+
+    """
     fdd = _frac_disk_dom_kern(logsm, logssfr)
     fbulge_early = jnp.where(uran_fbulge < fdd, FBULGE_EARLY_DD, FBULGE_EARLY_BD)
     fbulge_late = jnp.where(uran_fbulge < fdd, FBULGE_LATE_DD, FBULGE_LATE_BD)
@@ -73,6 +97,7 @@ def get_fbulge_early_late(uran_fbulge, logsm, logssfr):
 
 @jjit
 def get_fbulge_tcrit(tarr, sfh_pop, t_obs):
+    """Calculate characteristic time bulge efficiency drops"""
     smh_pop = cumulative_mstar_formed_galpop(tarr, sfh_pop)
     logsmh_pop = jnp.log10(smh_pop)
     logsm_obs = interp_vmap(t_obs, tarr, logsmh_pop)
