@@ -73,7 +73,7 @@ def _dbk_kern(
     t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_randoms
 ):
     disk_bulge_history = dbpop.decompose_sfh_into_disk_bulge_sfh(
-        dbk_randoms.fbulge_uran, t_table, sfh_table, t_obs
+        dbk_randoms.uran_fbulge, t_table, sfh_table, t_obs
     )
 
     args = (
@@ -408,9 +408,9 @@ def get_mc_dbk_randoms(dbk_key, n_gals):
     fknot = jran.uniform(
         fknot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
     )
-    fbulge_uran = jran.uniform(fbulge_key, shape=(n_gals,))
+    uran_fbulge = jran.uniform(fbulge_key, shape=(n_gals,))
 
-    return DBKRandoms(fknot=fknot, fbulge_uran=fbulge_uran)
+    return DBKRandoms(fknot=fknot, uran_fbulge=uran_fbulge)
 
 
 @jjit
@@ -666,7 +666,7 @@ def _mc_lc_dbk_sed_kern(
     return sed_bulge, sed_disk, sed_knots
 
 
-DBKRandoms = namedtuple("DBKRandoms", ("fknot", "fbulge_uran"))
+DBKRandoms = namedtuple("DBKRandoms", ("fknot", "uran_fbulge"))
 PHOT_KERN_KEYS = (
     "obs_mags",
     "t_table",
