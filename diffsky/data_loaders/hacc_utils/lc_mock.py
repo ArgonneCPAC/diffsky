@@ -122,6 +122,7 @@ BLACK_HOLE_KEYS_OUT = (
 
 DBK_KEYS = (
     "fknot",
+    "uran_fbulge",
     *ORIENTATION_KEYS,
     *SIZE_KEYS,
     *MORPH_KEYS_OUT,
@@ -322,6 +323,7 @@ def write_batched_lc_dbk_sed_mock_to_disk(
         dbk_phot_dict[name + "_disk"] = phot_info["obs_mags_disk"][:, iband]
         dbk_phot_dict[name + "_knots"] = phot_info["obs_mags_knots"][:, iband]
         dbk_phot_dict["fknot"] = phot_info["fknot"]
+        dbk_phot_dict["uran_fbulge"] = phot_info["uran_fbulge"]
     write_batched_mock_data(
         fnout, dbk_phot_dict, list(dbk_phot_dict.keys()), dataset="data"
     )
