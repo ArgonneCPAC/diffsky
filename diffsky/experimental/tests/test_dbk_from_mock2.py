@@ -107,6 +107,7 @@ def test_reproduce_mock_dbk_kern():
         lc_data.t_obs,
         lc_data.mah_params,
         dbk_phot_info.fknot,
+        dbk_phot_info.uran_fbulge,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
