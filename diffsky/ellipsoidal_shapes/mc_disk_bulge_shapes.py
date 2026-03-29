@@ -40,9 +40,20 @@ def mc_disk_bulge_ellipsoids(ran_key, r50_disk, r50_bulge, psi_noise_deg=20.0):
 
     psi_disk_key, psi_bulge_key = jran.split(ran_key, 2)
     psi_disk = jran.uniform(psi_disk_key, minval=-jnp.pi, maxval=jnp.pi, shape=n)
-    delta_psi_deg = jran.uniform(
-        psi_bulge_key, minval=-psi_noise_deg, maxval=psi_noise_deg, shape=n
+    psi_noise_rad = jnp.deg2rad(psi_noise_deg)
+    delta_psi_rad = jran.uniform(
+        psi_bulge_key, minval=-psi_noise_rad, maxval=psi_noise_rad, shape=n
     )
-    delta_psi_rad = jnp.deg2rad(delta_psi_deg)
     psi_bulge = psi_disk + delta_psi_rad
-    raise NotImplementedError("Need to mod psi_bulge")
+
+    xshift = psi_bulge + jnp.pi
+
+    msk_shift_hi = xshift > 2 * jnp.pi
+    xshifthi = jnp.where(msk_shift_hi, xshift - 2 * jnp.pi, xshift)
+
+    msk_shift_lo = xshift < 0
+    xshiftlo = jnp.where(msk_shift_lo, xshift + 2 * jnp.pi, xshifthi)
+
+    psi_bulge = xshiftlo - jnp.pi
+
+    return psi_bulge, psi_disk
