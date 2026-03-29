@@ -1,10 +1,17 @@
 """"""
 
+from collections import namedtuple
+
 from jax import numpy as jnp
 from jax import random as jran
 
 from . import bulge_shapes, disk_shapes
 from . import ellipse_proj_kernels as epk
+
+Ellipse2DParams = namedtuple(
+    "Ellipse2DParams",
+    ("alpha", "beta", "psi", "ellipticity", "e_alpha", "e_beta", "A", "B", "C"),
+)
 
 
 def mc_disk_bulge_ellipsoids(ran_key, r50_disk, r50_bulge, psi_noise_deg=20.0):
@@ -56,4 +63,31 @@ def mc_disk_bulge_ellipsoids(ran_key, r50_disk, r50_bulge, psi_noise_deg=20.0):
 
     psi_bulge = xshiftlo - jnp.pi
 
-    return psi_bulge, psi_disk
+    e_alpha_disk, e_beta_disk = epk._get_xy_coords_of_projected_semi_axes(psi_disk)
+    e_alpha_bulge, e_beta_bulge = epk._get_xy_coords_of_projected_semi_axes(psi_bulge)
+
+    disk_ellipse = Ellipse2DParams(
+        alpha_disk,
+        beta_disk,
+        psi_disk,
+        ellipticity_disk,
+        e_alpha_disk,
+        e_beta_disk,
+        A_disk,
+        B_disk,
+        C_disk,
+    )
+
+    bulge_ellipse = Ellipse2DParams(
+        alpha_bulge,
+        beta_bulge,
+        psi_bulge,
+        ellipticity_bulge,
+        e_alpha_bulge,
+        e_beta_bulge,
+        A_bulge,
+        B_bulge,
+        C_bulge,
+    )
+
+    return disk_ellipse, bulge_ellipse
