@@ -48,9 +48,7 @@ def mc_disk_bulge_ellipsoids(ran_key, r50_disk, r50_bulge, psi_noise_deg=20.0):
     psi_disk_key, psi_bulge_key = jran.split(ran_key, 2)
     psi_disk = jran.uniform(psi_disk_key, minval=-jnp.pi, maxval=jnp.pi, shape=n)
     psi_noise_rad = jnp.deg2rad(psi_noise_deg)
-    delta_psi_rad = jran.uniform(
-        psi_bulge_key, minval=-psi_noise_rad, maxval=psi_noise_rad, shape=n
-    )
+    delta_psi_rad = jran.normal(psi_bulge_key, shape=n) * psi_noise_rad
     psi_bulge = psi_disk + delta_psi_rad
 
     xshift = psi_bulge + jnp.pi
