@@ -41,7 +41,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.CPAC_PRIVATE_REPO_TOKEN }}
           GITHUB_USER: ${{ secrets.GH_USR_TESTING_TOKEN }}
-          GH_TOKEN: ${{ secrets.CPAC_PRIVATE_REPO_TOKEN }}
 
         run: |
           conda config --set always_yes yes
@@ -74,6 +73,8 @@ jobs:
 
       - name: check opencosmo version
         shell: bash -l {0}
+        env:
+          GH_TOKEN: ${{ secrets.CPAC_PRIVATE_REPO_TOKEN }}
         run: |
           OPENCOSMO_CURRENT_VERSION=$(gh release view --repo ArgonneCPAC/OpenCosmo --json tagName --jq .tagName)
           OPENCOSMO_INSTALLED_VERSION=$(conda list opencosmo | awk 'NR==4 {print $2}')
