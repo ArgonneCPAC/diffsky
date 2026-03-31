@@ -93,7 +93,7 @@ def compute_phot_from_diffsky_mock(
         z_phot_tables,
         bands,
         None,
-        False,
+        dbk=False,
         insert=False,
         suffix=suffix,
         batch_size=batch_size,
@@ -157,7 +157,7 @@ def compute_dbk_phot_from_diffsky_mock(
         z_phot_tables,
         bands,
         include_extras,
-        True,
+        dbk=True,
         insert=False,
         suffix=suffix,
         batch_size=batch_size,
@@ -211,7 +211,7 @@ def compute_seds_from_diffsky_mock(
         z_phot_tables,
         bands,
         None,
-        False,
+        dbk=False,
         insert=False,
         batch_size=batch_size,
     )
@@ -332,6 +332,7 @@ def __run_photometry(
     z_phot_tables: dict[str | float, np.ndarray],
     band_names: list[str],
     include_extras: Optional[list],
+    dbk: bool,
     insert: bool = True,
     suffix: str = "",
     batch_size: int = -1,
@@ -367,8 +368,13 @@ def __run_photometry(
         cosmology=cosmology_parameters,
         format="numpy",
     )
+    if dbk:
+        to_compute = __compute_dbk_photometry_managed
+    else:
+        to_compute = __compute_photometry_managed
+
     return catalog.evaluate(
-        __compute_photometry_managed,
+        to_compute,
         to_compute=function,
         unpack_func=unpack_func,
         band_names=band_names,
@@ -507,7 +513,6 @@ def __compute_photometry_managed(
     redshift_true,
     t_obs,
     mc_sfh_type,
-    fknot,
     ssp_data,
     precomputed_ssp_mag_table,
     z_phot_table,
@@ -630,6 +635,7 @@ def __compute_dbk_photometry_managed(
         redshift_true,
         t_obs,
         mah_params,
+        fknot,
         uran_fbulge,
         ssp_data,
         precomputed_ssp_mag_table,
