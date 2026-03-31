@@ -12,9 +12,9 @@ from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
 from .. import photometry_interpolation as photerp
+from ..disk_bulge_modeling import dbpop
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
 from ..disk_bulge_modeling import disk_knots
-from ..disk_bulge_modeling import mc_disk_bulge as mcdb
 from . import dbk_kernels
 from . import ssp_weight_kernels as sspwk
 
@@ -72,7 +72,9 @@ def get_mc_phot_randoms(ran_key, diffstarpop_params, mah_params, cosmo_params):
 def _dbk_kern(
     t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_randoms
 ):
-    disk_bulge_history = mcdb.decompose_sfh_into_disk_bulge_sfh(t_table, sfh_table)
+    disk_bulge_history = dbpop.decompose_sfh_into_disk_bulge_sfh(
+        dbk_randoms.uran_fbulge, t_table, sfh_table, t_obs
+    )
 
     args = (
         t_obs,
@@ -402,10 +404,13 @@ def _sed_kern(
 
 @partial(jjit, static_argnames=["n_gals"])
 def get_mc_dbk_randoms(dbk_key, n_gals):
+    fknot_key, fbulge_key = jran.split(dbk_key, 2)
     fknot = jran.uniform(
-        dbk_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
+        fknot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
     )
-    return DBKRandoms(fknot=fknot)
+    uran_fbulge = jran.uniform(fbulge_key, shape=(n_gals,))
+
+    return DBKRandoms(fknot=fknot, uran_fbulge=uran_fbulge)
 
 
 @jjit
@@ -661,7 +666,7 @@ def _mc_lc_dbk_sed_kern(
     return sed_bulge, sed_disk, sed_knots
 
 
-DBKRandoms = namedtuple("DBKRandoms", ("fknot",))
+DBKRandoms = namedtuple("DBKRandoms", ("fknot", "uran_fbulge"))
 PHOT_KERN_KEYS = (
     "obs_mags",
     "t_table",

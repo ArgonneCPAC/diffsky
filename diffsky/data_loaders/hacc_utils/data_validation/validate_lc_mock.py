@@ -425,6 +425,7 @@ def check_recomputed_photometry(
             t_obs,
             mah_params,
             mock["fknot"],
+            mock["uran_fbulge"],
             ssp_data,
             precomputed_ssp_mag_table,
             z_phot_table,

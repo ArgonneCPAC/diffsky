@@ -353,6 +353,10 @@ def add_metadata_dbk_sed_columns(metadata):
         str(u.dimensionless_unscaled),
         "Fraction of disk mass contained in star-forming knots",
     )
+    metadata["uran_fbulge"] = (
+        str(u.dimensionless_unscaled),
+        "Array for adding noise to disk/bulge decomposition",
+    )
     return metadata
 
 

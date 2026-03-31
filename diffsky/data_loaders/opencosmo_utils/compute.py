@@ -93,7 +93,7 @@ def compute_phot_from_diffsky_mock(
         z_phot_tables,
         bands,
         None,
-        False,
+        dbk=False,
         insert=False,
         suffix=suffix,
         batch_size=batch_size,
@@ -157,7 +157,7 @@ def compute_dbk_phot_from_diffsky_mock(
         z_phot_tables,
         bands,
         include_extras,
-        True,
+        dbk=True,
         insert=False,
         suffix=suffix,
         batch_size=batch_size,
@@ -211,7 +211,7 @@ def compute_seds_from_diffsky_mock(
         z_phot_tables,
         bands,
         None,
-        False,
+        dbk=False,
         insert=False,
         batch_size=batch_size,
     )
@@ -332,7 +332,7 @@ def __run_photometry(
     z_phot_tables: dict[str | float, np.ndarray],
     band_names: list[str],
     include_extras: Optional[list],
-    do_decomp: bool = False,
+    dbk: bool,
     insert: bool = True,
     suffix: str = "",
     batch_size: int = -1,
@@ -368,8 +368,13 @@ def __run_photometry(
         cosmology=cosmology_parameters,
         format="numpy",
     )
+    if dbk:
+        to_compute = __compute_dbk_photometry_managed
+    else:
+        to_compute = __compute_photometry_managed
+
     return catalog.evaluate(
-        __compute_photometry_managed,
+        to_compute,
         to_compute=function,
         unpack_func=unpack_func,
         band_names=band_names,
@@ -381,7 +386,6 @@ def __run_photometry(
         z_phot_table=z_phot_tables,
         Ob0=catalog.cosmology.Ob0,
         include_extras=include_extras,
-        do_decomp=do_decomp,
         suffix=suffix,
         insert=insert,
         vectorize=True,
@@ -415,6 +419,7 @@ def age_at_z_(redshift_true, cosmology):
 def __compute_dbk_sed_managed(
     t_obs,
     fknot,
+    uran_fbulge,
     uran_av,
     uran_delta,
     uran_funo,
@@ -437,13 +442,14 @@ def __compute_dbk_sed_managed(
         lgfburst=lgfburst, lgyr_peak=lgyr_peak, lgyr_max=lgyr_max
     )
 
-    DBKRandoms = namedtuple("DBKRandoms", ("fknot",))
-    dbk_randoms = DBKRandoms(fknot)
+    dbk_randoms = mcpk.DBKRandoms(fknot, uran_fbulge)
     dbk_phot_info = {"sfh_table": sfh_table, "lgmet_weights": lgmet_weights}
 
     dbk_phot_info["uran_av"] = uran_av
     dbk_phot_info["uran_delta"] = uran_delta
     dbk_phot_info["uran_funo"] = uran_funo
+    dbk_phot_info["uran_fbulge"] = uran_fbulge
+
     dbk_phot_info["delta_mag_ssp_scatter"] = delta_mag_ssp_scatter
     dbk_phot_info["logsm_obs"] = logsm_obs
     dbk_phot_info["logssfr_obs"] = logssfr_obs
@@ -507,7 +513,6 @@ def __compute_photometry_managed(
     redshift_true,
     t_obs,
     mc_sfh_type,
-    fknot,
     ssp_data,
     precomputed_ssp_mag_table,
     z_phot_table,
@@ -516,7 +521,6 @@ def __compute_photometry_managed(
     cosmology,
     Ob0,
     include_extras,
-    do_decomp=False,
     suffix="",
 ):
     mc_is_q = mc_sfh_type == 0
@@ -538,10 +542,87 @@ def __compute_photometry_managed(
         lg_rejuv=lg_rejuv,
     )
 
-    if do_decomp:
-        fknot_arg = (fknot,)
-    else:
-        fknot_arg = ()
+    args = (
+        mc_is_q,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        uran_pburst,
+        delta_mag_ssp_scatter,
+        sfh_params,
+        redshift_true,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        cosmology,
+        Ob0 / cosmology.Om0,
+    )
+    result = to_compute(*args)
+    return unpack_func(result, band_names, suffix, include_extras)
+
+
+def __compute_dbk_photometry_managed(
+    to_compute,
+    unpack_func,
+    band_names,
+    logm0,
+    logtc,
+    early_index,
+    late_index,
+    t_peak,  # diffmah params
+    lgmcrit,
+    lgy_at_mcrit,
+    indx_lo,
+    indx_hi,  # ms params
+    lg_qt,
+    qlglgdt,
+    lg_drop,
+    lg_rejuv,  # Q params
+    uran_av,
+    uran_delta,
+    uran_funo,
+    uran_pburst,  # ¯\_(ツ)_/¯ (I am not a real astrophysicist)
+    uran_fbulge,
+    delta_mag_ssp_scatter,
+    redshift_true,
+    t_obs,
+    mc_sfh_type,
+    fknot,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    param_collection,
+    cosmology,
+    Ob0,
+    include_extras,
+    suffix="",
+):
+    mc_is_q = mc_sfh_type == 0
+    mah_params = DiffmahParams(
+        logm0=logm0,
+        logtc=logtc,
+        early_index=early_index,
+        late_index=late_index,
+        t_peak=t_peak,
+    )
+    sfh_params = DiffstarParams(
+        lgmcrit=lgmcrit,
+        lgy_at_mcrit=lgy_at_mcrit,
+        indx_lo=indx_lo,
+        indx_hi=indx_hi,
+        lg_qt=lg_qt,
+        qlglgdt=qlglgdt,
+        lg_drop=lg_drop,
+        lg_rejuv=lg_rejuv,
+    )
 
     args = (
         mc_is_q,
@@ -554,7 +635,8 @@ def __compute_photometry_managed(
         redshift_true,
         t_obs,
         mah_params,
-        *fknot_arg,
+        fknot,
+        uran_fbulge,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,

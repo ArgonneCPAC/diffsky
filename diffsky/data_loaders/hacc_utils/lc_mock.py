@@ -24,7 +24,8 @@ from jax import vmap
 from diffsky.data_loaders import load_ssp_data
 
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
-from ...ellipsoidal_shapes import bulge_shapes, disk_shapes, ellipse_proj_kernels
+from ...ellipsoidal_shapes import bulge_shapes, disk_shapes
+from ...ellipsoidal_shapes import mc_disk_bulge_shapes as mcdbs
 from ...experimental.black_hole_modeling import black_hole_mass as bhm
 from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
     monte_carlo_bh_acc_rate,
@@ -122,6 +123,7 @@ BLACK_HOLE_KEYS_OUT = (
 
 DBK_KEYS = (
     "fknot",
+    "uran_fbulge",
     *ORIENTATION_KEYS,
     *SIZE_KEYS,
     *MORPH_KEYS_OUT,
@@ -322,6 +324,7 @@ def write_batched_lc_dbk_sed_mock_to_disk(
         dbk_phot_dict[name + "_disk"] = phot_info["obs_mags_disk"][:, iband]
         dbk_phot_dict[name + "_knots"] = phot_info["obs_mags_knots"][:, iband]
         dbk_phot_dict["fknot"] = phot_info["fknot"]
+        dbk_phot_dict["uran_fbulge"] = phot_info["uran_fbulge"]
     write_batched_mock_data(
         fnout, dbk_phot_dict, list(dbk_phot_dict.keys()), dataset="data"
     )
@@ -516,7 +519,7 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["zscore_r50_disk"] = zscore_disk
     diffsky_data["zscore_r50_bulge"] = zscore_bulge
 
-    morph_key, disk_shape_key, bulge_shape_key = jran.split(morph_key, 3)
+    orientation_key, disk_shape_key, bulge_shape_key = jran.split(morph_key, 3)
     n = diffsky_data["r50_disk"].size
     disk_axis_ratios = disk_shapes.sample_disk_axis_ratios(disk_shape_key, n)
     bulge_axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_shape_key, n)
@@ -527,18 +530,8 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["b_over_a_bulge"] = bulge_axis_ratios.b_over_a
     diffsky_data["c_over_a_bulge"] = bulge_axis_ratios.c_over_a
 
-    morph_key, disk_orientation_key, bulge_orientation_key = jran.split(morph_key, 3)
-    ellipse2d_disk = ellipse_proj_kernels.mc_ellipsoid_params(
-        diffsky_data["r50_disk"],
-        diffsky_data["b_over_a_disk"],
-        diffsky_data["c_over_a_disk"],
-        disk_orientation_key,
-    )
-    ellipse2d_bulge = ellipse_proj_kernels.mc_ellipsoid_params(
-        diffsky_data["r50_bulge"],
-        diffsky_data["b_over_a_bulge"],
-        diffsky_data["c_over_a_bulge"],
-        bulge_orientation_key,
+    ellipse2d_disk, ellipse2d_bulge = mcdbs.mc_disk_bulge_ellipsoids(
+        orientation_key, r50_disk, r50_bulge
     )
 
     diffsky_data["beta_disk"] = ellipse2d_disk.beta
