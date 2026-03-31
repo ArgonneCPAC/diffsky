@@ -5,7 +5,7 @@ import os
 import numpy as np
 import pytest
 from dsps.data_loaders.defaults import DEFAULT_SSP_BNAME as DEFAULT_DSPS_SSP_BNAME
-from dsps.data_loaders.defaults import SSPData as DEFAULT_SSPData
+from dsps.data_loaders.defaults import DEFAULT_SSP_KEYS
 
 from .. import load_ssp_data
 
@@ -18,7 +18,7 @@ def test_load_default_ssp_templates():
     ssp_data = load_ssp_data.load_ssp_templates(
         drn=DSPS_DATA_DRN, bn=DEFAULT_DSPS_SSP_BNAME
     )
-    assert set(ssp_data._fields) == set(DEFAULT_SSPData._fields)
+    assert set(ssp_data._fields) == set(DEFAULT_SSP_KEYS)
 
 
 @pytest.mark.skipif(DSPS_DATA_DRN is None, reason=ENV_VAR_MSG)
@@ -26,7 +26,7 @@ def test_load_emline_ssp_templates():
     ssp_data = load_ssp_data.load_ssp_templates(
         drn=DSPS_DATA_DRN, bn=load_ssp_data.DEFAULT_DIFFSKY_SSP_BNAME
     )
-    expected_keys = set(DEFAULT_SSPData._fields) | set(("emlines",))
+    expected_keys = set(DEFAULT_SSP_KEYS) | set(("emlines",))
     assert set(ssp_data._fields) == expected_keys
 
     n_met = ssp_data.ssp_lgmet.size
