@@ -210,6 +210,7 @@ def compute_dbk_phot_from_diffsky_mock(
         t_obs,
         mah_params,
         diffsky_data["fknot"],
+        diffsky_data["uran_fbulge"],
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
