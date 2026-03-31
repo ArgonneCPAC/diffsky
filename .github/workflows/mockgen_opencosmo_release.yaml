@@ -56,7 +56,7 @@ jobs:
             mpi4py \
             mpich \
             pytest \
-            "opencosmo>=1.2"
+            opencosmo
           conda install hdf5plugin=5.0
           conda uninstall diffmah --force
           conda uninstall diffstar --force
@@ -71,6 +71,19 @@ jobs:
 
           python -m pip install --no-build-isolation --no-deps -e .
 
+      - name: check opencosmo version
+        shell: bash -l {0}
+        run: |
+          OPENCOSMO_CURRENT_VERSION=$(gh release view --repo ArgonneCPAC/OpenCosmo --json tagName --jq .tagName)
+          OPENCOSMO_INSTALLED_VERSION=$(conda list opencosmo | awk 'NR==4 {print $2}')
+          if [[ "$OPENCOSMO_CURRENT_VERSION" != "$OPENCOSMO_INSTALLED_VERSION" ]]; then
+            echo "Error: installed opencosmo ${OPENCOSMO_LATEST_VERSION} but latest version is ${OPENCOSMO_CURRENT_VERSION}"
+            exit 1
+          else
+            echo "Successfully installed opencosmo ${OPENCOSMO_LATEST_VERSION}"
+          fi
+      
+        
       - name: download dsps data
         shell: bash -l {0}
         run: |
