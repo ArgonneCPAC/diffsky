@@ -7,7 +7,7 @@ from collections import OrderedDict, namedtuple
 
 import h5py
 import numpy as np
-from dsps.data_loaders.defaults import SSPData as DEFAULT_SSPData
+from dsps.data_loaders.defaults import DEFAULT_SSP_KEYS
 from dsps.data_loaders.retrieve_fake_fsps_data import (
     load_fake_ssp_data as load_fake_ssp_data_dsps,
 )
@@ -49,7 +49,7 @@ def load_ssp_templates(fn=None, drn=None, bn=DEFAULT_DIFFSKY_SSP_BNAME):
     ssp_data_dict = OrderedDict()
 
     with h5py.File(fn, "r") as hdf:
-        for key in DEFAULT_SSPData._fields:
+        for key in DEFAULT_SSP_KEYS:
             ssp_data_dict[key] = hdf[key][...]
 
         if "emlines" in hdf.keys():
