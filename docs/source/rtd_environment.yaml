@@ -1,9 +1,9 @@
-name: rtd311
+name: rtd312
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.11
+  - python=3.12
   - pandoc>=3.1,<4.0
   - pip
   - nbsphinx
