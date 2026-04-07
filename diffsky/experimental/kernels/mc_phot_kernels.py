@@ -437,6 +437,68 @@ def _mc_specphot_kern(
 
 
 @jjit
+def _specphot_kern(
+    phot_randoms,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    line_wave_table,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    cosmo_params,
+    fb,
+):
+    phot_kern_results = _phot_kern(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+    )
+
+    _dust_res = sspwk.compute_dust_attenuation_lines(
+        phot_randoms.uran_av,
+        phot_randoms.uran_delta,
+        phot_randoms.uran_funo,
+        phot_kern_results.logsm_obs,
+        phot_kern_results.logssfr_obs,
+        ssp_data,
+        z_obs,
+        line_wave_table,
+        spspop_params.dustpop_params,
+        scatter_params,
+    )
+    dust_ftrans_lines = _dust_res[0]
+
+    gal_linelums = sspwk._compute_linelum_from_weights(
+        phot_kern_results.logsm_obs,
+        dust_ftrans_lines,
+        ssp_data,
+        phot_kern_results.ssp_weights,
+        line_wave_table,
+    )
+
+    return phot_kern_results, gal_linelums
+
+
+@jjit
 def _mc_dbk_kern(
     t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_key
 ):
