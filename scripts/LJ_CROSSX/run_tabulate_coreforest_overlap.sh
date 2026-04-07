@@ -16,5 +16,4 @@ source ~/.bash_profile
 conda activate diffsky_oc311
 cd $PBS_O_WORKDIR
 
-rsync /home/ahearin/work/repositories/python/diffsky/scripts/LJ_CROSSX/tabulate_coreforest_overlap.py ./
-python tabulate_coreforest_overlap.py
+python /home/ahearin/work/repositories/python/diffsky/scripts/LJ_CROSSX/tabulate_coreforest_overlap.py
