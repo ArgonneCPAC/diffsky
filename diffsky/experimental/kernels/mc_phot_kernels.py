@@ -367,7 +367,7 @@ def _phot_kern_merging(
     return phot_kern_results, flux_obs, merge_prob, mstar_obs
 
 
-@partial(jjit, static_argnames=["n_t_table"])
+@jjit
 def _mc_specphot_kern(
     ran_key,
     z_obs,
@@ -375,7 +375,6 @@ def _mc_specphot_kern(
     mah_params,
     ssp_data,
     precomputed_ssp_mag_table,
-    precomputed_ssp_lineflux_cgs_table,
     z_phot_table,
     wave_eff_table,
     line_wave_table,
@@ -386,10 +385,13 @@ def _mc_specphot_kern(
     ssp_err_pop_params,
     cosmo_params,
     fb,
-    n_t_table=mcdw.N_T_TABLE,
 ):
-    phot_kern_results, phot_randoms = _mc_phot_kern(
-        ran_key,
+    phot_randoms, sfh_params = get_mc_phot_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params
+    )
+    phot_kern_results, gal_linelums = _specphot_kern(
+        phot_randoms,
+        sfh_params,
         z_obs,
         t_obs,
         mah_params,
@@ -397,43 +399,16 @@ def _mc_specphot_kern(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
-        diffstarpop_params,
+        line_wave_table,
         mzr_params,
         spspop_params,
         scatter_params,
         ssp_err_pop_params,
         cosmo_params,
         fb,
-        n_t_table=n_t_table,
     )
 
-    _dust_res = sspwk.compute_dust_attenuation_lines(
-        phot_randoms.uran_av,
-        phot_randoms.uran_delta,
-        phot_randoms.uran_funo,
-        phot_kern_results.logsm_obs,
-        phot_kern_results.logssfr_obs,
-        ssp_data,
-        z_obs,
-        line_wave_table,
-        spspop_params.dustpop_params,
-        scatter_params,
-    )
-    dust_ftrans_lines = _dust_res[0]
-
-    n_lines, n_met, n_age = precomputed_ssp_lineflux_cgs_table.shape
-    _s = (1, n_lines, n_met, n_age)
-    precomputed_ssp_lineflux_cgs_table_galpop = (
-        precomputed_ssp_lineflux_cgs_table.reshape(_s)
-    )
-
-    gal_linefluxes = sspwk._compute_lineflux_from_weights(
-        phot_kern_results.logsm_obs,
-        dust_ftrans_lines,
-        precomputed_ssp_lineflux_cgs_table_galpop,
-        phot_kern_results.ssp_weights,
-    )
-    return phot_kern_results, phot_randoms, gal_linefluxes
+    return phot_kern_results, phot_randoms, gal_linelums
 
 
 @jjit
@@ -496,6 +471,79 @@ def _specphot_kern(
     )
 
     return phot_kern_results, gal_linelums
+
+
+@jjit
+def _mc_specphot_kern_merging(
+    ran_key,
+    phot_randoms,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    line_wave_table,
+    diffstarpop_params,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    merge_params,
+    cosmo_params,
+    fb,
+    logmp_infall,
+    logmhost_infall,
+    t_infall,
+    is_central,
+    nhalos_weights,
+    halo_indx,
+):
+    phot_randoms, sfh_params = get_mc_phot_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params
+    )
+
+    (
+        phot_kern_results,
+        flux_obs,
+        merge_prob,
+        mstar_obs,
+        linelums_obs,
+    ) = _specphot_kern_merging(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        line_wave_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        merge_params,
+        cosmo_params,
+        fb,
+        logmp_infall,
+        logmhost_infall,
+        t_infall,
+        is_central,
+        nhalos_weights,
+        halo_indx,
+    )
+    return (
+        phot_kern_results,
+        phot_randoms,
+        flux_obs,
+        merge_prob,
+        mstar_obs,
+        linelums_obs,
+    )
 
 
 @jjit
@@ -573,79 +621,6 @@ def _specphot_kern_merging(
     linelums_obs = linelums_obs.at[indx_to_keep].add(linelums_to_keep)
 
     return phot_kern_results, flux_obs, merge_prob, mstar_obs, linelums_obs
-
-
-@jjit
-def _mc_specphot_kern_merging(
-    ran_key,
-    phot_randoms,
-    sfh_params,
-    z_obs,
-    t_obs,
-    mah_params,
-    ssp_data,
-    precomputed_ssp_mag_table,
-    z_phot_table,
-    wave_eff_table,
-    line_wave_table,
-    diffstarpop_params,
-    mzr_params,
-    spspop_params,
-    scatter_params,
-    ssp_err_pop_params,
-    merge_params,
-    cosmo_params,
-    fb,
-    logmp_infall,
-    logmhost_infall,
-    t_infall,
-    is_central,
-    nhalos_weights,
-    halo_indx,
-):
-    phot_randoms, sfh_params = get_mc_phot_randoms(
-        ran_key, diffstarpop_params, mah_params, cosmo_params
-    )
-
-    (
-        phot_kern_results,
-        flux_obs,
-        merge_prob,
-        mstar_obs,
-        linelums_obs,
-    ) = _specphot_kern_merging(
-        phot_randoms,
-        sfh_params,
-        z_obs,
-        t_obs,
-        mah_params,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
-        line_wave_table,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssp_err_pop_params,
-        merge_params,
-        cosmo_params,
-        fb,
-        logmp_infall,
-        logmhost_infall,
-        t_infall,
-        is_central,
-        nhalos_weights,
-        halo_indx,
-    )
-    return (
-        phot_kern_results,
-        phot_randoms,
-        flux_obs,
-        merge_prob,
-        mstar_obs,
-        linelums_obs,
-    )
 
 
 @jjit
