@@ -17,6 +17,7 @@ from jax import vmap
 from ...burstpop import diffqburstpop_mono, freqburst_mono
 from ...dustpop import tw_dustpop_mono_noise
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
+from ...utils import L_SUN_CGS, emline_utils
 
 _M = (0, None, None)
 _calc_lgmet_weights_galpop = jjit(
@@ -153,7 +154,6 @@ def compute_burstiness(
 
 @partial(jjit, static_argnames=["n_gals"])
 def get_dust_randoms(dust_key, n_gals):
-
     # Generate randoms for stochasticity in dust attenuation curves
     av_key, delta_key, funo_key = jran.split(dust_key, 3)
     uran_av = jran.uniform(av_key, shape=(n_gals,))
@@ -217,7 +217,6 @@ def compute_dust_attenuation_lines(
     dustpop_params,
     scatter_params,
 ):
-
     # Calculate fraction of flux transmitted through dust for each galaxy
     # Note that F_trans(λ_eff, τ_age) varies with stellar age τ_age
     ftrans_args = (
@@ -287,6 +286,34 @@ def _compute_lineflux_from_weights(
     lineflux_galpop = jnp.sum(integrand, axis=(2, 3)) * _mstar
 
     return lineflux_galpop
+
+
+@jjit
+def _compute_linelum_from_weights(
+    logsm_obs,
+    frac_trans,
+    ssp_data,
+    ssp_weights,
+    line_wave_table,
+):
+    """
+    Returns emission line luminosity:
+        linelum_galpop_cgs.shape (n_gal, n_line)
+    """
+    ssp_linelum = emline_utils.get_ssp_emline_luminosity(line_wave_table, ssp_data)
+
+    n_gal = logsm_obs.size
+    (n_met, n_age, n_line) = ssp_linelum.shape
+
+    _ftrans = frac_trans.reshape((n_gal, n_line, 1, n_age))
+    _weights = ssp_weights.reshape((n_gal, 1, n_met, n_age))
+    _mstar = 10 ** logsm_obs.reshape((n_gal, 1))
+    _ssp_linelum = jnp.transpose(ssp_linelum, (2, 0, 1))
+
+    integrand = _ssp_linelum * _weights * _ftrans
+    linelum_galpop_cgs = jnp.sum(integrand, axis=(2, 3)) * (L_SUN_CGS * _mstar)
+
+    return linelum_galpop_cgs
 
 
 @jjit

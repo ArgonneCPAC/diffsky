@@ -1,5 +1,6 @@
 """"""
 
+import jax.numpy as jnp
 from dsps.utils import _sigmoid
 from jax import jit as jjit
 from jax import vmap
@@ -36,3 +37,17 @@ def fake_lineflux_table_cgs(ssp_lgmet, ssp_lg_age_gyr):
 
     """
     return _fake_lineflux_table(ssp_lgmet, ssp_lg_age_gyr) * L_SUN_CGS
+
+
+@jjit
+def get_ssp_linelum(emlines_wave_aa, ssp_data):
+    ssp_emline_wave = jnp.array(ssp_data.ssp_emline_wave)
+
+    emlines_wave_idx = []
+    for emline_wave_aa in emlines_wave_aa:
+        idx = jnp.argmin(jnp.abs(ssp_emline_wave - emline_wave_aa))
+        emlines_wave_idx.append(idx)
+    emlines_wave_idx = jnp.array(emlines_wave_idx)
+    ssp_linelum = ssp_data.ssp_emline_luminosity[:, :, emlines_wave_idx]
+
+    return ssp_linelum
