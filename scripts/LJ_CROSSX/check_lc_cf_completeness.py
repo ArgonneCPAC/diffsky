@@ -15,7 +15,7 @@ BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 SIM_NAME = "LastJourney"
 DRN_LC_CF = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-cf-diffsky"
 DRN_LC_CORES = (
-    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-6/output"
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-7/output"
 )
 FN_LC_CORES = os.path.join(DRN_LC_CORES, "lc_cores-decomposition.txt")
 

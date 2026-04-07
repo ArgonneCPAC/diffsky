@@ -11,7 +11,7 @@ from diffsky.data_loaders.hacc_utils import hacc_core_utils as hcu
 BN_GLOBPAT_LC_CORES = "lc_cores-{0}.{1}.hdf5"
 BN_GLOBPAT_LC_CF = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 DRN_LJ_LC_LCRC = (
-    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-6/output"
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-7/output"
 )
 
 
