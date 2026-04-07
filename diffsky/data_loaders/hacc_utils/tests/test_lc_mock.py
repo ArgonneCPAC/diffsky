@@ -18,6 +18,7 @@ from ....experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
 from ....experimental.lc_phot_kern import get_wave_eff_table
 from ....experimental.tests import test_mc_lightcone_halos as tmclh
 from ....param_utils import diffsky_param_wrapper as dpw
+from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ... import io_utils as iou
 from ...load_ssp_data import load_fake_ssp_data
 from .. import lc_mock as lcmp_repro
@@ -56,6 +57,31 @@ def test_load_diffsky_param_collection(tmp_path):
     iou.write_namedtuple_to_hdf5(all_named_params, fn)
 
     param_collection = lcmp_repro.load_diffsky_param_collection(
+        tmp_path, mock_version_name
+    )
+    for params in param_collection:
+        pnames = list(params._fields)  # enforce each params is actually a namedtuple
+        assert len(pnames) == len(params)
+    all_params_flat2 = dpw.unroll_param_collection_into_flat_array(*param_collection)
+
+    assert np.allclose(all_params_flat, all_params_flat2, rtol=1e-5)
+
+
+def test_load_diffsky_param_collection_merging(tmp_path):
+    all_params_flat = dpwm.unroll_param_collection_into_flat_array(
+        *dpwm.DEFAULT_PARAM_COLLECTION
+    )
+    all_pnames = dpwm.get_flat_param_names()
+
+    Params = namedtuple("Params", all_pnames)
+    all_named_params = Params(*all_params_flat)
+
+    mock_version_name = "unit_testing"
+    bn = lcmp_repro.BNPAT_PARAM_COLLECTION.format(mock_version_name)
+    fn = os.path.join(tmp_path, bn)
+    iou.write_namedtuple_to_hdf5(all_named_params, fn)
+
+    param_collection = lcmp_repro.load_diffsky_param_collection_merging(
         tmp_path, mock_version_name
     )
     for params in param_collection:
