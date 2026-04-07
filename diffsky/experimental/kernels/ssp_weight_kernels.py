@@ -17,7 +17,7 @@ from jax import vmap
 from ...burstpop import diffqburstpop_mono, freqburst_mono
 from ...dustpop import tw_dustpop_mono_noise
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
-from ...utils import L_SUN_CGS, emline_utils
+from ...utils import emline_utils
 
 _M = (0, None, None)
 _calc_lgmet_weights_galpop = jjit(
@@ -311,7 +311,9 @@ def _compute_linelum_from_weights(
     _ssp_linelum = jnp.transpose(ssp_linelum, (2, 0, 1))
 
     integrand = _ssp_linelum * _weights * _ftrans
-    linelum_galpop_cgs = jnp.sum(integrand, axis=(2, 3)) * (L_SUN_CGS * _mstar)
+    linelum_galpop_cgs = jnp.sum(integrand, axis=(2, 3)) * (
+        emline_utils.L_SUN_CGS * _mstar
+    )
 
     return linelum_galpop_cgs
 
