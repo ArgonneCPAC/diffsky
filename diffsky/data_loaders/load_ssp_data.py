@@ -6,12 +6,12 @@ from collections import namedtuple
 
 import h5py
 import numpy as np
+from dsps.constants import L_SUN_CGS
 from dsps.data_loaders import load_ssp_templates as load_ssp_templates_dsps
 from dsps.data_loaders.retrieve_fake_fsps_data import (
     load_fake_ssp_data as load_fake_ssp_data_dsps,
 )
 
-from ..utils.emline_utils import L_SUN_CGS
 from .defaults import DEFAULT_SSP_BNAME
 
 EmissionLine = namedtuple("EmissionLine", ["line_wave", "line_flux"])

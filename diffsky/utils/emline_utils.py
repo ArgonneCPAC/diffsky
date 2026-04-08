@@ -1,10 +1,9 @@
 """"""
 
+from dsps.constants import L_SUN_CGS
 from dsps.utils import _sigmoid
 from jax import jit as jjit
 from jax import vmap
-
-L_SUN_CGS = 3.828e33  # Lsun in erg/s
 
 
 @jjit
