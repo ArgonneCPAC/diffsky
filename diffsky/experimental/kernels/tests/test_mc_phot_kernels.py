@@ -352,27 +352,9 @@ def test_specphot_kern_merging(num_halos=250):
     n_lines = 3
     line_wave_table = np.linspace(1_000, 10_000, n_lines)
 
-    phot_kern_results, linelums_in_situ = mcpk._specphot_kern(
-        phot_randoms,
-        sfh_params,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        line_wave_table,
-        *dpw.DEFAULT_PARAM_COLLECTION[1:],
-        DEFAULT_COSMOLOGY,
-        fb,
-    )
-    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [getattr(phot_kern_results, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
-    )
-
     (
         phot_kern_results,
+        linelums_in_situ,
         flux_obs,
         merge_prob,
         mstar_obs,
