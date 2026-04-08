@@ -66,12 +66,23 @@ def test_write_ssp_templates_to_disk(tmp_path):
 
 
 def test_load_fake_ssp_data():
-    n_lines = 5
-    ssp_data = load_ssp_data.load_fake_ssp_data(n_lines=n_lines)
-    assert len(ssp_data.emlines) == 5
+    ssp_data = load_ssp_data.load_fake_ssp_data()
+    assert ssp_data.ssp_emline_wave is not None
 
-    emline_names = ["a", "b", "c"]
-    ssp_data = load_ssp_data.load_fake_ssp_data(emline_names=emline_names)
-    assert list(ssp_data.emlines._fields) == list(emline_names)
-    ssp_data = load_ssp_data.load_fake_ssp_data(emline_names=emline_names)
-    assert list(ssp_data.emlines._fields) == list(emline_names)
+    assert ssp_data.ssp_emline_wave is not None
+    assert ssp_data.ssp_emline_luminosity is not None
+
+    for x in ssp_data:
+        assert np.all(np.isfinite(x))
+
+    # Enforce reasonable range of wavelength values for Angstrom units
+    assert np.all(np.array(ssp_data.ssp_emline_wave) > 500)
+
+    n_met = ssp_data.ssp_lgmet.size
+    n_age = ssp_data.ssp_lg_age_gyr.size
+    assert np.all(ssp_data.ssp_emline_luminosity.shape[:2] == (n_met, n_age))
+
+    # Enforce reasonable range of luminosity values for erg/s/Msun units
+    assert np.array(ssp_data.ssp_emline_luminosity).max() < 1e40
+    assert np.array(ssp_data.ssp_emline_luminosity).min() > 0
+    assert np.any(np.array(ssp_data.ssp_emline_luminosity) > 1e20)

@@ -43,6 +43,6 @@ def write_ssp_templates_to_disk(fn, ssp_data):
             hdf_out["ssp_emline_name"] = list(ssp_data.ssp_emline_wave._fields)
 
 
-def load_fake_ssp_data(n_lines=3, emline_names=None):
+def load_fake_ssp_data():
     ssp_data = load_fake_ssp_data_dsps()
     return ssp_data
