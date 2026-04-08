@@ -208,7 +208,7 @@ if __name__ == "__main__":
                     ishell, ipatch = olap_patch_id
                     bn_patch_in = LC_PATCH_BNPAT.format(ishell, ipatch)
                     fn_patch_in = os.path.join(drn_lc, bn_patch_in)
-                    lc_patch_data = load_flat_hdf5(fn_patch_in)
+                    lc_patch_data = load_flat_hdf5(fn_patch_in, dataset="data")
                     n_patch = len(lc_patch_data["coreforest_file_idx"])
 
                     try:
