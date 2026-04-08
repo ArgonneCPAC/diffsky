@@ -39,10 +39,10 @@ def test_load_default_ssp_templates():
     n_age = ssp_data.ssp_lg_age_gyr.size
     assert np.all(ssp_data.ssp_emline_luminosity.shape[:2] == (n_met, n_age))
 
-    # Enforce reasonable range of luminosity values for Lsun/Msun units
-    assert np.array(ssp_data.ssp_emline_luminosity).max() < 5_000
+    # Enforce reasonable range of luminosity values for erg/s/Msun units
+    assert np.array(ssp_data.ssp_emline_luminosity).max() < 1e40
     assert np.array(ssp_data.ssp_emline_luminosity).min() > 0
-    assert np.any(np.array(ssp_data.ssp_emline_luminosity) > 100)
+    assert np.any(np.array(ssp_data.ssp_emline_luminosity) > 1e20)
 
 
 @pytest.mark.skipif(DSPS_DATA_DRN is None, reason=ENV_VAR_MSG)
