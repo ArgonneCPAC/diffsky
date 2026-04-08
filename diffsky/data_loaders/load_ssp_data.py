@@ -22,6 +22,9 @@ def load_ssp_templates(fn=None, drn=None, bn=DEFAULT_SSP_BNAME):
     return ssp_data
 
 
+load_ssp_templates.__doc__ = load_ssp_templates_dsps.__doc__
+
+
 def write_ssp_templates_to_disk(fn, ssp_data):
     """Write the SSP data to disk
 
