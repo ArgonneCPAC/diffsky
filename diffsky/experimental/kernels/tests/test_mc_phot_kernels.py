@@ -390,3 +390,81 @@ def test_specphot_kern_merging(num_halos=250):
     assert np.all(np.isfinite(mstar_obs))
 
     assert np.any(linelums_in_plus_ex_situ != linelums_in_situ)
+
+
+def test_mc_specphot_kern_merging(num_halos=250):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    fb = 0.156
+
+    phot_randoms, sfh_params = mcpk.get_mc_phot_randoms(
+        ran_key, dpw.DEFAULT_PARAM_COLLECTION[0], lc_data.mah_params, DEFAULT_COSMOLOGY
+    )
+
+    n_lines = 3
+    line_wave_table = np.linspace(1_000, 10_000, n_lines)
+
+    _res = mcpk._mc_specphot_kern_merging(
+        ran_key,
+        phot_randoms,
+        sfh_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        line_wave_table,
+        *dpw.DEFAULT_PARAM_COLLECTION,
+        merging_model.DEFAULT_MERGE_PARAMS,
+        DEFAULT_COSMOLOGY,
+        fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.nhalos,
+        lc_data.halo_indx,
+    )
+    (
+        phot_kern_results,
+        linelums_in_situ,
+        phot_randoms,
+        flux_obs,
+        merge_prob,
+        mstar_obs,
+        linelums_in_plus_ex_situ,
+    ) = _res
+    assert np.all(merge_prob >= 0)
+    assert np.all(merge_prob <= 1)
+    assert np.any(merge_prob > 0)
+    assert np.any(merge_prob < 1)
+
+    assert np.all(np.isfinite(mstar_obs))
+
+    obs_mags_in_plus_ex_situ = -2.5 * np.log10(flux_obs)
+    assert np.any(obs_mags_in_plus_ex_situ != phot_kern_results.obs_mags)
+    assert np.any(linelums_in_plus_ex_situ != linelums_in_situ)
+
+    # Enforce centrals get brighter and satellites get dimmer
+    assert np.all(
+        obs_mags_in_plus_ex_situ[lc_data.is_central == 1]
+        <= phot_kern_results.obs_mags[lc_data.is_central == 1]
+    )
+    assert np.all(
+        obs_mags_in_plus_ex_situ[lc_data.is_central == 0]
+        >= phot_kern_results.obs_mags[lc_data.is_central == 0]
+    )
+
+    # Enforce centrals get more massive and satellites less massive
+    assert np.all(
+        mstar_obs[lc_data.is_central == 1]
+        >= 10 ** phot_kern_results.logsm_obs[lc_data.is_central == 1]
+    )
+    assert np.all(
+        mstar_obs[lc_data.is_central == 0]
+        <= 10 ** phot_kern_results.logsm_obs[lc_data.is_central == 0]
+    )
