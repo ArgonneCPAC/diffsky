@@ -212,7 +212,7 @@ def test_specphot_kern(num_halos=250):
         fb,
     )
 
-    phot_kern_results2, phot_randoms2, gal_linelums = _specphot_res
+    phot_kern_results2, phot_randoms2, gal_linelums, ssp_linewave_idx = _specphot_res
     assert np.allclose(
         phot_kern_results.obs_mags, phot_kern_results2.obs_mags, rtol=1e-4
     )
@@ -351,14 +351,7 @@ def test_specphot_kern_merging(num_halos=250):
     n_lines = 3
     line_wave_table = np.linspace(1_000, 10_000, n_lines)
 
-    (
-        phot_kern_results,
-        linelums_in_situ,
-        flux_obs,
-        merge_prob,
-        mstar_obs,
-        linelums_in_plus_ex_situ,
-    ) = mcpk._specphot_kern_merging(
+    _res = mcpk._specphot_kern_merging(
         phot_randoms,
         sfh_params,
         lc_data.z_obs,
@@ -380,6 +373,15 @@ def test_specphot_kern_merging(num_halos=250):
         lc_data.nhalos,
         lc_data.halo_indx,
     )
+    (
+        phot_kern_results,
+        linelums_in_situ,
+        flux_obs,
+        merge_prob,
+        mstar_obs,
+        linelums_in_plus_ex_situ,
+        ssp_linewave_idx,
+    ) = _res
 
     assert np.all(merge_prob >= 0)
     assert np.all(merge_prob <= 1)
@@ -436,6 +438,7 @@ def test_mc_specphot_kern_merging(num_halos=250):
         merge_prob,
         mstar_obs,
         linelums_in_plus_ex_situ,
+        ssp_linewave_idx,
     ) = _res
     assert np.all(merge_prob >= 0)
     assert np.all(merge_prob <= 1)
