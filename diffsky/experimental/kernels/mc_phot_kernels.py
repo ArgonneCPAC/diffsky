@@ -546,6 +546,7 @@ def _mc_specphot_kern_merging(
         merge_prob,
         mstar_obs,
         linelums_obs,
+        ssp_linewave_idx,
     )
 
 
