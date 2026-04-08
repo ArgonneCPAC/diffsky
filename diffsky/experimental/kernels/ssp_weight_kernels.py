@@ -300,7 +300,9 @@ def _compute_linelum_from_weights(
     Returns emission line luminosity:
         linelum_galpop_cgs.shape (n_gal, n_line)
     """
-    ssp_linelum = emline_utils.get_ssp_linelum(line_wave_table, ssp_data)
+    ssp_linelum, ssp_linewave_idx = emline_utils.get_ssp_linelum(
+        line_wave_table, ssp_data
+    )
 
     n_gal = logsm_obs.size
     (n_met, n_age, n_line) = ssp_linelum.shape
@@ -315,7 +317,7 @@ def _compute_linelum_from_weights(
         emline_utils.L_SUN_CGS * _mstar
     )
 
-    return linelum_galpop_cgs
+    return linelum_galpop_cgs, ssp_linewave_idx
 
 
 @jjit

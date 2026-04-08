@@ -389,7 +389,7 @@ def _mc_specphot_kern(
     phot_randoms, sfh_params = get_mc_phot_randoms(
         ran_key, diffstarpop_params, mah_params, cosmo_params
     )
-    phot_kern_results, gal_linelums = _specphot_kern(
+    phot_kern_results, gal_linelums, ssp_linewave_idx = _specphot_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -408,7 +408,7 @@ def _mc_specphot_kern(
         fb,
     )
 
-    return phot_kern_results, phot_randoms, gal_linelums
+    return phot_kern_results, phot_randoms, gal_linelums, ssp_linewave_idx
 
 
 @jjit
@@ -462,7 +462,7 @@ def _specphot_kern(
     )
     dust_ftrans_lines = _dust_res[0]
 
-    gal_linelums = sspwk._compute_linelum_from_weights(
+    gal_linelums, ssp_linewave_idx = sspwk._compute_linelum_from_weights(
         phot_kern_results.logsm_obs,
         dust_ftrans_lines,
         ssp_data,
@@ -470,7 +470,7 @@ def _specphot_kern(
         line_wave_table,
     )
 
-    return phot_kern_results, gal_linelums
+    return phot_kern_results, gal_linelums, ssp_linewave_idx
 
 
 @jjit
@@ -512,6 +512,7 @@ def _mc_specphot_kern_merging(
         merge_prob,
         mstar_obs,
         linelums_obs,
+        ssp_linewave_idx,
     ) = _specphot_kern_merging(
         phot_randoms,
         sfh_params,
@@ -574,7 +575,7 @@ def _specphot_kern_merging(
     nhalos_weights,
     halo_indx,
 ):
-    phot_kern_results, linelums_in_situ = _specphot_kern(
+    phot_kern_results, linelums_in_situ, ssp_linewave_idx = _specphot_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -629,6 +630,7 @@ def _specphot_kern_merging(
         merge_prob,
         mstar_obs,
         linelums_obs,
+        ssp_linewave_idx,
     )
 
 
@@ -865,14 +867,13 @@ def _mc_dbk_specphot_kern(
     fb,
 ):
     phot_key, dbk_key = jran.split(ran_key, 2)
-    phot_kern_results, phot_randoms, gal_linefluxes = _mc_specphot_kern(
-        phot_key,
+    phot_kern_results, phot_randoms, gal_linelums, ssp_linewave_idx = _mc_specphot_kern(
+        ran_key,
         z_obs,
         t_obs,
         mah_params,
         ssp_data,
         precomputed_ssp_mag_table,
-        precomputed_ssp_lineflux_cgs_table,
         z_phot_table,
         wave_eff_table,
         line_wave_table,
@@ -912,9 +913,10 @@ def _mc_dbk_specphot_kern(
     dbk_specphot_keys = (*MCDBKPhotInfo._fields, *ssp_data.emlines._fields)
     MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_keys)
 
-    lineflux_dict = dict()
-    for i, name in enumerate(ssp_data.emlines._fields):
-        lineflux_dict[name] = gal_linefluxes[:, i]
+    linelum_dict = dict()
+    for i in range(0, ssp_linewave_idx.size):
+        name = ssp_data.ssp_emline_wave._fields[ssp_linewave_idx[i]]
+        linelum_dict[name] = gal_linelums[:, i]
 
     dbk_specphot_info = MCDBKSpecPhotInfo(
         **phot_kern_results._asdict(),
@@ -925,7 +927,7 @@ def _mc_dbk_specphot_kern(
         obs_mags_bulge=obs_mags_bulge,
         obs_mags_disk=obs_mags_disk,
         obs_mags_knots=obs_mags_knots,
-        **lineflux_dict,
+        **linelum_dict,
     )
     return dbk_specphot_info, dbk_weights
 

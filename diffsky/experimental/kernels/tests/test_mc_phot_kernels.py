@@ -10,7 +10,6 @@ from jax import vmap
 
 from ....merging import merging_model
 from ....param_utils import diffsky_param_wrapper as dpw
-from ....utils import emline_utils
 from ...tests import test_lightcone_generators as tlcg
 from ...tests import test_mc_lightcone_halos as tmclh
 from ...tests import test_mc_phot
