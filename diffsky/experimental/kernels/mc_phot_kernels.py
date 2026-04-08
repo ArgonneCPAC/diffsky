@@ -507,6 +507,7 @@ def _mc_specphot_kern_merging(
 
     (
         phot_kern_results,
+        linelums_in_situ,
         flux_obs,
         merge_prob,
         mstar_obs,
@@ -538,6 +539,7 @@ def _mc_specphot_kern_merging(
     )
     return (
         phot_kern_results,
+        linelums_in_situ,
         phot_randoms,
         flux_obs,
         merge_prob,
@@ -620,7 +622,14 @@ def _specphot_kern_merging(
     linelums_obs = linelums_obs.at[halo_indx].add(linelums_to_deposit)
     linelums_obs = linelums_obs.at[indx_to_keep].add(linelums_to_keep)
 
-    return phot_kern_results, flux_obs, merge_prob, mstar_obs, linelums_obs
+    return (
+        phot_kern_results,
+        linelums_in_situ,
+        flux_obs,
+        merge_prob,
+        mstar_obs,
+        linelums_obs,
+    )
 
 
 @jjit
