@@ -161,7 +161,7 @@ def mc_lc_specphot(
         Contains info about the galaxy SEDs
 
     """
-    phot_kern_results, phot_randoms, gal_linefluxes = mcpk._mc_specphot_kern(
+    phot_kern_results, phot_randoms, gal_linelums = mcpk._mc_specphot_kern(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -183,8 +183,8 @@ def mc_lc_specphot(
     for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
         phot_kern_results[key] = val
 
-    for i, emline_name in enumerate(lc_data.ssp_data.emlines._fields):
-        phot_kern_results[emline_name] = gal_linefluxes[:, i]
+    for i, emline_name in enumerate(lc_data.ssp_data.ssp_emline_wave._fields):
+        phot_kern_results[emline_name] = gal_linelums[:, i]
 
     return phot_kern_results
 
