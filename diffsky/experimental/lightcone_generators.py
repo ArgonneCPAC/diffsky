@@ -324,7 +324,7 @@ def weighted_lc_photdata(
 def passively_add_emlines_to_lc_data(ssp_data, lc_data):
     """Include precomputed emission line fluxes, if they are present in the ssp_data
 
-    If ssp_data.emlines exists, the returned lc_data will have two additional fields:
+    If ssp_data.ssp_emline_wave exists, the returned lc_data will have two additional fields:
 
         precomputed_ssp_lineflux_cgs_table : array, shape (n_lines, n_met, n_age)
 
