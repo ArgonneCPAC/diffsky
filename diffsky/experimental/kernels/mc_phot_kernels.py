@@ -864,7 +864,7 @@ def _mc_dbk_specphot_kern(
     fb,
 ):
     phot_key, dbk_key = jran.split(ran_key, 2)
-    phot_kern_results, phot_randoms, gal_linelums, ssp_linewave_idx = _mc_specphot_kern(
+    phot_kern_results, phot_randoms, gal_linelums = _mc_specphot_kern(
         ran_key,
         z_obs,
         t_obs,
@@ -911,8 +911,7 @@ def _mc_dbk_specphot_kern(
     MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_keys)
 
     linelum_dict = dict()
-    for i in range(0, ssp_linewave_idx.size):
-        name = ssp_data.ssp_emline_wave._fields[ssp_linewave_idx[i]]
+    for i, name in enumerate(ssp_data.ssp_emline_wave._fields):
         linelum_dict[name] = gal_linelums[:, i]
 
     dbk_specphot_info = MCDBKSpecPhotInfo(
