@@ -68,28 +68,29 @@ def test_load_diffsky_param_collection(tmp_path):
 
 
 def test_load_diffsky_param_collection_merging(tmp_path):
-    all_params_flat = dpwm.unroll_param_collection_into_flat_array(
-        *dpwm.DEFAULT_PARAM_COLLECTION
-    )
-    all_pnames = dpwm.get_flat_param_names()
-
-    Params = namedtuple("Params", all_pnames)
-    all_named_params = Params(*all_params_flat)
-
     mock_version_name = "unit_testing"
-    bn = lcmp_repro.BNPAT_PARAM_COLLECTION.format(mock_version_name)
-    fn = os.path.join(tmp_path, bn)
-    iou.write_namedtuple_to_hdf5(all_named_params, fn)
 
-    param_collection = lcmp_repro.load_diffsky_param_collection_merging(
+    # Get default param. collection
+    param_collection = dpwm.DEFAULT_PARAM_COLLECTION
+    all_params_flat = dpwm.unroll_param_collection_into_flat_array(*param_collection)
+
+    # Write to disk
+    lcmp_repro.write_diffsky_param_collection_merging(
+        tmp_path, mock_version_name, param_collection
+    )
+
+    # Load param. collection from disk
+    param_collection_loaded = lcmp_repro.load_diffsky_param_collection_merging(
         tmp_path, mock_version_name
     )
-    for params in param_collection:
+    for params in param_collection_loaded:
         pnames = list(params._fields)  # enforce each params is actually a namedtuple
         assert len(pnames) == len(params)
-    all_params_flat2 = dpwm.unroll_param_collection_into_flat_array(*param_collection)
-
-    assert np.allclose(all_params_flat, all_params_flat2, rtol=1e-5)
+    all_params_flat_loaded = dpwm.unroll_param_collection_into_flat_array(
+        *param_collection_loaded
+    )
+    # Compare written and loaded
+    assert np.allclose(all_params_flat, all_params_flat_loaded, rtol=1e-5)
 
 
 def _prepare_input_catalogs(n_gals=20):
