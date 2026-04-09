@@ -294,30 +294,26 @@ def _compute_linelum_from_weights(
     frac_trans,
     ssp_data,
     ssp_weights,
-    line_wave_table,
 ):
     """
     Returns emission line luminosity:
         linelum_galpop_cgs.shape (n_gal, n_line)
     """
-    ssp_linelum, ssp_linewave_idx = emline_utils.get_ssp_linelum(
-        line_wave_table, ssp_data
-    )
 
     n_gal = logsm_obs.size
-    (n_met, n_age, n_line) = ssp_linelum.shape
+    (n_met, n_age, n_line) = ssp_data.ssp_emline_luminosity.shape
 
     _ftrans = frac_trans.reshape((n_gal, n_line, 1, n_age))
     _weights = ssp_weights.reshape((n_gal, 1, n_met, n_age))
     _mstar = 10 ** logsm_obs.reshape((n_gal, 1))
-    _ssp_linelum = jnp.transpose(ssp_linelum, (2, 0, 1))
+    _ssp_linelum = jnp.transpose(
+        ssp_data.ssp_emline_luminosity, (2, 0, 1)
+    )  # (n_line, n_met, n_age)
 
     integrand = _ssp_linelum * _weights * _ftrans
-    linelum_galpop_cgs = jnp.sum(integrand, axis=(2, 3)) * (
-        emline_utils.L_SUN_CGS * _mstar
-    )
+    linelum_galpop_cgs = jnp.sum(integrand, axis=(2, 3)) * _mstar
 
-    return linelum_galpop_cgs, ssp_linewave_idx
+    return linelum_galpop_cgs
 
 
 @jjit
