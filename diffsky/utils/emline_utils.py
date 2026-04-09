@@ -36,17 +36,3 @@ def fake_lineflux_table_cgs(ssp_lgmet, ssp_lg_age_gyr):
 
     """
     return _fake_lineflux_table(ssp_lgmet, ssp_lg_age_gyr) * L_SUN_CGS
-
-
-@jjit
-def get_ssp_linelum(emlines_wave_aa, ssp_data):
-    ssp_emline_wave = jnp.array(ssp_data.ssp_emline_wave)
-
-    ssp_linewave_idx = []
-    for emline_wave_aa in emlines_wave_aa:
-        idx = jnp.argmin(jnp.abs(ssp_emline_wave - emline_wave_aa))
-        ssp_linewave_idx.append(idx)
-    ssp_linewave_idx = jnp.array(ssp_linewave_idx)
-    ssp_linelum = ssp_data.ssp_emline_luminosity[:, :, ssp_linewave_idx]
-
-    return ssp_linelum, ssp_linewave_idx
