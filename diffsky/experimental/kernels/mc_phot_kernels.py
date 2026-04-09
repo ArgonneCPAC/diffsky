@@ -389,7 +389,7 @@ def _mc_specphot_kern(
     phot_randoms, sfh_params = get_mc_phot_randoms(
         ran_key, diffstarpop_params, mah_params, cosmo_params
     )
-    phot_kern_results, gal_linelums, ssp_linewave_idx = _specphot_kern(
+    phot_kern_results, gal_linelums = _specphot_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -408,7 +408,7 @@ def _mc_specphot_kern(
         fb,
     )
 
-    return phot_kern_results, phot_randoms, gal_linelums, ssp_linewave_idx
+    return phot_kern_results, phot_randoms, gal_linelums
 
 
 @jjit
@@ -511,7 +511,6 @@ def _mc_specphot_kern_merging(
         merge_prob,
         mstar_obs,
         linelums_obs,
-        ssp_linewave_idx,
     ) = _specphot_kern_merging(
         phot_randoms,
         sfh_params,
@@ -545,7 +544,6 @@ def _mc_specphot_kern_merging(
         merge_prob,
         mstar_obs,
         linelums_obs,
-        ssp_linewave_idx,
     )
 
 
@@ -575,7 +573,7 @@ def _specphot_kern_merging(
     nhalos_weights,
     halo_indx,
 ):
-    phot_kern_results, linelums_in_situ, ssp_linewave_idx = _specphot_kern(
+    phot_kern_results, linelums_in_situ = _specphot_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -630,7 +628,6 @@ def _specphot_kern_merging(
         merge_prob,
         mstar_obs,
         linelums_obs,
-        ssp_linewave_idx,
     )
 
 
