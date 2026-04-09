@@ -113,7 +113,7 @@ def test_weighted_lc_halos_photdata():
     assert hasattr(lc_data, "precomputed_ssp_lineflux_cgs_table")
     assert hasattr(lc_data, "line_wave_table")
 
-    EMLINE_NAMES = lc_data.ssp_data.emlines._fields
+    EMLINE_NAMES = lc_data.ssp_data.ssp_emline_wave._fields
     n_lines = len(EMLINE_NAMES)
     assert lc_data.precomputed_ssp_lineflux_cgs_table.shape == (n_lines, n_met, n_age)
     assert lc_data.line_wave_table.shape == (n_lines,)
