@@ -462,15 +462,14 @@ def _specphot_kern(
     )
     dust_ftrans_lines = _dust_res[0]
 
-    gal_linelums, ssp_linewave_idx = sspwk._compute_linelum_from_weights(
+    gal_linelums = sspwk._compute_linelum_from_weights(
         phot_kern_results.logsm_obs,
         dust_ftrans_lines,
         ssp_data,
         phot_kern_results.ssp_weights,
-        line_wave_table,
     )
 
-    return phot_kern_results, gal_linelums, ssp_linewave_idx
+    return phot_kern_results, gal_linelums
 
 
 @jjit
