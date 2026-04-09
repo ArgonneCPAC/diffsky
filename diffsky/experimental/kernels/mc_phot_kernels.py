@@ -906,7 +906,7 @@ def _mc_dbk_specphot_kern(
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
 
-    dbk_specphot_keys = (*MCDBKPhotInfo._fields, *ssp_data.emlines._fields)
+    dbk_specphot_keys = (*MCDBKPhotInfo._fields, *ssp_data.ssp_emline_wave._fields)
     MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_keys)
 
     linelum_dict = dict()
