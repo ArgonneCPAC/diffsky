@@ -331,8 +331,8 @@ def passively_add_emlines_to_lc_data(ssp_data, lc_data):
         line_wave_table : array, shape (n_lines, )
 
     """
-    if hasattr(ssp_data, "ssp_emline_wave"):
-
+    _ssp_emline_wave = getattr(ssp_data, "ssp_emline_wave", None)
+    if _ssp_emline_wave is not None:
         # Need shape # n_lines, n_met, n_age
         precomputed_ssp_lineflux_cgs_table = jnp.swapaxes(
             jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
