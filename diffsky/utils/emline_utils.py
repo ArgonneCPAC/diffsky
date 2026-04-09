@@ -1,6 +1,5 @@
 """"""
 
-import jax.numpy as jnp
 from dsps.utils import _sigmoid
 from jax import jit as jjit
 from jax import vmap
