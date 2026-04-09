@@ -183,7 +183,7 @@ def mc_lc_specphot(
     for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
         phot_kern_results[key] = val
 
-    for i, emline_name in enumerate(lc_data.ssp_data.emlines._fields):
+    for i, emline_name in enumerate(lc_data.ssp_data.ssp_emline_wave._fields):
         phot_kern_results[emline_name] = gal_linefluxes[:, i]
 
     return phot_kern_results
