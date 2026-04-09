@@ -396,12 +396,14 @@ def generate_lc_data(
         z_phot_table,
         wave_eff_table,
     )
-    if hasattr(ssp_data, "emlines"):
+    if hasattr(ssp_data, "ssp_emline_wave"):
 
-        precomputed_ssp_lineflux_cgs_table = np.array(
-            [emline.line_flux for emline in ssp_data.emlines]
+        # Need shape # n_lines, n_met, n_age
+        precomputed_ssp_lineflux_cgs_table = jnp.swapaxes(
+            jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
         )
-        line_wave_table = np.array([emline.line_wave for emline in ssp_data.emlines])
+
+        line_wave_table = np.array(ssp_data.ssp_emline_wave)
 
         new_fields = ("precomputed_ssp_lineflux_cgs_table", "line_wave_table")
         new_vals = (precomputed_ssp_lineflux_cgs_table, line_wave_table)
