@@ -851,7 +851,6 @@ def _mc_dbk_specphot_kern(
     mah_params,
     ssp_data,
     precomputed_ssp_mag_table,
-    precomputed_ssp_lineflux_cgs_table,
     z_phot_table,
     wave_eff_table,
     line_wave_table,
