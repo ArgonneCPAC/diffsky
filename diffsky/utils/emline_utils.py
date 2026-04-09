@@ -1,6 +1,5 @@
 """"""
 
-import jax.numpy as jnp
 from dsps.constants import L_SUN_CGS
 from dsps.utils import _sigmoid
 from jax import jit as jjit
