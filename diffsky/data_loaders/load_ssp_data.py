@@ -51,8 +51,8 @@ def load_fake_ssp_data():
 
 def get_sparse_ssp_data(
     ssp_data,
-    n_met=3,
-    n_age=11,
+    n_met=5,
+    n_age=7,
     n_wave=90,
     emline_names=("Ba_alpha_6563", "Ba_beta_4861"),
 ):
@@ -71,10 +71,15 @@ def get_sparse_ssp_data(
 
     ssp_flux = ssp_data.ssp_flux[::n_skip_met, ::n_skip_lg_age_gyr, ::n_skip_wave]
 
+    emline_lum_sparse = ssp_data.ssp_emline_luminosity[
+        ::n_skip_met, ::n_skip_lg_age_gyr
+    ]
+
     sparse_ssp_data = ssp_data._replace(
         ssp_lgmet=lgmet_sparse,
         ssp_lg_age_gyr=lg_age_gyr_sparse,
         ssp_wave=wave_sparse,
         ssp_flux=ssp_flux,
+        ssp_emline_luminosity=emline_lum_sparse,
     )
     return sparse_ssp_data

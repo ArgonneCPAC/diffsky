@@ -90,12 +90,13 @@ def test_load_fake_ssp_data():
 
 def test_get_sparse_ssp_data():
     ssp_data = load_ssp_data.load_fake_ssp_data()
+    n_lines = 2
     sparse_ssp_data = load_ssp_data.get_sparse_ssp_data(
         ssp_data,
         n_met=2,
         n_age=6,
         n_wave=40,
-        emline_names=ssp_data.ssp_emline_wave._fields[:2],
+        emline_names=ssp_data.ssp_emline_wave._fields[:n_lines],
     )
     assert len(sparse_ssp_data.ssp_lgmet) < len(ssp_data.ssp_lgmet) / 2
     assert len(sparse_ssp_data.ssp_lg_age_gyr) < len(ssp_data.ssp_lg_age_gyr) / 2
@@ -108,3 +109,9 @@ def test_get_sparse_ssp_data():
     )
 
     assert len(sparse_ssp_data.ssp_emline_wave._fields) == 2
+
+    assert sparse_ssp_data.ssp_emline_luminosity.shape == (
+        sparse_ssp_data.ssp_lgmet.size,
+        sparse_ssp_data.ssp_lg_age_gyr.size,
+        n_lines,
+    )
