@@ -167,7 +167,6 @@ def mc_lc_specphot(
         lc_data.mah_params,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
-        lc_data.precomputed_ssp_lineflux_cgs_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
         lc_data.line_wave_table,
