@@ -200,13 +200,14 @@ def test_specphot_kern(num_halos=250):
     line_wave_table = np.linspace(1_000, 10_000, n_lines)
     emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
     ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
+    lc_data = lc_data._replace(ssp_data=ssp_data)
 
     _specphot_res = mcpk._mc_specphot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
-        ssp_data,
+        lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
@@ -239,6 +240,7 @@ def test_specphot_kern_merging(num_halos=250):
     line_wave_table = np.linspace(1_000, 10_000, n_lines)
     emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
     ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
+    lc_data = lc_data._replace(ssp_data=ssp_data)
 
     (
         phot_kern_results,
@@ -253,7 +255,7 @@ def test_specphot_kern_merging(num_halos=250):
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
-        ssp_data,
+        lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
@@ -354,6 +356,7 @@ def test_mc_specphot_kern_merging(num_halos=250):
     line_wave_table = np.linspace(1_000, 10_000, n_lines)
     emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
     ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
+    lc_data = lc_data._replace(ssp_data=ssp_data)
 
     _res = mcpk._mc_specphot_kern_merging(
         ran_key,
@@ -362,7 +365,7 @@ def test_mc_specphot_kern_merging(num_halos=250):
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
-        ssp_data,
+        lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
