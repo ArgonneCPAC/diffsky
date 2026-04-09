@@ -153,12 +153,13 @@ def test_mc_lc_phot_agrees_with_mc_lc_specphot(num_halos=50):
     emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
     ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
     lc_data = lc_data._replace(ssp_data=ssp_data)
+    line_wave_table = np.array([line_wave for line_wave in ssp_data.ssp_emline_wave])
 
     phot_kern_results = mc_phot.mc_lc_phot(
         ran_key, lc_data, diffstarpop_params=sfh_models["tng"]
     )
     phot_kern_results2 = mc_phot.mc_lc_specphot(
-        ran_key, lc_data, diffstarpop_params=sfh_models["smdpl_dr1"]
+        ran_key, lc_data, line_wave_table, diffstarpop_params=sfh_models["smdpl_dr1"]
     )
     assert not np.allclose(
         phot_kern_results["obs_mags"], phot_kern_results2["obs_mags"], atol=0.1

@@ -137,6 +137,7 @@ def mc_lc_phot_merging(
 def mc_lc_specphot(
     ran_key,
     lc_data,
+    line_wave_table,
     diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
     mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
     spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
@@ -169,7 +170,7 @@ def mc_lc_specphot(
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        lc_data.line_wave_table,
+        line_wave_table,
         diffstarpop_params,
         mzr_params,
         spspop_params,
