@@ -440,11 +440,6 @@ def add_dbk_phot_quantities_to_mock(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    # Need shape # n_lines, n_met, n_age
-    precomputed_ssp_linelum_cgs_table = jnp.swapaxes(
-        jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
-    )
-
     line_wave_table = np.array(ssp_data.ssp_emline_wave)
 
     dbk_phot_info, dbk_weights = mcpk._mc_dbk_specphot_kern(
