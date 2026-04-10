@@ -441,7 +441,7 @@ def add_dbk_phot_quantities_to_mock(
     )
 
     # Need shape # n_lines, n_met, n_age
-    precomputed_ssp_lineflux_cgs_table = jnp.swapaxes(
+    precomputed_ssp_linelum_cgs_table = jnp.swapaxes(
         jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
     )
 
