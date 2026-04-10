@@ -420,3 +420,13 @@ def test_mc_specphot_kern_merging(num_halos=250):
         mstar_obs[lc_data.is_central == 0]
         <= 10 ** phot_kern_results.logsm_obs[lc_data.is_central == 0]
     )
+
+    # Enforce centrals get brighter lines and satellites less bright
+    assert np.all(
+        linelums_in_plus_ex_situ[lc_data.is_central == 1]
+        >= linelums_in_situ[lc_data.is_central == 1]
+    )
+    assert np.all(
+        linelums_in_plus_ex_situ[lc_data.is_central == 0]
+        <= linelums_in_situ[lc_data.is_central == 0]
+    )
