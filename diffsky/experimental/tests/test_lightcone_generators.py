@@ -110,12 +110,12 @@ def test_weighted_lc_halos_photdata():
     assert np.all(lc_data.wave_eff_table > 100)
     assert np.all(lc_data.wave_eff_table < 40_000)
 
-    assert hasattr(lc_data, "precomputed_ssp_lineflux_cgs_table")
+    assert hasattr(lc_data, "precomputed_ssp_linelum_cgs_table")
     assert hasattr(lc_data, "line_wave_table")
 
     EMLINE_NAMES = lc_data.ssp_data.ssp_emline_wave._fields
     n_lines = len(EMLINE_NAMES)
-    assert lc_data.precomputed_ssp_lineflux_cgs_table.shape == (n_lines, n_met, n_age)
+    assert lc_data.precomputed_ssp_linelum_cgs_table.shape == (n_lines, n_met, n_age)
     assert lc_data.line_wave_table.shape == (n_lines,)
 
     ran_key = jran.key(1)

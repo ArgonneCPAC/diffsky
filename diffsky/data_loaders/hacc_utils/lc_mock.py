@@ -224,11 +224,15 @@ def write_diffsky_param_collection(drn_mock, mock_version_name, param_collection
     iou.write_namedtuple_to_hdf5(flat_diffsky_params, fn_out)
 
 
-def write_diffsky_param_collection_merging(drn_mock, mock_version_name, param_collection):
+def write_diffsky_param_collection_merging(
+    drn_mock, mock_version_name, param_collection
+):
     """"""
     bn = BNPAT_PARAM_COLLECTION.format(mock_version_name)
     fn_out = os.path.join(drn_mock, bn)
-    flat_diffsky_params = dpwm.unroll_param_collection_into_flat_array(*param_collection)
+    flat_diffsky_params = dpwm.unroll_param_collection_into_flat_array(
+        *param_collection
+    )
     DiffskyParams = namedtuple("DiffskyParams", dpwm.get_flat_param_names())
     flat_diffsky_params = DiffskyParams(*flat_diffsky_params)
 
@@ -436,11 +440,6 @@ def add_dbk_phot_quantities_to_mock(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    # Need shape # n_lines, n_met, n_age
-    precomputed_ssp_lineflux_cgs_table = jnp.swapaxes(
-        jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
-    )
-
     line_wave_table = np.array(ssp_data.ssp_emline_wave)
 
     dbk_phot_info, dbk_weights = mcpk._mc_dbk_specphot_kern(
@@ -450,7 +449,6 @@ def add_dbk_phot_quantities_to_mock(
         mah_params,
         ssp_data,
         precomputed_ssp_mag_table,
-        precomputed_ssp_lineflux_cgs_table,
         z_phot_table,
         wave_eff_table,
         line_wave_table,
@@ -584,7 +582,6 @@ def add_black_hole_quantities_to_diffsky_data(lc_data, diffsky_data, phot_info):
 
 
 def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5.0):
-
     pos = np.array((lc_data["x"], lc_data["y"], lc_data["z"])).T
     host_pos = [lc_data[key][lc_data["top_host_idx"]] for key in ("x", "y", "z")]
     host_pos = np.array(host_pos).T
@@ -595,7 +592,12 @@ def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5
     diffsky_data["y_host"] = host_pos[:, 1]
     diffsky_data["z_host"] = host_pos[:, 2]
 
-    args = (10**host_logmp_obs, sim_info.cosmo_params, lc_data["redshift_true"], "200m")
+    args = (
+        10**host_logmp_obs,
+        sim_info.cosmo_params,
+        lc_data["redshift_true"],
+        "200m",
+    )
     host_radius_mpc = hbf.halo_mass_to_halo_radius(*args) / 1000.0
 
     n_cores = host_logmp_obs.shape[0]
@@ -630,7 +632,6 @@ def get_patch_info_from_mock_basename(bn):
 
 
 def concatenate_batched_phot_data(phot_batches):
-
     phot_info = dict()
     for key in phot_batches[0][0].keys():
         try:
@@ -656,7 +657,6 @@ def concatenate_batched_phot_data(phot_batches):
 
 
 def write_batched_mock_data(fn_out, data_batch, colnames_out, dataset="data"):
-
     with h5py.File(fn_out, "a") as hdf_out:
         if dataset not in hdf_out:
             grp = hdf_out.create_group(dataset)

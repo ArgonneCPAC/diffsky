@@ -137,6 +137,7 @@ def mc_lc_phot_merging(
 def mc_lc_specphot(
     ran_key,
     lc_data,
+    line_wave_table,
     diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
     mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
     spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
@@ -160,17 +161,16 @@ def mc_lc_specphot(
         Contains info about the galaxy SEDs
 
     """
-    phot_kern_results, phot_randoms, gal_linefluxes = mcpk._mc_specphot_kern(
+    phot_kern_results, phot_randoms, gal_linelums = mcpk._mc_specphot_kern(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
-        lc_data.precomputed_ssp_lineflux_cgs_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        lc_data.line_wave_table,
+        line_wave_table,
         diffstarpop_params,
         mzr_params,
         spspop_params,
@@ -184,7 +184,7 @@ def mc_lc_specphot(
         phot_kern_results[key] = val
 
     for i, emline_name in enumerate(lc_data.ssp_data.ssp_emline_wave._fields):
-        phot_kern_results[emline_name] = gal_linefluxes[:, i]
+        phot_kern_results[emline_name] = gal_linelums[:, i]
 
     return phot_kern_results
 

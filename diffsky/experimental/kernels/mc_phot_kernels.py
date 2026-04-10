@@ -367,7 +367,7 @@ def _phot_kern_merging(
     return phot_kern_results, flux_obs, merge_prob, mstar_obs
 
 
-@partial(jjit, static_argnames=["n_t_table"])
+@jjit
 def _mc_specphot_kern(
     ran_key,
     z_obs,
@@ -375,7 +375,6 @@ def _mc_specphot_kern(
     mah_params,
     ssp_data,
     precomputed_ssp_mag_table,
-    precomputed_ssp_lineflux_cgs_table,
     z_phot_table,
     wave_eff_table,
     line_wave_table,
@@ -386,10 +385,13 @@ def _mc_specphot_kern(
     ssp_err_pop_params,
     cosmo_params,
     fb,
-    n_t_table=mcdw.N_T_TABLE,
 ):
-    phot_kern_results, phot_randoms = _mc_phot_kern(
-        ran_key,
+    phot_randoms, sfh_params = get_mc_phot_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params
+    )
+    phot_kern_results, gal_linelums = _specphot_kern(
+        phot_randoms,
+        sfh_params,
         z_obs,
         t_obs,
         mah_params,
@@ -397,14 +399,53 @@ def _mc_specphot_kern(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
-        diffstarpop_params,
+        line_wave_table,
         mzr_params,
         spspop_params,
         scatter_params,
         ssp_err_pop_params,
         cosmo_params,
         fb,
-        n_t_table=n_t_table,
+    )
+
+    return phot_kern_results, phot_randoms, gal_linelums
+
+
+@jjit
+def _specphot_kern(
+    phot_randoms,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    line_wave_table,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    cosmo_params,
+    fb,
+):
+    phot_kern_results = _phot_kern(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
     )
 
     _dust_res = sspwk.compute_dust_attenuation_lines(
@@ -421,19 +462,173 @@ def _mc_specphot_kern(
     )
     dust_ftrans_lines = _dust_res[0]
 
-    n_lines, n_met, n_age = precomputed_ssp_lineflux_cgs_table.shape
-    _s = (1, n_lines, n_met, n_age)
-    precomputed_ssp_lineflux_cgs_table_galpop = (
-        precomputed_ssp_lineflux_cgs_table.reshape(_s)
-    )
-
-    gal_linefluxes = sspwk._compute_lineflux_from_weights(
+    gal_linelums = sspwk._compute_linelum_from_weights(
         phot_kern_results.logsm_obs,
         dust_ftrans_lines,
-        precomputed_ssp_lineflux_cgs_table_galpop,
+        ssp_data,
         phot_kern_results.ssp_weights,
     )
-    return phot_kern_results, phot_randoms, gal_linefluxes
+
+    return phot_kern_results, gal_linelums
+
+
+@jjit
+def _mc_specphot_kern_merging(
+    ran_key,
+    phot_randoms,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    line_wave_table,
+    diffstarpop_params,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    merge_params,
+    cosmo_params,
+    fb,
+    logmp_infall,
+    logmhost_infall,
+    t_infall,
+    is_central,
+    nhalos_weights,
+    halo_indx,
+):
+    phot_randoms, sfh_params = get_mc_phot_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params
+    )
+
+    (
+        phot_kern_results,
+        linelums_in_situ,
+        flux_obs,
+        merge_prob,
+        mstar_obs,
+        linelums_obs,
+    ) = _specphot_kern_merging(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        line_wave_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        merge_params,
+        cosmo_params,
+        fb,
+        logmp_infall,
+        logmhost_infall,
+        t_infall,
+        is_central,
+        nhalos_weights,
+        halo_indx,
+    )
+    return (
+        phot_kern_results,
+        linelums_in_situ,
+        phot_randoms,
+        flux_obs,
+        merge_prob,
+        mstar_obs,
+        linelums_obs,
+    )
+
+
+@jjit
+def _specphot_kern_merging(
+    phot_randoms,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    line_wave_table,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    merge_params,
+    cosmo_params,
+    fb,
+    logmp_infall,
+    logmhost_infall,
+    t_infall,
+    is_central,
+    nhalos_weights,
+    halo_indx,
+):
+    phot_kern_results, linelums_in_situ = _specphot_kern(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        line_wave_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+    )
+
+    upids = jnp.where(is_central == 1, -1.0, 0.0)
+    merge_prob = merging_model.get_p_merge_from_merging_params(
+        merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
+    )
+    ngals = logmp_infall.shape[0]
+    indx_to_keep = jnp.arange(ngals).astype("i8")
+
+    merge_weight = merge_prob * nhalos_weights
+    mstar_in_situ = 10**phot_kern_results.logsm_obs
+    mstar_to_keep = mstar_in_situ * (1 - merge_prob)
+    mstar_to_deposit = mstar_in_situ * merge_weight
+    mstar_obs = jnp.zeros_like(mstar_in_situ)
+    mstar_obs = mstar_obs.at[halo_indx].add(mstar_to_deposit)
+    mstar_obs = mstar_obs.at[indx_to_keep].add(mstar_to_keep)
+
+    merge_weight = merge_weight[:, jnp.newaxis]
+    flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags)
+    flux_to_keep = flux_in_situ * (1 - merge_prob)[:, jnp.newaxis]
+    flux_to_deposit = flux_in_situ * merge_weight
+    flux_obs = jnp.zeros_like(flux_in_situ)
+    flux_obs = flux_obs.at[halo_indx].add(flux_to_deposit)
+    flux_obs = flux_obs.at[indx_to_keep].add(flux_to_keep)
+
+    linelums_to_keep = linelums_in_situ * (1 - merge_prob)[:, jnp.newaxis]
+    linelums_to_deposit = linelums_in_situ * merge_weight
+    linelums_obs = jnp.zeros_like(linelums_in_situ)
+    linelums_obs = linelums_obs.at[halo_indx].add(linelums_to_deposit)
+    linelums_obs = linelums_obs.at[indx_to_keep].add(linelums_to_keep)
+
+    return (
+        phot_kern_results,
+        linelums_in_situ,
+        flux_obs,
+        merge_prob,
+        mstar_obs,
+        linelums_obs,
+    )
 
 
 @jjit
@@ -656,7 +851,6 @@ def _mc_dbk_specphot_kern(
     mah_params,
     ssp_data,
     precomputed_ssp_mag_table,
-    precomputed_ssp_lineflux_cgs_table,
     z_phot_table,
     wave_eff_table,
     line_wave_table,
@@ -669,14 +863,13 @@ def _mc_dbk_specphot_kern(
     fb,
 ):
     phot_key, dbk_key = jran.split(ran_key, 2)
-    phot_kern_results, phot_randoms, gal_linefluxes = _mc_specphot_kern(
-        phot_key,
+    phot_kern_results, phot_randoms, gal_linelums = _mc_specphot_kern(
+        ran_key,
         z_obs,
         t_obs,
         mah_params,
         ssp_data,
         precomputed_ssp_mag_table,
-        precomputed_ssp_lineflux_cgs_table,
         z_phot_table,
         wave_eff_table,
         line_wave_table,
@@ -716,9 +909,9 @@ def _mc_dbk_specphot_kern(
     dbk_specphot_keys = (*MCDBKPhotInfo._fields, *ssp_data.ssp_emline_wave._fields)
     MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_keys)
 
-    lineflux_dict = dict()
+    linelum_dict = dict()
     for i, name in enumerate(ssp_data.ssp_emline_wave._fields):
-        lineflux_dict[name] = gal_linefluxes[:, i]
+        linelum_dict[name] = gal_linelums[:, i]
 
     dbk_specphot_info = MCDBKSpecPhotInfo(
         **phot_kern_results._asdict(),
@@ -729,7 +922,7 @@ def _mc_dbk_specphot_kern(
         obs_mags_bulge=obs_mags_bulge,
         obs_mags_disk=obs_mags_disk,
         obs_mags_knots=obs_mags_knots,
-        **lineflux_dict,
+        **linelum_dict,
     )
     return dbk_specphot_info, dbk_weights
 

@@ -134,7 +134,7 @@ def test_generate_lc_data_emlines():
     assert np.all(np.isfinite(lc_data.logmp0))
     for x in lc_data.mah_params:
         assert np.all(np.isfinite(x))
-    assert np.all(np.isfinite(lc_data.precomputed_ssp_lineflux_cgs_table))
+    assert np.all(np.isfinite(lc_data.precomputed_ssp_linelum_cgs_table))
     assert np.all(np.isfinite(lc_data.line_wave_table))
 
 

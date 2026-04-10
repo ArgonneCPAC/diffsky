@@ -399,14 +399,14 @@ def generate_lc_data(
     _ssp_emline_wave = getattr(ssp_data, "ssp_emline_wave", None)
     if _ssp_emline_wave is not None:
         # Need shape # n_lines, n_met, n_age
-        precomputed_ssp_lineflux_cgs_table = jnp.swapaxes(
+        precomputed_ssp_linelum_cgs_table = jnp.swapaxes(
             jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
         )
 
         line_wave_table = np.array(ssp_data.ssp_emline_wave)
 
-        new_fields = ("precomputed_ssp_lineflux_cgs_table", "line_wave_table")
-        new_vals = (precomputed_ssp_lineflux_cgs_table, line_wave_table)
+        new_fields = ("precomputed_ssp_linelum_cgs_table", "line_wave_table")
+        new_vals = (precomputed_ssp_linelum_cgs_table, line_wave_table)
         fields = (*LCData._fields, *new_fields)
         values = (*lc_data, *new_vals)
         lc_data = namedtuple("LCData", fields)(*values)
@@ -451,13 +451,13 @@ def generate_weighted_grid_lc_data(
     _ssp_emline_wave = getattr(ssp_data, "ssp_emline_wave", None)
     if _ssp_emline_wave is not None:
         # Need shape # n_lines, n_met, n_age
-        precomputed_ssp_lineflux_cgs_table = jnp.swapaxes(
+        precomputed_ssp_linelum_cgs_table = jnp.swapaxes(
             jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
         )
         line_wave_table = jnp.array(ssp_data.ssp_emline_wave)
 
-        new_fields = ("precomputed_ssp_lineflux_cgs_table", "line_wave_table")
-        new_vals = (precomputed_ssp_lineflux_cgs_table, line_wave_table)
+        new_fields = ("precomputed_ssp_linelum_cgs_table", "line_wave_table")
+        new_vals = (precomputed_ssp_linelum_cgs_table, line_wave_table)
         fields = (*LCData._fields, *new_fields)
         values = (*lc_data, *new_vals)
         lc_data = namedtuple("LCData", fields)(*values)
@@ -515,13 +515,13 @@ def mc_weighted_lightcone_data(
     _ssp_emline_wave = getattr(ssp_data, "ssp_emline_wave", None)
     if _ssp_emline_wave is not None:
         # Need shape # n_lines, n_met, n_age
-        precomputed_ssp_lineflux_cgs_table = jnp.swapaxes(
+        precomputed_ssp_linelum_cgs_table = jnp.swapaxes(
             jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
         )
         line_wave_table = jnp.array(ssp_data.ssp_emline_wave)
 
-        new_fields = ("precomputed_ssp_lineflux_cgs_table", "line_wave_table")
-        new_vals = (precomputed_ssp_lineflux_cgs_table, line_wave_table)
+        new_fields = ("precomputed_ssp_linelum_cgs_table", "line_wave_table")
+        new_vals = (precomputed_ssp_linelum_cgs_table, line_wave_table)
         fields = (*LCData._fields, *new_fields)
         values = (*lc_data, *new_vals)
         lc_data = namedtuple("LCData", fields)(*values)
