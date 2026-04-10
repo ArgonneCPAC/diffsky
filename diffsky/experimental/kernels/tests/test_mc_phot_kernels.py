@@ -401,7 +401,7 @@ def test_mc_specphot_kern_merging(num_halos=250):
     assert np.any(obs_mags_in_plus_ex_situ != phot_kern_results.obs_mags)
     assert np.any(linelums_in_plus_ex_situ != linelums_in_situ)
 
-    # Enforce centrals get brighter and satellites get dimmer
+    # Enforce centrals can only get brighter and satellites can only get dimmer
     assert np.all(
         obs_mags_in_plus_ex_situ[lc_data.is_central == 1]
         <= phot_kern_results.obs_mags[lc_data.is_central == 1]
@@ -411,7 +411,7 @@ def test_mc_specphot_kern_merging(num_halos=250):
         >= phot_kern_results.obs_mags[lc_data.is_central == 0]
     )
 
-    # Enforce centrals get more massive and satellites less massive
+    # Enforce centrals can only get more massive and satellites less massive
     assert np.all(
         mstar_obs[lc_data.is_central == 1]
         >= 10 ** phot_kern_results.logsm_obs[lc_data.is_central == 1]
@@ -421,7 +421,7 @@ def test_mc_specphot_kern_merging(num_halos=250):
         <= 10 ** phot_kern_results.logsm_obs[lc_data.is_central == 0]
     )
 
-    # Enforce centrals get brighter lines and satellites less bright
+    # Enforce centrals can only get brighter lines and satellites less bright
     assert np.all(
         linelums_in_plus_ex_situ[lc_data.is_central == 1]
         >= linelums_in_situ[lc_data.is_central == 1]
@@ -429,4 +429,34 @@ def test_mc_specphot_kern_merging(num_halos=250):
     assert np.all(
         linelums_in_plus_ex_situ[lc_data.is_central == 0]
         <= linelums_in_situ[lc_data.is_central == 0]
+    )
+
+    # Enforce some centrals actually get brighter and some satellites dimmer
+    assert np.any(
+        obs_mags_in_plus_ex_situ[lc_data.is_central == 1]
+        < phot_kern_results.obs_mags[lc_data.is_central == 1]
+    )
+    assert np.any(
+        obs_mags_in_plus_ex_situ[lc_data.is_central == 0]
+        > phot_kern_results.obs_mags[lc_data.is_central == 0]
+    )
+
+    # Enforce some centrals actually get more massive and satellites less massive
+    assert np.any(
+        mstar_obs[lc_data.is_central == 1]
+        > 10 ** phot_kern_results.logsm_obs[lc_data.is_central == 1]
+    )
+    assert np.any(
+        mstar_obs[lc_data.is_central == 0]
+        < 10 ** phot_kern_results.logsm_obs[lc_data.is_central == 0]
+    )
+
+    # Enforce some centrals actually get brighter lines and satellites less bright
+    assert np.any(
+        linelums_in_plus_ex_situ[lc_data.is_central == 1]
+        > linelums_in_situ[lc_data.is_central == 1]
+    )
+    assert np.any(
+        linelums_in_plus_ex_situ[lc_data.is_central == 0]
+        < linelums_in_situ[lc_data.is_central == 0]
     )
