@@ -32,7 +32,7 @@ def test_multiband_lc_phot_kern():
 
     lc_halopop = mclh.mc_lightcone_host_halo_diffmah(*args)
 
-    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
+    ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data(n_line=0)
 
     _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
     wave, u, g, r, i, z, y = _res
@@ -97,7 +97,8 @@ def _generate_lc_data(include_emlines=False):
     if include_emlines:
         ssp_data = load_fake_ssp_data()
     else:
-        ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data()
+        ssp_data = retrieve_fake_fsps_data.load_fake_ssp_data(n_line=0)
+        assert ssp_data.ssp_emline_wave is None
 
     _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
     wave, u, g, r, i, z, y = _res
@@ -140,6 +141,7 @@ def test_generate_lc_data_emlines():
 def test_multiband_lc_phot_kern_u_param_arr():
     ran_key = jran.key(0)
     lc_data = _generate_lc_data()
+    assert "line_wave_table" not in lc_data._fields
 
     n_gals = lc_data.logmp0.size
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape

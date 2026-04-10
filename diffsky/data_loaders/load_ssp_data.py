@@ -1,72 +1,26 @@
 """"""
 
-import os
-import random
-import string
-from collections import OrderedDict, namedtuple
+from collections import namedtuple
 
 import h5py
-import numpy as np
-from dsps.data_loaders.defaults import DEFAULT_SSP_KEYS
+from dsps.constants import L_SUN_CGS
+from dsps.data_loaders import load_ssp_templates as load_ssp_templates_dsps
+from dsps.data_loaders.load_emline_info import get_subset_emline_data
 from dsps.data_loaders.retrieve_fake_fsps_data import (
     load_fake_ssp_data as load_fake_ssp_data_dsps,
 )
 
-from ..utils.emline_utils import L_SUN_CGS
+from .defaults import DEFAULT_SSP_BNAME
 
 EmissionLine = namedtuple("EmissionLine", ["line_wave", "line_flux"])
 
-DEFAULT_DIFFSKY_SSP_BNAME = "ssp_data_fsps_v3.2_emlines.hdf5"
 
-
-def load_ssp_templates(fn=None, drn=None, bn=DEFAULT_DIFFSKY_SSP_BNAME):
-    """Load SSP templates, optionally including emission lines if present
-
-    For emission lines, note that line_flux is stored on disk in units of Lsun/Msun.
-    But load_ssp_templates converts to cgs units after reading from disk.
-    And write_ssp_templates_to_disk converts back to Lsun/Msun before writing to disk.
-
-    """
-
-    if fn is None:
-        if drn is None:
-            try:
-                drn = os.environ["DSPS_DRN"]
-            except KeyError:
-                msg = (
-                    "Since you did not pass the fn or drn argument\n"
-                    "then you must have the DSPS_DRN environment variable set"
-                )
-                raise ValueError(msg)
-
-        fn = os.path.join(drn, bn)
-
-    msg = "{0} does not exist".format(fn)
-    assert os.path.isfile(fn), msg
-
-    EmissionLine = namedtuple("EmissionLine", ["line_wave", "line_flux"])
-
-    ssp_data_dict = OrderedDict()
-
-    with h5py.File(fn, "r") as hdf:
-        for key in DEFAULT_SSP_KEYS:
-            ssp_data_dict[key] = hdf[key][...]
-
-        if "emlines" in hdf.keys():
-            emlines_dict = OrderedDict()
-            for emline in hdf["emlines"].keys():
-                wave = float(hdf["emlines"][emline]["line_wave"][...])
-                flux = hdf["emlines"][emline]["line_flux"][...] * L_SUN_CGS
-                emlines_dict[emline] = EmissionLine(wave, flux)
-
-            EmissionLines = namedtuple("EmissionLines", list(emlines_dict.keys()))
-            emission_lines = EmissionLines(**emlines_dict)
-            ssp_data_dict["emlines"] = emission_lines
-
-    SSPData = namedtuple("SSPData", list(ssp_data_dict.keys()))
-    ssp_data = SSPData(**ssp_data_dict)
-
+def load_ssp_templates(fn=None, drn=None, bn=DEFAULT_SSP_BNAME):
+    ssp_data = load_ssp_templates_dsps(fn=fn, drn=drn, bn=bn)
     return ssp_data
+
+
+load_ssp_templates.__doc__ = load_ssp_templates_dsps.__doc__
 
 
 def write_ssp_templates_to_disk(fn, ssp_data):
@@ -79,52 +33,53 @@ def write_ssp_templates_to_disk(fn, ssp_data):
     """
 
     with h5py.File(fn, "w") as hdf_out:
-        for name, arr in zip(ssp_data._fields, ssp_data):
-            if name != "emlines":
-                hdf_out[name] = arr
+        for field, val in zip(ssp_data._fields, ssp_data):
+            if val is not None:
+                if field == "ssp_emline_luminosity":
+                    hdf_out[field] = val / L_SUN_CGS
+                else:
+                    hdf_out[field] = val
 
-        if "emlines" in ssp_data._fields:
-            grp = hdf_out.create_group("emlines")
-
-            # Store each line's wavelength and flux table
-            gen = zip(ssp_data.emlines._fields, ssp_data.emlines)
-            for line_name, emline in gen:
-                line_grp = grp.create_group(line_name)
-                line_grp["line_wave"] = emline.line_wave
-                line_grp["line_flux"] = emline.line_flux / L_SUN_CGS
+        if "ssp_emline_wave" in ssp_data._fields:
+            hdf_out["ssp_emline_name"] = list(ssp_data.ssp_emline_wave._fields)
 
 
-def load_fake_ssp_data(n_lines=3, emline_names=None):
+def load_fake_ssp_data():
     ssp_data = load_fake_ssp_data_dsps()
-    n_met, n_age = ssp_data.ssp_flux.shape[:-1]
-
-    characters = string.ascii_letters
-
-    if emline_names is None:
-        linename_length = 10
-        emline_names = []
-        while len(emline_names) < n_lines:
-            random_string = "".join(random.choices(characters, k=linename_length))
-            if random_string not in emline_names:
-                emline_names.append(random_string)
-    else:
-        n_lines = len(emline_names)
-
-    line_waves = np.linspace(1_000, 10_000, n_lines)
-
-    emlines_dict = dict()
-    for i, linename in enumerate(emline_names):
-        line_wave = line_waves[i]
-        line_flux = np.ones((n_met, n_age))
-        emlines_dict[linename] = EmissionLine(line_wave, line_flux)
-
-    EmissionLines = namedtuple("EmissionLines", list(emlines_dict.keys()))
-    emission_lines = EmissionLines(**emlines_dict)
-
-    ssp_data_dict = ssp_data._asdict()
-    ssp_data_dict["emlines"] = emission_lines
-
-    SSPData = namedtuple("SSPData", list(ssp_data_dict.keys()))
-    ssp_data = SSPData(**ssp_data_dict)
-
     return ssp_data
+
+
+def get_sparse_ssp_data(
+    ssp_data,
+    n_met=5,
+    n_age=7,
+    n_wave=90,
+    emline_names=("Ba_alpha_6563", "Ba_beta_4861"),
+):
+    """Get a tiny subset of the ssp_data in each dimension - mostly for unit-testing"""
+    if "ssp_emline_wave" in ssp_data._fields:
+        ssp_data = get_subset_emline_data(ssp_data, emline_names)
+
+    n_skip_met = ssp_data.ssp_lgmet.size // n_met
+    lgmet_sparse = ssp_data.ssp_lgmet[::n_skip_met]
+
+    n_skip_lg_age_gyr = ssp_data.ssp_lg_age_gyr.size // n_age
+    lg_age_gyr_sparse = ssp_data.ssp_lg_age_gyr[::n_skip_lg_age_gyr]
+
+    n_skip_wave = ssp_data.ssp_wave.size // n_wave
+    wave_sparse = ssp_data.ssp_wave[::n_skip_wave]
+
+    ssp_flux = ssp_data.ssp_flux[::n_skip_met, ::n_skip_lg_age_gyr, ::n_skip_wave]
+
+    emline_lum_sparse = ssp_data.ssp_emline_luminosity[
+        ::n_skip_met, ::n_skip_lg_age_gyr
+    ]
+
+    sparse_ssp_data = ssp_data._replace(
+        ssp_lgmet=lgmet_sparse,
+        ssp_lg_age_gyr=lg_age_gyr_sparse,
+        ssp_wave=wave_sparse,
+        ssp_flux=ssp_flux,
+        ssp_emline_luminosity=emline_lum_sparse,
+    )
+    return sparse_ssp_data

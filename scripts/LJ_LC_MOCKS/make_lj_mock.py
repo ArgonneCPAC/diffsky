@@ -20,6 +20,7 @@ import h5py
 import jax
 import numpy as np
 import yaml
+from dsps.data_loaders.load_emline_info import get_subset_emline_data
 from jax import random as jran
 from mpi4py import MPI
 
@@ -68,9 +69,9 @@ ROMAN_FILTER_NICKNAMES = (
     "roman_Grism_0thOrder",
 )
 OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES, *ROMAN_FILTER_NICKNAMES)
-OUTPUT_LINE_NICKNAMES = ("Halpha", "OII", "OIII")
+OUTPUT_LINE_NICKNAMES = ("Ba_alpha_6563", "Ba_beta_4861")
 
-SSP_SED_BNAME = "ssp_data_fsps_v3.2_emlines.hdf5"
+SSP_SED_BNAME = "fsps_v0.4.7_mist_c3k_a_kroupa_wNE_logGasU-2.0_logGasZ0.0.h5"
 
 
 if __name__ == "__main__":
@@ -172,10 +173,11 @@ if __name__ == "__main__":
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
     ssp_data = load_ssp_templates(bn=bn_ssp_data)
+    ssp_data = get_subset_emline_data(ssp_data, OUTPUT_LINE_NICKNAMES)
 
     # Check that the SSP data includes all necessary lines
     for line_name in OUTPUT_LINE_NICKNAMES:
-        assert line_name in ssp_data.emlines._fields
+        assert line_name in ssp_data.ssp_emline_wave._fields
 
     param_collection = gmp.get_param_collection_for_mock(
         cosmos_fit=cosmos_fit, sfh_model=sfh_model, rank=0

@@ -20,8 +20,7 @@ def _get_weighted_lc_halos_photdata_for_unit_testing(num_halos=75):
     z_min, z_max = 0.1, 3.0
     sky_area_degsq = 100.0
 
-    EMLINE_NAMES = ("Halpha", "OII", "OIII", "NII")
-    ssp_data = load_ssp_data.load_fake_ssp_data(emline_names=EMLINE_NAMES)
+    ssp_data = load_ssp_data.load_fake_ssp_data()
 
     _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
     wave, u, g, r, i, z, y = _res
@@ -58,8 +57,7 @@ def _get_weighted_lc_photdata_for_unit_testing(num_halos=75):
     z_min, z_max = 0.1, 3.0
     sky_area_degsq = 100.0
 
-    EMLINE_NAMES = ("Halpha", "OII", "OIII", "NII")
-    ssp_data = load_ssp_data.load_fake_ssp_data(emline_names=EMLINE_NAMES)
+    ssp_data = load_ssp_data.load_fake_ssp_data()
 
     _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
     wave, u, g, r, i, z, y = _res
@@ -115,7 +113,7 @@ def test_weighted_lc_halos_photdata():
     assert hasattr(lc_data, "precomputed_ssp_lineflux_cgs_table")
     assert hasattr(lc_data, "line_wave_table")
 
-    EMLINE_NAMES = lc_data.ssp_data.emlines._fields
+    EMLINE_NAMES = lc_data.ssp_data.ssp_emline_wave._fields
     n_lines = len(EMLINE_NAMES)
     assert lc_data.precomputed_ssp_lineflux_cgs_table.shape == (n_lines, n_met, n_age)
     assert lc_data.line_wave_table.shape == (n_lines,)

@@ -1129,12 +1129,13 @@ def mc_weighted_lightcone_data(
         logmp_obs,
     )
 
-    if hasattr(ssp_data, "emlines"):
-
-        precomputed_ssp_lineflux_cgs_table = np.array(
-            [emline.line_flux for emline in ssp_data.emlines]
+    _ssp_emline_wave = getattr(ssp_data, "ssp_emline_wave", None)
+    if _ssp_emline_wave is not None:
+        # Need shape # n_lines, n_met, n_age
+        precomputed_ssp_lineflux_cgs_table = jnp.swapaxes(
+            jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
         )
-        line_wave_table = np.array([emline.line_wave for emline in ssp_data.emlines])
+        line_wave_table = jnp.array(ssp_data.ssp_emline_wave)
 
         new_fields = ("precomputed_ssp_lineflux_cgs_table", "line_wave_table")
         new_vals = (precomputed_ssp_lineflux_cgs_table, line_wave_table)

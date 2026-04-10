@@ -324,19 +324,20 @@ def weighted_lc_photdata(
 def passively_add_emlines_to_lc_data(ssp_data, lc_data):
     """Include precomputed emission line fluxes, if they are present in the ssp_data
 
-    If ssp_data.emlines exists, the returned lc_data will have two additional fields:
+    If ssp_data.ssp_emline_wave exists, the returned lc_data will have two additional fields:
 
         precomputed_ssp_lineflux_cgs_table : array, shape (n_lines, n_met, n_age)
 
         line_wave_table : array, shape (n_lines, )
 
     """
-    if hasattr(ssp_data, "emlines"):
-
-        precomputed_ssp_lineflux_cgs_table = jnp.array(
-            [emline.line_flux for emline in ssp_data.emlines]
+    _ssp_emline_wave = getattr(ssp_data, "ssp_emline_wave", None)
+    if _ssp_emline_wave is not None:
+        # Need shape # n_lines, n_met, n_age
+        precomputed_ssp_lineflux_cgs_table = jnp.swapaxes(
+            jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
         )
-        line_wave_table = jnp.array([emline.line_wave for emline in ssp_data.emlines])
+        line_wave_table = jnp.array(ssp_data.ssp_emline_wave)
 
         new_fields = ("precomputed_ssp_lineflux_cgs_table", "line_wave_table")
         new_vals = (precomputed_ssp_lineflux_cgs_table, line_wave_table)
