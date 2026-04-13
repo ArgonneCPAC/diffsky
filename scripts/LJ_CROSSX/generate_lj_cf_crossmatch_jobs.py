@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument("-drn_script", help="Directory to write scripts", default="")
 
     parser.add_argument(
-        "-conda_env", help="conda environment to activate", default="improv311"
+        "-conda_env", help="conda environment to activate", default="diffhacc_py312"
     )
 
     args = parser.parse_args()

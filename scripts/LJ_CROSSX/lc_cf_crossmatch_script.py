@@ -35,7 +35,7 @@ DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc_cores"
 DRN_LJ_DIFFMAH_LCRC = "/lcrc/project/halotools/LastJourney/diffmah_fits"
 DRN_LJ_DIFFMAH_POBOY = "/Users/aphearin/work/DATA/LastJourney/diffmah_fits"
 
-DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/halotools/LastJourney/lc-cf-diffsky"
+DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/halotools/LastJourney/lc-7-cf-diffsky"
 DRN_LC_CF_XDATA_LCRC = os.path.join(DRN_LJ_CROSSX_OUT_LCRC, "LC_CF_XDATA")
 DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
 DRN_LC_CF_XDATA_POBOY = os.path.join(DRN_LJ_CROSSX_OUT_POBOY, "LC_CF_XDATA")
