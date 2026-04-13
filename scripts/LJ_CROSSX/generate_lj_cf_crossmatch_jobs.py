@@ -109,7 +109,7 @@ if __name__ == "__main__":
     for ijob, job_info in enumerate(job_list):
 
         fnout_cfg = os.path.join(drn_script, BN_CFG.format(ijob))
-        np.savetxt(fnout_cfg, job_info)
+        np.savetxt(fnout_cfg, job_info, fmt="%d")
 
         fn_submit_script = os.path.join(drn_script, BN_JOB.format(ijob))
 
