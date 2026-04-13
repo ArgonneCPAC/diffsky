@@ -12,7 +12,7 @@ import subprocess
 
 import numpy as np
 
-BN_JOB = "run_lc_cf_crossx_{0}_to_{1}.sh"
+BN_JOB = "run_lc_cf_crossx_{0}.sh"
 BN_SCRIPT = "lc_cf_crossmatch_script.py"
 
 if __name__ == "__main__":
@@ -105,14 +105,14 @@ if __name__ == "__main__":
     else:
         print("\nDry run: jobs not submitted\n")
 
-    for job_info in job_list:
+    for ijob, job_info in enumerate(job_list):
 
         i = job_info[0]
         j = job_info[-1]
         ibn = f"{i:0{nchar}d}"
         jbn = f"{j:0{nchar}d}"
 
-        fn_submit_script = os.path.join(drn_script, BN_JOB.format(ibn, jbn))
+        fn_submit_script = os.path.join(drn_script, BN_JOB.format(ijob))
 
         with open(fn_submit_script, "w") as fout:
             for line_out in header_lines:
