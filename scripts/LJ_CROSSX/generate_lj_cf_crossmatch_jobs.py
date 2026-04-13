@@ -13,6 +13,7 @@ import subprocess
 import numpy as np
 
 BN_JOB = "run_lc_cf_crossx_{0}.sh"
+BN_CFG = "lc_patch_list_{0}.cfg"
 BN_SCRIPT = "lc_cf_crossmatch_script.py"
 
 if __name__ == "__main__":
@@ -98,7 +99,7 @@ if __name__ == "__main__":
         "",
     )
 
-    line_pat = "python {0} {1:.3f} {2:.3f} -istart {3} -iend {4} -drn_out {5} "
+    line_pat = "python {0} {1:.3f} {2:.3f} -lc_patch_list_cfg {3} -drn_out {4} "
 
     if submit_job:
         print("\nSubmitting jobs to queue\n")
@@ -107,10 +108,8 @@ if __name__ == "__main__":
 
     for ijob, job_info in enumerate(job_list):
 
-        i = job_info[0]
-        j = job_info[-1]
-        ibn = f"{i:0{nchar}d}"
-        jbn = f"{j:0{nchar}d}"
+        fnout_cfg = os.path.join(drn_script, BN_CFG.format(ijob))
+        np.savetxt(fnout_cfg, job_info)
 
         fn_submit_script = os.path.join(drn_script, BN_JOB.format(ijob))
 
@@ -118,7 +117,7 @@ if __name__ == "__main__":
             for line_out in header_lines:
                 fout.write(line_out + "\n")
 
-            line_out = line_pat.format(BN_SCRIPT, z_min, z_max, i, j, drn_out)
+            line_out = line_pat.format(BN_SCRIPT, z_min, z_max, fnout_cfg, drn_out)
             fout.write(line_out + "\n")
 
         if submit_job:
