@@ -855,7 +855,7 @@ def _mc_dbk_specphot_kern(
 ):
     phot_key, dbk_key = jran.split(ran_key, 2)
     phot_kern_results, phot_randoms, gal_linelums = _mc_specphot_kern(
-        ran_key,
+        phot_key,
         z_obs,
         t_obs,
         mah_params,
