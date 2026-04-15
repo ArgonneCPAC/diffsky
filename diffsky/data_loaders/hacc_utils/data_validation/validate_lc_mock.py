@@ -15,7 +15,7 @@ from ....experimental import dbk_phot_from_mock
 from ....experimental import precompute_ssp_phot as psspp
 from ....param_utils import diffsky_param_wrapper as dpw
 from .. import lc_mock as lcmp
-from .. import load_flat_hdf5, load_lc_cf
+from .. import load_flat_hdf5, load_lc_cf, load_lc_mock
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
 REQUIRED_SOFTWARE_VERSION_INFO = (
@@ -176,6 +176,32 @@ def check_all_data_columns_have_metadata(fn_lc_mock):
 
 def check_metadata(fn_lc_mock):
     msg = []
+
+    # Check if the load_mock_metadata function works
+    try:
+        all_metadata = load_lc_mock.load_mock_metadata(fn_lc_mock)
+    except:  # noqa
+        s = f"load_mock_metadata function fails on {fn_lc_mock}"
+        msg.append(s)
+        return msg
+
+    bn_lc_mock = os.path.basename(fn_lc_mock)
+    # Check for `index` in metadata of real halos
+    if "synthetic" not in bn_lc_mock:
+        try:
+            assert "index" in all_metadata.keys()
+        except AssertionError:
+            s = f"metadata is missing `index` info for {fn_lc_mock}"
+            msg.append(s)
+            return msg
+    else:
+        try:
+            assert "index" not in all_metadata.keys()
+        except AssertionError:
+            s = f"metadata contains `index` info for {fn_lc_mock} - unexpected for synthetic halos"
+            msg.append(s)
+            return msg
+
     with h5py.File(fn_lc_mock, "r") as hdf:
         try:
             # Check all scalar metadata

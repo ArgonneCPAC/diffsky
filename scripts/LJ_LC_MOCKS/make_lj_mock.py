@@ -393,6 +393,8 @@ if __name__ == "__main__":
                 )
 
         if synthetic_cores == 0:
+            metadata_mock.append_index_metadata(fn_out, indir_lc_data)
+
             lc_cores_poskeys = (
                 "x",
                 "y",
@@ -443,6 +445,11 @@ if __name__ == "__main__":
 
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
+
+            if synthetic_cores == 0:
+                bn_sky_decomp = "lc_cores-decomposition.txt"
+                fn_sky_decomp = os.path.join(indir_lc_data, bn_sky_decomp)
+                shutil.copy2(fn_sky_decomp, drn_out)
 
             lcmp_repro.write_ancillary_data(
                 drn_out,
