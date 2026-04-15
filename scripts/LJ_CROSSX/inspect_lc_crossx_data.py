@@ -3,6 +3,7 @@
 import argparse
 import os
 from glob import glob
+from time import time
 
 import numpy as np
 
@@ -51,9 +52,10 @@ if __name__ == "__main__":
         "-n_matchup_test",
         help="Number of files to check n_cf_match=1",
         type=int,
-        default=10,
+        default=100,
     )
 
+    start = time()
     args = parser.parse_args()
     drn_lc_cf = args.drn_lc_cf
     z_min = args.z_min
@@ -125,6 +127,9 @@ if __name__ == "__main__":
             print(f"{bname} fails readiness test")
             failure_collector.append(bname)
 
+    end = time()
+    runtime = end - start
+    print(f"Runtime to check files = {runtime:.1f} seconds")
     if all_good:
         print("All lightcone patches pass all tests")
     else:
