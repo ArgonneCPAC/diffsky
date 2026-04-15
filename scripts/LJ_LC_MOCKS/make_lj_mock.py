@@ -43,10 +43,10 @@ DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LJ_LC_LCRC = (
     "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-7/output"
 )
-DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-6"
+DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-7"
 
 DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-7-cf-diffsky"
-DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
+DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-7-cf-diffsky"
 
 
 SIM_NAME = "LastJourney"
