@@ -28,14 +28,14 @@ DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 
 DRN_LJ_LC_LCRC = (
-    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-6/output"
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-7/output"
 )
 DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc_cores"
 
 DRN_LJ_DIFFMAH_LCRC = "/lcrc/project/halotools/LastJourney/diffmah_fits"
 DRN_LJ_DIFFMAH_POBOY = "/Users/aphearin/work/DATA/LastJourney/diffmah_fits"
 
-DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/halotools/LastJourney/lc-cf-diffsky"
+DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/halotools/LastJourney/lc-7-cf-diffsky"
 DRN_LC_CF_XDATA_LCRC = os.path.join(DRN_LJ_CROSSX_OUT_LCRC, "LC_CF_XDATA")
 DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
 DRN_LC_CF_XDATA_POBOY = os.path.join(DRN_LJ_CROSSX_OUT_POBOY, "LC_CF_XDATA")
@@ -208,7 +208,7 @@ if __name__ == "__main__":
                     ishell, ipatch = olap_patch_id
                     bn_patch_in = LC_PATCH_BNPAT.format(ishell, ipatch)
                     fn_patch_in = os.path.join(drn_lc, bn_patch_in)
-                    lc_patch_data = load_flat_hdf5(fn_patch_in)
+                    lc_patch_data = load_flat_hdf5(fn_patch_in, dataset="data")
                     n_patch = len(lc_patch_data["coreforest_file_idx"])
 
                     try:
