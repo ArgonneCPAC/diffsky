@@ -28,6 +28,10 @@ def compute_x_tot_from_x_in_situ(
         Fraction of X that the associated central receives from a merged satellite
         frac_receive < 1 ==> X is not conserved
 
+        Example use-case: satellite emission lines may be partially or entirely
+            extinguished upon merging, in which case merged satellites will still vanish
+            but their associated central will not receive boosted emission line flux
+
     Returns
     -------
     x_tot : array, shape (n, )
