@@ -150,3 +150,27 @@ def generate_fake_mah_params(ran_key, t_obs, lgmp_obs, is_central, lgt0):
     fake_mah_params = DEFAULT_MAH_PARAMS._make(_mah_params)
 
     return fake_mah_params
+
+
+def _chunked_read_kernel(fobj, nchunks, chunknum, keys_to_read):
+    """Read a forest-complete chunk of data from lc_cores"""
+
+    nindex = len(fobj["index"]["offset"])
+    nstart = (nindex // nchunks) * chunknum
+    nend = (nindex // nchunks) * (chunknum + 1)
+
+    read_start = fobj["index"]["offset"][nstart]
+    if chunknum == nchunks - 1:
+        read_end = fobj["index"]["offset"][-1] + fobj["index"]["count"][-1]
+    else:
+        read_end = fobj["index"]["offset"][nend]
+
+    lc_cores_chunk = {}
+    for k in keys_to_read:
+        lc_cores_chunk[k] = fobj["data"]["k"][read_start:read_end]
+
+    # shift look-up-indices for the chunk
+    lc_cores_chunk["top_host_idx"] -= read_start
+    lc_cores_chunk["secondary_top_host_idx"] -= read_start
+
+    return lc_cores_chunk
