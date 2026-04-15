@@ -167,8 +167,8 @@ def _chunked_read_kernel(fobj, nchunks, chunknum, keys_to_read):
         read_end = fobj["index"]["offset"][nend]
 
     lc_cores_chunk = {}
-    for k in keys_to_read:
-        lc_cores_chunk[k] = fobj["data"]["k"][read_start:read_end]
+    for key in keys_to_read:
+        lc_cores_chunk[key] = fobj["data"][key][read_start:read_end]
 
     # shift look-up-indices for the chunk
     lc_cores_chunk["top_host_idx"] -= read_start
