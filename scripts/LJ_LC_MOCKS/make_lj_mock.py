@@ -272,9 +272,13 @@ if __name__ == "__main__":
             tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
         )
 
-        nchunks = nhalos_estimate // batch_size
+        if batch_size >= nhalos_estimate:
+            nchunks = 1
+        else:
+            nchunks = nhalos_estimate // batch_size
         msg = f"Loading {nhalos_estimate} halos in {nchunks} chunks with batch_size={batch_size}"
         print(msg)
+
         for chunknum in range(0, nchunks):
             jax.clear_caches()
             gc.collect()
