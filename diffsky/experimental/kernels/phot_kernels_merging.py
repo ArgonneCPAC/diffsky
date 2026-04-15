@@ -8,8 +8,11 @@ from . import mc_phot_kernels as mcpk
 def _mc_dbk_specphot_kern_merging(
     ran_key, diffstarpop_params, mah_params, cosmo_params
 ):
-    _res = _dbk_specphot_kern_merging(
+    dbk_specphot_merging_randoms, sfh_params = get_mc_dbk_specphot_merging_randoms(
         ran_key, diffstarpop_params, mah_params, cosmo_params
+    )
+    _res = _dbk_specphot_kern_merging(
+        mah_params, sfh_params, cosmo_params, dbk_specphot_merging_randoms
     )
 
 
@@ -28,5 +31,5 @@ def get_dbk_merging_randoms(ran_key, phot_randoms):
     return dbk_specphot_randoms
 
 
-def _dbk_specphot_kern_merging():
+def _dbk_specphot_kern_merging(mah_params, sfh_params, cosmo_params, randoms):
     pass
