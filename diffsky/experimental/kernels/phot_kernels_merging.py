@@ -26,3 +26,7 @@ def get_mc_dbk_specphot_merging_randoms(
 
 def get_dbk_merging_randoms(ran_key, phot_randoms):
     return dbk_specphot_randoms
+
+
+def _dbk_specphot_kern_merging():
+    pass
