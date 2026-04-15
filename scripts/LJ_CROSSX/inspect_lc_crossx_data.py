@@ -7,6 +7,7 @@ from glob import glob
 import numpy as np
 
 from diffsky.data_loaders.hacc_utils import hacc_core_utils as hcu
+from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 
 BN_GLOBPAT_LC_CORES = "lc_cores-{0}.{1}.hdf5"
 BN_GLOBPAT_LC_CF = "lc_cores-{0}.{1}.diffsky_data.hdf5"
@@ -28,6 +29,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "patch_max", help="Maximum lc_patch to check for matches", type=int
     )
+    parser.add_argument(
+        "-patch_min", help="Minimum lc_patch to check for matches", type=int, default=0
+    )
 
     parser.add_argument(
         "-bnpat_lc_cf",
@@ -43,12 +47,20 @@ if __name__ == "__main__":
         help="Basename pattern for lc_cores",
         default=BN_GLOBPAT_LC_CORES.format("*", "*"),
     )
+    parser.add_argument(
+        "-n_matchup_test",
+        help="Number of files to check n_cf_match=1",
+        type=int,
+        default=10,
+    )
 
     args = parser.parse_args()
     drn_lc_cf = args.drn_lc_cf
     z_min = args.z_min
     z_max = args.z_max
     patch_max = args.patch_max
+    patch_min = args.patch_min
+    n_matchup_test = args.n_matchup_test
 
     bnpat_lc_cf = args.bnpat_lc_cf
     drn_lc_cores = args.drn_lc_cores
@@ -76,6 +88,7 @@ if __name__ == "__main__":
             (stepnum >= timestep_min)
             & (stepnum <= timestep_max)
             & (lc_patch <= patch_max)
+            & (lc_patch >= patch_min)
         ):
 
             matching_bn_lc_cf = bn_lc_cores.replace(".hdf5", ".diffsky_data.hdf5")
@@ -97,22 +110,24 @@ if __name__ == "__main__":
         np.savetxt(fn_incompl_out, incomplete_patch_collector, fmt="%i")
 
     # Sanity check the matchup
+    indx_all = np.arange(len(fn_lc_cf_list)).astype(int)
+    indx_test = np.random.choice(indx_all, n_matchup_test, replace=False)
+    all_good = True
+    failure_collector = []
+    for indx in indx_test:
+        fn = fn_lc_cf_list[indx]
+        report = hlu.check_lc_cores_diffsky_data(fn)
+        fn_report = fn.replace(".hdf5", ".report.txt")
+        all_good_fn = hlu.write_lc_cores_diffsky_data_report_to_disk(report, fn_report)
+        all_good = all_good & all_good_fn
+        if not all_good_fn:
+            bname = os.path.basename(fn)
+            print(f"{bname} fails readiness test")
+            failure_collector.append(bname)
 
-    # all_good = True
-    # failure_collector = []
-    # for fn in fn_list:
-    #     report = check_lc_cores_diffsky_data(fn)
-    #     fn_report = fn.replace(".hdf5", ".report.txt")
-    #     all_good_fn = write_lc_cores_diffsky_data_report_to_disk(report, fn_report)
-    #     all_good = all_good & all_good_fn
-    #     if not all_good_fn:
-    #         bname = os.path.basename(fn)
-    #         print(f"{bname} fails readiness test")
-    #         failure_collector.append(bname)
-
-    # if all_good:
-    #     print("All lightcone patches pass all tests")
-    # else:
-    #     print("Some failures in the following lightcone patches:\n")
-    #     for failing_bn in failure_collector:
-    #         print(f"{failing_bn}")
+    if all_good:
+        print("All lightcone patches pass all tests")
+    else:
+        print("Some failures in the following lightcone patches:\n")
+        for failing_bn in failure_collector:
+            print(f"{failing_bn}")
