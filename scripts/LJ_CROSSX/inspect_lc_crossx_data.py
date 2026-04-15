@@ -52,7 +52,7 @@ if __name__ == "__main__":
         "-n_matchup_test",
         help="Number of files to check n_cf_match=1",
         type=int,
-        default=100,
+        default=500,
     )
 
     start = time()
@@ -113,7 +113,11 @@ if __name__ == "__main__":
 
     # Sanity check the matchup
     indx_all = np.arange(len(fn_lc_cf_list)).astype(int)
-    indx_test = np.random.choice(indx_all, n_matchup_test, replace=False)
+    if indx_all.size <= n_matchup_test:
+        indx_test = np.copy(indx_all)
+    else:
+        indx_test = np.random.choice(indx_all, n_matchup_test, replace=False)
+
     all_good = True
     failure_collector = []
     for indx in indx_test:
