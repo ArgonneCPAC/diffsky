@@ -272,20 +272,18 @@ if __name__ == "__main__":
             tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
         )
 
-        print(f"Looping over {nhalos_estimate} halos with batch_size={batch_size}")
-        for istart in range(0, nhalos_estimate, batch_size):
+        nchunks = nhalos_estimate // batch_size
+        msg = f"Loading {nhalos_estimate} halos in {nchunks} chunks with batch_size={batch_size}"
+        print(msg)
+        for chunknum in range(0, nchunks):
             jax.clear_caches()
             gc.collect()
-
-            iend = min(istart + batch_size, nhalos_estimate)
 
             patch_key, batch_key = jran.split(patch_key)
 
             if synthetic_cores == 0:
-                lc_data_batch, diffsky_data_batch = (
-                    load_lc_cf.load_lc_diffsky_patch_data(
-                        fn_lc_diffsky, indir_lc_data, istart=istart, iend=iend
-                    )
+                lc_data_batch, diffsky_data_batch = load_lc_cf.load_lc_cf_chunk(
+                    fn_lc_diffsky, indir_lc_data, nchunks=nchunks, chunknum=chunknum
                 )
             else:
                 downsample_factor = nhalos_estimate / batch_size
