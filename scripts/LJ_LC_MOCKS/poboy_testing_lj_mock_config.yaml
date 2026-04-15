@@ -2,7 +2,8 @@ machine: "poboy"
 z_min: 0.0
 z_max: 0.06
 istart: 0
-iend: 1
+iend: 2
+batch_size: 200
 drn_out: "ci_test_output"
 mock_nickname: "ci_test_mock"
 cosmos_fit: "cosmos_260215"
