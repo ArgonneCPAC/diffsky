@@ -118,6 +118,7 @@ if __name__ == "__main__":
     else:
         indx_test = np.random.choice(indx_all, n_matchup_test, replace=False)
 
+    print(f"\nChecking n_cf_match=1 for {n_matchup_test} randomly selected files...")
     all_good = True
     failure_collector = []
     for indx in indx_test:
@@ -135,8 +136,8 @@ if __name__ == "__main__":
     runtime = end - start
     print(f"Runtime to check files = {runtime:.1f} seconds")
     if all_good:
-        print("All lightcone patches pass all tests")
+        print("A\nll lightcone patches pass all tests\n")
     else:
-        print("Some failures in the following lightcone patches:\n")
+        print("\nSome failures in the following lightcone patches:\n")
         for failing_bn in failure_collector:
             print(f"{failing_bn}")
