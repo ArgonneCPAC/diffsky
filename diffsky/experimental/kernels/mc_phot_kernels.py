@@ -9,7 +9,7 @@ from jax import random as jran
 from jax import vmap
 
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
-from ...merging import merging_model
+from ...merging import compute_x_tot_from_x_in_situ, merging_model
 from ...ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
 from .. import photometry_interpolation as photerp
@@ -345,24 +345,19 @@ def _phot_kern_merging(
     merge_prob = merging_model.get_p_merge_from_merging_params(
         merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
     )
-    ngals = logmp_infall.shape[0]
-    indx_to_keep = jnp.arange(ngals).astype("i8")
 
-    merge_weight = merge_prob * nhalos_weights
     mstar_in_situ = 10**phot_kern_results.logsm_obs
-    mstar_to_keep = mstar_in_situ * (1 - merge_prob)
-    mstar_to_deposit = mstar_in_situ * merge_weight
-    mstar_obs = jnp.zeros_like(mstar_in_situ)
-    mstar_obs = mstar_obs.at[halo_indx].add(mstar_to_deposit)
-    mstar_obs = mstar_obs.at[indx_to_keep].add(mstar_to_keep)
+    mstar_obs = compute_x_tot_from_x_in_situ(
+        mstar_in_situ, merge_prob, nhalos_weights, halo_indx
+    )
 
-    merge_weight = merge_weight[:, jnp.newaxis]
     flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags)
-    flux_to_keep = flux_in_situ * (1 - merge_prob)[:, jnp.newaxis]
-    flux_to_deposit = flux_in_situ * merge_weight
-    flux_obs = jnp.zeros_like(flux_in_situ)
-    flux_obs = flux_obs.at[halo_indx].add(flux_to_deposit)
-    flux_obs = flux_obs.at[indx_to_keep].add(flux_to_keep)
+    flux_obs = compute_x_tot_from_x_in_situ(
+        flux_in_situ,
+        merge_prob[:, jnp.newaxis],
+        nhalos_weights[:, jnp.newaxis],
+        halo_indx,
+    )
 
     return phot_kern_results, flux_obs, merge_prob, mstar_obs
 
@@ -596,30 +591,26 @@ def _specphot_kern_merging(
     merge_prob = merging_model.get_p_merge_from_merging_params(
         merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
     )
-    ngals = logmp_infall.shape[0]
-    indx_to_keep = jnp.arange(ngals).astype("i8")
 
-    merge_weight = merge_prob * nhalos_weights
     mstar_in_situ = 10**phot_kern_results.logsm_obs
-    mstar_to_keep = mstar_in_situ * (1 - merge_prob)
-    mstar_to_deposit = mstar_in_situ * merge_weight
-    mstar_obs = jnp.zeros_like(mstar_in_situ)
-    mstar_obs = mstar_obs.at[halo_indx].add(mstar_to_deposit)
-    mstar_obs = mstar_obs.at[indx_to_keep].add(mstar_to_keep)
+    mstar_obs = compute_x_tot_from_x_in_situ(
+        mstar_in_situ, merge_prob, nhalos_weights, halo_indx
+    )
 
-    merge_weight = merge_weight[:, jnp.newaxis]
     flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags)
-    flux_to_keep = flux_in_situ * (1 - merge_prob)[:, jnp.newaxis]
-    flux_to_deposit = flux_in_situ * merge_weight
-    flux_obs = jnp.zeros_like(flux_in_situ)
-    flux_obs = flux_obs.at[halo_indx].add(flux_to_deposit)
-    flux_obs = flux_obs.at[indx_to_keep].add(flux_to_keep)
+    flux_obs = compute_x_tot_from_x_in_situ(
+        flux_in_situ,
+        merge_prob[:, jnp.newaxis],
+        nhalos_weights[:, jnp.newaxis],
+        halo_indx,
+    )
 
-    linelums_to_keep = linelums_in_situ * (1 - merge_prob)[:, jnp.newaxis]
-    linelums_to_deposit = linelums_in_situ * merge_weight
-    linelums_obs = jnp.zeros_like(linelums_in_situ)
-    linelums_obs = linelums_obs.at[halo_indx].add(linelums_to_deposit)
-    linelums_obs = linelums_obs.at[indx_to_keep].add(linelums_to_keep)
+    linelums_obs = compute_x_tot_from_x_in_situ(
+        linelums_in_situ,
+        merge_prob[:, jnp.newaxis],
+        nhalos_weights[:, jnp.newaxis],
+        halo_indx,
+    )
 
     return (
         phot_kern_results,
