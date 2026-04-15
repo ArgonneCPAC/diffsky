@@ -55,6 +55,7 @@ def load_mock_metadata(fn_mock):
     hacc_cosmology = dict()
     nbody_info = dict()
     software_info = dict()
+    index_data = dict()
 
     with h5py.File(fn_mock, "r") as hdf:
         for key, val in hdf["metadata"].attrs.items():
@@ -76,6 +77,11 @@ def load_mock_metadata(fn_mock):
 
             z_phot_table = hdf["metadata"]["z_phot_table"][...]
             metadata_dict["z_phot_table"] = z_phot_table
+
+            if "index" in hdf["metadata"].keys():
+                for indx_name, indx_val in hdf["metadata"]["index"].attrs.items():
+                    index_data[indx_name] = indx_val
+                metadata_dict["index"] = index_data
 
     drn_mock = os.path.dirname(fn_mock)
 

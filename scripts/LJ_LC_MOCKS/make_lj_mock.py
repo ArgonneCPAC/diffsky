@@ -393,6 +393,8 @@ if __name__ == "__main__":
                 )
 
         if synthetic_cores == 0:
+            metadata_mock.append_index_metadata(fn_out, indir_lc_data)
+
             lc_cores_poskeys = (
                 "x",
                 "y",

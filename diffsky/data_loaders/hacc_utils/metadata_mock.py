@@ -1,10 +1,11 @@
 """"""
 
+import os
 from datetime import datetime
 
 import h5py
 
-from . import load_lc_cf
+from . import load_flat_hdf5, load_lc_cf
 
 try:
     from astropy import units as u
@@ -589,6 +590,19 @@ def append_metadata(
 
             hdf_out[key_out].attrs["unit"] = str(u.erg / u.s)
             hdf_out[key_out].attrs["description"] = LINELUM_MSG
+
+
+def append_index_metadata(fnout, drn_lc_cores):
+    """Copy the index metadata from lc_cores to the output mock data"""
+    bn_lc_cores = os.path.basename(fnout).replace(".diffsky_gals.hdf5", ".hdf5")
+    fn_lc_cores = os.path.join(drn_lc_cores, bn_lc_cores)
+    index_data = load_flat_hdf5(fn_lc_cores, dataset="index")
+
+    with h5py.File(fnout, "r+") as hdf_out:
+        metadata_group = hdf_out.require_group("metadata")
+        index_group = metadata_group.require_group("index")
+        for key, val in index_data.items():
+            index_group.attrs[key] = val
 
 
 def get_dependency_versions():
