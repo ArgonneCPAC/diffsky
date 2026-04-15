@@ -6,6 +6,7 @@ To run a unit test of this script:
 
 To run a local test on poboy:
     python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
 
 """
 
