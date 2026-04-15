@@ -136,7 +136,7 @@ if __name__ == "__main__":
     runtime = end - start
     print(f"Runtime to check files = {runtime:.1f} seconds")
     if all_good:
-        print("A\nll lightcone patches pass all tests\n")
+        print("\nAll lightcone patches pass all tests\n")
     else:
         print("\nSome failures in the following lightcone patches:\n")
         for failing_bn in failure_collector:
