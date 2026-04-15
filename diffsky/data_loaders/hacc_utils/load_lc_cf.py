@@ -3,6 +3,7 @@
 import os
 from collections import namedtuple
 
+import h5py
 import numpy as np
 from diffmah import DEFAULT_MAH_PARAMS
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
@@ -150,3 +151,51 @@ def generate_fake_mah_params(ran_key, t_obs, lgmp_obs, is_central, lgt0):
     fake_mah_params = DEFAULT_MAH_PARAMS._make(_mah_params)
 
     return fake_mah_params
+
+
+def _chunked_read_kernel(fobj, nchunks, chunknum, keys_to_read):
+    """Read a forest-complete chunk of data from lc_cores"""
+
+    nindex = len(fobj["index"]["offset"])
+    nstart = (nindex // nchunks) * chunknum
+    nend = (nindex // nchunks) * (chunknum + 1)
+
+    read_start = fobj["index"]["offset"][nstart]
+    if chunknum == nchunks - 1:
+        read_end = fobj["index"]["offset"][-1] + fobj["index"]["count"][-1]
+    else:
+        read_end = fobj["index"]["offset"][nend]
+
+    lc_cores_chunk = {}
+    for key in keys_to_read:
+        lc_cores_chunk[key] = fobj["data"][key][read_start:read_end]
+
+    # shift look-up-indices for the chunk
+    lc_cores_chunk["top_host_idx_chunk"] = lc_cores_chunk["top_host_idx"] - read_start
+    lc_cores_chunk["secondary_top_host_idx_chunk"] = (
+        lc_cores_chunk["secondary_top_host_idx"] - read_start
+    )
+
+    return lc_cores_chunk, (read_start, read_end)
+
+
+def load_lc_cf_chunk(fn_lc_cf, drn_lc_cores, *, nchunks, chunknum, lc_cores_keys=None):
+    bn_lc_cf = os.path.basename(fn_lc_cf)
+    bn_lc_cores = os.path.basename(bn_lc_cf).replace(".diffsky_data.hdf5", ".hdf5")
+    fn_lc_cores = os.path.join(drn_lc_cores, bn_lc_cores)
+
+    with h5py.File(fn_lc_cores, "r") as hdf:
+        if lc_cores_keys is None:
+            lc_cores_keys = list(hdf["data"].keys())
+
+        lc_data, (istart, iend) = _chunked_read_kernel(
+            hdf, nchunks, chunknum, lc_cores_keys
+        )
+
+    diffsky_data = load_flat_hdf5(fn_lc_cf, istart=istart, iend=iend)
+
+    lc_data["redshift_true"] = 1.0 / lc_data["scale_factor"] - 1.0
+
+    assert lc_data["redshift_true"].shape[0] == diffsky_data["logm0"].shape[0]
+
+    return lc_data, diffsky_data

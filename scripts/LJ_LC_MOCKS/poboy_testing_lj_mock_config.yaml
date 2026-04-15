@@ -1,0 +1,13 @@
+machine: "poboy"
+z_min: 0.0
+z_max: 0.06
+istart: 0
+iend: 2
+batch_size: 200
+drn_out: "ci_test_output"
+mock_nickname: "ci_test_mock"
+cosmos_fit: "cosmos_260215"
+synthetic_cores: 0
+mock_version_name: "dummy_version_name"
+lsst_only: 1
+bn_ssp_data: "fsps_v0.4.7_mist_c3k_a_kroupa_wNE_logGasU-2.0_logGasZ0.0.sparse.h5"

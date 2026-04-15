@@ -1,9 +1,12 @@
 """Script to make an SED mock to populate a Last Journey lightcone
 
 To run a unit test of this script:
+    python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
 
-python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
-python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
+To run a local test on poboy:
+    mpiexec -n 2 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
 
 """
 
@@ -43,10 +46,10 @@ DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 DRN_LJ_LC_LCRC = (
     "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-7/output"
 )
-DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-6"
+DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-7"
 
 DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-7-cf-diffsky"
-DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-cf-diffsky"
+DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-7-cf-diffsky"
 
 
 SIM_NAME = "LastJourney"
@@ -272,20 +275,22 @@ if __name__ == "__main__":
             tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
         )
 
-        print(f"Looping over {nhalos_estimate} halos with batch_size={batch_size}")
-        for istart in range(0, nhalos_estimate, batch_size):
+        if batch_size >= nhalos_estimate:
+            nchunks = 1
+        else:
+            nchunks = nhalos_estimate // batch_size
+        msg = f"Loading {nhalos_estimate} halos in {nchunks} chunks with batch_size={batch_size}"
+        print(msg)
+
+        for chunknum in range(0, nchunks):
             jax.clear_caches()
             gc.collect()
-
-            iend = min(istart + batch_size, nhalos_estimate)
 
             patch_key, batch_key = jran.split(patch_key)
 
             if synthetic_cores == 0:
-                lc_data_batch, diffsky_data_batch = (
-                    load_lc_cf.load_lc_diffsky_patch_data(
-                        fn_lc_diffsky, indir_lc_data, istart=istart, iend=iend
-                    )
+                lc_data_batch, diffsky_data_batch = load_lc_cf.load_lc_cf_chunk(
+                    fn_lc_diffsky, indir_lc_data, nchunks=nchunks, chunknum=chunknum
                 )
             else:
                 downsample_factor = nhalos_estimate / batch_size
