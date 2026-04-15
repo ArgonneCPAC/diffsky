@@ -446,6 +446,11 @@ if __name__ == "__main__":
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
 
+            if synthetic_cores == 0:
+                bn_sky_decomp = "lc_cores-decomposition.txt"
+                fn_sky_decomp = os.path.join(indir_lc_data, bn_sky_decomp)
+                shutil.copy2(fn_sky_decomp, drn_out)
+
             lcmp_repro.write_ancillary_data(
                 drn_out,
                 mock_version_name,
