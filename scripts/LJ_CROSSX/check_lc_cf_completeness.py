@@ -13,7 +13,7 @@ from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 
 SIM_NAME = "LastJourney"
-DRN_LC_CF = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-cf-diffsky"
+DRN_LC_CF = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-7-cf-diffsky"
 DRN_LC_CORES = (
     "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-7/output"
 )
