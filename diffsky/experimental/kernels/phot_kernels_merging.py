@@ -32,4 +32,21 @@ def get_dbk_merging_randoms(ran_key, phot_randoms):
 
 
 def _dbk_specphot_kern_merging(mah_params, sfh_params, cosmo_params, randoms):
-    pass
+    dbk_specphot_info, dbk_weights = mcpk._mc_dbk_specphot_kern(
+        ran_key,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        line_wave_table,
+        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+    )
