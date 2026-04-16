@@ -469,27 +469,12 @@ def test_mc_dbk_specphot_kern(num_halos=250):
     )
     fb = 0.156
 
-    n_lines = 3
-    emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
-    ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
-    lc_data = lc_data._replace(
-        ssp_data=ssp_data,
-        line_wave_table=lc_data.line_wave_table[0:n_lines],
-        precomputed_ssp_linelum_cgs_table=lc_data.precomputed_ssp_linelum_cgs_table[
-            :n_lines, :, :
-        ],
-    )
-
-    phot_randoms, sfh_params = mcpk.get_mc_phot_randoms(
-        ran_key, dpw.DEFAULT_PARAM_COLLECTION[0], lc_data.mah_params, DEFAULT_COSMOLOGY
-    )
-
     args = (
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
-        ssp_data,
+        lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
