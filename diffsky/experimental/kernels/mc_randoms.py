@@ -1,12 +1,14 @@
 """"""
 
 from collections import namedtuple
+from functools import partial
 
 from jax import jit as jjit
 from jax import random as jran
 
 from ...ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
+from ..disk_bulge_modeling import disk_knots
 from . import ssp_weight_kernels as sspwk
 
 PHOT_RAN_KEYS = (
@@ -18,6 +20,8 @@ PHOT_RAN_KEYS = (
     "delta_mag_ssp_scatter",
 )
 PhotRandoms = namedtuple("PhotRandoms", PHOT_RAN_KEYS)
+
+DBKRandoms = namedtuple("DBKRandoms", ("fknot", "uran_fbulge"))
 
 
 @jjit
@@ -50,3 +54,14 @@ def get_mc_phot_randoms(ran_key, diffstarpop_params, mah_params, cosmo_params):
         delta_mag_ssp_scatter,
     )
     return phot_randoms, sfh_params
+
+
+@partial(jjit, static_argnames=["n_gals"])
+def get_mc_dbk_randoms(dbk_key, n_gals):
+    fknot_key, fbulge_key = jran.split(dbk_key, 2)
+    fknot = jran.uniform(
+        fknot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
+    )
+    uran_fbulge = jran.uniform(fbulge_key, shape=(n_gals,))
+
+    return DBKRandoms(fknot=fknot, uran_fbulge=uran_fbulge)
