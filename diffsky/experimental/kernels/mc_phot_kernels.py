@@ -1,32 +1,18 @@
 from collections import namedtuple
 from functools import partial
 
-from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
-from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...merging import compute_x_tot_from_x_in_situ, merging_model
 from ...ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
-from . import dbk_kernels, mc_randoms
-from . import phot_kernels as pkern
+from . import dbk_kernels, linelum_kernels, mc_randoms, phot_kernels
 from . import ssp_weight_kernels as sspwk
-
-PHOT_RAN_KEYS = (
-    "mc_is_q",
-    "uran_av",
-    "uran_delta",
-    "uran_funo",
-    "uran_pburst",
-    "delta_mag_ssp_scatter",
-)
-PhotRandoms = namedtuple("PhotRandoms", PHOT_RAN_KEYS)
-
 
 LGMET_SCATTER = 0.2
 
@@ -35,13 +21,23 @@ _B = (None, None, 1)
 interp_vmap2 = jjit(vmap(jnp.interp, in_axes=_B, out_axes=1))
 
 
+# kernels
+_mc_phot_kern = phot_kernels._mc_phot_kern
+_phot_kern = phot_kernels._phot_kern
+_mc_dbk_kern = dbk_kernels._mc_dbk_kern
+_dbk_kern = dbk_kernels._dbk_kern  # noqa
+_mc_specphot_kern = linelum_kernels._mc_specphot_kern
+_specphot_kern = linelum_kernels._specphot_kern
+
+# randoms
 get_mc_phot_randoms = mc_randoms.get_mc_phot_randoms
 get_mc_dbk_randoms = mc_randoms.get_mc_dbk_randoms
 
-_mc_phot_kern = pkern._mc_phot_kern
-_phot_kern = pkern._phot_kern
-_mc_dbk_kern = dbk_kernels._mc_dbk_kern
-_dbk_kern = dbk_kernels._dbk_kern  # noqa
+# namedtuple containers
+PhotRandoms = mc_randoms.PhotRandoms
+SpecKernResults = linelum_kernels.SpecKernResults
+PhotKernResults = phot_kernels.PhotKernResults
+DBKRandoms = mc_randoms.DBKRandoms
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -165,113 +161,6 @@ def _phot_kern_merging(
     )
 
     return phot_kern_results, flux_obs, merge_prob, mstar_obs
-
-
-@jjit
-def _mc_specphot_kern(
-    ran_key,
-    z_obs,
-    t_obs,
-    mah_params,
-    ssp_data,
-    precomputed_ssp_mag_table,
-    z_phot_table,
-    wave_eff_table,
-    line_wave_table,
-    diffstarpop_params,
-    mzr_params,
-    spspop_params,
-    scatter_params,
-    ssp_err_pop_params,
-    cosmo_params,
-    fb,
-):
-    phot_randoms, sfh_params = get_mc_phot_randoms(
-        ran_key, diffstarpop_params, mah_params, cosmo_params
-    )
-    phot_kern_results, gal_linelums, dust_ftrans_lines = _specphot_kern(
-        phot_randoms,
-        sfh_params,
-        z_obs,
-        t_obs,
-        mah_params,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
-        line_wave_table,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssp_err_pop_params,
-        cosmo_params,
-        fb,
-    )
-
-    spec_kern_results = SpecKernResults(gal_linelums, dust_ftrans_lines)
-
-    return phot_kern_results, phot_randoms, spec_kern_results
-
-
-@jjit
-def _specphot_kern(
-    phot_randoms,
-    sfh_params,
-    z_obs,
-    t_obs,
-    mah_params,
-    ssp_data,
-    precomputed_ssp_mag_table,
-    z_phot_table,
-    wave_eff_table,
-    line_wave_table,
-    mzr_params,
-    spspop_params,
-    scatter_params,
-    ssp_err_pop_params,
-    cosmo_params,
-    fb,
-):
-    phot_kern_results = _phot_kern(
-        phot_randoms,
-        sfh_params,
-        z_obs,
-        t_obs,
-        mah_params,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssp_err_pop_params,
-        cosmo_params,
-        fb,
-    )
-
-    _dust_res = sspwk.compute_dust_attenuation_lines(
-        phot_randoms.uran_av,
-        phot_randoms.uran_delta,
-        phot_randoms.uran_funo,
-        phot_kern_results.logsm_obs,
-        phot_kern_results.logssfr_obs,
-        ssp_data,
-        z_obs,
-        line_wave_table,
-        spspop_params.dustpop_params,
-        scatter_params,
-    )
-    dust_ftrans_lines = _dust_res[0]
-
-    gal_linelums = sspwk._compute_linelum_from_weights(
-        phot_kern_results.logsm_obs,
-        dust_ftrans_lines,
-        ssp_data,
-        phot_kern_results.ssp_weights,
-    )
-
-    return phot_kern_results, gal_linelums, dust_ftrans_lines
 
 
 @jjit
@@ -799,27 +688,6 @@ def _mc_lc_dbk_sed_kern(
 
     return sed_bulge, sed_disk, sed_knots
 
-
-DBKRandoms = namedtuple("DBKRandoms", ("fknot", "uran_fbulge"))
-PHOT_KERN_KEYS = (
-    "obs_mags",
-    "t_table",
-    *DEFAULT_DIFFSTAR_PARAMS._fields,
-    "sfh_table",
-    "logsm_obs",
-    "logssfr_obs",
-    "mc_sfh_type",
-    "ssp_weights",
-    "lgmet_weights",
-    *DEFAULT_BURST_PARAMS._fields,
-    *DEFAULT_DUST_PARAMS._fields,
-    "dust_frac_trans",
-    "ssp_photflux_table",
-    "frac_ssp_errors",
-    "wave_eff_galpop",
-)
-PhotKernResults = namedtuple("PhotKernResults", PHOT_KERN_KEYS)
-SpecKernResults = namedtuple("SpecKernResults", ("gal_linelums", "dust_ftrans_lines"))
 
 DBK_PHOT_EXTRA_FIELDS = (
     *dbk.FbulgeParams._fields,
