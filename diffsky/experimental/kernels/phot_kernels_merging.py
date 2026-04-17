@@ -1,11 +1,13 @@
 """"""
 
+from jax import jit as jjit
 from jax import numpy as jnp
 
 from ...merging import compute_x_tot_from_x_in_situ, merging_model
 from . import mc_phot_kernels as mcpk
 
 
+@jjit
 def _mc_dbk_specphot_kern_merging(
     ran_key,
     z_obs,
