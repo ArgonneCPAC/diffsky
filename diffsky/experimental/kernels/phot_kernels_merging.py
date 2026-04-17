@@ -64,12 +64,13 @@ def _mc_dbk_specphot_kern_merging(
     mstar_colnames = ("mstar_bulge", "mstar_disk", "mstar_knots")
     mstar_dict = dict()
     for name in mstar_colnames:
-        mstar_dict[name] = getattr(dbk_specphot_info, name) * frac_dm
+        mstar_dict[name] = getattr(dbk_weights, name) * frac_dm
 
     mag_dict = dict()
     mag_colnames = ("obs_mags", "obs_mags_bulge", "obs_mags_disk", "obs_mags_knots")
+    n_gals, n_bands = dbk_specphot_info.obs_mags.shape
     for name in mag_colnames:
-        mag_dict[name] = getattr(dbk_specphot_info, name) + dmag
+        mag_dict[name] = getattr(dbk_specphot_info, name) + dmag.reshape((n_gals, 1))
 
     linelum_dict = dict()
     for name in ssp_data.ssp_emline_wave._fields:
@@ -78,4 +79,9 @@ def _mc_dbk_specphot_kern_merging(
             kname = name + k
             linelum_dict[kname] = getattr(dbk_specphot_info, kname) * frac_dm
 
-    return mstar_dict, mag_dict, linelum_dict
+    ex_situ_dict = dict(mstar_obs=mstar_obs)
+    ex_situ_dict.update(mstar_dict)
+    ex_situ_dict.update(mag_dict)
+    ex_situ_dict.update(linelum_dict)
+
+    return dbk_specphot_info, dbk_weights, ex_situ_dict
