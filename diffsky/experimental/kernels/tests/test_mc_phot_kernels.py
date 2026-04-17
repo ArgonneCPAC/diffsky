@@ -217,7 +217,7 @@ def test_specphot_kern(num_halos=250):
         fb,
     )
 
-    phot_kern_results2, phot_randoms2, gal_linelums = _specphot_res
+    phot_kern_results2, phot_randoms2, spec_kern_results = _specphot_res
     assert np.allclose(
         phot_kern_results.obs_mags, phot_kern_results2.obs_mags, rtol=1e-4
     )

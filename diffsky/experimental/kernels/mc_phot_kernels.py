@@ -403,7 +403,9 @@ def _mc_specphot_kern(
         fb,
     )
 
-    return phot_kern_results, phot_randoms, gal_linelums
+    spec_kern_results = SpecKernResults(gal_linelums, dust_ftrans_lines)
+
+    return phot_kern_results, phot_randoms, spec_kern_results
 
 
 @jjit
@@ -854,7 +856,7 @@ def _mc_dbk_specphot_kern(
     fb,
 ):
     phot_key, dbk_key = jran.split(ran_key, 2)
-    phot_kern_results, phot_randoms, gal_linelums = _mc_specphot_kern(
+    phot_kern_results, phot_randoms, spec_kern_results = _mc_specphot_kern(
         phot_key,
         z_obs,
         t_obs,
@@ -902,7 +904,7 @@ def _mc_dbk_specphot_kern(
 
     linelum_dict = dict()
     for i, name in enumerate(ssp_data.ssp_emline_wave._fields):
-        linelum_dict[name] = gal_linelums[:, i]
+        linelum_dict[name] = spec_kern_results.gal_linelums[:, i]
 
     dbk_specphot_info = MCDBKSpecPhotInfo(
         **phot_kern_results._asdict(),
@@ -998,6 +1000,7 @@ PHOT_KERN_KEYS = (
     "wave_eff_galpop",
 )
 PhotKernResults = namedtuple("PhotKernResults", PHOT_KERN_KEYS)
+SpecKernResults = namedtuple("SpecKernResults", ("gal_linelums", "dust_ftrans_lines"))
 
 DBK_EXTRA_FIELDS = (
     *dbk.FbulgeParams._fields,
