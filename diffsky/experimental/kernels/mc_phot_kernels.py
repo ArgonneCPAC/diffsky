@@ -899,12 +899,26 @@ def _mc_dbk_specphot_kern(
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
 
-    dbk_specphot_keys = (*MCDBKPhotInfo._fields, *ssp_data.ssp_emline_wave._fields)
+    line_names = []
+    for name in ssp_data.ssp_emline_wave._fields:
+        line_names.append(name)
+        line_names.append(name + "_bulge")
+        line_names.append(name + "_disk")
+        line_names.append(name + "_knots")
+
+    dbk_specphot_keys = (*MCDBKPhotInfo._fields, *line_names)
     MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_keys)
 
+    _dbk_line_res = _get_dbk_linelum_decomposition(
+        dbk_weights, spec_kern_results, ssp_data
+    )
+    linelums_bulge, linelums_disk, linelums_knots = _dbk_line_res
     linelum_dict = dict()
     for i, name in enumerate(ssp_data.ssp_emline_wave._fields):
         linelum_dict[name] = spec_kern_results.gal_linelums[:, i]
+        linelum_dict[name + "_bulge"] = linelums_bulge[:, i]
+        linelum_dict[name + "_disk"] = linelums_disk[:, i]
+        linelum_dict[name + "_knots"] = linelums_knots[:, i]
 
     dbk_specphot_info = MCDBKSpecPhotInfo(
         **phot_kern_results._asdict(),
@@ -918,6 +932,29 @@ def _mc_dbk_specphot_kern(
         **linelum_dict,
     )
     return dbk_specphot_info, dbk_weights
+
+
+@jjit
+def _get_dbk_linelum_decomposition(dbk_weights, spec_kern_results, ssp_data):
+    linelums_bulge = sspwk._compute_linelum_from_weights(
+        jnp.log10(dbk_weights.mstar_bulge),
+        spec_kern_results.dust_ftrans_lines,
+        ssp_data,
+        dbk_weights.ssp_weights_bulge,
+    )
+    linelums_disk = sspwk._compute_linelum_from_weights(
+        jnp.log10(dbk_weights.mstar_disk),
+        spec_kern_results.dust_ftrans_lines,
+        ssp_data,
+        dbk_weights.ssp_weights_disk,
+    )
+    linelums_knots = sspwk._compute_linelum_from_weights(
+        jnp.log10(dbk_weights.mstar_knots),
+        spec_kern_results.dust_ftrans_lines,
+        ssp_data,
+        dbk_weights.ssp_weights_knots,
+    )
+    return linelums_bulge, linelums_disk, linelums_knots
 
 
 def _mc_lc_dbk_sed_kern(
