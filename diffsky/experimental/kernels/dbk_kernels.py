@@ -7,7 +7,8 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
 
-from ..disk_bulge_modeling import disk_knots
+from ..disk_bulge_modeling import dbpop, disk_knots
+from . import mc_randoms
 from . import ssp_weight_kernels as sspwk
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
@@ -17,17 +18,40 @@ get_pureburst_age_weights = jjit(
     vmap(diffburst._pureburst_age_weights_from_params, in_axes=_BPOP)
 )
 
-DBKWeights = namedtuple(
-    "DBKWeights",
-    (
-        "ssp_weights_bulge",
-        "ssp_weights_disk",
-        "ssp_weights_knots",
-        "mstar_bulge",
-        "mstar_disk",
-        "mstar_knots",
-    ),
-)
+
+@jjit
+def _mc_dbk_kern(
+    t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_key
+):
+    n_gals = t_obs.shape[0]
+    dbk_randoms = mc_randoms.get_mc_dbk_randoms(dbk_key, n_gals)
+    dbk_weights, disk_bulge_history = _dbk_kern(
+        t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_randoms
+    )
+    return dbk_randoms, dbk_weights, disk_bulge_history
+
+
+@jjit
+def _dbk_kern(
+    t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_randoms
+):
+    disk_bulge_history = dbpop.decompose_sfh_into_disk_bulge_sfh(
+        dbk_randoms.uran_fbulge, t_table, sfh_table, t_obs
+    )
+
+    args = (
+        t_obs,
+        ssp_data,
+        t_table,
+        sfh_table,
+        burst_params,
+        lgmet_weights,
+        disk_bulge_history,
+        dbk_randoms.fknot,
+    )
+    dbk_weights = get_dbk_weights(*args)
+
+    return dbk_weights, disk_bulge_history
 
 
 @jjit
@@ -114,3 +138,16 @@ def get_dbk_weights(
         mstar_disk=mstar_disk,
         mstar_knots=mstar_knots,
     )
+
+
+DBKWeights = namedtuple(
+    "DBKWeights",
+    (
+        "ssp_weights_bulge",
+        "ssp_weights_disk",
+        "ssp_weights_knots",
+        "mstar_bulge",
+        "mstar_disk",
+        "mstar_knots",
+    ),
+)

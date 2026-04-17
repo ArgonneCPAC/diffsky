@@ -12,9 +12,7 @@ from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...merging import compute_x_tot_from_x_in_situ, merging_model
 from ...ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
-from ..disk_bulge_modeling import dbpop
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
-from ..disk_bulge_modeling import disk_knots
 from . import dbk_kernels, mc_randoms
 from . import phot_kernels as pkern
 from . import ssp_weight_kernels as sspwk
@@ -38,31 +36,12 @@ interp_vmap2 = jjit(vmap(jnp.interp, in_axes=_B, out_axes=1))
 
 
 get_mc_phot_randoms = mc_randoms.get_mc_phot_randoms
+get_mc_dbk_randoms = mc_randoms.get_mc_dbk_randoms
+
 _mc_phot_kern = pkern._mc_phot_kern
 _phot_kern = pkern._phot_kern
-
-
-@jjit
-def _dbk_kern(
-    t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_randoms
-):
-    disk_bulge_history = dbpop.decompose_sfh_into_disk_bulge_sfh(
-        dbk_randoms.uran_fbulge, t_table, sfh_table, t_obs
-    )
-
-    args = (
-        t_obs,
-        ssp_data,
-        t_table,
-        sfh_table,
-        burst_params,
-        lgmet_weights,
-        disk_bulge_history,
-        dbk_randoms.fknot,
-    )
-    dbk_weights = dbk_kernels.get_dbk_weights(*args)
-
-    return dbk_weights, disk_bulge_history
+_mc_dbk_kern = dbk_kernels._mc_dbk_kern
+_dbk_kern = dbk_kernels._dbk_kern  # noqa
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -450,18 +429,6 @@ def _specphot_kern_merging(
     )
 
 
-@jjit
-def _mc_dbk_kern(
-    t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_key
-):
-    n_gals = t_obs.shape[0]
-    dbk_randoms = get_mc_dbk_randoms(dbk_key, n_gals)
-    dbk_weights, disk_bulge_history = _dbk_kern(
-        t_obs, ssp_data, t_table, sfh_table, burst_params, lgmet_weights, dbk_randoms
-    )
-    return dbk_randoms, dbk_weights, disk_bulge_history
-
-
 @partial(jjit, static_argnames=["n_t_table"])
 def _sed_kern(
     phot_randoms,
@@ -543,17 +510,6 @@ def _sed_kern(
 
     sed_kern_results = (rest_sed, dust_frac_trans, frac_ssp_errors, ssp_weights)
     return sed_kern_results
-
-
-@partial(jjit, static_argnames=["n_gals"])
-def get_mc_dbk_randoms(dbk_key, n_gals):
-    fknot_key, fbulge_key = jran.split(dbk_key, 2)
-    fknot = jran.uniform(
-        fknot_key, minval=0, maxval=disk_knots.FKNOT_MAX, shape=(n_gals,)
-    )
-    uran_fbulge = jran.uniform(fbulge_key, shape=(n_gals,))
-
-    return DBKRandoms(fknot=fknot, uran_fbulge=uran_fbulge)
 
 
 @jjit
