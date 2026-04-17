@@ -8,8 +8,7 @@ from jax import random as jran
 from ....param_utils import diffsky_param_wrapper as dpw
 from ...tests import test_mc_lightcone_halos as tmclh
 from ...tests import test_mc_phot
-from .. import dbk_kernels
-from .. import mc_phot_kernels as mcpk
+from .. import dbk_kernels, phot_kernels
 
 
 def test_mc_dbk_kern(num_halos=50):
@@ -19,7 +18,7 @@ def test_mc_dbk_kern(num_halos=50):
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)
 
-    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
+    phot_kern_results, phot_randoms = phot_kernels._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -75,7 +74,7 @@ def test_mc_dbk_kern(num_halos=50):
         phot_kern_results.dust_frac_trans,
         phot_kern_results.frac_ssp_errors,
     )
-    _res = mcpk._get_dbk_phot_from_dbk_weights(*args)
+    _res = dbk_kernels._get_dbk_phot_from_dbk_weights(*args)
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res
 
     np.all(phot_kern_results.logsm_obs > np.log10(dbk_weights.mstar_bulge.flatten()))
