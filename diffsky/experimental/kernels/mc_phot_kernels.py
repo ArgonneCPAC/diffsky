@@ -28,6 +28,7 @@ _mc_dbk_kern = dbk_kernels._mc_dbk_kern
 _dbk_kern = dbk_kernels._dbk_kern  # noqa
 _mc_specphot_kern = linelum_kernels._mc_specphot_kern
 _specphot_kern = linelum_kernels._specphot_kern
+_get_dbk_phot_from_dbk_weights = dbk_kernels._get_dbk_phot_from_dbk_weights
 
 # randoms
 get_mc_phot_randoms = mc_randoms.get_mc_phot_randoms
@@ -399,40 +400,6 @@ def _sed_kern(
 
     sed_kern_results = (rest_sed, dust_frac_trans, frac_ssp_errors, ssp_weights)
     return sed_kern_results
-
-
-@jjit
-def _get_dbk_phot_from_dbk_weights(
-    ssp_photflux_table, dbk_weights, dust_frac_trans, frac_ssp_err
-):
-    n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
-
-    # Reshape arrays before calculating galaxy magnitudes
-    _ftrans = dust_frac_trans.reshape((n_gals, n_bands, 1, n_age))
-
-    _ferr_ssp = frac_ssp_err.reshape((n_gals, n_bands, 1, 1))
-
-    _w_bulge = dbk_weights.ssp_weights_bulge.reshape((n_gals, 1, n_met, n_age))
-    _w_dd = dbk_weights.ssp_weights_disk.reshape((n_gals, 1, n_met, n_age))
-    _w_knot = dbk_weights.ssp_weights_knots.reshape((n_gals, 1, n_met, n_age))
-
-    _mstar_bulge = dbk_weights.mstar_bulge.reshape((n_gals, 1))
-    _mstar_disk = dbk_weights.mstar_disk.reshape((n_gals, 1))
-    _mstar_knots = dbk_weights.mstar_knots.reshape((n_gals, 1))
-
-    integrand_bulge = ssp_photflux_table * _w_bulge * _ftrans * _ferr_ssp
-    flux_bulge = jnp.sum(integrand_bulge, axis=(2, 3)) * _mstar_bulge
-    obs_mags_bulge = -2.5 * jnp.log10(flux_bulge)
-
-    integrand_disk = ssp_photflux_table * _w_dd * _ftrans * _ferr_ssp
-    flux_disk = jnp.sum(integrand_disk, axis=(2, 3)) * _mstar_disk
-    obs_mags_disk = -2.5 * jnp.log10(flux_disk)
-
-    integrand_knots = ssp_photflux_table * _w_knot * _ftrans * _ferr_ssp
-    flux_knots = jnp.sum(integrand_knots, axis=(2, 3)) * _mstar_knots
-    obs_mags_knots = -2.5 * jnp.log10(flux_knots)
-
-    return obs_mags_bulge, obs_mags_disk, obs_mags_knots
 
 
 def _mc_dbk_phot_kern(
