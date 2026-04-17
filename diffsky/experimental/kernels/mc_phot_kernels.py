@@ -384,7 +384,7 @@ def _mc_specphot_kern(
     phot_randoms, sfh_params = get_mc_phot_randoms(
         ran_key, diffstarpop_params, mah_params, cosmo_params
     )
-    phot_kern_results, gal_linelums = _specphot_kern(
+    phot_kern_results, gal_linelums, dust_ftrans_lines = _specphot_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -403,7 +403,9 @@ def _mc_specphot_kern(
         fb,
     )
 
-    return phot_kern_results, phot_randoms, gal_linelums
+    spec_kern_results = SpecKernResults(gal_linelums, dust_ftrans_lines)
+
+    return phot_kern_results, phot_randoms, spec_kern_results
 
 
 @jjit
@@ -464,7 +466,7 @@ def _specphot_kern(
         phot_kern_results.ssp_weights,
     )
 
-    return phot_kern_results, gal_linelums
+    return phot_kern_results, gal_linelums, dust_ftrans_lines
 
 
 @jjit
@@ -568,7 +570,7 @@ def _specphot_kern_merging(
     nhalos_weights,
     halo_indx,
 ):
-    phot_kern_results, linelums_in_situ = _specphot_kern(
+    phot_kern_results, linelums_in_situ, dust_ftrans_lines = _specphot_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -854,8 +856,8 @@ def _mc_dbk_specphot_kern(
     fb,
 ):
     phot_key, dbk_key = jran.split(ran_key, 2)
-    phot_kern_results, phot_randoms, gal_linelums = _mc_specphot_kern(
-        ran_key,
+    phot_kern_results, phot_randoms, spec_kern_results = _mc_specphot_kern(
+        phot_key,
         z_obs,
         t_obs,
         mah_params,
@@ -897,12 +899,26 @@ def _mc_dbk_specphot_kern(
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
 
-    dbk_specphot_keys = (*MCDBKPhotInfo._fields, *ssp_data.ssp_emline_wave._fields)
+    line_names = []
+    for name in ssp_data.ssp_emline_wave._fields:
+        line_names.append(name)
+        line_names.append(name + "_bulge")
+        line_names.append(name + "_disk")
+        line_names.append(name + "_knots")
+
+    dbk_specphot_keys = (*MCDBKPhotInfo._fields, *line_names)
     MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_keys)
 
+    _dbk_line_res = _get_dbk_linelum_decomposition(
+        dbk_weights, spec_kern_results, ssp_data
+    )
+    linelums_bulge, linelums_disk, linelums_knots = _dbk_line_res
     linelum_dict = dict()
     for i, name in enumerate(ssp_data.ssp_emline_wave._fields):
-        linelum_dict[name] = gal_linelums[:, i]
+        linelum_dict[name] = spec_kern_results.gal_linelums[:, i]
+        linelum_dict[name + "_bulge"] = linelums_bulge[:, i]
+        linelum_dict[name + "_disk"] = linelums_disk[:, i]
+        linelum_dict[name + "_knots"] = linelums_knots[:, i]
 
     dbk_specphot_info = MCDBKSpecPhotInfo(
         **phot_kern_results._asdict(),
@@ -916,6 +932,29 @@ def _mc_dbk_specphot_kern(
         **linelum_dict,
     )
     return dbk_specphot_info, dbk_weights
+
+
+@jjit
+def _get_dbk_linelum_decomposition(dbk_weights, spec_kern_results, ssp_data):
+    linelums_bulge = sspwk._compute_linelum_from_weights(
+        jnp.log10(dbk_weights.mstar_bulge),
+        spec_kern_results.dust_ftrans_lines,
+        ssp_data,
+        dbk_weights.ssp_weights_bulge,
+    )
+    linelums_disk = sspwk._compute_linelum_from_weights(
+        jnp.log10(dbk_weights.mstar_disk),
+        spec_kern_results.dust_ftrans_lines,
+        ssp_data,
+        dbk_weights.ssp_weights_disk,
+    )
+    linelums_knots = sspwk._compute_linelum_from_weights(
+        jnp.log10(dbk_weights.mstar_knots),
+        spec_kern_results.dust_ftrans_lines,
+        ssp_data,
+        dbk_weights.ssp_weights_knots,
+    )
+    return linelums_bulge, linelums_disk, linelums_knots
 
 
 def _mc_lc_dbk_sed_kern(
@@ -998,6 +1037,7 @@ PHOT_KERN_KEYS = (
     "wave_eff_galpop",
 )
 PhotKernResults = namedtuple("PhotKernResults", PHOT_KERN_KEYS)
+SpecKernResults = namedtuple("SpecKernResults", ("gal_linelums", "dust_ftrans_lines"))
 
 DBK_EXTRA_FIELDS = (
     *dbk.FbulgeParams._fields,

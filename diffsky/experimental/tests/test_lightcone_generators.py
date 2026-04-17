@@ -3,6 +3,7 @@
 from collections import namedtuple
 
 import numpy as np
+from dsps.data_loaders import load_emline_info as lemi
 from dsps.data_loaders import retrieve_fake_fsps_data
 from dsps.data_loaders.defaults import TransmissionCurve
 from jax import random as jran
@@ -50,7 +51,7 @@ def _get_weighted_lc_halos_photdata_for_unit_testing(num_halos=75):
     return lc_data, tcurves
 
 
-def _get_weighted_lc_photdata_for_unit_testing(num_halos=75):
+def _get_weighted_lc_photdata_for_unit_testing(num_halos=75, n_lines=3):
     ran_key = jran.key(0)
 
     lgmp_min, lgmp_max = 10.0, 15.0
@@ -83,6 +84,16 @@ def _get_weighted_lc_photdata_for_unit_testing(num_halos=75):
         z_phot_table,
     )
     lc_data = lcg.weighted_lc_photdata(*args)
+
+    emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
+    ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
+    lc_data = lc_data._replace(
+        ssp_data=ssp_data,
+        line_wave_table=lc_data.line_wave_table[0:n_lines],
+        precomputed_ssp_linelum_cgs_table=lc_data.precomputed_ssp_linelum_cgs_table[
+            :n_lines, :, :
+        ],
+    )
 
     return lc_data, tcurves
 
