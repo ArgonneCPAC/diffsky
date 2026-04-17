@@ -13,3 +13,11 @@ def test_dbk_kern():
 
 def test_get_dbk_weights():
     pass
+
+
+def test_get_dbk_phot_from_dbk_weights():
+    pass
+
+
+def test_get_dbk_linelum_decomposition():
+    pass

@@ -13,10 +13,10 @@ from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
 from .. import photometry_interpolation as photerp
-from . import mc_randoms
+from . import constants, mc_randoms
 from . import ssp_weight_kernels as sspwk
 
-LGMET_SCATTER = 0.2
+LGMET_SCATTER = constants.LGMET_SCATTER
 
 
 _B = (None, None, 1)
