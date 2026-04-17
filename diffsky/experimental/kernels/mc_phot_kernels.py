@@ -384,7 +384,7 @@ def _mc_specphot_kern(
     phot_randoms, sfh_params = get_mc_phot_randoms(
         ran_key, diffstarpop_params, mah_params, cosmo_params
     )
-    phot_kern_results, gal_linelums = _specphot_kern(
+    phot_kern_results, gal_linelums, dust_ftrans_lines = _specphot_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -464,7 +464,7 @@ def _specphot_kern(
         phot_kern_results.ssp_weights,
     )
 
-    return phot_kern_results, gal_linelums
+    return phot_kern_results, gal_linelums, dust_ftrans_lines
 
 
 @jjit
@@ -568,7 +568,7 @@ def _specphot_kern_merging(
     nhalos_weights,
     halo_indx,
 ):
-    phot_kern_results, linelums_in_situ = _specphot_kern(
+    phot_kern_results, linelums_in_situ, dust_ftrans_lines = _specphot_kern(
         phot_randoms,
         sfh_params,
         z_obs,
