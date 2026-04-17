@@ -6,7 +6,6 @@ from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
-from ...merging import compute_x_tot_from_x_in_situ, merging_model
 from ...ssp_err_model import ssp_err_model
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
 from . import (
