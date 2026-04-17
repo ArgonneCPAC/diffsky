@@ -1,6 +1,7 @@
 """"""
 
 import numpy as np
+import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import random as jran
@@ -109,17 +110,21 @@ def test_mc_dbk_kern(num_halos=50):
     assert np.all(std_magdiff < 0.01)
 
 
+@pytest.mark.xfail
 def test_dbk_kern():
-    pass
+    raise NotImplementedError("Test not implemented yet")
 
 
+@pytest.mark.xfail
 def test_get_dbk_weights():
-    pass
+    raise NotImplementedError("Test not implemented yet")
 
 
+@pytest.mark.xfail
 def test_get_dbk_phot_from_dbk_weights():
-    pass
+    raise NotImplementedError("Test not implemented yet")
 
 
+@pytest.mark.xfail
 def test_get_dbk_linelum_decomposition():
-    pass
+    raise NotImplementedError("Test not implemented yet")

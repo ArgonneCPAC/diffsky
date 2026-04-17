@@ -1,6 +1,7 @@
 """"""
 
 import numpy as np
+import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
@@ -48,9 +49,11 @@ def test_mc_dbk_specphot_kern(num_halos=250):
         assert np.allclose(logdiff, 0.0, atol=0.01)
 
 
+@pytest.mark.xfail
 def test_mc_dbk_phot_kern():
-    pass
+    raise NotImplementedError("Test not implemented yet")
 
 
+@pytest.mark.xfail
 def test_mc_lc_dbk_sed_kern():
-    pass
+    raise NotImplementedError("Test not implemented yet")
