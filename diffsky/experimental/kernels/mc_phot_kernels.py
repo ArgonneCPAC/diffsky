@@ -1039,7 +1039,7 @@ PHOT_KERN_KEYS = (
 PhotKernResults = namedtuple("PhotKernResults", PHOT_KERN_KEYS)
 SpecKernResults = namedtuple("SpecKernResults", ("gal_linelums", "dust_ftrans_lines"))
 
-DBK_EXTRA_FIELDS = (
+DBK_PHOT_EXTRA_FIELDS = (
     *dbk.FbulgeParams._fields,
     "bulge_to_total_history",
     "obs_mags_bulge",
@@ -1052,6 +1052,6 @@ MCDBKPhotInfo = namedtuple(
         *PhotKernResults._fields,
         *PhotRandoms._fields,
         *DBKRandoms._fields,
-        *DBK_EXTRA_FIELDS,
+        *DBK_PHOT_EXTRA_FIELDS,
     ),
 )
