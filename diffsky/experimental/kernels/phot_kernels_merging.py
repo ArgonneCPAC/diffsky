@@ -1,14 +1,17 @@
 """"""
 
+from functools import partial
+
 from jax import jit as jjit
 from jax import numpy as jnp
 
 from ...merging import compute_x_tot_from_x_in_situ, merging_model
-from . import mc_phot_kernels as mcpk
+from .. import mc_diffstarpop_wrappers as mcdw
+from . import mc_randoms, phot_kernels
 
 
-@jjit
-def _mc_dbk_specphot_kern_merging(
+@partial(jjit, static_argnames=["n_t_table"])
+def _mc_phot_kern_merging(
     ran_key,
     z_obs,
     t_obs,
@@ -17,7 +20,6 @@ def _mc_dbk_specphot_kern_merging(
     precomputed_ssp_mag_table,
     z_phot_table,
     wave_eff_table,
-    line_wave_table,
     diffstarpop_params,
     mzr_params,
     spspop_params,
@@ -32,9 +34,14 @@ def _mc_dbk_specphot_kern_merging(
     is_central,
     nhalos_weights,
     halo_indx,
+    n_t_table=mcdw.N_T_TABLE,
 ):
-    dbk_specphot_info, dbk_weights = mcpk._mc_dbk_specphot_kern(
-        ran_key,
+    phot_randoms, sfh_params = mc_randoms.get_mc_phot_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params
+    )
+    phot_kern_results, flux_obs, merge_prob, mstar_obs = _phot_kern_merging(
+        phot_randoms,
+        sfh_params,
         z_obs,
         t_obs,
         mah_params,
@@ -42,48 +49,85 @@ def _mc_dbk_specphot_kern_merging(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
-        line_wave_table,
-        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        merge_params,
+        cosmo_params,
+        fb,
+        logmp_infall,
+        logmhost_infall,
+        t_infall,
+        is_central,
+        nhalos_weights,
+        halo_indx,
+        n_t_table=n_t_table,
+    )
+    return phot_kern_results, phot_randoms, flux_obs, merge_prob, mstar_obs
+
+
+@partial(jjit, static_argnames=["n_t_table"])
+def _phot_kern_merging(
+    phot_randoms,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    merge_params,
+    cosmo_params,
+    fb,
+    logmp_infall,
+    logmhost_infall,
+    t_infall,
+    is_central,
+    nhalos_weights,
+    halo_indx,
+    n_t_table=mcdw.N_T_TABLE,
+):
+    phot_kern_results = phot_kernels._phot_kern(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
         mzr_params,
         spspop_params,
         scatter_params,
         ssp_err_pop_params,
         cosmo_params,
         fb,
+        n_t_table=n_t_table,
     )
+
     upids = jnp.where(is_central == 1, -1.0, 0.0)
     merge_prob = merging_model.get_p_merge_from_merging_params(
         merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
     )
-    mstar_in_situ = 10**dbk_specphot_info.logsm_obs
 
+    mstar_in_situ = 10**phot_kern_results.logsm_obs
     mstar_obs = compute_x_tot_from_x_in_situ(
         mstar_in_situ, merge_prob, nhalos_weights, halo_indx
     )
-    frac_dm = mstar_obs / mstar_in_situ
-    dmag = -2.5 * jnp.log10(frac_dm)
 
-    mstar_colnames = ("mstar_bulge", "mstar_disk", "mstar_knots")
-    mstar_dict = dict()
-    for name in mstar_colnames:
-        mstar_dict[name] = getattr(dbk_weights, name) * frac_dm
+    flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags)
+    flux_obs = compute_x_tot_from_x_in_situ(
+        flux_in_situ,
+        merge_prob[:, jnp.newaxis],
+        nhalos_weights[:, jnp.newaxis],
+        halo_indx,
+    )
 
-    mag_dict = dict()
-    mag_colnames = ("obs_mags", "obs_mags_bulge", "obs_mags_disk", "obs_mags_knots")
-    n_gals, n_bands = dbk_specphot_info.obs_mags.shape
-    for name in mag_colnames:
-        mag_dict[name] = getattr(dbk_specphot_info, name) + dmag.reshape((n_gals, 1))
-
-    linelum_dict = dict()
-    for name in ssp_data.ssp_emline_wave._fields:
-        linelum_dict[name] = getattr(dbk_specphot_info, name) * frac_dm
-        for k in ("_bulge", "_disk", "_knots"):
-            kname = name + k
-            linelum_dict[kname] = getattr(dbk_specphot_info, kname) * frac_dm
-
-    ex_situ_dict = dict(mstar_obs=mstar_obs)
-    ex_situ_dict.update(mstar_dict)
-    ex_situ_dict.update(mag_dict)
-    ex_situ_dict.update(linelum_dict)
-
-    return dbk_specphot_info, dbk_weights, ex_situ_dict
+    return phot_kern_results, flux_obs, merge_prob, mstar_obs

@@ -5,7 +5,7 @@ from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import phot_kernels_merging as pkm
+from .. import dbk_kernels_merging as dbkkm
 
 
 def test_mc_dbk_specphot_kern_merging(num_halos=250):
@@ -36,5 +36,5 @@ def test_mc_dbk_specphot_kern_merging(num_halos=250):
         lc_data.nhalos,
         lc_data.halo_indx,
     )
-    _res = pkm._mc_dbk_specphot_kern_merging(*args)
+    _res = dbkkm._mc_dbk_specphot_kern_merging(*args)
     dbk_specphot_info, dbk_weights, ex_situ_dict = _res
