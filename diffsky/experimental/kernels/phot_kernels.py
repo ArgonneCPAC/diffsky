@@ -40,6 +40,7 @@ def _mc_phot_kern(
     ssp_err_pop_params,
     cosmo_params,
     fb,
+    *,
     n_t_table=mcdw.N_T_TABLE,
 ):
     phot_randoms, sfh_params = mc_randoms.get_mc_phot_randoms(
@@ -83,6 +84,7 @@ def _phot_kern(
     ssp_err_pop_params,
     cosmo_params,
     fb,
+    *,
     n_t_table=mcdw.N_T_TABLE,
 ):
     """Populate the input lightcone with galaxy SEDs"""
