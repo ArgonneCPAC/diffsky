@@ -3,6 +3,7 @@
 from collections import namedtuple
 
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
+from jax import jit as jjit
 from jax import numpy as jnp
 from jax import random as jran
 
@@ -12,6 +13,7 @@ from . import dbk_kernels, linelum_kernels, mc_randoms, phot_kernels
 from . import ssp_weight_kernels as sspwk
 
 
+@jjit
 def _mc_dbk_phot_kern(
     ran_key,
     z_obs,
@@ -85,6 +87,7 @@ def _mc_dbk_phot_kern(
     return dbk_phot_info, dbk_weights
 
 
+@jjit
 def _mc_dbk_specphot_kern(
     ran_key,
     z_obs,
@@ -171,6 +174,7 @@ def _mc_dbk_specphot_kern(
     return dbk_specphot_info, dbk_weights
 
 
+@jjit
 def _mc_lc_dbk_sed_kern(
     dbk_phot_info,
     dbk_weights,
@@ -253,4 +257,5 @@ _dbk_specphot_keys = (
     *MCDBKPhotInfo._fields,
     *("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots"),
 )
+MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", _dbk_specphot_keys)
 MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", _dbk_specphot_keys)
