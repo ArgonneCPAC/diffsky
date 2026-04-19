@@ -2,7 +2,7 @@
 
 from jax import jit as jjit
 
-from .kernels import mc_randoms, phot_kernels, phot_kernels_merging
+from .kernels import mc_randoms, phot_kernels_merging
 
 
 @jjit
