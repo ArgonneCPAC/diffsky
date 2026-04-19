@@ -15,7 +15,7 @@ from ... import phot_utils
 from ...data_loaders import load_flat_hdf5
 from ...experimental import dbk_phot_from_mock
 from ...experimental import precompute_ssp_phot as psspp
-from ...experimental.kernels import mc_phot_kernels as mcpk
+from ...experimental.kernels import dbk_kernels, dbk_specphot_kernels, mc_randoms
 from . import hacc_core_utils as hcu
 from . import lc_mock as lcmp
 
@@ -305,7 +305,9 @@ def compute_dbk_sed_from_diffsky_mock(
     )
     t_obs = age_at_z(diffsky_data["redshift_true"], *sim_info.cosmo_params)
 
-    dbk_randoms = mcpk.DBKRandoms(diffsky_data["fknot"], diffsky_data["uran_fbulge"])
+    dbk_randoms = mc_randoms.DBKRandoms(
+        diffsky_data["fknot"], diffsky_data["uran_fbulge"]
+    )
 
     dbk_phot_info["uran_av"] = diffsky_data["uran_av"]
     dbk_phot_info["uran_delta"] = diffsky_data["uran_delta"]
@@ -325,7 +327,7 @@ def compute_dbk_sed_from_diffsky_mock(
         dbk_phot_info["lgmet_weights"],
         dbk_randoms,
     )
-    dbk_weights, disk_bulge_history = mcpk._dbk_kern(*args)
+    dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(*args)
 
     dbk_phot_info["mstar_bulge"] = dbk_weights.mstar_bulge
     dbk_phot_info["mstar_disk"] = dbk_weights.mstar_disk
@@ -334,17 +336,38 @@ def compute_dbk_sed_from_diffsky_mock(
     DBKPhotInfo = namedtuple("DBKPhotInfo", list(dbk_phot_info.keys()))
     dbk_phot_info = DBKPhotInfo(**dbk_phot_info)
 
-    sed_bulge, sed_disk, sed_knots = mcpk._mc_lc_dbk_sed_kern(
-        dbk_phot_info,
+    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
+        [diffsky_data[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+    )
+    mah_params = DEFAULT_MAH_PARAMS._make(
+        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+    )
+
+    sed_bulge, sed_disk, sed_knots = dbk_specphot_kernels._dbk_sed_kern(
+        diffsky_data["mc_is_q"],
+        diffsky_data["uran_av"],
+        diffsky_data["uran_delta"],
+        diffsky_data["uran_pburst"],
+        diffsky_data["uran_funo"],
+        diffsky_data["delta_mag_ssp_scatter"],
+        diffsky_data["uran_fbulge"],
+        diffsky_data["fknot"],
+        sfh_params,
+        diffsky_data["redshift_true"],
+        diffsky_data["t_obs"],
+        mah_params,
         dbk_weights,
         diffsky_data["redshift_true"],
         ssp_data,
+        param_collection.mzr_params,
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
+        sim_info.cosmo_params,
+        sim_info.fb,
     )
     dbk_sed_info = dbk_phot_info._asdict()
-    dbk_sed_info["rest_sed_bulge"] = sed_bulge
-    dbk_sed_info["rest_sed_disk"] = sed_disk
-    dbk_sed_info["rest_sed_knots"] = sed_knots
+    dbk_sed_info["sed_bulge"] = sed_bulge
+    dbk_sed_info["sed_disk"] = sed_disk
+    dbk_sed_info["sed_knots"] = sed_knots
     return dbk_sed_info
