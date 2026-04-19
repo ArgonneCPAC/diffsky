@@ -22,6 +22,7 @@ PHOT_RAN_KEYS = (
 PhotRandoms = namedtuple("PhotRandoms", PHOT_RAN_KEYS)
 
 DBKRandoms = namedtuple("DBKRandoms", ("fknot", "uran_fbulge"))
+DiffMergeRandoms = namedtuple("DiffMergeRandoms", ("uran_pmerge",))
 
 
 @jjit
@@ -65,3 +66,9 @@ def get_mc_dbk_randoms(dbk_key, n_gals):
     uran_fbulge = jran.uniform(fbulge_key, shape=(n_gals,))
 
     return DBKRandoms(fknot=fknot, uran_fbulge=uran_fbulge)
+
+
+@partial(jjit, static_argnames=["n_gals"])
+def get_merging_randoms(pmerge_key, n_gals):
+    uran_pmerge = jran.uniform(pmerge_key, shape=(n_gals,))
+    return DiffMergeRandoms(uran_pmerge=uran_pmerge)
