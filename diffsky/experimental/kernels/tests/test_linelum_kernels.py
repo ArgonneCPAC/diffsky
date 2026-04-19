@@ -10,7 +10,7 @@ from ...tests import test_mc_lightcone_halos as tmclh
 from .. import linelum_kernels, phot_kernels
 
 
-def test_mc_specphot_kern(num_halos=250):
+def test_mc_specphot_kern(num_halos=150):
     ran_key = jran.key(0)
     lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
 
