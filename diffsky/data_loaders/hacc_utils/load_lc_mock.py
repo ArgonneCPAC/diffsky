@@ -343,8 +343,9 @@ def compute_dbk_sed_from_diffsky_mock(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
+    mc_is_q = np.where(diffsky_data["mc_sfh_type"] == 0, True, False)
     sed_bulge, sed_disk, sed_knots = dbk_specphot_kernels._dbk_sed_kern(
-        diffsky_data["mc_is_q"],
+        mc_is_q,
         diffsky_data["uran_av"],
         diffsky_data["uran_delta"],
         diffsky_data["uran_pburst"],
