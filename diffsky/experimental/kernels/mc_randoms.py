@@ -75,6 +75,17 @@ def get_merging_randoms(pmerge_key, n_gals):
 
 
 @jjit
+def get_mc_dbk_phot_randoms(ran_key, diffstarpop_params, mah_params, cosmo_params):
+    phot_key, dbk_key = jran.split(ran_key, 2)
+    phot_randoms, sfh_params = get_mc_phot_randoms(
+        phot_key, diffstarpop_params, mah_params, cosmo_params
+    )
+    n_gals = sfh_params[0].shape[0]
+    dbk_randoms = get_mc_dbk_randoms(dbk_key, n_gals)
+    return phot_randoms, sfh_params, dbk_randoms
+
+
+@jjit
 def get_mc_phot_merge_randoms(ran_key, diffstarpop_params, mah_params, cosmo_params):
     phot_key, merge_key = jran.split(ran_key, 2)
     phot_randoms, sfh_params = get_mc_phot_randoms(
