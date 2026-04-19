@@ -165,7 +165,7 @@ def _mc_dbk_specphot_kern(
     linelums_bulge, linelums_disk, linelums_knots = _dbk_line_res
     linelum_dict = dict()
     for i, name in enumerate(ssp_data.ssp_emline_wave._fields):
-        linelum_dict[name] = spec_kern_results.gal_linelums[:, i]
+        linelum_dict[name] = spec_kern_results.linelum_gal[:, i]
         linelum_dict[name + "_bulge"] = linelums_bulge[:, i]
         linelum_dict[name + "_disk"] = linelums_disk[:, i]
         linelum_dict[name + "_knots"] = linelums_knots[:, i]

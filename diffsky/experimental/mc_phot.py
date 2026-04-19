@@ -184,7 +184,7 @@ def mc_lc_specphot(
         phot_kern_results[key] = val
 
     for i, emline_name in enumerate(lc_data.ssp_data.ssp_emline_wave._fields):
-        phot_kern_results[emline_name] = spec_kern_results.gal_linelums[:, i]
+        phot_kern_results[emline_name] = spec_kern_results.linelum_gal[:, i]
 
     return phot_kern_results
 
