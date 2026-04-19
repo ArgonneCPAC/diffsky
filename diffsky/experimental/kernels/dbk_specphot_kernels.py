@@ -31,9 +31,13 @@ def _mc_dbk_phot_kern(
     cosmo_params,
     fb,
 ):
-    phot_key, dbk_key = jran.split(ran_key, 2)
-    phot_kern_results, phot_randoms = phot_kernels._mc_phot_kern(
-        phot_key,
+    phot_randoms, sfh_params, dbk_randoms = mc_randoms.get_mc_dbk_phot_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params
+    )
+    dbk_phot_info, dbk_weights = _dbk_phot_kern(
+        phot_randoms,
+        sfh_params,
+        dbk_randoms,
         z_obs,
         t_obs,
         mah_params,
@@ -41,7 +45,46 @@ def _mc_dbk_phot_kern(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
-        diffstarpop_params,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        cosmo_params,
+        fb,
+    )
+
+    return dbk_phot_info, dbk_weights
+
+
+@jjit
+def _dbk_phot_kern(
+    phot_randoms,
+    sfh_params,
+    dbk_randoms,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    cosmo_params,
+    fb,
+):
+    phot_kern_results = phot_kernels._phot_kern(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
         mzr_params,
         spspop_params,
         scatter_params,
@@ -55,16 +98,15 @@ def _mc_dbk_phot_kern(
         lgyr_peak=phot_kern_results.lgyr_peak,
         lgyr_max=phot_kern_results.lgyr_max,
     )
-    _ret2 = dbk_kernels._mc_dbk_kern(
+    dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(
         t_obs,
         ssp_data,
         phot_kern_results.t_table,
         phot_kern_results.sfh_table,
         burst_params,
         phot_kern_results.lgmet_weights,
-        dbk_key,
+        dbk_randoms,
     )
-    dbk_randoms, dbk_weights, disk_bulge_history = _ret2
 
     _ret3 = dbk_kernels._get_dbk_phot_from_dbk_weights(
         phot_kern_results.ssp_photflux_table,

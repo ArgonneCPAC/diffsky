@@ -1,7 +1,6 @@
 """"""
 
 import numpy as np
-import pytest
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
@@ -12,13 +11,36 @@ from ...tests import test_lightcone_generators as tlcg
 from .. import dbk_specphot_kernels as dbkspk
 
 
+def test_mc_dbk_phot_kern(num_halos=19):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    fb = 0.196
+
+    args = (
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpw.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+    dbk_phot_info, dbk_weights = dbkspk._mc_dbk_phot_kern(*args)
+
+
 def test_mc_dbk_specphot_kern(num_halos=13):
     """Enforce that the sum of the component lines equals the composite line"""
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )
-    fb = 0.156
+    fb = 0.196
 
     args = (
         ran_key,
@@ -46,11 +68,6 @@ def test_mc_dbk_specphot_kern(num_halos=13):
     )
     logdiff = np.log10(component_lines_sum) - np.log10(dbk_specphot_info.linelum_gal)
     assert np.allclose(logdiff, 0.0, atol=0.01)
-
-
-@pytest.mark.xfail
-def test_mc_dbk_phot_kern():
-    raise NotImplementedError("Test not implemented yet")
 
 
 def test_mc_lc_dbk_sed_kern(num_halos=17):
