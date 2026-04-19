@@ -187,7 +187,7 @@ def _mc_lc_dbk_sed_kern(
     n_gals = dbk_phot_info.logsm_obs.shape[0]
     wave_eff_galpop = jnp.tile(ssp_data.ssp_wave, n_gals).reshape((n_gals, -1))
 
-    dust_frac_trans, dust_params = sspwk.compute_dust_attenuation(
+    dust_frac_trans, __ = sspwk.compute_dust_attenuation(
         dbk_phot_info.uran_av,
         dbk_phot_info.uran_delta,
         dbk_phot_info.uran_funo,
@@ -198,11 +198,6 @@ def _mc_lc_dbk_sed_kern(
         wave_eff_galpop,
         spspop_params.dustpop_params,
         scatter_params,
-    )
-    dust_params = dust_params._replace(
-        av=dust_params.av[:, 0, -1],
-        delta=dust_params.delta[:, 0],
-        funo=dust_params.funo[:, 0],
     )
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
@@ -225,9 +220,9 @@ def _mc_lc_dbk_sed_kern(
     _w_dd = dbk_weights.ssp_weights_disk.reshape((n_gals, n_met, n_age, 1))
     _w_knot = dbk_weights.ssp_weights_knots.reshape((n_gals, n_met, n_age, 1))
 
-    mb = dbk_phot_info.mstar_bulge.reshape((n_gals, 1))
-    md = dbk_phot_info.mstar_disk.reshape((n_gals, 1))
-    mk = dbk_phot_info.mstar_knots.reshape((n_gals, 1))
+    mb = dbk_weights.mstar_bulge.reshape((n_gals, 1))
+    md = dbk_weights.mstar_disk.reshape((n_gals, 1))
+    mk = dbk_weights.mstar_knots.reshape((n_gals, 1))
 
     sed_bulge = jnp.sum(a * b * _w_bulge * d, axis=(1, 2)) * mb
     sed_disk = jnp.sum(a * b * _w_dd * d, axis=(1, 2)) * md
