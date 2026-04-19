@@ -4,7 +4,6 @@ from functools import partial
 
 from jax import jit as jjit
 from jax import numpy as jnp
-from jax import random as jran
 
 from ...merging import compute_x_tot_from_x_in_situ, merging_kernels, merging_model
 from .. import mc_diffstarpop_wrappers as mcdw
@@ -39,12 +38,9 @@ def _mc_phot_kern_merging(
     *,
     n_t_table=mcdw.N_T_TABLE,
 ):
-    phot_key, merge_key = jran.split(ran_key, 2)
-    phot_randoms, sfh_params = mc_randoms.get_mc_phot_randoms(
-        phot_key, diffstarpop_params, mah_params, cosmo_params
+    phot_randoms, sfh_params, merging_randoms = mc_randoms.get_mc_phot_merge_randoms(
+        ran_key, diffstarpop_params, mah_params, cosmo_params
     )
-    n_gals = sfh_params[0].shape[0]
-    merging_randoms = mc_randoms.get_merging_randoms(merge_key, n_gals)
 
     phot_kern_results, flux_obs, merge_prob, mstar_obs = _phot_kern_merging(
         phot_randoms,

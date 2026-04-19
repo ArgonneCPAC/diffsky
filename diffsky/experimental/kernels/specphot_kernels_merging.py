@@ -3,15 +3,13 @@
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from ...merging import compute_x_tot_from_x_in_situ, merging_model
+from ...merging import compute_x_tot_from_x_in_situ, merging_kernels, merging_model
 from . import linelum_kernels, mc_randoms
 
 
 @jjit
 def _mc_specphot_kern_merging(
     ran_key,
-    phot_randoms,
-    sfh_params,
     z_obs,
     t_obs,
     mah_params,
@@ -34,20 +32,15 @@ def _mc_specphot_kern_merging(
     is_central,
     nhalos_weights,
     halo_indx,
+    mc_merge,
 ):
-    phot_randoms, sfh_params = mc_randoms.get_mc_phot_randoms(
+    phot_randoms, sfh_params, merging_randoms = mc_randoms.get_mc_phot_merge_randoms(
         ran_key, diffstarpop_params, mah_params, cosmo_params
     )
 
-    (
-        phot_kern_results,
-        linelums_in_situ,
-        flux_obs,
-        merge_prob,
-        mstar_obs,
-        linelums_obs,
-    ) = _specphot_kern_merging(
+    _res = _specphot_kern_merging(
         phot_randoms,
+        merging_randoms,
         sfh_params,
         z_obs,
         t_obs,
@@ -70,7 +63,17 @@ def _mc_specphot_kern_merging(
         is_central,
         nhalos_weights,
         halo_indx,
+        mc_merge,
     )
+    (
+        phot_kern_results,
+        linelums_in_situ,
+        flux_obs,
+        merge_prob,
+        mstar_obs,
+        linelums_obs,
+    ) = _res
+
     return (
         phot_kern_results,
         linelums_in_situ,
@@ -85,6 +88,7 @@ def _mc_specphot_kern_merging(
 @jjit
 def _specphot_kern_merging(
     phot_randoms,
+    merging_randoms,
     sfh_params,
     z_obs,
     t_obs,
@@ -107,6 +111,7 @@ def _specphot_kern_merging(
     is_central,
     nhalos_weights,
     halo_indx,
+    mc_merge,
 ):
     _res = linelum_kernels._specphot_kern(
         phot_randoms,
@@ -132,6 +137,9 @@ def _specphot_kern_merging(
     merge_prob = merging_model.get_p_merge_from_merging_params(
         merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
     )
+    # If mc_merge=1, implement Monte Carlo merging, else merge_prob is a float
+    mc_p_merge = merging_kernels.get_mc_p_merge(merging_randoms.uran_pmerge, merge_prob)
+    merge_prob = jnp.where(mc_merge < 1, merge_prob, mc_p_merge)
 
     mstar_in_situ = 10**phot_kern_results.logsm_obs
     mstar_obs = compute_x_tot_from_x_in_situ(

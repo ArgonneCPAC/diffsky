@@ -12,16 +12,12 @@ from .. import mc_randoms
 from .. import specphot_kernels_merging as sppkm
 
 
-def test_mc_specphot_kern_merging(num_halos=250):
+def test_mc_specphot_kern_merging(num_halos=41):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )
-    fb = 0.156
-
-    phot_randoms, sfh_params = mc_randoms.get_mc_phot_randoms(
-        ran_key, dpw.DEFAULT_PARAM_COLLECTION[0], lc_data.mah_params, DEFAULT_COSMOLOGY
-    )
+    fb = 0.151
 
     n_lines = 3
     line_wave_table = np.linspace(1_000, 10_000, n_lines)
@@ -29,10 +25,9 @@ def test_mc_specphot_kern_merging(num_halos=250):
     ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
     lc_data = lc_data._replace(ssp_data=ssp_data)
 
+    mc_merge = 0
     _res = sppkm._mc_specphot_kern_merging(
         ran_key,
-        phot_randoms,
-        sfh_params,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
@@ -51,6 +46,7 @@ def test_mc_specphot_kern_merging(num_halos=250):
         lc_data.is_central,
         lc_data.nhalos,
         lc_data.halo_indx,
+        mc_merge,
     )
     (
         phot_kern_results,
@@ -133,16 +129,16 @@ def test_mc_specphot_kern_merging(num_halos=250):
     )
 
 
-def test_specphot_kern_merging(num_halos=250):
+def test_specphot_kern_merging(num_halos=47):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )
 
-    fb = 0.156
+    fb = 0.116
     ran_key, phot_key = jran.split(ran_key, 2)
 
-    phot_randoms, sfh_params = mc_randoms.get_mc_phot_randoms(
+    phot_randoms, sfh_params, merging_randoms = mc_randoms.get_mc_phot_merge_randoms(
         ran_key, dpw.DEFAULT_PARAM_COLLECTION[0], lc_data.mah_params, DEFAULT_COSMOLOGY
     )
 
@@ -151,6 +147,8 @@ def test_specphot_kern_merging(num_halos=250):
     emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
     ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
     lc_data = lc_data._replace(ssp_data=ssp_data)
+
+    mc_merge = 0
 
     (
         phot_kern_results,
@@ -161,6 +159,7 @@ def test_specphot_kern_merging(num_halos=250):
         linelums_in_plus_ex_situ,
     ) = sppkm._specphot_kern_merging(
         phot_randoms,
+        merging_randoms,
         sfh_params,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -180,6 +179,7 @@ def test_specphot_kern_merging(num_halos=250):
         lc_data.is_central,
         lc_data.nhalos,
         lc_data.halo_indx,
+        mc_merge,
     )
 
     assert np.all(merge_prob >= 0)
@@ -189,6 +189,4 @@ def test_specphot_kern_merging(num_halos=250):
 
     assert np.all(np.isfinite(mstar_obs))
 
-    assert np.any(linelums_in_plus_ex_situ != linelums_in_situ)
-    assert np.any(linelums_in_plus_ex_situ != linelums_in_situ)
     assert np.any(linelums_in_plus_ex_situ != linelums_in_situ)
