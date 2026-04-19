@@ -233,7 +233,7 @@ def _mc_lc_dbk_sed_kern(
     sed_disk = jnp.sum(a * b * _w_dd * d, axis=(1, 2)) * md
     sed_knots = jnp.sum(a * b * _w_knot * d, axis=(1, 2)) * mk
 
-    return sed_bulge, sed_disk, sed_knots
+    return DBKSEDInfo(sed_bulge, sed_disk, sed_knots)
 
 
 DBK_PHOT_EXTRA_FIELDS = (
@@ -258,3 +258,5 @@ _dbk_specphot_keys = (
     *("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots"),
 )
 MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", _dbk_specphot_keys)
+
+DBKSEDInfo = namedtuple("DBKSEDInfo", ("sed_bulge", "sed_disk", "sed_knots"))
