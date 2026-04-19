@@ -119,7 +119,11 @@ def test_dbk_sed_kern(num_halos=17):
         DEFAULT_COSMOLOGY,
         fb,
     )
-    sed_sum = dbk_sed_info.sed_bulge + dbk_sed_info.sed_disk + dbk_sed_info.sed_knots
+    sed_sum = (
+        dbk_sed_info.rest_sed_bulge
+        + dbk_sed_info.rest_sed_disk
+        + dbk_sed_info.rest_sed_knots
+    )
 
     temp_args = (
         dbk_specphot_info.mc_is_q,

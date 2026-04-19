@@ -394,4 +394,6 @@ _dbk_specphot_keys = (
 )
 MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", _dbk_specphot_keys)
 
-DBKSEDInfo = namedtuple("DBKSEDInfo", ("sed_bulge", "sed_disk", "sed_knots"))
+DBKSEDInfo = namedtuple(
+    "DBKSEDInfo", ("rest_sed_bulge", "rest_sed_disk", "rest_sed_knots")
+)
