@@ -5,7 +5,6 @@ from collections import namedtuple
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
-from jax import random as jran
 
 from ...ssp_err_model import ssp_err_model
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
@@ -265,15 +264,64 @@ def _dbk_specphot_kern(
 
 
 @jjit
-def _mc_lc_dbk_sed_kern(
-    dbk_phot_info,
-    dbk_weights,
+def _dbk_sed_kern(
+    mc_is_q,
+    uran_av,
+    uran_delta,
+    uran_funo,
+    uran_pburst,
+    delta_mag_ssp_scatter,
+    uran_fbulge,
+    fknot,
+    sfh_params,
     z_obs,
+    t_obs,
+    mah_params,
     ssp_data,
+    mzr_params,
     spspop_params,
     scatter_params,
     ssperr_params,
+    cosmo_params,
+    fb,
 ):
+    phot_randoms = mc_randoms.PhotRandoms(
+        mc_is_q,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        uran_pburst,
+        delta_mag_ssp_scatter,
+    )
+    dbk_randoms = mc_randoms.DBKRandoms(fknot=fknot, uran_fbulge=uran_fbulge)
+    n_gals = z_obs.size
+    n_bands = 1
+    n_z = 2
+    z_phot_table = jnp.linspace(z_obs.min(), z_obs.max(), n_z)
+    n_met = ssp_data.ssp_lgmet.size
+    n_age = ssp_data.ssp_lg_age_gyr.size
+    precomputed_ssp_mag_table = jnp.ones((n_z, n_bands, n_met, n_age))
+    wave_eff_table = jnp.ones((n_z, n_bands))
+
+    dbk_phot_info, dbk_weights = _dbk_phot_kern(
+        phot_randoms,
+        sfh_params,
+        dbk_randoms,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        cosmo_params,
+        fb,
+    )
+
     n_gals = dbk_phot_info.logsm_obs.shape[0]
     wave_eff_galpop = jnp.tile(ssp_data.ssp_wave, n_gals).reshape((n_gals, -1))
 
@@ -318,7 +366,9 @@ def _mc_lc_dbk_sed_kern(
     sed_disk = jnp.sum(a * b * _w_dd * d, axis=(1, 2)) * md
     sed_knots = jnp.sum(a * b * _w_knot * d, axis=(1, 2)) * mk
 
-    return DBKSEDInfo(sed_bulge, sed_disk, sed_knots)
+    sed_info = DBKSEDInfo(sed_bulge, sed_disk, sed_knots)
+
+    return sed_info, dbk_weights
 
 
 DBK_PHOT_EXTRA_FIELDS = (

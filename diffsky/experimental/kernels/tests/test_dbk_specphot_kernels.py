@@ -70,13 +70,13 @@ def test_mc_dbk_specphot_kern(num_halos=13):
     assert np.allclose(logdiff, 0.0, atol=0.01)
 
 
-def test_mc_lc_dbk_sed_kern(num_halos=17):
+def test_dbk_sed_kern(num_halos=17):
     """Enforce that the sum of the component SEDs equals the composite SED"""
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )
-    fb = 0.166
+    fb = 0.116
 
     args = (
         ran_key,
@@ -94,20 +94,32 @@ def test_mc_lc_dbk_sed_kern(num_halos=17):
     )
     dbk_specphot_info, dbk_weights = dbkspk._mc_dbk_specphot_kern(*args)
 
-    dbk_sed_info = dbkspk._mc_lc_dbk_sed_kern(
-        dbk_specphot_info,
-        dbk_weights,
-        lc_data.z_obs,
-        lc_data.ssp_data,
-        dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
-        dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
-        dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
-    )
-    sed_sum = dbk_sed_info.sed_bulge + dbk_sed_info.sed_disk + dbk_sed_info.sed_knots
-
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
         [getattr(dbk_specphot_info, pname) for pname in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
+
+    dbk_sed_info, __ = dbkspk._dbk_sed_kern(
+        dbk_specphot_info.mc_is_q,
+        dbk_specphot_info.uran_av,
+        dbk_specphot_info.uran_delta,
+        dbk_specphot_info.uran_funo,
+        dbk_specphot_info.uran_pburst,
+        dbk_specphot_info.delta_mag_ssp_scatter,
+        dbk_specphot_info.uran_fbulge,
+        dbk_specphot_info.fknot,
+        sfh_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+        dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+        dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+        dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+    sed_sum = dbk_sed_info.sed_bulge + dbk_sed_info.sed_disk + dbk_sed_info.sed_knots
 
     temp_args = (
         dbk_specphot_info.mc_is_q,

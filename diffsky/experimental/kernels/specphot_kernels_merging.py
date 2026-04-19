@@ -131,7 +131,7 @@ def _specphot_kern_merging(
         cosmo_params,
         fb,
     )
-    phot_kern_results, linelums_in_situ, dust_ftrans_lines = _res
+    phot_kern_results, spec_kern_results = _res
 
     upids = jnp.where(is_central == 1, -1.0, 0.0)
     merge_prob = merging_model.get_p_merge_from_merging_params(
@@ -155,7 +155,7 @@ def _specphot_kern_merging(
     )
 
     linelums_obs = compute_x_tot_from_x_in_situ(
-        linelums_in_situ,
+        spec_kern_results.linelum_gal,
         merge_prob[:, jnp.newaxis],
         nhalos_weights[:, jnp.newaxis],
         halo_indx,
@@ -163,7 +163,7 @@ def _specphot_kern_merging(
 
     return (
         phot_kern_results,
-        linelums_in_situ,
+        spec_kern_results.linelum_gal,
         flux_obs,
         merge_prob,
         mstar_obs,
