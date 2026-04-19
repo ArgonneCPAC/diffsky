@@ -75,11 +75,10 @@ def _mc_dbk_specphot_kern_merging(
         mag_dict[name] = getattr(dbk_specphot_info, name) + dmag.reshape((n_gals, 1))
 
     linelum_dict = dict()
-    for name in ssp_data.ssp_emline_wave._fields:
-        linelum_dict[name] = getattr(dbk_specphot_info, name) * frac_dm
-        for k in ("_bulge", "_disk", "_knots"):
-            kname = name + k
-            linelum_dict[kname] = getattr(dbk_specphot_info, kname) * frac_dm
+    line_colnames = ("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots")
+    for name in line_colnames:
+        _f = frac_dm.reshape((n_gals, 1))
+        linelum_dict[name] = getattr(dbk_specphot_info, name) * _f
 
     ex_situ_dict = dict(mstar_obs=mstar_obs)
     ex_situ_dict.update(mstar_dict)
