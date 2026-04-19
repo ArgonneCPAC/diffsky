@@ -355,7 +355,7 @@ def compute_dbk_sed_from_diffsky_mock(
         diffsky_data["fknot"],
         sfh_params,
         diffsky_data["redshift_true"],
-        diffsky_data["t_obs"],
+        t_obs,
         mah_params,
         dbk_weights,
         diffsky_data["redshift_true"],
