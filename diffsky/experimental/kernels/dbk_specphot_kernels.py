@@ -149,26 +149,10 @@ def _mc_dbk_specphot_kern(
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
 
-    line_names = []
-    for name in ssp_data.ssp_emline_wave._fields:
-        line_names.append(name)
-        line_names.append(name + "_bulge")
-        line_names.append(name + "_disk")
-        line_names.append(name + "_knots")
-
-    dbk_specphot_keys = (*MCDBKPhotInfo._fields, *line_names)
-    MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_keys)
-
     _dbk_line_res = dbk_kernels._get_dbk_linelum_decomposition(
         dbk_weights, spec_kern_results, ssp_data
     )
-    linelums_bulge, linelums_disk, linelums_knots = _dbk_line_res
-    linelum_dict = dict()
-    for i, name in enumerate(ssp_data.ssp_emline_wave._fields):
-        linelum_dict[name] = spec_kern_results.linelum_gal[:, i]
-        linelum_dict[name + "_bulge"] = linelums_bulge[:, i]
-        linelum_dict[name + "_disk"] = linelums_disk[:, i]
-        linelum_dict[name + "_knots"] = linelums_knots[:, i]
+    linelum_bulge, linelum_disk, linelum_knots = _dbk_line_res
 
     dbk_specphot_info = MCDBKSpecPhotInfo(
         **phot_kern_results._asdict(),
@@ -179,7 +163,10 @@ def _mc_dbk_specphot_kern(
         obs_mags_bulge=obs_mags_bulge,
         obs_mags_disk=obs_mags_disk,
         obs_mags_knots=obs_mags_knots,
-        **linelum_dict,
+        linelum_gal=spec_kern_results.linelum_gal,
+        linelum_bulge=linelum_bulge,
+        linelum_disk=linelum_disk,
+        linelum_knots=linelum_knots,
     )
     return dbk_specphot_info, dbk_weights
 
@@ -261,3 +248,9 @@ MCDBKPhotInfo = namedtuple(
         *DBK_PHOT_EXTRA_FIELDS,
     ),
 )
+
+_dbk_specphot_keys = (
+    *MCDBKPhotInfo._fields,
+    *("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots"),
+)
+MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", _dbk_specphot_keys)
