@@ -85,6 +85,7 @@ def mc_lc_phot_merging(
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
     skip_param_check=False,
+    mc_merge=1,
 ):
     param_collection = dpwm.ParamCollection(
         diffstarpop_params,
@@ -120,6 +121,7 @@ def mc_lc_phot_merging(
         lc_data.is_central,
         lc_data.nhalos,
         lc_data.halo_indx,
+        mc_merge,
     )
     phot_kern_results, phot_randoms, flux_obs, merge_prob, mstar_obs = _res
     phot_kern_results = phot_kern_results._asdict()
