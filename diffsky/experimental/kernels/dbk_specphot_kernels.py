@@ -258,4 +258,3 @@ _dbk_specphot_keys = (
     *("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots"),
 )
 MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", _dbk_specphot_keys)
-MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", _dbk_specphot_keys)
