@@ -9,7 +9,7 @@ from jax import vmap
 
 from ..dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from .disk_bulge_modeling import disk_bulge_kernels as dbk
-from .kernels import mc_phot_kernels as mcpk
+from .kernels import dbk_kernels, mc_randoms, phot_kernels, sed_kernels
 
 _BPOP = (None, 0, 0)
 _pureburst_age_weights_from_params_vmap = jjit(
@@ -60,7 +60,7 @@ def _reproduce_mock_phot_kern(
     fb,
 ):
 
-    phot_randoms = mcpk.PhotRandoms(
+    phot_randoms = mc_randoms.PhotRandoms(
         mc_is_q,
         uran_av,
         uran_delta,
@@ -69,7 +69,7 @@ def _reproduce_mock_phot_kern(
         delta_mag_ssp_scatter,
     )
 
-    phot_kern_results = mcpk._phot_kern(
+    phot_kern_results = phot_kernels._phot_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -134,7 +134,7 @@ def _reproduce_mock_sed_kern(
         cosmo_params,
         fb,
     )
-    sed_kern_results = mcpk._sed_kern(
+    sed_kern_results = sed_kernels._sed_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -202,8 +202,8 @@ def _reproduce_mock_dbk_kern(
     burst_params = DEFAULT_BURST_PARAMS._make(
         [getattr(phot_kern_results, pname) for pname in DEFAULT_BURST_PARAMS._fields]
     )
-    dbk_randoms = mcpk.DBKRandoms(fknot=fknot, uran_fbulge=uran_fbulge)
-    _ret2 = mcpk._dbk_kern(
+    dbk_randoms = mc_randoms.DBKRandoms(fknot=fknot, uran_fbulge=uran_fbulge)
+    _ret2 = dbk_kernels._dbk_kern(
         t_obs,
         ssp_data,
         phot_kern_results.t_table,
@@ -214,7 +214,7 @@ def _reproduce_mock_dbk_kern(
     )
     dbk_weights, disk_bulge_history = _ret2
 
-    _ret3 = mcpk._get_dbk_phot_from_dbk_weights(
+    _ret3 = dbk_kernels._get_dbk_phot_from_dbk_weights(
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,
