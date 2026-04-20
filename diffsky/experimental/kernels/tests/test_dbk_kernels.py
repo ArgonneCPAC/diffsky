@@ -8,9 +8,12 @@ from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper as dpw
 from ...disk_bulge_modeling import dbpop
+from ...tests import test_lightcone_generators as tlcg
 from ...tests import test_mc_lightcone_halos as tmclh
 from ...tests import test_mc_phot
-from .. import dbk_kernels, mc_randoms, phot_kernels
+from .. import dbk_kernels
+from .. import dbk_specphot_kernels as dbkspk
+from .. import mc_randoms, phot_kernels
 
 
 def test_mc_dbk_kern(num_halos=50):
@@ -174,11 +177,51 @@ def test_get_dbk_weights():
         assert np.allclose(np.sum(weights, axis=(1, 2)), 1.0, rtol=1e-3)
 
 
-@pytest.mark.xfail
-def test_get_dbk_phot_from_dbk_weights():
-    raise NotImplementedError("Test not implemented yet")
+def test_get_dbk_linelum_decomposition(num_halos=55):
+    """Enforce that the sum of the component lines equals the composite line"""
+    ran_key = jran.key(10)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    fb = 0.196
 
+    args = (
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        lc_data.line_wave_table,
+        *dpw.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+    dbk_specphot_info, dbk_weights = dbkspk._mc_dbk_specphot_kern(*args)
 
-@pytest.mark.xfail
-def test_get_dbk_linelum_decomposition():
-    raise NotImplementedError("Test not implemented yet")
+    for key in ("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots"):
+        assert np.all(np.isfinite(getattr(dbk_specphot_info, key)))
+
+    component_lines_sum = (
+        dbk_specphot_info.linelum_bulge
+        + dbk_specphot_info.linelum_disk
+        + dbk_specphot_info.linelum_knots
+    )
+    logdiff = np.log10(component_lines_sum) - np.log10(dbk_specphot_info.linelum_gal)
+    assert np.allclose(logdiff, 0.0, atol=0.01)
+
+    _ret3 = dbk_kernels._get_dbk_phot_from_dbk_weights(
+        dbk_specphot_info.ssp_photflux_table,
+        dbk_weights,
+        dbk_specphot_info.dust_frac_trans,
+        dbk_specphot_info.frac_ssp_errors,
+    )
+    obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
+    obs_mags_sum = -2.5 * np.log10(
+        10 ** (-0.4 * obs_mags_bulge)
+        + 10 ** (-0.4 * obs_mags_disk)
+        + 10 ** (-0.4 * obs_mags_knots)
+    )
+    assert np.allclose(dbk_specphot_info.obs_mags, obs_mags_sum, atol=0.01)
