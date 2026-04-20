@@ -6,12 +6,11 @@ import opencosmo as oc
 from diffmah import DiffmahParams
 from diffstar import DiffstarParams
 from dsps.cosmology import age_at_z
-from dsps.sfh.diffburst import BurstParams
 
 from ... import phot_utils
 from ...experimental import dbk_phot_from_mock
 from ...experimental import precompute_ssp_phot as psspp
-from ...experimental.kernels import mc_phot_kernels as mcpk
+from ...experimental.kernels import dbk_specphot_kernels
 
 
 def __get_z_phot_tables(catalog: oc.Lightcone):
@@ -276,8 +275,8 @@ def compute_dbk_seds_from_diffsky_mock(
         __compute_dbk_sed_managed,
         ssp_data=aux_data["ssp_data"],
         param_collection=aux_data["param_collection"],
-        t_table=aux_data["t_table"],
         cosmology=cosmology_parameters,
+        Ob0=catalog.cosmology.Ob0,
         insert=False,
         vectorize=True,
         format="numpy",
@@ -418,73 +417,81 @@ def age_at_z_(redshift_true, cosmology):
 
 def __compute_dbk_sed_managed(
     t_obs,
+    mc_sfh_type,
     fknot,
     uran_fbulge,
     uran_av,
     uran_delta,
     uran_funo,
-    lgfburst,
-    lgyr_peak,
-    lgyr_max,
-    logsm_obs,
-    logssfr_obs,
+    uran_pburst,
+    logm0,
+    logtc,
+    early_index,
+    late_index,
+    t_peak,  # diffmah params
+    lgmcrit,
+    lgy_at_mcrit,
+    indx_lo,
+    indx_hi,  # ms params
+    lg_qt,
+    qlglgdt,
+    lg_drop,
+    lg_rejuv,  # Q params
     delta_mag_ssp_scatter,
     redshift_true,
-    sfh_table,
-    lgmet_weights,
     ssp_data,
     param_collection,
     cosmology,
-    t_table,
+    Ob0,
     suffix="",
 ):
-    burst_params = BurstParams(
-        lgfburst=lgfburst, lgyr_peak=lgyr_peak, lgyr_max=lgyr_max
+
+    mc_is_q = mc_sfh_type == 0
+    mah_params = DiffmahParams(
+        logm0=logm0,
+        logtc=logtc,
+        early_index=early_index,
+        late_index=late_index,
+        t_peak=t_peak,
     )
-
-    dbk_randoms = mcpk.DBKRandoms(fknot, uran_fbulge)
-    dbk_phot_info = {"sfh_table": sfh_table, "lgmet_weights": lgmet_weights}
-
-    dbk_phot_info["uran_av"] = uran_av
-    dbk_phot_info["uran_delta"] = uran_delta
-    dbk_phot_info["uran_funo"] = uran_funo
-    dbk_phot_info["uran_fbulge"] = uran_fbulge
-
-    dbk_phot_info["delta_mag_ssp_scatter"] = delta_mag_ssp_scatter
-    dbk_phot_info["logsm_obs"] = logsm_obs
-    dbk_phot_info["logssfr_obs"] = logssfr_obs
+    sfh_params = DiffstarParams(
+        lgmcrit=lgmcrit,
+        lgy_at_mcrit=lgy_at_mcrit,
+        indx_lo=indx_lo,
+        indx_hi=indx_hi,
+        lg_qt=lg_qt,
+        qlglgdt=qlglgdt,
+        lg_drop=lg_drop,
+        lg_rejuv=lg_rejuv,
+    )
 
     args = (
-        t_obs,
-        ssp_data,
-        t_table,
-        sfh_table,
-        burst_params,
-        lgmet_weights,
-        dbk_randoms,
-    )
-
-    dbk_weights, disk_bulge_history = mcpk._dbk_kern(*args)
-    dbk_phot_info["mstar_bulge"] = dbk_weights.mstar_bulge
-    dbk_phot_info["mstar_disk"] = dbk_weights.mstar_disk
-    dbk_phot_info["mstar_knots"] = dbk_weights.mstar_knots
-    DBKPhotInfo = namedtuple("DBKPhotInfo", list(dbk_phot_info.keys()))
-    dbk_phot_info = DBKPhotInfo(**dbk_phot_info)
-
-    sed_bulge, sed_disk, sed_knots = mcpk._mc_lc_dbk_sed_kern(
-        dbk_phot_info,
-        dbk_weights,
+        mc_is_q,
+        uran_av,
+        uran_delta,
+        uran_funo,
+        uran_pburst,
+        delta_mag_ssp_scatter,
+        uran_fbulge,
+        fknot,
+        sfh_params,
         redshift_true,
+        t_obs,
+        mah_params,
         ssp_data,
+        param_collection.mzr_params,
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
+        cosmology,
+        Ob0 / cosmology.Om0,
     )
+    sed_info, dbk_weights = dbk_specphot_kernels._dbk_sed_kern(*args)
 
     dbk_sed_info = {}
-    dbk_sed_info["rest_sed_bulge"] = sed_bulge
-    dbk_sed_info["rest_sed_disk"] = sed_disk
-    dbk_sed_info["rest_sed_knots"] = sed_knots
+    dbk_sed_info["rest_sed_bulge"] = sed_info.rest_sed_bulge
+    dbk_sed_info["rest_sed_disk"] = sed_info.rest_sed_disk
+    dbk_sed_info["rest_sed_knots"] = sed_info.rest_sed_knots
     return dbk_sed_info
 
 
@@ -508,8 +515,8 @@ def __compute_photometry_managed(
     uran_av,
     uran_delta,
     uran_funo,
-    uran_pburst,  # ¯\_(ツ)_/¯ (I am not a real astrophysicist)
-    delta_mag_ssp_scatter,
+    uran_pburst,
+    delta_mag_ssp_scatter,  # randoms
     redshift_true,
     t_obs,
     mc_sfh_type,
@@ -588,9 +595,9 @@ def __compute_dbk_photometry_managed(
     uran_av,
     uran_delta,
     uran_funo,
-    uran_pburst,  # ¯\_(ツ)_/¯ (I am not a real astrophysicist)
+    uran_pburst,
     uran_fbulge,
-    delta_mag_ssp_scatter,
+    delta_mag_ssp_scatter,  # randoms
     redshift_true,
     t_obs,
     mc_sfh_type,

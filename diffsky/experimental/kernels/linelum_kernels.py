@@ -30,7 +30,7 @@ def _mc_specphot_kern(
     phot_randoms, sfh_params = mc_randoms.get_mc_phot_randoms(
         ran_key, diffstarpop_params, mah_params, cosmo_params
     )
-    phot_kern_results, gal_linelums, dust_ftrans_lines = _specphot_kern(
+    phot_kern_results, spec_kern_results = _specphot_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -48,8 +48,6 @@ def _mc_specphot_kern(
         cosmo_params,
         fb,
     )
-
-    spec_kern_results = SpecKernResults(gal_linelums, dust_ftrans_lines)
 
     return phot_kern_results, phot_randoms, spec_kern_results
 
@@ -105,14 +103,16 @@ def _specphot_kern(
     )
     dust_ftrans_lines = _dust_res[0]
 
-    gal_linelums = sspwk._compute_linelum_from_weights(
+    linelum_gal = sspwk._compute_linelum_from_weights(
         phot_kern_results.logsm_obs,
         dust_ftrans_lines,
         ssp_data,
         phot_kern_results.ssp_weights,
     )
 
-    return phot_kern_results, gal_linelums, dust_ftrans_lines
+    spec_kern_results = SpecKernResults(linelum_gal, dust_ftrans_lines)
+
+    return phot_kern_results, spec_kern_results
 
 
-SpecKernResults = namedtuple("SpecKernResults", ("gal_linelums", "dust_ftrans_lines"))
+SpecKernResults = namedtuple("SpecKernResults", ("linelum_gal", "dust_ftrans_lines"))

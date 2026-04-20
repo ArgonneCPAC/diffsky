@@ -60,6 +60,7 @@ def diffstarpop_cen_wrapper(
     t_obs,
     cosmo_params,
     fb,
+    *,
     n_t_table=N_T_TABLE,
 ):
     n_gals = mah_params.logm0.size

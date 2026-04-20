@@ -14,7 +14,9 @@ from jax import numpy as jnp
 
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
+from .kernels import dbk_specphot_kernels as dbkspk
 from .kernels import mc_phot_kernels as mcpk
+from .kernels import mc_randoms
 
 
 def mc_lc_phot(
@@ -85,6 +87,7 @@ def mc_lc_phot_merging(
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
     skip_param_check=False,
+    mc_merge=1,
 ):
     param_collection = dpwm.ParamCollection(
         diffstarpop_params,
@@ -120,6 +123,7 @@ def mc_lc_phot_merging(
         lc_data.is_central,
         lc_data.nhalos,
         lc_data.halo_indx,
+        mc_merge,
     )
     phot_kern_results, phot_randoms, flux_obs, merge_prob, mstar_obs = _res
     phot_kern_results = phot_kern_results._asdict()
@@ -184,7 +188,7 @@ def mc_lc_specphot(
         phot_kern_results[key] = val
 
     for i, emline_name in enumerate(lc_data.ssp_data.ssp_emline_wave._fields):
-        phot_kern_results[emline_name] = spec_kern_results.gal_linelums[:, i]
+        phot_kern_results[emline_name] = spec_kern_results.linelum_gal[:, i]
 
     return phot_kern_results
 
@@ -357,31 +361,31 @@ def mc_lc_dbk_sed(
     if not skip_param_check:
         assert dpw.check_param_collection_is_ok(param_collection)
 
-    dbk_sed_info, dbk_weights = mc_lc_dbk_phot(
-        ran_key,
-        lc_data,
-        diffstarpop_params=diffstarpop_params,
-        mzr_params=mzr_params,
-        spspop_params=spspop_params,
-        scatter_params=scatter_params,
-        ssperr_params=ssperr_params,
-        cosmo_params=cosmo_params,
-        fb=fb,
-        return_dbk_weights=True,
+    phot_randoms, sfh_params, dbk_randoms = mc_randoms.get_mc_dbk_phot_randoms(
+        ran_key, diffstarpop_params, lc_data.mah_params, cosmo_params
     )
-    SEDInfo = namedtuple("SEDInfo", list(dbk_sed_info.keys()))
-    dbk_sed_info = SEDInfo(**dbk_sed_info)
-    sed_bulge, sed_disk, sed_knots = mcpk._mc_lc_dbk_sed_kern(
-        dbk_sed_info,
-        dbk_weights,
+
+    dbk_sed_info, dbk_weights = dbkspk._dbk_sed_kern(
+        phot_randoms.mc_is_q,
+        phot_randoms.uran_av,
+        phot_randoms.uran_delta,
+        phot_randoms.uran_funo,
+        phot_randoms.uran_pburst,
+        phot_randoms.delta_mag_ssp_scatter,
+        dbk_randoms.uran_fbulge,
+        dbk_randoms.fknot,
+        sfh_params,
         lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
         lc_data.ssp_data,
-        spspop_params,
-        scatter_params,
-        ssperr_params,
+        dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+        dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+        dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+        dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+        DEFAULT_COSMOLOGY,
+        fb,
     )
+
     dbk_sed_info = dbk_sed_info._asdict()
-    dbk_sed_info["rest_sed_bulge"] = sed_bulge
-    dbk_sed_info["rest_sed_disk"] = sed_disk
-    dbk_sed_info["rest_sed_knots"] = sed_knots
     return dbk_sed_info

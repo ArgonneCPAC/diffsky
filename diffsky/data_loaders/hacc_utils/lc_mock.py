@@ -461,9 +461,26 @@ def add_dbk_phot_quantities_to_mock(
         sim_info.fb,
     )
 
-    # Discard columns storing non-tabular data
+    # Store contents of matrices of line luminosities into dict with line names
+    linelum_dict = dict()
+    for i, name in enumerate(ssp_data.ssp_emline_wave._fields):
+        linelum_dict[name] = dbk_phot_info.linelum_gal[:, i]
+        linelum_dict[name + "_bulge"] = dbk_phot_info.linelum_bulge[:, i]
+        linelum_dict[name + "_disk"] = dbk_phot_info.linelum_disk[:, i]
+        linelum_dict[name + "_knots"] = dbk_phot_info.linelum_knots[:, i]
+
+    # Convert to dict
     dbk_phot_info = dbk_phot_info._asdict()
+
+    # Discard columns storing non-tabular data
     dbk_phot_info.pop("t_table")
+
+    # Discard line luminosity matrices and replace with named lines
+    dbk_phot_info.pop("linelum_gal")
+    dbk_phot_info.pop("linelum_bulge")
+    dbk_phot_info.pop("linelum_disk")
+    dbk_phot_info.pop("linelum_knots")
+    dbk_phot_info.update(linelum_dict)
 
     return dbk_phot_info, lc_data, diffsky_data
 

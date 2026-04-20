@@ -15,8 +15,9 @@ def test_mc_phot_kern_merging(num_halos=250):
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )
-    fb = 0.156
+    fb = 0.176
 
+    mc_merge = 0
     _res = pkm._mc_phot_kern_merging(
         ran_key,
         lc_data.z_obs,
@@ -36,6 +37,7 @@ def test_mc_phot_kern_merging(num_halos=250):
         lc_data.is_central,
         lc_data.nhalos,
         lc_data.halo_indx,
+        mc_merge,
     )
     phot_kern_results, phot_randoms, flux_obs, merge_prob, mstar_obs = _res
     assert np.all(merge_prob >= 0)

@@ -26,6 +26,7 @@ def _sed_kern(
     ssp_err_pop_params,
     cosmo_params,
     fb,
+    *,
     n_t_table=mcdw.N_T_TABLE,
 ):
     """"""

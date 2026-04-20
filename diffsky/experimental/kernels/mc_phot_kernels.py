@@ -33,7 +33,6 @@ _specphot_kern_merging = specphot_kernels_merging._specphot_kern_merging
 
 _mc_dbk_phot_kern = dbk_specphot_kernels._mc_dbk_phot_kern
 _mc_dbk_specphot_kern = dbk_specphot_kernels._mc_dbk_specphot_kern
-_mc_lc_dbk_sed_kern = dbk_specphot_kernels._mc_lc_dbk_sed_kern
 interp_vmap2 = phot_kernels.interp_vmap2
 
 

@@ -3,6 +3,8 @@
 from jax import jit as jjit
 from jax import numpy as jnp
 
+MC_P_MERGE_MAX = 1.0 - 1e-6
+
 
 @jjit
 def compute_x_tot_from_x_in_situ(
@@ -50,3 +52,9 @@ def compute_x_tot_from_x_in_situ(
     x_tot = x_tot.at[indx_to_keep].add(x_to_keep)
 
     return x_tot
+
+
+@jjit
+def get_mc_p_merge(uran, p_merge):
+    mc_p_merge = jnp.where(uran < p_merge, MC_P_MERGE_MAX, 0.0)
+    return mc_p_merge

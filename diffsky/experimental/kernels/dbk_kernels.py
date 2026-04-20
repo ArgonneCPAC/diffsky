@@ -171,30 +171,30 @@ def _get_dbk_phot_from_dbk_weights(
     flux_knots = jnp.sum(integrand_knots, axis=(2, 3)) * _mstar_knots
     obs_mags_knots = -2.5 * jnp.log10(flux_knots)
 
-    return obs_mags_bulge, obs_mags_disk, obs_mags_knots
+    return DBKPhotInfo(obs_mags_bulge, obs_mags_disk, obs_mags_knots)
 
 
 @jjit
 def _get_dbk_linelum_decomposition(dbk_weights, spec_kern_results, ssp_data):
-    linelums_bulge = sspwk._compute_linelum_from_weights(
+    linelum_bulge = sspwk._compute_linelum_from_weights(
         jnp.log10(dbk_weights.mstar_bulge),
         spec_kern_results.dust_ftrans_lines,
         ssp_data,
         dbk_weights.ssp_weights_bulge,
     )
-    linelums_disk = sspwk._compute_linelum_from_weights(
+    linelum_disk = sspwk._compute_linelum_from_weights(
         jnp.log10(dbk_weights.mstar_disk),
         spec_kern_results.dust_ftrans_lines,
         ssp_data,
         dbk_weights.ssp_weights_disk,
     )
-    linelums_knots = sspwk._compute_linelum_from_weights(
+    linelum_knots = sspwk._compute_linelum_from_weights(
         jnp.log10(dbk_weights.mstar_knots),
         spec_kern_results.dust_ftrans_lines,
         ssp_data,
         dbk_weights.ssp_weights_knots,
     )
-    return linelums_bulge, linelums_disk, linelums_knots
+    return DBKSpecInfo(linelum_bulge, linelum_disk, linelum_knots)
 
 
 DBKWeights = namedtuple(
@@ -207,4 +207,11 @@ DBKWeights = namedtuple(
         "mstar_disk",
         "mstar_knots",
     ),
+)
+
+DBKSpecInfo = namedtuple(
+    "DBKSpecInfo", ("linelum_bulge", "linelum_disk", "linelum_knots")
+)
+DBKPhotInfo = namedtuple(
+    "DBKPhotInfo", ("obs_mags_bulge", "obs_mags_disk", "obs_mags_knots")
 )
