@@ -7,9 +7,10 @@ from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper as dpw
+from ...disk_bulge_modeling import dbpop
 from ...tests import test_mc_lightcone_halos as tmclh
 from ...tests import test_mc_phot
-from .. import dbk_kernels, phot_kernels
+from .. import dbk_kernels, mc_randoms, phot_kernels
 
 
 def test_mc_dbk_kern(num_halos=50):
@@ -110,14 +111,67 @@ def test_mc_dbk_kern(num_halos=50):
     assert np.all(std_magdiff < 0.01)
 
 
-@pytest.mark.xfail
-def test_dbk_kern():
-    raise NotImplementedError("Test not implemented yet")
-
-
-@pytest.mark.xfail
 def test_get_dbk_weights():
-    raise NotImplementedError("Test not implemented yet")
+    """Enforce all dbk_weights sum to unity and dbk masses sum to total mass"""
+    ran_key = jran.key(0)
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing()
+
+    fb = 0.1
+    phot_kern_results, phot_randoms = phot_kernels._mc_phot_kern(
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpw.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+    dbk_key = jran.key(1)
+    n_gals = lc_data.z_obs.size
+    dbk_randoms = mc_randoms.get_mc_dbk_randoms(dbk_key, n_gals)
+
+    disk_bulge_history = dbpop.decompose_sfh_into_disk_bulge_sfh(
+        dbk_randoms.uran_fbulge,
+        phot_kern_results.t_table,
+        phot_kern_results.sfh_table,
+        lc_data.t_obs,
+    )
+    burst_params = DEFAULT_BURST_PARAMS._replace(
+        lgfburst=phot_kern_results.lgfburst,
+        lgyr_peak=phot_kern_results.lgyr_peak,
+        lgyr_max=phot_kern_results.lgyr_max,
+    )
+
+    dbk_weights = dbk_kernels.get_dbk_weights(
+        lc_data.t_obs,
+        lc_data.ssp_data,
+        phot_kern_results.t_table,
+        phot_kern_results.sfh_table,
+        burst_params,
+        phot_kern_results.lgmet_weights,
+        disk_bulge_history,
+        dbk_randoms.fknot,
+    )
+
+    logsm_sum = np.log10(
+        dbk_weights.mstar_bulge.flatten()
+        + dbk_weights.mstar_disk.flatten()
+        + dbk_weights.mstar_knots.flatten()
+    )
+    assert np.allclose(phot_kern_results.logsm_obs, logsm_sum, atol=0.1)
+    n_gals, n_met, n_age = dbk_weights.ssp_weights_bulge.shape
+
+    for weights in (
+        dbk_weights.ssp_weights_bulge,
+        dbk_weights.ssp_weights_disk,
+        dbk_weights.ssp_weights_knots,
+    ):
+        assert weights.shape == (n_gals, n_met, n_age)
+        assert np.allclose(np.sum(weights, axis=(1, 2)), 1.0, rtol=1e-3)
 
 
 @pytest.mark.xfail
