@@ -344,7 +344,7 @@ def compute_dbk_sed_from_diffsky_mock(
     )
 
     mc_is_q = np.where(diffsky_data["mc_sfh_type"] == 0, True, False)
-    sed_bulge, sed_disk, sed_knots = dbk_specphot_kernels._dbk_sed_kern(
+    sed_info, __ = dbk_specphot_kernels._dbk_sed_kern(
         mc_is_q,
         diffsky_data["uran_av"],
         diffsky_data["uran_delta"],
@@ -366,7 +366,7 @@ def compute_dbk_sed_from_diffsky_mock(
         sim_info.fb,
     )
     dbk_sed_info = dbk_phot_info._asdict()
-    dbk_sed_info["rest_sed_bulge"] = sed_bulge
-    dbk_sed_info["rest_sed_disk"] = sed_disk
-    dbk_sed_info["rest_sed_knots"] = sed_knots
+    dbk_sed_info["rest_sed_bulge"] = sed_info["rest_sed_bulge"]
+    dbk_sed_info["rest_sed_disk"] = sed_info["rest_sed_disk"]
+    dbk_sed_info["rest_sed_knots"] = sed_info["rest_sed_knots"]
     return dbk_sed_info
