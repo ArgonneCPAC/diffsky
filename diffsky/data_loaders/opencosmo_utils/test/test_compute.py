@@ -190,7 +190,6 @@ def test_compute_seds_insert(opencosmo_data_path, version_checking, synth_cores)
     assert np.all(~np.isnan(seds))
 
 
-@pytest.mark.xfail
 def test_compute_dbk_seds(opencosmo_data_path, version_checking, synth_cores):
     catalog, aux_data = load_diffsky_mock(
         opencosmo_data_path, version_check=version_checking, synth_cores=synth_cores
