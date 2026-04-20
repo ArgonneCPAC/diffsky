@@ -275,7 +275,6 @@ def compute_dbk_seds_from_diffsky_mock(
         __compute_dbk_sed_managed,
         ssp_data=aux_data["ssp_data"],
         param_collection=aux_data["param_collection"],
-        t_table=aux_data["t_table"],
         cosmology=cosmology_parameters,
         Ob0=catalog.cosmology.Ob0,
         insert=False,
