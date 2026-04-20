@@ -37,7 +37,7 @@ def _mc_phot_kern(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
     cosmo_params,
     fb,
     *,
@@ -59,7 +59,7 @@ def _mc_phot_kern(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
         n_t_table=n_t_table,
@@ -81,7 +81,7 @@ def _phot_kern(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
     cosmo_params,
     fb,
     *,
@@ -142,7 +142,7 @@ def _phot_kern(
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
     frac_ssp_errors_nonoise = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
-        ssp_err_pop_params, logsm_obs, z_obs, wave_eff_galpop
+        ssperr_params, logsm_obs, z_obs, wave_eff_galpop
     )
     frac_ssp_errors = ssp_err_model.get_noisy_frac_ssp_errors(
         wave_eff_galpop, frac_ssp_errors_nonoise, phot_randoms.delta_mag_ssp_scatter
