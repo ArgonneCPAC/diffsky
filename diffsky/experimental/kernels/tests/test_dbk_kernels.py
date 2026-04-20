@@ -1,7 +1,6 @@
 """"""
 
 import numpy as np
-import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import random as jran
