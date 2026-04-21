@@ -18,7 +18,7 @@ def test_mc_phot_kern_merging(num_halos=250):
     fb = 0.176
 
     mc_merge = 0
-    _res = pkm._mc_phot_kern_merging(
+    phot_kern_results, phot_randoms = pkm._mc_phot_kern_merging(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -39,7 +39,7 @@ def test_mc_phot_kern_merging(num_halos=250):
         lc_data.halo_indx,
         mc_merge,
     )
-    phot_kern_results, phot_randoms, flux_obs, merge_prob, mstar_obs = _res
+
     n_gals = lc_data.z_obs.size
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
 
@@ -52,6 +52,7 @@ def test_mc_phot_kern_merging(num_halos=250):
     assert np.any(phot_kern_results.p_merge < 1)
 
     # Enforce consistent array shapes
+    assert phot_kern_results.p_merge.shape == (n_gals,)
     assert phot_kern_results.logsm_obs.shape == (n_gals,)
     assert phot_kern_results.logsm_obs_in_situ.shape == (n_gals,)
     assert phot_kern_results.obs_mags.shape == (n_gals, n_bands)

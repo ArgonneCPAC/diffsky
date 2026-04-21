@@ -43,7 +43,7 @@ def _mc_phot_kern_merging(
         ran_key, diffstarpop_params, mah_params, cosmo_params
     )
 
-    phot_kern_results, flux_obs, p_merge, mstar_obs = _phot_kern_merging(
+    phot_kern_results = _phot_kern_merging(
         phot_randoms,
         merging_randoms,
         sfh_params,
@@ -70,7 +70,7 @@ def _mc_phot_kern_merging(
         mc_merge,
         n_t_table=n_t_table,
     )
-    return phot_kern_results, phot_randoms, flux_obs, p_merge, mstar_obs
+    return phot_kern_results, phot_randoms
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -137,15 +137,12 @@ def _phot_kern_merging(
 
     flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags)
     flux_obs = compute_x_tot_from_x_in_situ(
-        flux_in_situ,
-        p_merge[:, jnp.newaxis],
-        nhalos_weights[:, jnp.newaxis],
-        halo_indx,
+        flux_in_situ, p_merge[:, jnp.newaxis], nhalos_weights[:, jnp.newaxis], halo_indx
     )
     phot_kern_results = _get_phot_kern_results_with_merging(
         phot_kern_results, mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge
     )
-    return phot_kern_results, flux_obs, p_merge, mstar_obs
+    return phot_kern_results
 
 
 @jjit
