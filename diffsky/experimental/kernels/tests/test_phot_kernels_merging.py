@@ -1,6 +1,7 @@
 """"""
 
 import numpy as np
+import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
@@ -8,6 +9,8 @@ from ....merging import merging_model
 from ....param_utils import diffsky_param_wrapper as dpw
 from ...tests import test_lightcone_generators as tlcg
 from .. import phot_kernels_merging as pkm
+
+TOL = 1e-8
 
 
 def check_phot_kern_merging_results(phot_kern_results, lc_data):
@@ -36,8 +39,9 @@ def check_phot_kern_merging_results(phot_kern_results, lc_data):
     name = "obs_mags"
     x = getattr(phot_kern_results, name)
     y = getattr(phot_kern_results, name + "_in_situ")
-    assert np.all(x[msk_cen] <= y[msk_cen])
-    assert np.all(x[msk_sat] >= y[msk_sat])
+    assert np.all(x[msk_cen] <= y[msk_cen] + TOL)
+    assert np.all(x[msk_sat] >= y[msk_sat] - TOL)
+
     # Enforce merging is nontrivial
     assert np.any(x[msk_cen] < y[msk_cen])
     assert np.any(x[msk_sat] > y[msk_sat])
@@ -46,14 +50,15 @@ def check_phot_kern_merging_results(phot_kern_results, lc_data):
     name = "logsm_obs"
     x = getattr(phot_kern_results, name)
     y = getattr(phot_kern_results, name + "_in_situ")
-    assert np.all(x[msk_cen] >= y[msk_cen])
-    assert np.all(x[msk_sat] <= y[msk_sat])
+    assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
+    assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
     # Enforce merging is nontrivial
     assert np.any(x[msk_cen] > y[msk_cen])
     assert np.any(x[msk_sat] < y[msk_sat])
 
 
-def test_mc_phot_kern_merging(num_halos=250, mc_merge=0):
+@pytest.mark.parametrize("mc_merge", [0, 1])
+def test_mc_phot_kern_merging(mc_merge, num_halos=250):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos

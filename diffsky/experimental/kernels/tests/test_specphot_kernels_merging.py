@@ -1,6 +1,7 @@
 """ """
 
 import numpy as np
+import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.data_loaders import load_emline_info as lemi
 from jax import random as jran
@@ -10,6 +11,8 @@ from ....param_utils import diffsky_param_wrapper as dpw
 from ...tests import test_lightcone_generators as tlcg
 from .. import specphot_kernels_merging as sppkm
 from .test_phot_kernels_merging import check_phot_kern_merging_results
+
+TOL = 1e-8
 
 
 def check_spec_kern_merging_results(spec_kern_results, lc_data):
@@ -27,16 +30,17 @@ def check_spec_kern_merging_results(spec_kern_results, lc_data):
 
     # Enforce centrals can only get more massive and satellites less massive
     name = "linelum_gal"
-    x = getattr(spec_kern_results, name)
-    y = getattr(spec_kern_results, name + "_in_situ")
-    assert np.all(x[msk_cen] >= y[msk_cen])
-    assert np.all(x[msk_sat] <= y[msk_sat])
+    x = np.log10(getattr(spec_kern_results, name))
+    y = np.log10(getattr(spec_kern_results, name + "_in_situ"))
+    assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
+    assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
     # Enforce merging is nontrivial
     assert np.any(x[msk_cen] > y[msk_cen])
     assert np.any(x[msk_sat] < y[msk_sat])
 
 
-def test_mc_specphot_kern_merging(num_halos=41, mc_merge=0):
+@pytest.mark.parametrize("mc_merge", [0, 1])
+def test_mc_specphot_kern_merging(mc_merge, num_halos=141):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos

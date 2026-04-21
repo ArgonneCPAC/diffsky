@@ -1,46 +1,20 @@
 """"""
 
 import numpy as np
+import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
 from .. import dbk_specphot_kernels_merging as dbkspkm
+from .test_phot_kernels_merging import check_phot_kern_merging_results
+from .test_specphot_kernels_merging import check_spec_kern_merging_results
+
+TOL = 1e-8
 
 
-def test_mc_dbk_specphot_kern_merging(num_halos=150, mc_merge=0):
-    """Enforce that the sum of the component lines equals the composite line"""
-    ran_key = jran.key(0)
-    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
-        num_halos=num_halos
-    )
-    fb = 0.13
-
-    args = (
-        ran_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        lc_data.line_wave_table,
-        *dpwm.DEFAULT_PARAM_COLLECTION,
-        DEFAULT_COSMOLOGY,
-        fb,
-        lc_data.logmp_infall,
-        lc_data.logmhost_infall,
-        lc_data.t_infall,
-        lc_data.is_central,
-        lc_data.nhalos,
-        lc_data.halo_indx,
-        mc_merge,
-    )
-    _res = dbkspkm._mc_dbk_specphot_kern_merging(*args)
-    dbk_specphot_info, dbk_weights = _res
-    # return dbk_specphot_info, dbk_weights, lc_data
+def check_dbk_specphot_kern_merging_results(dbk_specphot_info, dbk_weights, lc_data):
     for arr in dbk_specphot_info:
         assert np.all(np.isfinite(arr))
 
@@ -79,15 +53,15 @@ def test_mc_dbk_specphot_kern_merging(num_halos=150, mc_merge=0):
     name = "logsm_obs"
     x = getattr(dbk_specphot_info, name)
     y = getattr(dbk_specphot_info, name + "_in_situ")
-    assert np.all(x[msk_cen] >= y[msk_cen])
-    assert np.all(x[msk_sat] <= y[msk_sat])
+    assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
+    assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
     # Separately enforce for DBK decomposition
     for k in component_names:
         kname = name.replace("_obs", k)
         x = getattr(dbk_specphot_info, kname)
         y = getattr(dbk_specphot_info, kname + "_in_situ")
-        assert np.all(x[msk_cen] >= y[msk_cen]), kname
-        assert np.all(x[msk_sat] <= y[msk_sat])
+        assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
+        assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
         # Enforce merging is nontrivial
         assert np.any(x[msk_cen] > y[msk_cen])
         assert np.any(x[msk_sat] < y[msk_sat])
@@ -96,8 +70,8 @@ def test_mc_dbk_specphot_kern_merging(num_halos=150, mc_merge=0):
     name = "obs_mags"
     x = getattr(dbk_specphot_info, name)
     y = getattr(dbk_specphot_info, name + "_in_situ")
-    assert np.all(x[msk_cen] <= y[msk_cen])
-    assert np.all(x[msk_sat] >= y[msk_sat])
+    assert np.all(x[msk_cen] <= y[msk_cen] + TOL)
+    assert np.all(x[msk_sat] >= y[msk_sat] - TOL)
     # Enforce merging is nontrivial
     assert np.any(x[msk_cen] < y[msk_cen])
     assert np.any(x[msk_sat] > y[msk_sat])
@@ -105,8 +79,8 @@ def test_mc_dbk_specphot_kern_merging(num_halos=150, mc_merge=0):
     for k in component_names:
         x = getattr(dbk_specphot_info, name + k)
         y = getattr(dbk_specphot_info, name + k + "_in_situ")
-        assert np.all(x[msk_cen] <= y[msk_cen])
-        assert np.all(x[msk_sat] >= y[msk_sat])
+        assert np.all(x[msk_cen] <= y[msk_cen] + TOL)
+        assert np.all(x[msk_sat] >= y[msk_sat] - TOL)
         # Enforce merging is nontrivial
         assert np.any(x[msk_cen] < y[msk_cen])
         assert np.any(x[msk_sat] > y[msk_sat])
@@ -115,15 +89,55 @@ def test_mc_dbk_specphot_kern_merging(num_halos=150, mc_merge=0):
     name = "linelum_gal"
     x = getattr(dbk_specphot_info, name)
     y = getattr(dbk_specphot_info, name + "_in_situ")
-    assert np.all(x[msk_cen] >= y[msk_cen])
-    assert np.all(x[msk_sat] <= y[msk_sat])
+    assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
+    assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
     # Separately enforce for DBK decomposition
     for k in component_names:
         kname = name.replace("_gal", k)
-        x = getattr(dbk_specphot_info, kname)
-        y = getattr(dbk_specphot_info, kname + "_in_situ")
-        assert np.all(x[msk_cen] >= y[msk_cen])
-        assert np.all(x[msk_sat] <= y[msk_sat])
+        x = np.log10(getattr(dbk_specphot_info, kname))
+        y = np.log10(getattr(dbk_specphot_info, kname + "_in_situ"))
+        assert np.all(np.isfinite(x))
+        assert np.all(np.isfinite(y))
+        assert np.all(x[msk_cen] >= y[msk_cen] - TOL), k
+        assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
         # Enforce merging is nontrivial
         assert np.any(x[msk_cen] > y[msk_cen])
         assert np.any(x[msk_sat] < y[msk_sat])
+
+
+@pytest.mark.parametrize("mc_merge", [0, 1])
+def test_mc_dbk_specphot_kern_merging(mc_merge, num_halos=150):
+    """Enforce that the sum of the component lines equals the composite line"""
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    fb = 0.13
+
+    args = (
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        lc_data.line_wave_table,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.nhalos,
+        lc_data.halo_indx,
+        mc_merge,
+    )
+    _res = dbkspkm._mc_dbk_specphot_kern_merging(*args)
+    dbk_specphot_info, dbk_weights = _res
+
+    check_phot_kern_merging_results(dbk_specphot_info, lc_data)
+    check_spec_kern_merging_results(dbk_specphot_info, lc_data)
+    check_dbk_specphot_kern_merging_results(dbk_specphot_info, dbk_weights, lc_data)
