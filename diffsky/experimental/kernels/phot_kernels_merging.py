@@ -121,6 +121,40 @@ def _phot_kern_merging(
         n_t_table=n_t_table,
     )
 
+    _res = _get_phot_kern_merging_quantities(
+        phot_kern_results,
+        merging_randoms,
+        t_obs,
+        merge_params,
+        logmp_infall,
+        logmhost_infall,
+        t_infall,
+        is_central,
+        nhalos_weights,
+        halo_indx,
+        mc_merge,
+    )
+    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge = _res
+    phot_kern_results = _get_phot_kern_results_with_merging(
+        phot_kern_results, mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge
+    )
+    return phot_kern_results
+
+
+@jjit
+def _get_phot_kern_merging_quantities(
+    phot_kern_results,
+    merging_randoms,
+    t_obs,
+    merge_params,
+    logmp_infall,
+    logmhost_infall,
+    t_infall,
+    is_central,
+    nhalos_weights,
+    halo_indx,
+    mc_merge,
+):
     upids = jnp.where(is_central == 1, -1.0, 0.0)
     p_merge = merging_model.get_p_merge_from_merging_params(
         merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
@@ -139,10 +173,7 @@ def _phot_kern_merging(
     flux_obs = compute_x_tot_from_x_in_situ(
         flux_in_situ, p_merge[:, jnp.newaxis], nhalos_weights[:, jnp.newaxis], halo_indx
     )
-    phot_kern_results = _get_phot_kern_results_with_merging(
-        phot_kern_results, mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge
-    )
-    return phot_kern_results
+    return mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge
 
 
 @jjit

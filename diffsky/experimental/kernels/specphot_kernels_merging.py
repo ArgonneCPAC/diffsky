@@ -119,23 +119,20 @@ def _specphot_kern_merging(
     )
     phot_kern_results, spec_kern_results = _res
 
-    upids = jnp.where(is_central == 1, -1.0, 0.0)
-    p_merge = merging_model.get_p_merge_from_merging_params(
-        merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
+    _res = phot_kernels_merging._get_phot_kern_merging_quantities(
+        phot_kern_results,
+        merging_randoms,
+        t_obs,
+        merge_params,
+        logmp_infall,
+        logmhost_infall,
+        t_infall,
+        is_central,
+        nhalos_weights,
+        halo_indx,
+        mc_merge,
     )
-    # If mc_merge=1, implement Monte Carlo merging, else p_merge is a float
-    mc_p_merge = merging_kernels.get_mc_p_merge(merging_randoms.uran_pmerge, p_merge)
-    p_merge = jnp.where(mc_merge < 1, p_merge, mc_p_merge)
-
-    mstar_in_situ = 10**phot_kern_results.logsm_obs
-    mstar_obs = compute_x_tot_from_x_in_situ(
-        mstar_in_situ, p_merge, nhalos_weights, halo_indx
-    )
-
-    flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags)
-    flux_obs = compute_x_tot_from_x_in_situ(
-        flux_in_situ, p_merge[:, jnp.newaxis], nhalos_weights[:, jnp.newaxis], halo_indx
-    )
+    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge = _res
 
     args = (
         phot_kern_results,
@@ -147,17 +144,27 @@ def _specphot_kern_merging(
     )
     phot_kern_results = phot_kernels_merging._get_phot_kern_results_with_merging(*args)
 
-    linelum_in_situ = spec_kern_results.linelum_gal
-    linelums_obs = compute_x_tot_from_x_in_situ(
-        linelum_in_situ,
-        p_merge[:, jnp.newaxis],
-        nhalos_weights[:, jnp.newaxis],
-        halo_indx,
-    )
+    args = phot_kern_results, spec_kern_results, nhalos_weights, halo_indx
+    linelums_obs, linelum_in_situ = _get_linelum_kern_merging_quantities(*args)
     spec_kern_results = _get_linelum_results_with_merging(
         spec_kern_results, linelums_obs, linelum_in_situ
     )
+
     return phot_kern_results, spec_kern_results
+
+
+@jjit
+def _get_linelum_kern_merging_quantities(
+    phot_kern_results, spec_kern_results, nhalos_weights, halo_indx
+):
+    linelum_in_situ = spec_kern_results.linelum_gal
+    linelums_obs = compute_x_tot_from_x_in_situ(
+        linelum_in_situ,
+        phot_kern_results.p_merge[:, jnp.newaxis],
+        nhalos_weights[:, jnp.newaxis],
+        halo_indx,
+    )
+    return linelums_obs, linelum_in_situ
 
 
 @jjit
