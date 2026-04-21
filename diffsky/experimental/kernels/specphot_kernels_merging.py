@@ -5,7 +5,7 @@ from collections import namedtuple
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from ...merging import compute_x_tot_from_x_in_situ, merging_kernels, merging_model
+from ...merging import compute_x_tot_from_x_in_situ
 from . import linelum_kernels, mc_randoms, phot_kernels_merging
 
 
