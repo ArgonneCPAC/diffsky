@@ -1,10 +1,12 @@
 """"""
 
+from collections import namedtuple
+
 from jax import jit as jjit
 from jax import numpy as jnp
 
 from ...merging import compute_x_tot_from_x_in_situ, merging_model
-from . import mc_phot_kernels as mcpk
+from . import dbk_specphot_kernels as dbkspk
 
 
 @jjit
@@ -33,7 +35,9 @@ def _mc_dbk_specphot_kern_merging(
     nhalos_weights,
     halo_indx,
 ):
-    dbk_specphot_info, dbk_weights = mcpk._mc_dbk_specphot_kern(
+    n_gals = z_obs.size
+
+    dbk_specphot_info, dbk_weights = dbkspk._mc_dbk_specphot_kern(
         ran_key,
         z_obs,
         t_obs,
@@ -51,6 +55,7 @@ def _mc_dbk_specphot_kern_merging(
         cosmo_params,
         fb,
     )
+
     upids = jnp.where(is_central == 1, -1.0, 0.0)
     merge_prob = merging_model.get_p_merge_from_merging_params(
         merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
@@ -63,26 +68,40 @@ def _mc_dbk_specphot_kern_merging(
     frac_dm = mstar_obs / mstar_in_situ
     dmag = -2.5 * jnp.log10(frac_dm)
 
+    ex_situ_dict = dict()
+    in_situ_dict = dict()
+
+    ex_situ_dict["logsm_obs"] = dbk_specphot_info.logsm_obs + jnp.log10(frac_dm)
+    in_situ_dict["logsm_obs" + "_in_situ"] = dbk_specphot_info.logsm_obs
+
     mstar_colnames = ("mstar_bulge", "mstar_disk", "mstar_knots")
-    mstar_dict = dict()
     for name in mstar_colnames:
-        mstar_dict[name] = getattr(dbk_weights, name) * frac_dm
+        outname = name.replace("mstar", "logsm")
+        ex_situ_dict[outname] = jnp.log10(getattr(dbk_weights, name) * frac_dm)
+        in_situ_dict[outname + "_in_situ"] = jnp.log10(getattr(dbk_weights, name))
 
-    mag_dict = dict()
     mag_colnames = ("obs_mags", "obs_mags_bulge", "obs_mags_disk", "obs_mags_knots")
-    n_gals, n_bands = dbk_specphot_info.obs_mags.shape
     for name in mag_colnames:
-        mag_dict[name] = getattr(dbk_specphot_info, name) + dmag.reshape((n_gals, 1))
+        _dmag = dmag.reshape((n_gals, 1))
+        ex_situ_dict[name] = getattr(dbk_specphot_info, name) + _dmag
+        in_situ_dict[name + "_in_situ"] = getattr(dbk_specphot_info, name)
 
-    linelum_dict = dict()
     line_colnames = ("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots")
     for name in line_colnames:
         _f = frac_dm.reshape((n_gals, 1))
-        linelum_dict[name] = getattr(dbk_specphot_info, name) * _f
+        ex_situ_dict[name] = getattr(dbk_specphot_info, name) * _f
+        in_situ_dict[name + "_in_situ"] = getattr(dbk_specphot_info, name)
 
-    ex_situ_dict = dict(mstar_obs=mstar_obs)
-    ex_situ_dict.update(mstar_dict)
-    ex_situ_dict.update(mag_dict)
-    ex_situ_dict.update(linelum_dict)
+    dbk_specphot_info = dbk_specphot_info._replace(**ex_situ_dict)
+    dbk_weights = dbk_weights._replace(
+        mstar_bulge=dbk_weights.mstar_bulge * frac_dm,
+        mstar_disk=dbk_weights.mstar_disk * frac_dm,
+        mstar_knots=dbk_weights.mstar_knots * frac_dm,
+    )
 
-    return dbk_specphot_info, dbk_weights, ex_situ_dict
+    new_keys = list(in_situ_dict.keys())
+    dbk_specphot_info_keys = list(dbk_specphot_info._fields) + new_keys
+    MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_info_keys)
+    dbk_specphot_info = MCDBKSpecPhotInfo(**dbk_specphot_info._asdict(), **in_situ_dict)
+
+    return dbk_specphot_info, dbk_weights
