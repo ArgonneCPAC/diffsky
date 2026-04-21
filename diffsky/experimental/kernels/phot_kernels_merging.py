@@ -190,13 +190,12 @@ def _get_phot_kern_results_with_merging(
     in_situ_dict["logsm_obs" + "_in_situ"] = jnp.log10(mstar_in_situ)
     in_situ_dict["obs_mags" + "_in_situ"] = -2.5 * jnp.log10(flux_in_situ)
 
+    new_keys = ["logsm_obs_in_situ", "obs_mags_in_situ", "p_merge"]
+    fields = list(phot_kern_results._fields) + new_keys
+    PhotKernResults = namedtuple("PhotKernResults", fields)
+
     phot_kern_results = PhotKernResults(
         **phot_kern_results._asdict(), **in_situ_dict, p_merge=p_merge
     )
 
     return phot_kern_results
-
-
-new_keys = ["logsm_obs_in_situ", "obs_mags_in_situ", "p_merge"]
-phot_kern_results_keys = list(phot_kernels.PhotKernResults._fields) + new_keys
-PhotKernResults = namedtuple("PhotKernResults", phot_kern_results_keys)

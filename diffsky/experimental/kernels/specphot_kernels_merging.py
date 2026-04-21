@@ -170,12 +170,11 @@ def _get_linelum_kern_merging_quantities(
 @jjit
 def _get_linelum_results_with_merging(spec_kern_results, linelums_obs, linelum_in_situ):
     spec_kern_results = spec_kern_results._replace(linelum_gal=linelums_obs)
+
+    new_keys = ["linelum_gal_in_situ"]
+    fields = list(spec_kern_results._fields) + new_keys
+    SpecKernResults = namedtuple("SpecKernResults", fields)
     spec_kern_results = SpecKernResults(
         **spec_kern_results._asdict(), linelum_gal_in_situ=linelum_in_situ
     )
     return spec_kern_results
-
-
-new_keys = ["linelum_gal_in_situ"]
-spec_kern_results_keys = list(linelum_kernels.SpecKernResults._fields) + new_keys
-SpecKernResults = namedtuple("SpecKernResults", spec_kern_results_keys)

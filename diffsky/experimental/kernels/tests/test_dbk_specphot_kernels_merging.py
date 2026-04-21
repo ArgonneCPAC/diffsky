@@ -17,6 +17,8 @@ def test_mc_dbk_specphot_kern_merging(num_halos=150):
     )
     fb = 0.13
 
+    mc_merge = 0
+
     args = (
         ran_key,
         lc_data.z_obs,
@@ -36,9 +38,11 @@ def test_mc_dbk_specphot_kern_merging(num_halos=150):
         lc_data.is_central,
         lc_data.nhalos,
         lc_data.halo_indx,
+        mc_merge,
     )
     _res = dbkspkm._mc_dbk_specphot_kern_merging(*args)
     dbk_specphot_info, dbk_weights = _res
+    # return dbk_specphot_info, dbk_weights, lc_data
     for arr in dbk_specphot_info:
         assert np.all(np.isfinite(arr))
 
@@ -73,6 +77,23 @@ def test_mc_dbk_specphot_kern_merging(num_halos=150):
     msk_cen = lc_data.is_central == 1
     msk_sat = ~msk_cen
 
+    # Enforce centrals can only get more massive and satellites less massive
+    name = "logsm_obs"
+    x = getattr(dbk_specphot_info, name)
+    y = getattr(dbk_specphot_info, name + "_in_situ")
+    assert np.all(x[msk_cen] >= y[msk_cen])
+    assert np.all(x[msk_sat] <= y[msk_sat])
+    # Separately enforce for DBK decomposition
+    for k in component_names:
+        kname = name.replace("_obs", k)
+        x = getattr(dbk_specphot_info, kname)
+        y = getattr(dbk_specphot_info, kname + "_in_situ")
+        assert np.all(x[msk_cen] >= y[msk_cen]), kname
+        assert np.all(x[msk_sat] <= y[msk_sat])
+        # Enforce merging is nontrivial
+        assert np.any(x[msk_cen] > y[msk_cen])
+        assert np.any(x[msk_sat] < y[msk_sat])
+
     # Enforce centrals can only get brighter and satellites can only get dimmer
     name = "obs_mags"
     x = getattr(dbk_specphot_info, name)
@@ -91,23 +112,6 @@ def test_mc_dbk_specphot_kern_merging(num_halos=150):
         # Enforce merging is nontrivial
         assert np.any(x[msk_cen] < y[msk_cen])
         assert np.any(x[msk_sat] > y[msk_sat])
-
-    # Enforce centrals can only get more massive and satellites less massive
-    name = "logsm_obs"
-    x = getattr(dbk_specphot_info, name)
-    y = getattr(dbk_specphot_info, name + "_in_situ")
-    assert np.all(x[msk_cen] >= y[msk_cen])
-    assert np.all(x[msk_sat] <= y[msk_sat])
-    # Separately enforce for DBK decomposition
-    for k in component_names:
-        kname = name.replace("_obs", k)
-        x = getattr(dbk_specphot_info, kname)
-        y = getattr(dbk_specphot_info, kname + "_in_situ")
-        assert np.all(x[msk_cen] >= y[msk_cen]), kname
-        assert np.all(x[msk_sat] <= y[msk_sat])
-        # Enforce merging is nontrivial
-        assert np.any(x[msk_cen] > y[msk_cen])
-        assert np.any(x[msk_sat] < y[msk_sat])
 
     # Enforce centrals can only get brighter lines and satellites less bright
     name = "linelum_gal"
