@@ -10,36 +10,7 @@ from ...tests import test_lightcone_generators as tlcg
 from .. import phot_kernels_merging as pkm
 
 
-def test_mc_phot_kern_merging(num_halos=250):
-    ran_key = jran.key(0)
-    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
-        num_halos=num_halos
-    )
-    fb = 0.176
-
-    mc_merge = 0
-    phot_kern_results, phot_randoms = pkm._mc_phot_kern_merging(
-        ran_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
-        merging_model.DEFAULT_MERGE_PARAMS,
-        DEFAULT_COSMOLOGY,
-        fb,
-        lc_data.logmp_infall,
-        lc_data.logmhost_infall,
-        lc_data.t_infall,
-        lc_data.is_central,
-        lc_data.nhalos,
-        lc_data.halo_indx,
-        mc_merge,
-    )
-
+def check_phot_kern_merging_results(phot_kern_results, lc_data):
     n_gals = lc_data.z_obs.size
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
 
@@ -80,3 +51,36 @@ def test_mc_phot_kern_merging(num_halos=250):
     # Enforce merging is nontrivial
     assert np.any(x[msk_cen] > y[msk_cen])
     assert np.any(x[msk_sat] < y[msk_sat])
+
+
+def test_mc_phot_kern_merging(num_halos=250):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    fb = 0.176
+
+    mc_merge = 0
+    phot_kern_results, phot_randoms = pkm._mc_phot_kern_merging(
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpw.DEFAULT_PARAM_COLLECTION,
+        merging_model.DEFAULT_MERGE_PARAMS,
+        DEFAULT_COSMOLOGY,
+        fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.nhalos,
+        lc_data.halo_indx,
+        mc_merge,
+    )
+
+    check_phot_kern_merging_results(phot_kern_results, lc_data)
