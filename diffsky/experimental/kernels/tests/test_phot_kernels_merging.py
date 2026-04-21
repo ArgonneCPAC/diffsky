@@ -40,32 +40,42 @@ def test_mc_phot_kern_merging(num_halos=250):
         mc_merge,
     )
     phot_kern_results, phot_randoms, flux_obs, merge_prob, mstar_obs = _res
-    assert np.all(merge_prob >= 0)
-    assert np.all(merge_prob <= 1)
-    assert np.any(merge_prob > 0)
-    assert np.any(merge_prob < 1)
+    n_gals = lc_data.z_obs.size
+    n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
 
-    assert np.all(np.isfinite(mstar_obs))
+    for arr in phot_kern_results:
+        assert np.all(np.isfinite(arr))
 
-    obs_mags_in_plus_ex_situ = -2.5 * np.log10(flux_obs)
-    assert np.any(obs_mags_in_plus_ex_situ != phot_kern_results.obs_mags)
+    assert np.all(phot_kern_results.p_merge >= 0)
+    assert np.all(phot_kern_results.p_merge <= 1)
+    assert np.any(phot_kern_results.p_merge > 0)
+    assert np.any(phot_kern_results.p_merge < 1)
 
-    # Enforce centrals get brighter and satellites get dimmer
-    assert np.all(
-        obs_mags_in_plus_ex_situ[lc_data.is_central == 1]
-        <= phot_kern_results.obs_mags[lc_data.is_central == 1]
-    )
-    assert np.all(
-        obs_mags_in_plus_ex_situ[lc_data.is_central == 0]
-        >= phot_kern_results.obs_mags[lc_data.is_central == 0]
-    )
+    # Enforce consistent array shapes
+    assert phot_kern_results.logsm_obs.shape == (n_gals,)
+    assert phot_kern_results.logsm_obs_in_situ.shape == (n_gals,)
+    assert phot_kern_results.obs_mags.shape == (n_gals, n_bands)
+    assert phot_kern_results.obs_mags_in_situ.shape == (n_gals, n_bands)
 
-    # Enforce centrals get more massive and satellites less massive
-    assert np.all(
-        mstar_obs[lc_data.is_central == 1]
-        >= 10 ** phot_kern_results.logsm_obs[lc_data.is_central == 1]
-    )
-    assert np.all(
-        mstar_obs[lc_data.is_central == 0]
-        <= 10 ** phot_kern_results.logsm_obs[lc_data.is_central == 0]
-    )
+    msk_cen = lc_data.is_central == 1
+    msk_sat = ~msk_cen
+
+    # Enforce centrals can only get brighter and satellites can only get dimmer
+    name = "obs_mags"
+    x = getattr(phot_kern_results, name)
+    y = getattr(phot_kern_results, name + "_in_situ")
+    assert np.all(x[msk_cen] <= y[msk_cen])
+    assert np.all(x[msk_sat] >= y[msk_sat])
+    # Enforce merging is nontrivial
+    assert np.any(x[msk_cen] < y[msk_cen])
+    assert np.any(x[msk_sat] > y[msk_sat])
+
+    # Enforce centrals can only get more massive and satellites less massive
+    name = "logsm_obs"
+    x = getattr(phot_kern_results, name)
+    y = getattr(phot_kern_results, name + "_in_situ")
+    assert np.all(x[msk_cen] >= y[msk_cen])
+    assert np.all(x[msk_sat] <= y[msk_sat])
+    # Enforce merging is nontrivial
+    assert np.any(x[msk_cen] > y[msk_cen])
+    assert np.any(x[msk_sat] < y[msk_sat])
