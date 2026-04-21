@@ -56,11 +56,10 @@ def _dbk_kern(
 
 @jjit
 def get_bulge_weights(t_obs, ssp_data, t_table, disk_bulge_history, lgmet_weights):
-    n_gals = t_obs.size
     logsm_obs_bulge = interp_vmap(
         t_obs, t_table, jnp.log10(disk_bulge_history.smh_bulge)
     )
-    mstar_obs_bulge = 10 ** logsm_obs_bulge.reshape((n_gals, 1))
+    mstar_obs_bulge = 10**logsm_obs_bulge
     age_weights_bulge = sspwk.calc_age_weights_from_sfh_table_vmap(
         t_table, disk_bulge_history.sfh_bulge, ssp_data.ssp_lg_age_gyr, t_obs
     )

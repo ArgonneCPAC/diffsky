@@ -125,15 +125,10 @@ def mc_lc_phot_merging(
         lc_data.halo_indx,
         mc_merge,
     )
-    phot_kern_results, phot_randoms, flux_obs, merge_prob, mstar_obs = _res
+    phot_kern_results, phot_randoms = _res
     phot_kern_results = phot_kern_results._asdict()
     for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
         phot_kern_results[key] = val
-    phot_kern_results["obs_mags_in_situ"] = phot_kern_results["obs_mags"]
-    phot_kern_results["obs_mags"] = -2.5 * jnp.log10(flux_obs)
-    phot_kern_results["p_merge"] = merge_prob
-    phot_kern_results["logsm_obs_in_situ"] = phot_kern_results["logsm_obs"]
-    phot_kern_results["logsm_obs"] = jnp.log10(mstar_obs)
 
     return phot_kern_results
 

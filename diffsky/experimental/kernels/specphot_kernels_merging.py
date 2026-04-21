@@ -1,10 +1,12 @@
 """"""
 
+from collections import namedtuple
+
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from ...merging import compute_x_tot_from_x_in_situ, merging_kernels, merging_model
-from . import linelum_kernels, mc_randoms
+from ...merging import compute_x_tot_from_x_in_situ
+from . import linelum_kernels, mc_randoms, phot_kernels_merging
 
 
 @jjit
@@ -38,7 +40,7 @@ def _mc_specphot_kern_merging(
         ran_key, diffstarpop_params, mah_params, cosmo_params
     )
 
-    _res = _specphot_kern_merging(
+    phot_kern_results, spec_kern_results = _specphot_kern_merging(
         phot_randoms,
         merging_randoms,
         sfh_params,
@@ -65,24 +67,8 @@ def _mc_specphot_kern_merging(
         halo_indx,
         mc_merge,
     )
-    (
-        phot_kern_results,
-        linelums_in_situ,
-        flux_obs,
-        merge_prob,
-        mstar_obs,
-        linelums_obs,
-    ) = _res
 
-    return (
-        phot_kern_results,
-        linelums_in_situ,
-        phot_randoms,
-        flux_obs,
-        merge_prob,
-        mstar_obs,
-        linelums_obs,
-    )
+    return phot_kern_results, phot_randoms, spec_kern_results
 
 
 @jjit
@@ -133,39 +119,62 @@ def _specphot_kern_merging(
     )
     phot_kern_results, spec_kern_results = _res
 
-    upids = jnp.where(is_central == 1, -1.0, 0.0)
-    merge_prob = merging_model.get_p_merge_from_merging_params(
-        merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
-    )
-    # If mc_merge=1, implement Monte Carlo merging, else merge_prob is a float
-    mc_p_merge = merging_kernels.get_mc_p_merge(merging_randoms.uran_pmerge, merge_prob)
-    merge_prob = jnp.where(mc_merge < 1, merge_prob, mc_p_merge)
-
-    mstar_in_situ = 10**phot_kern_results.logsm_obs
-    mstar_obs = compute_x_tot_from_x_in_situ(
-        mstar_in_situ, merge_prob, nhalos_weights, halo_indx
-    )
-
-    flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags)
-    flux_obs = compute_x_tot_from_x_in_situ(
-        flux_in_situ,
-        merge_prob[:, jnp.newaxis],
-        nhalos_weights[:, jnp.newaxis],
-        halo_indx,
-    )
-
-    linelums_obs = compute_x_tot_from_x_in_situ(
-        spec_kern_results.linelum_gal,
-        merge_prob[:, jnp.newaxis],
-        nhalos_weights[:, jnp.newaxis],
-        halo_indx,
-    )
-
-    return (
+    _res = phot_kernels_merging._get_phot_kern_merging_quantities(
         phot_kern_results,
-        spec_kern_results.linelum_gal,
-        flux_obs,
-        merge_prob,
-        mstar_obs,
-        linelums_obs,
+        merging_randoms,
+        t_obs,
+        merge_params,
+        logmp_infall,
+        logmhost_infall,
+        t_infall,
+        is_central,
+        nhalos_weights,
+        halo_indx,
+        mc_merge,
     )
+    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge = _res
+
+    args = (
+        phot_kern_results,
+        mstar_in_situ,
+        mstar_obs,
+        flux_in_situ,
+        flux_obs,
+        p_merge,
+    )
+    phot_kern_results = phot_kernels_merging._get_phot_kern_results_with_merging(*args)
+
+    args = phot_kern_results, spec_kern_results, nhalos_weights, halo_indx
+    linelums_obs, linelum_in_situ = _get_linelum_kern_merging_quantities(*args)
+    spec_kern_results = _get_linelum_results_with_merging(
+        spec_kern_results, linelums_obs, linelum_in_situ
+    )
+
+    return phot_kern_results, spec_kern_results
+
+
+@jjit
+def _get_linelum_kern_merging_quantities(
+    phot_kern_results, spec_kern_results, nhalos_weights, halo_indx
+):
+    linelum_in_situ = spec_kern_results.linelum_gal
+    linelums_obs = compute_x_tot_from_x_in_situ(
+        linelum_in_situ,
+        phot_kern_results.p_merge[:, jnp.newaxis],
+        nhalos_weights[:, jnp.newaxis],
+        halo_indx,
+    )
+    return linelums_obs, linelum_in_situ
+
+
+@jjit
+def _get_linelum_results_with_merging(spec_kern_results, linelums_obs, linelum_in_situ):
+    spec_kern_results = spec_kern_results._replace(linelum_gal=linelums_obs)
+
+    new_keys = ["linelum_gal_in_situ"]
+    fields = list(spec_kern_results._fields) + new_keys
+    SpecKernResults = namedtuple("SpecKernResults", fields)
+    spec_kern_results = SpecKernResults(
+        **spec_kern_results._asdict(), linelum_gal_in_situ=linelum_in_situ
+    )
+    return spec_kern_results

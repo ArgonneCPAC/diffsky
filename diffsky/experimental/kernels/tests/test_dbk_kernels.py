@@ -72,6 +72,11 @@ def test_mc_dbk_kern(num_halos=50):
     assert np.all(dbk_weights.mstar_disk > 0)
     assert np.all(dbk_weights.mstar_knots > 0)
 
+    correct_shape = phot_kern_results.logsm_obs.shape
+    assert dbk_weights.mstar_bulge.shape == correct_shape
+    assert dbk_weights.mstar_disk.shape == correct_shape
+    assert dbk_weights.mstar_knots.shape == correct_shape
+
     args = (
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
@@ -80,6 +85,11 @@ def test_mc_dbk_kern(num_halos=50):
     )
     _res = dbk_kernels._get_dbk_phot_from_dbk_weights(*args)
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res
+
+    correct_shape = phot_kern_results.obs_mags.shape
+    assert obs_mags_bulge.shape == correct_shape
+    assert obs_mags_disk.shape == correct_shape
+    assert obs_mags_knots.shape == correct_shape
 
     np.all(phot_kern_results.logsm_obs > np.log10(dbk_weights.mstar_bulge.flatten()))
     np.all(phot_kern_results.logsm_obs > np.log10(dbk_weights.mstar_disk.flatten()))
@@ -159,10 +169,11 @@ def test_get_dbk_weights():
         dbk_randoms.fknot,
     )
 
+    assert dbk_weights.mstar_bulge.shape == (n_gals,)
+    assert dbk_weights.mstar_disk.shape == (n_gals,)
+    assert dbk_weights.mstar_knots.shape == (n_gals,)
     logsm_sum = np.log10(
-        dbk_weights.mstar_bulge.flatten()
-        + dbk_weights.mstar_disk.flatten()
-        + dbk_weights.mstar_knots.flatten()
+        dbk_weights.mstar_bulge + dbk_weights.mstar_disk + dbk_weights.mstar_knots
     )
     assert np.allclose(phot_kern_results.logsm_obs, logsm_sum, atol=0.1)
     n_gals, n_met, n_age = dbk_weights.ssp_weights_bulge.shape
@@ -176,13 +187,15 @@ def test_get_dbk_weights():
         assert np.allclose(np.sum(weights, axis=(1, 2)), 1.0, rtol=1e-3)
 
 
-def test_get_dbk_linelum_decomposition(num_halos=55):
+def test_get_dbk_linelum_decomposition(num_halos=55, n_lines=4):
     """Enforce that the sum of the component lines equals the composite line"""
     ran_key = jran.key(10)
+
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
-        num_halos=num_halos
+        num_halos=num_halos, n_lines=n_lines
     )
     fb = 0.196
+    n_gals = lc_data.z_obs.size
 
     args = (
         ran_key,
@@ -202,6 +215,11 @@ def test_get_dbk_linelum_decomposition(num_halos=55):
 
     for key in ("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots"):
         assert np.all(np.isfinite(getattr(dbk_specphot_info, key)))
+
+    assert dbk_specphot_info.linelum_gal.shape == (n_gals, n_lines)
+    assert dbk_specphot_info.linelum_bulge.shape == (n_gals, n_lines)
+    assert dbk_specphot_info.linelum_disk.shape == (n_gals, n_lines)
+    assert dbk_specphot_info.linelum_knots.shape == (n_gals, n_lines)
 
     component_lines_sum = (
         dbk_specphot_info.linelum_bulge
