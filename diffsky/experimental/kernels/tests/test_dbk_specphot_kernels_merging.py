@@ -51,6 +51,18 @@ def test_mc_dbk_specphot_kern_merging(num_halos=150):
         component_shape = getattr(dbk_specphot_info, kname).shape
         assert correct_shape == component_shape, kname
 
+    correct_shape = getattr(dbk_specphot_info, "obs_mags").shape
+    for k in component_names:
+        kname = "obs_mags" + k
+        component_shape = getattr(dbk_specphot_info, kname).shape
+        assert correct_shape == component_shape, kname
+
+    correct_shape = getattr(dbk_specphot_info, "linelum_gal").shape
+    for k in component_names:
+        kname = "linelum" + k
+        component_shape = getattr(dbk_specphot_info, kname).shape
+        assert correct_shape == component_shape, kname
+
     # Enforce consistency with dbk_weights
     specphot_key, dbk_key = "logsm", "mstar"
     for k in component_names:
