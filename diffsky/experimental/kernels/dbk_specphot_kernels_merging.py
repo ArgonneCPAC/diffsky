@@ -35,8 +35,6 @@ def _mc_dbk_specphot_kern_merging(
     nhalos_weights,
     halo_indx,
 ):
-    n_gals = z_obs.size
-
     dbk_specphot_info, dbk_weights = dbkspk._mc_dbk_specphot_kern(
         ran_key,
         z_obs,
@@ -61,10 +59,22 @@ def _mc_dbk_specphot_kern_merging(
         merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
     )
     mstar_in_situ = 10**dbk_specphot_info.logsm_obs
-
     mstar_obs = compute_x_tot_from_x_in_situ(
         mstar_in_situ, merge_prob, nhalos_weights, halo_indx
     )
+
+    dbk_specphot_info, dbk_weights = _get_dbk_specphot_info_with_merging(
+        dbk_specphot_info, dbk_weights, mstar_in_situ, mstar_obs
+    )
+    return dbk_specphot_info, dbk_weights
+
+
+@jjit
+def _get_dbk_specphot_info_with_merging(
+    dbk_specphot_info, dbk_weights, mstar_in_situ, mstar_obs
+):
+    n_gals = dbk_specphot_info.logsm_obs.size
+
     frac_dm = mstar_obs / mstar_in_situ
     dmag = -2.5 * jnp.log10(frac_dm)
 
@@ -103,5 +113,4 @@ def _mc_dbk_specphot_kern_merging(
     dbk_specphot_info_keys = list(dbk_specphot_info._fields) + new_keys
     MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_info_keys)
     dbk_specphot_info = MCDBKSpecPhotInfo(**dbk_specphot_info._asdict(), **in_situ_dict)
-
     return dbk_specphot_info, dbk_weights
