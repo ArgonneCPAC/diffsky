@@ -36,7 +36,7 @@ def check_spec_kern_merging_results(spec_kern_results, lc_data):
     assert np.any(x[msk_sat] < y[msk_sat])
 
 
-def test_mc_specphot_kern_merging(num_halos=41):
+def test_mc_specphot_kern_merging(num_halos=41, mc_merge=0):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
@@ -49,7 +49,6 @@ def test_mc_specphot_kern_merging(num_halos=41):
     ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
     lc_data = lc_data._replace(ssp_data=ssp_data)
 
-    mc_merge = 0
     phot_kern_results, phot_randoms, spec_kern_results = (
         sppkm._mc_specphot_kern_merging(
             ran_key,

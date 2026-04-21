@@ -53,14 +53,13 @@ def check_phot_kern_merging_results(phot_kern_results, lc_data):
     assert np.any(x[msk_sat] < y[msk_sat])
 
 
-def test_mc_phot_kern_merging(num_halos=250):
+def test_mc_phot_kern_merging(num_halos=250, mc_merge=0):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )
     fb = 0.176
 
-    mc_merge = 0
     phot_kern_results, phot_randoms = pkm._mc_phot_kern_merging(
         ran_key,
         lc_data.z_obs,

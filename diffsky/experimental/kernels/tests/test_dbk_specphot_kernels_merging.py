@@ -9,15 +9,13 @@ from ...tests import test_lightcone_generators as tlcg
 from .. import dbk_specphot_kernels_merging as dbkspkm
 
 
-def test_mc_dbk_specphot_kern_merging(num_halos=150):
+def test_mc_dbk_specphot_kern_merging(num_halos=150, mc_merge=0):
     """Enforce that the sum of the component lines equals the composite line"""
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )
     fb = 0.13
-
-    mc_merge = 0
 
     args = (
         ran_key,
