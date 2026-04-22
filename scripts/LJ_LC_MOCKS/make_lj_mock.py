@@ -37,8 +37,8 @@ from diffsky.data_loaders.hacc_utils import metadata_mock
 from diffsky.data_loaders.mock_utils import get_mock_version_name
 from diffsky.experimental import mc_lightcone_halos as mclh
 from diffsky.experimental import precompute_ssp_phot as psspp
-from diffsky.param_utils import diffsky_param_wrapper as dpw
-from diffsky.param_utils import get_mock_params as gmp
+from diffsky.param_utils import COSMOS_PARAM_FITS_MERGING
+from diffsky.param_utils import diffsky_param_wrapper_merging as dpwm
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -182,10 +182,8 @@ if __name__ == "__main__":
     for line_name in OUTPUT_LINE_NICKNAMES:
         assert line_name in ssp_data.ssp_emline_wave._fields
 
-    param_collection = gmp.get_param_collection_for_mock(
-        cosmos_fit=cosmos_fit, sfh_model=sfh_model, rank=0
-    )
-    dpw.check_param_collection_is_ok(param_collection)
+    param_collection = COSMOS_PARAM_FITS_MERGING[cosmos_fit]
+    dpwm.check_param_collection_is_ok(param_collection)
 
     n_z_phot_table = 15
 

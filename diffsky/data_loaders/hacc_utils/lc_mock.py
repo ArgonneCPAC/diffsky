@@ -32,7 +32,7 @@ from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ...experimental.kernels import dbk_specphot_kernels as dbkspk
+from ...experimental.kernels import dbk_specphot_kernels_merging as dbkspkm
 from ...experimental.kernels import phot_kernels as phkern
 from ...experimental.size_modeling import smzr_bulge, smzr_disk
 from ...fake_sats import halo_boundary_functions as hbf
@@ -443,7 +443,8 @@ def add_dbk_phot_quantities_to_mock(
 
     line_wave_table = np.array(ssp_data.ssp_emline_wave)
 
-    dbk_phot_info, dbk_weights = dbkspk._mc_dbk_specphot_kern(
+    mc_merge = 1
+    dbk_phot_info, dbk_weights = dbkspkm._mc_dbk_specphot_kern_merging(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],
@@ -458,10 +459,17 @@ def add_dbk_phot_quantities_to_mock(
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
+        param_collection.merging_params,
         sim_info.cosmo_params,
         sim_info.fb,
+        lc_data["logmp_infall"],
+        lc_data["logmhost_infall"],
+        lc_data["t_infall"],
+        lc_data["is_central"],
+        lc_data["nhalos_weights"],
+        lc_data["halo_indx"],
+        mc_merge,
     )
-
     # Store contents of matrices of line luminosities into dict with line names
     linelum_dict = dict()
     for i, name in enumerate(ssp_data.ssp_emline_wave._fields):
