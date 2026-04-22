@@ -290,10 +290,11 @@ if __name__ == "__main__":
                 lc_data_batch, diffsky_data_batch = load_lc_cf.load_lc_cf_chunk(
                     fn_lc_diffsky, indir_lc_data, nchunks=nchunks, chunknum=chunknum
                 )
-                lc_data_batch, diffsky_data_batch = (
-                    load_lc_cf.compute_additional_haloprops(
-                        lc_data_batch, diffsky_data_batch, sim_info
-                    )
+                diffsky_data_batch = load_lc_cf.compute_additional_haloprops(
+                    diffsky_data_batch,
+                    sim_info,
+                    halo_indx=lc_data_batch["top_host_idx_chunk"],
+                    sec_halo_indx=lc_data_batch["secondary_top_host_idx_chunk"],
                 )
             else:
                 downsample_factor = nhalos_estimate / batch_size

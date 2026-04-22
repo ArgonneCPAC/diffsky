@@ -115,6 +115,8 @@ PHOT_INFO_KEYS_OUT = (
     "uran_funo",
     "uran_pburst",
     "delta_mag_ssp_scatter",
+    "uran_pmerge",
+    "p_merge",
 )
 
 MORPH_KEYS_OUT = ("bulge_to_total", *dbk.DEFAULT_FBULGE_PARAMS._fields)

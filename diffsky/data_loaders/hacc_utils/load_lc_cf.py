@@ -220,21 +220,33 @@ def load_lc_mock_chunk(fn_lc_mock, *, nchunks, chunknum, lc_mock_keys=None):
     return lc_mock, (istart, iend)
 
 
-def compute_additional_haloprops(lc_data, diffsky_data, sim_info):
+def compute_additional_haloprops(
+    diffsky_data, sim_info, halo_indx=None, sec_halo_indx=None
+):
     """"""
-    n_gals = len(lc_data["scale_factor"])
+    n_gals = len(diffsky_data["t_peak"])
     additional_haloprops = dict()
     additional_haloprops["nhalos_weights"] = np.ones(n_gals).astype("float")
     additional_haloprops["t_infall"] = diffsky_data["t_peak"]
-    additional_haloprops["halo_indx"] = lc_data["top_host_idx_chunk"]
-    additional_haloprops["sec_halo_indx"] = lc_data["secondary_top_host_idx_chunk"]
+
+    if halo_indx is None:
+        additional_haloprops["halo_indx"] = diffsky_data["top_host_idx_chunk"]
+    else:
+        additional_haloprops["halo_indx"] = halo_indx
+
+    if sec_halo_indx is None:
+        additional_haloprops["sec_halo_indx"] = diffsky_data[
+            "secondary_top_host_idx_chunk"
+        ]
+    else:
+        additional_haloprops["sec_halo_indx"] = sec_halo_indx
 
     mah_params = DEFAULT_MAH_PARAMS._make(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
     mah_params_host = DEFAULT_MAH_PARAMS._make(
         [
-            diffsky_data[key][lc_data["top_host_idx_chunk"]]
+            diffsky_data[key][additional_haloprops["halo_indx"]]
             for key in DEFAULT_MAH_PARAMS._fields
         ]
     )
@@ -244,5 +256,6 @@ def compute_additional_haloprops(lc_data, diffsky_data, sim_info):
     additional_haloprops["logmhost_infall"] = logmh_at_t_obs(
         mah_params_host, diffsky_data["t_peak"], sim_info.lgt0
     )
+
     diffsky_data.update(additional_haloprops)
-    return lc_data, diffsky_data
+    return diffsky_data

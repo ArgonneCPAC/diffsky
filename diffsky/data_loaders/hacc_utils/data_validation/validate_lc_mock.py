@@ -11,7 +11,7 @@ from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology.flat_wcdm import age_at_z
 
 from .... import phot_utils
-from ....experimental import dbk_phot_from_mock
+from ....experimental import dbk_phot_from_mock_merging
 from ....experimental import precompute_ssp_phot as psspp
 from ....param_utils import diffsky_param_wrapper as dpw
 from .. import lc_mock as lcmp
@@ -380,7 +380,7 @@ def check_column_shapes(fn_lc_mock, data=None):
 
 
 def check_recomputed_photometry(
-    fn_lc_mock, n_test=200, return_results=False, *, no_dbk=False
+    fn_lc_mock, *, nchunks=20, chunknum_test=3, return_results=False, no_dbk=False
 ):
     """Recompute first N_TEST=50 galaxies photometry and enforce agreement"""
     with h5py.File(fn_lc_mock, "r") as hdf:
@@ -391,7 +391,10 @@ def check_recomputed_photometry(
     ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
     sim_info = lcmp.load_diffsky_sim_info(fn_lc_mock)
 
-    mock = load_flat_hdf5(fn_lc_mock, dataset="data", iend=n_test)
+    mock, __ = load_lc_cf.load_lc_mock_chunk(
+        fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
+    )
+    mock = load_lc_cf.compute_additional_haloprops(mock, sim_info)
 
     mah_params = DEFAULT_MAH_PARAMS._make(
         [mock[key] for key in DEFAULT_MAH_PARAMS._fields]
@@ -412,10 +415,10 @@ def check_recomputed_photometry(
         tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
     )
 
-    mc_is_q = np.where(mock["mc_sfh_type"] == 0, True, False)
+    nhalos_weights = np.ones_like(t_obs)
     if no_dbk:
         args = (
-            mc_is_q,
+            mock["mc_sfh_type"],
             mock["uran_av"],
             mock["uran_delta"],
             mock["uran_funo"],
@@ -433,27 +436,36 @@ def check_recomputed_photometry(
             param_collection.spspop_params,
             param_collection.scatter_params,
             param_collection.ssperr_params,
+            param_collection.merging_params,
             sim_info.cosmo_params,
             sim_info.fb,
+            mock["logmp_infall"],
+            mock["logmhost_infall"],
+            mock["t_infall"],
+            mock["central"],
+            mock["mc_sfh_type"],
+            mock["mc_sfh_type"],
+            nhalos_weights,
+            mock["top_host_idx_chunk"],
         )
-        _res = dbk_phot_from_mock._reproduce_mock_phot_kern(*args)
-        phot_info, phot_randoms = _res
+        phot_info = dbk_phot_from_mock_merging._reproduce_mock_phot_kern(*args)
         phot_info = phot_info._asdict()
 
     else:
         args = (
-            mc_is_q,
+            mock["mc_sfh_type"],
             mock["uran_av"],
             mock["uran_delta"],
             mock["uran_funo"],
             mock["uran_pburst"],
             mock["delta_mag_ssp_scatter"],
+            mock["uran_fbulge"],
+            mock["fknot"],
+            mock["uran_pmerge"],
             sfh_params,
             mock["redshift_true"],
             t_obs,
             mah_params,
-            mock["fknot"],
-            mock["uran_fbulge"],
             ssp_data,
             precomputed_ssp_mag_table,
             z_phot_table,
@@ -462,22 +474,19 @@ def check_recomputed_photometry(
             param_collection.spspop_params,
             param_collection.scatter_params,
             param_collection.ssperr_params,
+            param_collection.merging_params,
             sim_info.cosmo_params,
             sim_info.fb,
+            mock["logmp_infall"],
+            mock["logmhost_infall"],
+            mock["t_infall"],
+            mock["central"],
+            nhalos_weights,
+            mock["top_host_idx_chunk"],
         )
-        _res = dbk_phot_from_mock._reproduce_mock_dbk_kern(*args)
-        (
-            phot_info,
-            phot_randoms,
-            disk_bulge_history,
-            obs_mags_bulge,
-            obs_mags_disk,
-            obs_mags_knots,
-        ) = _res
+        _res = dbk_phot_from_mock_merging._reproduce_dbk_mock_phot_kern(*args)
+        phot_info, dbk_weights = _res
         phot_info = phot_info._asdict()
-        phot_info["obs_mags_bulge"] = obs_mags_bulge
-        phot_info["obs_mags_disk"] = obs_mags_disk
-        phot_info["obs_mags_knots"] = obs_mags_knots
 
     if return_results:
         return mock, phot_info, tcurves

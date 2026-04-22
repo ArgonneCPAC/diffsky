@@ -43,6 +43,66 @@ def _mc_dbk_specphot_kern_merging(
     )
     phot_randoms, sfh_params, dbk_randoms, merging_randoms = _res
 
+    dbk_specphot_info, dbk_weights = _dbk_specphot_kern_merging(
+        phot_randoms,
+        sfh_params,
+        dbk_randoms,
+        merging_randoms,
+        z_obs,
+        t_obs,
+        mah_params,
+        ssp_data,
+        precomputed_ssp_mag_table,
+        z_phot_table,
+        wave_eff_table,
+        line_wave_table,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssp_err_pop_params,
+        merge_params,
+        cosmo_params,
+        fb,
+        logmp_infall,
+        logmhost_infall,
+        t_infall,
+        is_central,
+        nhalos_weights,
+        halo_indx,
+        mc_merge,
+    )
+    return dbk_specphot_info, dbk_weights
+
+
+@jjit
+def _dbk_specphot_kern_merging(
+    phot_randoms,
+    sfh_params,
+    dbk_randoms,
+    merging_randoms,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    precomputed_ssp_mag_table,
+    z_phot_table,
+    wave_eff_table,
+    line_wave_table,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssp_err_pop_params,
+    merge_params,
+    cosmo_params,
+    fb,
+    logmp_infall,
+    logmhost_infall,
+    t_infall,
+    is_central,
+    nhalos_weights,
+    halo_indx,
+    mc_merge,
+):
     dbk_specphot_info, dbk_weights = dbkspk._dbk_specphot_kern(
         phot_randoms,
         sfh_params,
@@ -85,6 +145,7 @@ def _mc_dbk_specphot_kern_merging(
         flux_in_situ,
         flux_obs,
         p_merge,
+        merging_randoms.uran_pmerge,
     )
     dbk_specphot_info = pkm._get_phot_kern_results_with_merging(*args)
 

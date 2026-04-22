@@ -141,6 +141,7 @@ def _specphot_kern_merging(
         flux_in_situ,
         flux_obs,
         p_merge,
+        merging_randoms.uran_pmerge,
     )
     phot_kern_results = phot_kernels_merging._get_phot_kern_results_with_merging(*args)
 

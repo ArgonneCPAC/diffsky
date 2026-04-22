@@ -95,6 +95,16 @@ def add_metadata_spspop_columns(metadata):
         "Array for adding noise to SSP SED errors",
     )
 
+    metadata["uran_pmerge"] = (
+        str(u.dimensionless_unscaled),
+        "Array for adding noise to merging",
+    )
+
+    metadata["p_merge"] = (
+        str(u.dimensionless_unscaled),
+        "Probability that the galaxy merged its mass with its associated central",
+    )
+
     # dust
     metadata["av"] = (
         str(u.dimensionless_unscaled),
