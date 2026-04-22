@@ -424,6 +424,7 @@ def check_recomputed_photometry(
             mock["uran_funo"],
             mock["uran_pburst"],
             mock["delta_mag_ssp_scatter"],
+            mock["uran_pmerge"],
             sfh_params,
             mock["redshift_true"],
             t_obs,
@@ -443,8 +444,6 @@ def check_recomputed_photometry(
             mock["logmhost_infall"],
             mock["t_infall"],
             mock["central"],
-            mock["mc_sfh_type"],
-            mock["mc_sfh_type"],
             nhalos_weights,
             mock["top_host_idx_chunk"],
         )
@@ -489,7 +488,7 @@ def check_recomputed_photometry(
         phot_info = phot_info._asdict()
 
     if return_results:
-        return mock, phot_info, tcurves
+        return mock, phot_info, tcurves, args
 
     RTOL = 0.1
     ATOL = 0.2

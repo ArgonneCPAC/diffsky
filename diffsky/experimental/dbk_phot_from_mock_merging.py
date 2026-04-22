@@ -15,6 +15,7 @@ def _reproduce_mock_phot_kern(
     uran_funo,
     uran_pburst,
     delta_mag_ssp_scatter,
+    uran_pmerge,
     sfh_params,
     z_obs,
     t_obs,
@@ -46,9 +47,12 @@ def _reproduce_mock_phot_kern(
         uran_pburst,
         delta_mag_ssp_scatter,
     )
+    merging_randoms = mc_randoms.DiffMergeRandoms(uran_pmerge)
 
-    phot_kern_results, phot_randoms = phot_kernels_merging._phot_kern_merging(
+    mc_merge = 1
+    phot_kern_results = phot_kernels_merging._phot_kern_merging(
         phot_randoms,
+        merging_randoms,
         sfh_params,
         z_obs,
         t_obs,
@@ -70,6 +74,7 @@ def _reproduce_mock_phot_kern(
         is_central,
         nhalos_weights,
         halo_indx,
+        mc_merge,
     )
     return phot_kern_results
 
