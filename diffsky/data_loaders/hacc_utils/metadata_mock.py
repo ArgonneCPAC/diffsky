@@ -509,7 +509,9 @@ def append_metadata(
     *,
     exclude_colnames=[],
     no_dbk=False,
+    incl_in_situ=False,
 ):
+
     try:
         from astropy import units as u
         from astropy.cosmology import units as cu
@@ -571,6 +573,10 @@ def append_metadata(
             unit, description = val
             hdf_out[key_out].attrs["unit"] = unit
             hdf_out[key_out].attrs["description"] = description
+
+        if incl_in_situ:
+            filter_nicknames_in_situ = [x + "_in_situ" for x in filter_nicknames]
+            filter_nicknames = list(filter_nicknames) + filter_nicknames_in_situ
 
         # Filter magnitudes
         for nickname in filter_nicknames:

@@ -325,9 +325,18 @@ def write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
 
 
 def write_batched_lc_sed_mock_to_disk(
-    fnout, phot_info, lc_data, diffsky_data, filter_nicknames, lineflux_nicknames
+    fnout,
+    phot_info,
+    lc_data,
+    diffsky_data,
+    filter_nicknames,
+    lineflux_nicknames,
+    incl_in_situ=False,
 ):
     write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data)
+    if incl_in_situ:
+        filter_nicknames_in_situ = [x + "_in_situ" for x in filter_nicknames]
+        filter_nicknames = list(filter_nicknames) + filter_nicknames_in_situ
 
     specphot_dict = dict()
     for iband, name in enumerate(filter_nicknames):
@@ -350,8 +359,18 @@ def write_batched_lc_sed_mock_to_disk(
 
 
 def write_batched_lc_dbk_sed_mock_to_disk(
-    fnout, phot_info, lc_data, diffsky_data, filter_nicknames, lineflux_nicknames
+    fnout,
+    phot_info,
+    lc_data,
+    diffsky_data,
+    filter_nicknames,
+    lineflux_nicknames,
+    incl_in_situ=False,
 ):
+    if incl_in_situ:
+        filter_nicknames_in_situ = [x + "_in_situ" for x in filter_nicknames]
+        filter_nicknames = list(filter_nicknames) + filter_nicknames_in_situ
+
     write_batched_lc_sed_mock_to_disk(
         fnout, phot_info, lc_data, diffsky_data, filter_nicknames, lineflux_nicknames
     )

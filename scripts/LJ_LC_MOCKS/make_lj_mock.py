@@ -111,6 +111,7 @@ if __name__ == "__main__":
     batch_size = config.get("batch_size", 20_000)
     no_dbk = config.get("no_dbk", False)
     no_sed = config.get("no_sed", False)
+    incl_in_situ = config.get("incl_in_situ", False)
     bn_ssp_data = config.get("bn_ssp_data", SSP_SED_BNAME)
 
     if mock_version_name_in == "":
@@ -367,6 +368,7 @@ if __name__ == "__main__":
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
                         OUTPUT_LINE_NICKNAMES,
+                        incl_in_situ=incl_in_situ,
                     )
                 else:
                     lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
@@ -376,6 +378,7 @@ if __name__ == "__main__":
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
                         OUTPUT_LINE_NICKNAMES,
+                        incl_in_situ=incl_in_situ,
                     )
 
             if synthetic_cores == 1:
@@ -445,6 +448,7 @@ if __name__ == "__main__":
             OUTPUT_LINE_NICKNAMES,
             exclude_colnames=exclude_colnames,
             no_dbk=no_dbk,
+            incl_in_situ=incl_in_situ,
         )
 
         if rank == 0:
