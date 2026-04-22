@@ -399,7 +399,9 @@ def check_recomputed_photometry(
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
         [mock[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
-    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
+    param_collection = lcmp.load_diffsky_param_collection_merging(
+        drn_mock, mock_version_name
+    )
     t_obs = age_at_z(mock["redshift_true"], *sim_info.cosmo_params)
 
     # Precompute photometry at each element of the redshift table
