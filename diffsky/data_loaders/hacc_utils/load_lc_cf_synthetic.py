@@ -70,6 +70,7 @@ def load_lc_diffsky_patch_data(
     diffsky_data["phi"] = phi
 
     diffsky_data["top_host_idx"] = np.arange(n_gals).astype(int)
+    diffsky_data["secondary_top_host_idx"] = np.arange(n_gals).astype(int)
 
     for key in diffsky_data["mah_params"]._fields:
         diffsky_data[key] = getattr(diffsky_data["mah_params"], key)

@@ -468,6 +468,10 @@ def add_metadata_lc_core_data_columns(metadata):
         str(u.dimensionless_unscaled),
         "Index of host core",
     )
+    metadata["secondary_top_host_idx"] = (
+        str(u.dimensionless_unscaled),
+        "Index of host core",
+    )
     metadata["redshift_true"] = (
         str(u.dimensionless_unscaled),
         "True redshift",
@@ -602,7 +606,7 @@ def append_index_metadata(fnout, drn_lc_cores):
         metadata_group = hdf_out.require_group("metadata")
         index_group = metadata_group.require_group("index")
         for key, val in index_data.items():
-            index_group.attrs[key] = val
+            index_group[key] = val
 
 
 def get_dependency_versions():

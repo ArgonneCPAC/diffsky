@@ -153,18 +153,25 @@ def generate_fake_mah_params(ran_key, t_obs, lgmp_obs, is_central, lgt0):
     return fake_mah_params
 
 
-def _chunked_read_kernel(fobj, nchunks, chunknum, keys_to_read):
+def _read_lc_cores_chunk(fobj, nchunks, chunknum, keys_to_read, index_dataset=None):
     """Read a forest-complete chunk of data from lc_cores"""
 
-    nindex = len(fobj["index"]["offset"])
+    if index_dataset is None:
+        index_dataset = fobj
+    else:
+        index_dataset = fobj[index_dataset]
+
+    nindex = len(index_dataset["index"]["offset"])
     nstart = (nindex // nchunks) * chunknum
     nend = (nindex // nchunks) * (chunknum + 1)
 
-    read_start = fobj["index"]["offset"][nstart]
+    read_start = index_dataset["index"]["offset"][nstart]
     if chunknum == nchunks - 1:
-        read_end = fobj["index"]["offset"][-1] + fobj["index"]["count"][-1]
+        read_end = (
+            index_dataset["index"]["offset"][-1] + index_dataset["index"]["count"][-1]
+        )
     else:
-        read_end = fobj["index"]["offset"][nend]
+        read_end = index_dataset["index"]["offset"][nend]
 
     lc_cores_chunk = {}
     for key in keys_to_read:
@@ -188,7 +195,7 @@ def load_lc_cf_chunk(fn_lc_cf, drn_lc_cores, *, nchunks, chunknum, lc_cores_keys
         if lc_cores_keys is None:
             lc_cores_keys = list(hdf["data"].keys())
 
-        lc_data, (istart, iend) = _chunked_read_kernel(
+        lc_data, (istart, iend) = _read_lc_cores_chunk(
             hdf, nchunks, chunknum, lc_cores_keys
         )
 
@@ -201,6 +208,11 @@ def load_lc_cf_chunk(fn_lc_cf, drn_lc_cores, *, nchunks, chunknum, lc_cores_keys
     return lc_data, diffsky_data
 
 
+def load_lc_mock_chunk(fn_lc_mock, *, nchunks, chunknum, keys=None):
+    with h5py.File(fn_lc_mock, "r") as hdf:
+        pass
+
+
 def compute_additional_haloprops(lc_data, diffsky_data, sim_info):
     """"""
     n_gals = len(lc_data["scale_factor"])
@@ -208,6 +220,7 @@ def compute_additional_haloprops(lc_data, diffsky_data, sim_info):
     additional_haloprops["nhalos_weights"] = np.ones(n_gals).astype("float")
     additional_haloprops["t_infall"] = diffsky_data["t_peak"]
     additional_haloprops["halo_indx"] = lc_data["top_host_idx_chunk"]
+    additional_haloprops["sec_halo_indx"] = lc_data["secondary_top_host_idx_chunk"]
 
     mah_params = DEFAULT_MAH_PARAMS._make(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]

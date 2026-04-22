@@ -68,6 +68,7 @@ LC_DATA_KEYS_OUT = (
     "y",
     "z",
     "top_host_idx",
+    "secondary_top_host_idx",
     "central",
     "redshift_true",
     "stepnum",
