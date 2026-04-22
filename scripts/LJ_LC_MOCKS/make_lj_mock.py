@@ -290,6 +290,11 @@ if __name__ == "__main__":
                 lc_data_batch, diffsky_data_batch = load_lc_cf.load_lc_cf_chunk(
                     fn_lc_diffsky, indir_lc_data, nchunks=nchunks, chunknum=chunknum
                 )
+                lc_data_batch, diffsky_data_batch = (
+                    load_lc_cf.compute_additional_haloprops(
+                        lc_data_batch, diffsky_data_batch, sim_info
+                    )
+                )
             else:
                 downsample_factor = nhalos_estimate / batch_size
                 batch_key, synthetic_lc_key = jran.split(batch_key, 2)
@@ -449,7 +454,7 @@ if __name__ == "__main__":
                 fn_sky_decomp = os.path.join(indir_lc_data, bn_sky_decomp)
                 shutil.copy2(fn_sky_decomp, drn_out)
 
-            lcmp_repro.write_ancillary_data(
+            lcmp_repro.write_ancillary_data_merging(
                 drn_out,
                 mock_version_name,
                 sim_info,

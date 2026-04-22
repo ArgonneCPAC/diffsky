@@ -5,7 +5,7 @@ from collections import namedtuple
 
 import h5py
 import numpy as np
-from diffmah import DEFAULT_MAH_PARAMS
+from diffmah import DEFAULT_MAH_PARAMS, logmh_at_t_obs
 from diffmah.diffmahpop_kernels.bimod_censat_params import DEFAULT_DIFFMAHPOP_PARAMS
 from diffmah.diffmahpop_kernels.mc_bimod_cens import mc_diffmah_cenpop
 from diffmah.diffmahpop_kernels.mc_bimod_sats import mc_diffmah_satpop
@@ -198,4 +198,31 @@ def load_lc_cf_chunk(fn_lc_cf, drn_lc_cores, *, nchunks, chunknum, lc_cores_keys
 
     assert lc_data["redshift_true"].shape[0] == diffsky_data["logm0"].shape[0]
 
+    return lc_data, diffsky_data
+
+
+def compute_additional_haloprops(lc_data, diffsky_data, sim_info):
+    """"""
+    n_gals = len(lc_data["scale_factor"])
+    additional_haloprops = dict()
+    additional_haloprops["nhalos_weights"] = np.ones(n_gals).astype("float")
+    additional_haloprops["t_infall"] = diffsky_data["t_peak"]
+    additional_haloprops["halo_indx"] = lc_data["top_host_idx_chunk"]
+
+    mah_params = DEFAULT_MAH_PARAMS._make(
+        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+    )
+    mah_params_host = DEFAULT_MAH_PARAMS._make(
+        [
+            diffsky_data[key][lc_data["top_host_idx_chunk"]]
+            for key in DEFAULT_MAH_PARAMS._fields
+        ]
+    )
+    additional_haloprops["logmp_infall"] = logmh_at_t_obs(
+        mah_params, diffsky_data["t_peak"], sim_info.lgt0
+    )
+    additional_haloprops["logmhost_infall"] = logmh_at_t_obs(
+        mah_params_host, diffsky_data["t_peak"], sim_info.lgt0
+    )
+    diffsky_data.update(additional_haloprops)
     return lc_data, diffsky_data

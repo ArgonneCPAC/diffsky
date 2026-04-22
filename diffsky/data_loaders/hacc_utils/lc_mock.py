@@ -256,6 +256,15 @@ def write_ancillary_data(
     write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
 
 
+def write_ancillary_data_merging(
+    drn_out, mock_version_name, sim_info, param_collection, tcurves, ssp_data
+):
+    write_diffsky_t_table(drn_out, mock_version_name, sim_info)
+    write_diffsky_param_collection_merging(drn_out, mock_version_name, param_collection)
+    write_diffsky_tcurves_to_disk(drn_out, mock_version_name, tcurves)
+    write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
+
+
 def get_dsps_transmission_curves(filter_nicknames, drn=None):
     bn_pat_list = [name + "*" for name in filter_nicknames]
     TCurves = namedtuple("TCurves", filter_nicknames)
@@ -462,12 +471,12 @@ def add_dbk_phot_quantities_to_mock(
         param_collection.merging_params,
         sim_info.cosmo_params,
         sim_info.fb,
-        lc_data["logmp_infall"],
-        lc_data["logmhost_infall"],
-        lc_data["t_infall"],
-        lc_data["is_central"],
-        lc_data["nhalos_weights"],
-        lc_data["halo_indx"],
+        diffsky_data["logmp_infall"],
+        diffsky_data["logmhost_infall"],
+        diffsky_data["t_infall"],
+        lc_data["central"],
+        diffsky_data["nhalos_weights"],
+        diffsky_data["halo_indx"],
         mc_merge,
     )
     # Store contents of matrices of line luminosities into dict with line names
