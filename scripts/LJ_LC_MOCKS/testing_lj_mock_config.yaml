@@ -5,7 +5,7 @@ istart: 0
 iend: 1
 drn_out: "ci_test_output"
 mock_nickname: "ci_test_mock"
-cosmos_fit: "cosmos_260215"
+cosmos_fit: "cosmos_260305_Cmrg"
 synthetic_cores: 1
 lgmp_min: 12.5
 lgmp_max: 13.5
