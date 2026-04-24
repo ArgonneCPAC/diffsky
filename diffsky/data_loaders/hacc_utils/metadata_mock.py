@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 
 import h5py
-import numpy as np
 
 from . import load_flat_hdf5, load_lc_cf
 
