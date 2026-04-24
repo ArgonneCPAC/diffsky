@@ -578,10 +578,6 @@ def append_metadata(
             hdf_out[key_out].attrs["unit"] = unit
             hdf_out[key_out].attrs["description"] = description
 
-        if incl_in_situ:
-            filter_nicknames_in_situ = [x + "_in_situ" for x in filter_nicknames]
-            filter_nicknames = list(filter_nicknames) + filter_nicknames_in_situ
-
         # Filter magnitudes
         for nickname in filter_nicknames:
 
@@ -591,6 +587,10 @@ def append_metadata(
 
             hdf_out[key_out].attrs["unit"] = str(u.ABmag)
             hdf_out[key_out].attrs["description"] = COMPOSITE_MAG_MSG
+
+            if incl_in_situ:
+                hdf_out[key_out + "_in_situ"].attrs["unit"] = str(u.ABmag)
+                hdf_out[key_out + "_in_situ"].attrs["description"] = COMPOSITE_MAG_MSG
 
             # Component magnitudes
             if no_dbk:
@@ -605,6 +605,11 @@ def append_metadata(
                     msg = COMPONENT_MAG_MSG_PAT.format(component)
                     hdf_out[key_out].attrs["unit"] = str(u.ABmag)
                     hdf_out[key_out].attrs["description"] = msg
+
+                    if incl_in_situ:
+                        key_out = "data/" + "_".join((nickname, "in_situ", component))
+                        hdf_out[key_out].attrs["unit"] = str(u.ABmag)
+                        hdf_out[key_out].attrs["description"] = COMPOSITE_MAG_MSG
 
         # emission line fluxes
         for linename in lineflux_nicknames:

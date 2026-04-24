@@ -336,13 +336,12 @@ def write_batched_lc_sed_mock_to_disk(
     incl_in_situ=False,
 ):
     write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data)
-    if incl_in_situ:
-        filter_nicknames_in_situ = [x + "_in_situ" for x in filter_nicknames]
-        filter_nicknames = list(filter_nicknames) + filter_nicknames_in_situ
 
     specphot_dict = dict()
     for iband, name in enumerate(filter_nicknames):
         specphot_dict[name] = phot_info["obs_mags"][:, iband]
+        if incl_in_situ:
+            specphot_dict[name + "_in_situ"] = phot_info["obs_mags_in_situ"][:, iband]
 
     for linename in lineflux_nicknames:
         specphot_dict[linename] = phot_info[linename]
@@ -369,12 +368,15 @@ def write_batched_lc_dbk_sed_mock_to_disk(
     lineflux_nicknames,
     incl_in_situ=False,
 ):
-    if incl_in_situ:
-        filter_nicknames_in_situ = [x + "_in_situ" for x in filter_nicknames]
-        filter_nicknames = list(filter_nicknames) + filter_nicknames_in_situ
 
     write_batched_lc_sed_mock_to_disk(
-        fnout, phot_info, lc_data, diffsky_data, filter_nicknames, lineflux_nicknames
+        fnout,
+        phot_info,
+        lc_data,
+        diffsky_data,
+        filter_nicknames,
+        lineflux_nicknames,
+        incl_in_situ=incl_in_situ,
     )
 
     dbk_phot_dict = dict()
@@ -384,6 +386,17 @@ def write_batched_lc_dbk_sed_mock_to_disk(
         dbk_phot_dict[name + "_knots"] = phot_info["obs_mags_knots"][:, iband]
         dbk_phot_dict["fknot"] = phot_info["fknot"]
         dbk_phot_dict["uran_fbulge"] = phot_info["uran_fbulge"]
+        if incl_in_situ:
+            dbk_phot_dict[name + "_in_situ" + "_bulge"] = phot_info[
+                "obs_mags_bulge_in_situ"
+            ][:, iband]
+            dbk_phot_dict[name + "_in_situ" + "_disk"] = phot_info[
+                "obs_mags_disk_in_situ"
+            ][:, iband]
+            dbk_phot_dict[name + "_in_situ" + "_knots"] = phot_info[
+                "obs_mags_knots_in_situ"
+            ][:, iband]
+
     write_batched_mock_data(
         fnout, dbk_phot_dict, list(dbk_phot_dict.keys()), dataset="data"
     )

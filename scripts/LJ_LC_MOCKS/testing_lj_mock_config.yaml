@@ -11,4 +11,5 @@ lgmp_min: 12.5
 lgmp_max: 13.5
 mock_version_name: "dummy_version_name"
 lsst_only: 1
+incl_in_situ: false
 bn_ssp_data: "fsps_v0.4.7_mist_c3k_a_kroupa_wNE_logGasU-2.0_logGasZ0.0.sparse.h5"
