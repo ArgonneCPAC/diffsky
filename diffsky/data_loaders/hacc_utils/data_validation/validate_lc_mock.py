@@ -201,22 +201,13 @@ def check_metadata(fn_lc_mock):
         msg.append(s)
         return msg
 
-    bn_lc_mock = os.path.basename(fn_lc_mock)
-    # Check for `index` in metadata of real halos
-    if "synthetic" not in bn_lc_mock:
-        try:
-            assert "index" in all_metadata.keys()
-        except AssertionError:
-            s = f"metadata is missing `index` info for {fn_lc_mock}"
-            msg.append(s)
-            return msg
-    else:
-        try:
-            assert "index" not in all_metadata.keys()
-        except AssertionError:
-            s = f"metadata contains `index` info for {fn_lc_mock} - unexpected for synthetic halos"
-            msg.append(s)
-            return msg
+    # Check for `index` in metadata
+    try:
+        assert "index" in all_metadata.keys()
+    except AssertionError:
+        s = f"metadata is missing `index` info for {fn_lc_mock}"
+        msg.append(s)
+        return msg
 
     with h5py.File(fn_lc_mock, "r") as hdf:
         try:
@@ -407,10 +398,25 @@ def check_recomputed_photometry(
     ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
     sim_info = lcmp.load_diffsky_sim_info(fn_lc_mock)
 
-    mock, __ = load_lc_cf.load_lc_mock_chunk(
-        fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
-    )
-    mock = load_lc_cf.compute_additional_haloprops(mock, sim_info)
+    if "synthetic" not in fn_lc_mock:
+        mock, __ = load_lc_cf.load_lc_mock_chunk(
+            fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
+        )
+        mock = load_lc_cf.compute_additional_haloprops(mock, sim_info)
+    else:
+        _mock = load_flat_hdf5(fn_lc_mock, dataset="data", keys=["central"])
+        n = _mock["central"].size
+        if n < BATCH_SIZE:
+            mock = load_flat_hdf5(fn_lc_mock, dataset="data")
+        else:
+            mock = load_flat_hdf5(fn_lc_mock, dataset="data", iend=BATCH_SIZE)
+        n = mock["central"].size
+        _indx = np.arange(n).astype(int)
+        mock["top_host_idx_chunk"] = mock["top_host_idx"]
+        mock["secondary_top_host_idx_chunk"] = mock["secondary_top_host_idx"]
+        mock = load_lc_cf.compute_additional_haloprops(
+            mock, sim_info, halo_indx=_indx, sec_halo_indx=_indx
+        )
 
     mah_params = DEFAULT_MAH_PARAMS._make(
         [mock[key] for key in DEFAULT_MAH_PARAMS._fields]

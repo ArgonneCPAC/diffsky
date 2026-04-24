@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 import h5py
+import numpy as np
 
 from . import load_flat_hdf5, load_lc_cf
 
@@ -615,11 +616,15 @@ def append_metadata(
             hdf_out[key_out].attrs["description"] = LINELUM_MSG
 
 
-def append_index_metadata(fnout, drn_lc_cores):
+def append_index_metadata(fnout, drn_lc_cores, synthetic_cores):
     """Copy the index metadata from lc_cores to the output mock data"""
     bn_lc_cores = os.path.basename(fnout).replace(".diffsky_gals.hdf5", ".hdf5")
     fn_lc_cores = os.path.join(drn_lc_cores, bn_lc_cores)
-    index_data = load_flat_hdf5(fn_lc_cores, dataset="index")
+
+    if synthetic_cores == 0:
+        index_data = load_flat_hdf5(fn_lc_cores, dataset="index")
+    elif synthetic_cores == 1:
+        index_data = dict(count=0, offset=0, unique_id=0)
 
     with h5py.File(fnout, "r+") as hdf_out:
         metadata_group = hdf_out.require_group("metadata")
