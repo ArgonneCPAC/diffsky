@@ -143,7 +143,9 @@ def _specphot_kern_merging(
         p_merge,
         merging_randoms.uran_pmerge,
     )
-    phot_kern_results = phot_kernels_merging._get_phot_kern_results_with_merging(*args)
+    phot_kern_results = phot_kernels_merging._update_phot_kern_results_with_merging(
+        *args
+    )
 
     args = phot_kern_results, spec_kern_results, nhalos_weights, halo_indx
     linelums_obs, linelum_in_situ = _get_linelum_kern_merging_quantities(*args)

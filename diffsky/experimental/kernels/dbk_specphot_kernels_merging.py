@@ -147,7 +147,7 @@ def _dbk_specphot_kern_merging(
         p_merge,
         merging_randoms.uran_pmerge,
     )
-    dbk_specphot_info = pkm._get_phot_kern_results_with_merging(*args)
+    dbk_specphot_info = pkm._update_phot_kern_results_with_merging(*args)
 
     args = dbk_specphot_info, dbk_specphot_info, nhalos_weights, halo_indx
     linelums_obs, linelum_in_situ = spkm._get_linelum_kern_merging_quantities(*args)

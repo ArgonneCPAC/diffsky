@@ -135,7 +135,7 @@ def _phot_kern_merging(
         mc_merge,
     )
     mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge = _res
-    phot_kern_results = _get_phot_kern_results_with_merging(
+    phot_kern_results = _update_phot_kern_results_with_merging(
         phot_kern_results,
         mstar_in_situ,
         mstar_obs,
@@ -183,7 +183,7 @@ def _get_phot_kern_merging_quantities(
 
 
 @jjit
-def _get_phot_kern_results_with_merging(
+def _update_phot_kern_results_with_merging(
     phot_kern_results,
     mstar_in_situ,
     mstar_obs,
