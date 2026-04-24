@@ -98,6 +98,11 @@ def _prepare_input_catalogs(n_gals=20):
     lc_data = lc_data._asdict()
     lc_data["redshift_true"] = lc_data["z_obs"]
 
+    lc_data["top_host_idx"] = np.arange(lc_data["redshift_true"].size).astype(int)
+    lc_data["top_host_idx_chunk"] = lc_data["top_host_idx"]
+    lc_data["secondary_top_host_idx"] = lc_data["top_host_idx"]
+    lc_data["secondary_top_host_idx_chunk"] = lc_data["top_host_idx"]
+
     ZZ = np.zeros(n_gals).astype(int)
 
     diffsky_data = dict()
