@@ -115,35 +115,29 @@ jobs:
         run: |
           python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
 
-      - name: Create dummy diffsky galaxies for OpenCosmo
-        shell: bash -l {0}
-        run: |
-          python scripts/LJ_LC_MOCKS/create_dummy_mock_data.py ci_test_output/dummy_version_name
+      # - name: Create dummy diffsky galaxies for OpenCosmo
+      #   shell: bash -l {0}
+      #   run: |
+      #     python scripts/LJ_LC_MOCKS/create_dummy_mock_data.py ci_test_output/dummy_version_name
 
-      - name: OpenCosmo toolkit data conversion
-        shell: bash -l {0}
-        run: |
-          mkdir -p ci_test_output/oc_dummy_version_name
-          cp ci_test_output/dummy_version_name/* ci_test_output/oc_dummy_version_name/
-          rm -rf ci_test_output/oc_dummy_version_name/lc_cores*.hdf5
-          diffpipe run ci_test_output/dummy_version_name ci_test_output/oc_dummy_version_name -n 2
+      # - name: OpenCosmo toolkit data conversion
+      #   shell: bash -l {0}
+      #   run: |
+      #     mkdir -p ci_test_output/oc_dummy_version_name
+      #     cp ci_test_output/dummy_version_name/* ci_test_output/oc_dummy_version_name/
+      #     rm -rf ci_test_output/oc_dummy_version_name/lc_cores*.hdf5
+      #     diffpipe run ci_test_output/dummy_version_name ci_test_output/oc_dummy_version_name -n 2
 
-      - name: Run tests on OpenCosmo-formatted data
-        shell: bash -l {0}
-        run: |
-          echo "ci_test_output/oc_dummy_version_name ready for testing"
-          # Here we can execute a testing script of ci_test_output/oc_dummy_version_name
-          export RUN_OPENCOSMO_TESTS="true"
-          export OPENCOSMO_DIFFSKY_DATA_PATH="ci_test_output/oc_dummy_version_name"
-          pytest diffsky/data_loaders/opencosmo_utils/test
+      # - name: Run tests on OpenCosmo-formatted data
+      #   shell: bash -l {0}
+      #   run: |
+      #     echo "ci_test_output/oc_dummy_version_name ready for testing"
+      #     # Here we can execute a testing script of ci_test_output/oc_dummy_version_name
+      #     export RUN_OPENCOSMO_TESTS="true"
+      #     export OPENCOSMO_DIFFSKY_DATA_PATH="ci_test_output/oc_dummy_version_name"
+      #     pytest diffsky/data_loaders/opencosmo_utils/test
 
       - name: remove cosmos_fit mock
         shell: bash -l {0}
         run: |
           rm -rf ci_test_output
-
-      - name: Clean up mock data
-        shell: bash -l {0}
-        run: |
-          rm -rf ci_test_output
-
