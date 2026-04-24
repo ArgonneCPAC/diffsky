@@ -104,6 +104,8 @@ DIFFSKY_DATA_KEYS_OUT = (
     "logmp_obs",
     *TOP_HOST_SHAPE_KEYS,
     *DEFAULT_MAH_PARAMS._fields,
+    "logmp_infall",
+    "logmhost_infall",
 )
 
 PHOT_INFO_KEYS_OUT = (

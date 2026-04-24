@@ -62,9 +62,12 @@ def add_metadata_diffmah_columns(metadata):
 
     metadata["logmp0"] = (str(logMsun), "Log10 of halo mass at z=0")
     metadata["logmp_obs"] = (str(logMsun), "Log10 of halo mass at z")
-    metadata["logmp_obs_host"] = (
+    metadata["logmp_obs_host"] = (str(logMsun), "Log10 of mass of parent halo at z")
+
+    metadata["logmp_infall"] = (str(logMsun), "Log10 of halo mass at time of infall")
+    metadata["logmhost_infall"] = (
         str(logMsun),
-        "Log10 of mass of parent halo at z",
+        "Log10 of parent halo mass at time of infall",
     )
 
     return metadata
