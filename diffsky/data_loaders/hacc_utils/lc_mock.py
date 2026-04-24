@@ -426,7 +426,9 @@ def add_peculiar_velocity_to_mock(
     return diffsky_data
 
 
-def add_diffmah_properties_to_mock(diffsky_data, redshift_true, sim_info, ran_key):
+def add_diffmah_properties_to_mock(
+    diffsky_data, redshift_true, sim_info, ran_key, halo_indx, sec_halo_indx
+):
     diffsky_data["t_obs"] = flat_wcdm.age_at_z(redshift_true, *sim_info.cosmo_params)
 
     mah_params = DEFAULT_MAH_PARAMS._make(
@@ -451,6 +453,11 @@ def add_diffmah_properties_to_mock(diffsky_data, redshift_true, sim_info, ran_ke
         np.zeros(mah_params.logm0.size) + diffsky_data["t_obs"],
         sim_info.lgt0,
     )
+
+    diffsky_data = load_lc_cf.compute_additional_haloprops(
+        diffsky_data, sim_info, halo_indx=halo_indx, sec_halo_indx=sec_halo_indx
+    )
+
     return diffsky_data
 
 
@@ -467,7 +474,12 @@ def add_dbk_phot_quantities_to_mock(
 ):
     ran_key, mah_key = jran.split(ran_key, 2)
     diffsky_data = add_diffmah_properties_to_mock(
-        diffsky_data, lc_data["redshift_true"], sim_info, mah_key
+        diffsky_data,
+        lc_data["redshift_true"],
+        sim_info,
+        mah_key,
+        lc_data["top_host_idx_chunk"],
+        lc_data["secondary_top_host_idx_chunk"],
     )
 
     mah_params = DEFAULT_MAH_PARAMS._make(
@@ -540,7 +552,12 @@ def add_phot_quantities_to_mock(
 ):
     ran_key, mah_key = jran.split(ran_key, 2)
     diffsky_data = add_diffmah_properties_to_mock(
-        diffsky_data, lc_data["redshift_true"], sim_info, mah_key
+        diffsky_data,
+        lc_data["redshift_true"],
+        sim_info,
+        mah_key,
+        lc_data["top_host_idx_chunk"],
+        lc_data["secondary_top_host_idx_chunk"],
     )
 
     mah_params = DEFAULT_MAH_PARAMS._make(
