@@ -94,7 +94,7 @@ def load_mock_metadata(fn_mock):
     sim_info = lcmp.load_diffsky_sim_info(fn_mock)
     metadata_dict["sim_info"] = sim_info
 
-    param_collection = lcmp.load_diffsky_param_collection(
+    param_collection = lcmp.load_diffsky_param_collection_merging(
         drn_mock, metadata_dict["mock_version_name"]
     )
     metadata_dict["param_collection"] = param_collection
@@ -125,7 +125,9 @@ def load_diffsky_lc_patch(drn_mock, bn_mock):
     ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
     sim_info = lcmp.load_diffsky_sim_info(fn_mock)
 
-    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
+    param_collection = lcmp.load_diffsky_param_collection_merging(
+        drn_mock, mock_version_name
+    )
 
     z_phot_table = lcmp.load_diffsky_z_phot_table(fn_mock)
 
