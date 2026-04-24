@@ -523,6 +523,21 @@ def check_recomputed_photometry(
             msg.append("Inconsistent recalculation of obs_mags")
 
         try:
+            _k = "_in_situ"
+            assert np.allclose(
+                mock[tcurve_name + _k], phot_info["obs_mags" + _k][:, i], rtol=RTOL
+            )
+            assert np.allclose(
+                mock[tcurve_name + _k], phot_info["obs_mags" + _k][:, i], atol=ATOL
+            )
+            magdiff = mock[tcurve_name + _k] - phot_info["obs_mags" + _k][:, i]
+            assert np.mean(np.abs(magdiff) > 0.1) < 0.01
+        except AssertionError:
+            msg.append("Inconsistent recalculation of obs_mags_in_situ")
+        except KeyError:
+            pass  # Not all mocks include in-situ columns
+
+        try:
             assert np.allclose(
                 mock[tcurve_name + "_bulge"],
                 phot_info["obs_mags" + "_bulge"][:, i],
