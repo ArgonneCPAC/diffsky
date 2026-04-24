@@ -33,6 +33,11 @@ YAML_REQ_LIST = ("drn_out", "z_min", "z_max")
 HLINE = "----------"
 
 
+CHUNKNUM_TEST = 1
+NCHUNKS = 5
+BATCH_SIZE = 200
+
+
 def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     report = dict()
     data = load_flat_hdf5(fn_lc_mock, dataset="data")
@@ -61,6 +66,15 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if len(msg) > 0:
         report["column_shapes"] = msg
 
+    n_gals_tot = data["central"].size
+    nchunks_guess = n_gals_tot // BATCH_SIZE
+    if nchunks_guess < 3:
+        nchunks = 1
+        chunknum_test = 0
+    else:
+        nchunks = nchunks_guess
+        chunknum_test = 1
+
     if no_dbk or no_sed:
         pass
     else:
@@ -75,7 +89,9 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if no_sed:
         pass
     else:
-        msg = check_recomputed_photometry(fn_lc_mock, no_dbk=no_dbk)
+        msg = check_recomputed_photometry(
+            fn_lc_mock, no_dbk=no_dbk, nchunks=nchunks, chunknum_test=chunknum_test
+        )
         if len(msg) > 0:
             report["recomputed_photometry"] = msg
 
@@ -380,7 +396,7 @@ def check_column_shapes(fn_lc_mock, data=None):
 
 
 def check_recomputed_photometry(
-    fn_lc_mock, *, nchunks=20, chunknum_test=3, return_results=False, no_dbk=False
+    fn_lc_mock, *, nchunks, chunknum_test, return_results=False, no_dbk=False
 ):
     """Recompute first N_TEST=50 galaxies photometry and enforce agreement"""
     with h5py.File(fn_lc_mock, "r") as hdf:
