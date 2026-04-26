@@ -114,6 +114,10 @@ def load_lc_patch_collection(fn_list, keys):
     return mock
 
 
+def load_chunked_lc_patch(fn_mock, nchunks, chunknum):
+    raise NotImplementedError("Need a chunked version of the lc_mock reader")
+
+
 def load_diffsky_lc_patch(drn_mock, bn_mock):
     fn_mock = os.path.join(drn_mock, bn_mock)
     diffsky_data = load_flat_hdf5(fn_mock, dataset="data")
