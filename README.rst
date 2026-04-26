@@ -42,5 +42,4 @@ All the publicly available mocks are located at the following path on NERSC::
 
 For the most recent version of the mocks::
 
-    hlwas_cosmos_260215_02_17_2026 (1000 deg^2)
-    hltds_cosmos_260215_02_17_2026 (100 deg^2, includes disk/bulge decomposition)
+    cosmos_260316_04_26_2026 (30 deg^2)
