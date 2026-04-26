@@ -6,7 +6,7 @@ iend: 2
 batch_size: 200
 drn_out: "ci_test_output"
 mock_nickname: "ci_test_mock"
-cosmos_fit: "cosmos_260305_Cmrg"
+cosmos_fit: "cosmos_260316"
 synthetic_cores: 0
 mock_version_name: "dummy_version_name"
 lsst_only: 1
