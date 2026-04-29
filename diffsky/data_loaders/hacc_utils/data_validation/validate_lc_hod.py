@@ -9,6 +9,7 @@ from scipy.stats import binned_statistic
 
 try:
     from matplotlib import pyplot as plt
+    from matplotlib import lines as mlines
 
     HAS_MATPLOTLIB = True
 except ImportError:
@@ -189,3 +190,82 @@ def plot_fsat(*, pdata, z_bin, dz=0.5, drn_out=""):
 
     plt.close()
     return fig
+
+
+def plot_hod(*, pdata, logsm_samples=[10, 11], z_plot=0.5, dz=0.5, drn_out=""):
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+    assert HAS_ASTROPY, ASTROPY_MSG
+
+    drn_out = drn_out or "."
+    os.makedirs(drn_out, exist_ok=True)
+
+    logmp_bins = np.linspace(11, 14.75, 50)
+
+    msk_cen = pdata["central"] == 1
+    msk_sat = ~msk_cen
+
+    msk_zplot = np.abs(pdata["redshift_true"] - z_plot) < dz
+
+    halo_counts, __ = np.histogram(
+        pdata["logmp_obs_host"][msk_cen & msk_zplot], bins=logmp_bins
+    )
+
+    fig, ax = plt.subplots(1, 1)
+    ax.loglog()
+
+    logsm_cut = logsm_samples[0]
+    msk_logsm = pdata["logsm_obs"] > logsm_cut
+    cen_counts_10, __ = np.histogram(
+        pdata["logmp_obs_host"][msk_cen & msk_logsm & msk_zplot], bins=logmp_bins
+    )
+    sat_counts_10, __ = np.histogram(
+        pdata["logmp_obs_host"][msk_sat & msk_logsm & msk_zplot], bins=logmp_bins
+    )
+    ax.plot(
+        10 ** logmp_bins[1:],
+        cen_counts_10 / halo_counts,
+        label=r"${\rm centrals}$",
+        color=MBLUE,
+    )
+    ax.plot(
+        10 ** logmp_bins[1:],
+        sat_counts_10 / halo_counts,
+        label=r"${\rm satellites}$",
+        color=MRED,
+    )
+
+    logsm_cut = logsm_samples[1]
+    msk_logsm = pdata["logsm_obs"] > logsm_cut
+    cen_counts_11, __ = np.histogram(
+        pdata["logmp_obs_host"][msk_cen & msk_logsm & msk_zplot], bins=logmp_bins
+    )
+    sat_counts_11, __ = np.histogram(
+        pdata["logmp_obs_host"][msk_sat & msk_logsm & msk_zplot], bins=logmp_bins
+    )
+    ax.plot(10 ** logmp_bins[1:], cen_counts_11 / halo_counts, "--", color=MBLUE)
+    ax.plot(10 ** logmp_bins[1:], sat_counts_11 / halo_counts, "--", color=MRED)
+
+    ymin, ymax = ax.get_ylim()
+    ax.set_ylim(5e-4, ymax)
+
+    xlabel = ax.set_xlabel(r"$M_{\rm halo}\ [M_{\odot}]$")
+    ylabel = ax.set_ylabel(r"$\langle N_{\rm gal}\rangle$")
+
+    red_line = mlines.Line2D([], [], ls="-", c=MRED, label=r"${\rm satellites}$")
+    blue_line = mlines.Line2D([], [], ls="-", c=MBLUE, label=r"${\rm centrals}$")
+    leg0 = ax.legend(handles=[red_line, blue_line], loc="upper left")
+
+    solid_line = mlines.Line2D(
+        [], [], ls="-", c="gray", label=r"$M_{\star}>10^{10}M_{\odot}$"
+    )
+    dashed_line = mlines.Line2D(
+        [], [], ls="--", c="gray", label=r"$M_{\star}>10^{11}M_{\odot}$"
+    )
+    ax.add_artist(leg0)
+    ax.legend(handles=[solid_line, dashed_line], loc="lower right")
+
+    fn_out = os.path.join(drn_out, "hod_analysis_cosmos_260316_04_26_2026.png")
+
+    fig.savefig(
+        fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
+    )
