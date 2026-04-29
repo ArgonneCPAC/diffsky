@@ -134,7 +134,8 @@ def plot_smf(*, pdata, metadata, z_bin, dz=0.25, drn_out=""):
     )
 
     ax.legend()
-    fn_out = os.path.join(drn_out, "smf_analysis_cosmos_260316_04_26_2026.png")
+    bn_out = "sfm_" + metadata["mock_version_name"] + ".png"
+    fn_out = os.path.join(drn_out, bn_out)
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
@@ -143,7 +144,7 @@ def plot_smf(*, pdata, metadata, z_bin, dz=0.25, drn_out=""):
     return fig
 
 
-def plot_fsat(*, pdata, z_bin, dz=0.5, drn_out=""):
+def plot_fsat(*, pdata, metadata, z_bin, dz=0.5, drn_out=""):
     assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
     assert HAS_ASTROPY, ASTROPY_MSG
 
@@ -182,7 +183,8 @@ def plot_fsat(*, pdata, z_bin, dz=0.5, drn_out=""):
     ax.legend()
     xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
     ylabel = ax.set_ylabel(r"${\rm satellite\ fraction}$")
-    fn_out = os.path.join(drn_out, "fsat_analysis_cosmos_260316_04_26_2026.png")
+    bn_out = "fsat_" + metadata["mock_version_name"] + ".png"
+    fn_out = os.path.join(drn_out, bn_out)
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
@@ -191,7 +193,9 @@ def plot_fsat(*, pdata, z_bin, dz=0.5, drn_out=""):
     return fig
 
 
-def plot_hod(*, pdata, logsm_samples=[10, 11], z_plot=0.5, dz=0.5, drn_out=""):
+def plot_hod(
+    *, pdata, metadata, logsm_samples=[10, 11], z_plot=0.5, dz=0.5, drn_out=""
+):
     assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
     assert HAS_ASTROPY, ASTROPY_MSG
 
@@ -263,7 +267,8 @@ def plot_hod(*, pdata, logsm_samples=[10, 11], z_plot=0.5, dz=0.5, drn_out=""):
     ax.add_artist(leg0)
     ax.legend(handles=[solid_line, dashed_line], loc="lower right")
 
-    fn_out = os.path.join(drn_out, "hod_analysis_cosmos_260316_04_26_2026.png")
+    bn_out = "hod_" + metadata["mock_version_name"] + ".png"
+    fn_out = os.path.join(drn_out, bn_out)
 
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
@@ -272,7 +277,7 @@ def plot_hod(*, pdata, logsm_samples=[10, 11], z_plot=0.5, dz=0.5, drn_out=""):
     return fig
 
 
-def plot_csmf_cens(*, pdata, drn_out=""):
+def plot_csmf_cens(*, pdata, metadata, drn_out=""):
     assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
     assert HAS_ASTROPY, ASTROPY_MSG
 
@@ -333,7 +338,9 @@ def plot_csmf_cens(*, pdata, drn_out=""):
 
     xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
     ylabel = ax.set_ylabel(r"$P(M_{\star}\vert M_{\rm halo})$")
-    fn_out = os.path.join(drn_out, "cen_csmf_analysis_cosmos_260316_04_26_2026.png")
+
+    bn_out = "cen_csmf_" + metadata["mock_version_name"] + ".png"
+    fn_out = os.path.join(drn_out, bn_out)
 
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
@@ -342,7 +349,7 @@ def plot_csmf_cens(*, pdata, drn_out=""):
     return fig
 
 
-def plot_csmf_sats(*, pdata, logsm_cut=9.0, drn_out=""):
+def plot_csmf_sats(*, pdata, metadata, logsm_cut=9.0, drn_out=""):
     assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
     assert HAS_ASTROPY, ASTROPY_MSG
 
@@ -400,7 +407,8 @@ def plot_csmf_sats(*, pdata, logsm_cut=9.0, drn_out=""):
     xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
     ylabel = ax.set_ylabel(r"$\Phi(M_{\star}\vert M_{\rm host})$")
 
-    fn_out = os.path.join(drn_out, "sat_csmf_analysis_cosmos_260316_04_26_2026.png")
+    bn_out = "sat_csmf_" + metadata["mock_version_name"] + ".png"
+    fn_out = os.path.join(drn_out, bn_out)
 
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
