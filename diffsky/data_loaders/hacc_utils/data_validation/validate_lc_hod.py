@@ -140,7 +140,6 @@ def plot_smf(*, pdata, metadata, z_bin, dz=0.25, drn_out=""):
     )
 
     plt.close()
-
     return fig
 
 
@@ -269,6 +268,8 @@ def plot_hod(*, pdata, logsm_samples=[10, 11], z_plot=0.5, dz=0.5, drn_out=""):
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
+    plt.close()
+    return fig
 
 
 def plot_csmf_cens(*, pdata, drn_out=""):
@@ -337,3 +338,72 @@ def plot_csmf_cens(*, pdata, drn_out=""):
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
+    plt.close()
+    return fig
+
+
+def plot_csmf_sats(*, pdata, logsm_cut=9.0, drn_out=""):
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+    assert HAS_ASTROPY, ASTROPY_MSG
+
+    drn_out = drn_out or "."
+    os.makedirs(drn_out, exist_ok=True)
+
+    fig, ax = plt.subplots(1, 1)
+    logsm_bins = np.linspace(logsm_cut, 12, 50)
+    __ = ax.loglog()
+
+    msk_logsm = pdata["logsm_obs"] > logsm_cut
+    msk_cen = pdata["central"] == 1
+    msk_sat = ~msk_cen
+
+    lo, hi = 14, 15.5
+    msk_lgmhost = (pdata["logmp_obs_host"] > lo) & (pdata["logmp_obs_host"] < hi)
+    y, __ = np.histogram(
+        pdata["logsm_obs"][msk_lgmhost & msk_sat & msk_logsm], bins=logsm_bins
+    )
+    __ = ax.plot(
+        10 ** logsm_bins[1:],
+        y / (np.sum(msk_lgmhost & msk_cen)),
+        drawstyle="steps",
+        color=MRED,
+        label=r"$M_{\rm host}\approx10^{14.5}M_{\odot}$",
+    )
+
+    lo, hi = 13, 13.25
+    msk_lgmhost = (pdata["logmp_obs_host"] > lo) & (pdata["logmp_obs_host"] < hi)
+    y, __ = np.histogram(
+        pdata["logsm_obs"][msk_lgmhost & msk_sat & msk_logsm], bins=logsm_bins
+    )
+    __ = ax.plot(
+        10 ** logsm_bins[1:],
+        y / (np.sum(msk_lgmhost & msk_cen)),
+        drawstyle="steps",
+        color=MORANGE,
+        label=r"$M_{\rm host}\approx10^{13}M_{\odot}$",
+    )
+
+    lo, hi = 12, 12.25
+    msk_lgmhost = (pdata["logmp_obs_host"] > lo) & (pdata["logmp_obs_host"] < hi)
+    y, __ = np.histogram(
+        pdata["logsm_obs"][msk_lgmhost & msk_sat & msk_logsm], bins=logsm_bins
+    )
+    ax.plot(
+        10 ** logsm_bins[1:],
+        y / (np.sum(msk_lgmhost & msk_cen)),
+        drawstyle="steps",
+        color=MBLUE,
+        label=r"$M_{\rm host}\approx10^{12}M_{\odot}$",
+    )
+
+    ax.legend()
+    xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
+    ylabel = ax.set_ylabel(r"$\langle N_{\rm sat}\vert m_{\star}>9.5\rangle$")
+
+    fn_out = os.path.join(drn_out, "sat_csmf_analysis_cosmos_260316_04_26_2026.png")
+
+    fig.savefig(
+        fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
+    )
+    plt.close()
+    return fig
