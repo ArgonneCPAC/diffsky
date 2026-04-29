@@ -176,6 +176,16 @@ def check_all_columns_have_expected_shapes(fn_lc_mock, data=None):
                 s += f"but most columns have shape=({most_common_size},)"
                 msg.append(s)
 
+    MATRIX_SHAPED_COLNAMES = ("delta_mag_ssp_scatter",)
+    for key, arr in data.items():
+        if len(arr.shape) > 1:
+            if key in MATRIX_SHAPED_COLNAMES:
+                pass
+            else:
+                s = f"In {bn}, column {key}.shape={arr.shape}, but the only expected "
+                s += f"matrix-shaped columns are {MATRIX_SHAPED_COLNAMES}"
+                msg.append(s)
+
     return msg
 
 
