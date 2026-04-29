@@ -19,7 +19,7 @@ ASTROPY_MSG = "Must have astropy installed to run tests of metadata_mock"
 @pytest.mark.skipif(not HAS_ASTROPY, reason=ASTROPY_MSG)
 def test_get_metadata_all_columns():
 
-    column_metadata = metadata_mock.get_metadata_all_columns()
+    column_metadata = metadata_mock.get_metadata_all_columns(incl_in_situ=False)
     assert len(column_metadata) > 0
     for colname, metadata in column_metadata.items():
         unit_string, description = metadata
