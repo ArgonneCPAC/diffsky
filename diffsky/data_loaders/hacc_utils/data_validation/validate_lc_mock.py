@@ -70,6 +70,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if len(msg) > 0:
         report["column_shapes"] = msg
 
+    msg = check_merging_is_nontrivial(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["reasonable_merging"] = msg
+
     n_gals_tot = data["central"].size
     nchunks_guess = n_gals_tot // BATCH_SIZE
     if nchunks_guess < 3:
@@ -419,6 +423,37 @@ def check_column_shapes(fn_lc_mock, data=None):
                 msg.append(s)
 
     return msg
+
+
+def check_merging_is_nontrivial(fn_lc_mock, data=None):
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    msg = []
+    msk_cen = data["central"] == 1
+    msk_sat = ~msk_cen
+
+    keys_to_test = [key for key in data.keys() if "in_situ" in key]
+    for in_situ_key in keys_to_test:
+        key = in_situ_key.replace("_in_situ", "")
+
+        trivial_merging_cens = np.allclose(
+            data[key][msk_cen], data[in_situ_key][msk_cen], rtol=1e-6
+        )
+        trivial_merging_sats = np.allclose(
+            data[key][msk_sat], data[in_situ_key][msk_sat], rtol=1e-6
+        )
+
+        n_sats = msk_sat.sum()
+        if n_sats > 20:
+            if trivial_merging_cens:
+                s = f"`{key}` and `{in_situ_key}` are identical for centrals"
+                msg.append(s)
+            if trivial_merging_sats:
+                s = f"`{key}` and `{in_situ_key}` are identical for satellites"
+                msg.append(s)
+
+        return msg
 
 
 def check_recomputed_photometry(
