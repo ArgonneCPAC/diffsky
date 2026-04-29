@@ -433,6 +433,8 @@ def check_merging_is_nontrivial(fn_lc_mock, data=None):
     msk_cen = data["central"] == 1
     msk_sat = ~msk_cen
 
+    n_merged_sats = np.sum(data["p_merge"] > 0.5)
+
     keys_to_test = [key for key in data.keys() if "in_situ" in key]
     for in_situ_key in keys_to_test:
         key = in_situ_key.replace("_in_situ", "")
@@ -444,8 +446,7 @@ def check_merging_is_nontrivial(fn_lc_mock, data=None):
             data[key][msk_sat], data[in_situ_key][msk_sat], rtol=1e-6
         )
 
-        n_sats = msk_sat.sum()
-        if n_sats > 20:
+        if n_merged_sats > 10:
             if trivial_merging_cens:
                 s = f"`{key}` and `{in_situ_key}` are identical for centrals"
                 msg.append(s)
