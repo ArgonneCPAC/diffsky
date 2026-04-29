@@ -130,6 +130,9 @@ def get_plotting_data_mock(
         "vz",
         "central",
         *DEFAULT_MAH_PARAMS._fields,
+        "logmp_infall",
+        "logmhost_infall",
+        "central",
     )
 
     bnpat = f"lc_cores-*.{lc_patch}.diffsky_gals.hdf5"
@@ -221,6 +224,9 @@ def get_plotting_data_mock(
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
+    halo_indx = np.arange(mock["central"].size).astype(int)
+    raise NotImplementedError("halo_indx incorrectly computed for mock data")
+
     lc_data_dict = dict(
         nhalos=np.ones(n_mock).astype(float) * downsample_factor,
         z_obs=np.array(mock["redshift_true"]),
@@ -233,6 +239,11 @@ def get_plotting_data_mock(
         z_phot_table=z_phot_table,
         wave_eff_table=wave_eff_table,
         logmp_obs=logmp_obs,
+        logmp_infall=np.array(mock["logmp_infall"]),
+        t_infall=np.array(mock["t_peak"]),
+        logmhost_infall=np.array(mock["logmhost_infall"]),
+        is_central=np.array(mock["central"]),
+        halo_indx=halo_indx,
     )
     LCData = namedtuple("LCData", list(lc_data_dict.keys()))
     lc_data = LCData(**lc_data_dict)
@@ -279,7 +290,7 @@ def get_plotting_data_mock(
     PlottingData = namedtuple("PlottingData", ("cosmos", "lc_data", "diffsky_data"))
     pdata = PlottingData(cosmos, lc_data, diffsky_data)
 
-    return pdata
+    return pdata, metadata
 
 
 def get_plotting_data(
