@@ -139,7 +139,7 @@ def add_metadata_spspop_columns(metadata):
     return metadata
 
 
-def add_metadata_diffstar_columns(metadata):
+def add_metadata_diffstar_columns(metadata, incl_in_situ=False):
 
     metadata["lgmcrit"] = (
         str(u.dimensionless_unscaled),
@@ -189,6 +189,11 @@ def add_metadata_diffstar_columns(metadata):
         "Boolean specifies the type of star formation history."
         "0 for quenched, 1 for smooth main sequence, 2 for bursty main sequence",
     )
+    if incl_in_situ:
+        metadata["logsm_obs_in_situ"] = (
+            str(logMsun),
+            "Log10 of stellar mass at z (in-situ only)",
+        )
 
     return metadata
 
@@ -440,7 +445,7 @@ def add_metadata_dbk_morphology_columns(metadata):
     return metadata
 
 
-def get_metadata_all_columns():
+def get_metadata_all_columns(incl_in_situ):
     if not HAS_ASTROPY:
         raise ImportError("Must have astropy installed to attach units to metadata")
 
@@ -454,7 +459,9 @@ def get_metadata_all_columns():
     metadata_all_columns = add_metadata_inertia_tensor_columns(metadata_all_columns)
 
     metadata_all_columns = add_metadata_diffmah_columns(metadata_all_columns)
-    metadata_all_columns = add_metadata_diffstar_columns(metadata_all_columns)
+    metadata_all_columns = add_metadata_diffstar_columns(
+        metadata_all_columns, incl_in_situ=incl_in_situ
+    )
 
     metadata_all_columns = add_metadata_spspop_columns(metadata_all_columns)
     metadata_all_columns = add_metadata_morphology_columns(metadata_all_columns)
@@ -524,7 +531,7 @@ def append_metadata(
 
     u.add_enabled_units(cu)
 
-    column_metadata = get_metadata_all_columns()
+    column_metadata = get_metadata_all_columns(incl_in_situ)
 
     for colname in exclude_colnames:
         column_metadata.pop(colname)
