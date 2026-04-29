@@ -5,6 +5,8 @@ import numpy as np
 from glob import glob
 from .. import load_lc_mock as llcm
 
+from scipy.stats import binned_statistic
+
 try:
     from matplotlib import pyplot as plt
 
@@ -58,14 +60,7 @@ def get_plotting_data_mock(
     return pdata, metadata
 
 
-def plot_smf(
-    *,
-    pdata,
-    metadata,
-    z_bin,
-    dz=0.25,
-    drn_out="",
-):
+def plot_smf(*, pdata, metadata, z_bin, dz=0.25, drn_out=""):
     assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
     assert HAS_ASTROPY, ASTROPY_MSG
 
@@ -138,13 +133,59 @@ def plot_smf(
     )
 
     ax.legend()
+    fn_out = os.path.join(drn_out, "smf_analysis_cosmos_260316_04_26_2026.png")
     fig.savefig(
-        "smf_analysis_cosmos_260316_04_26_2026.png",
-        bbox_extra_artists=[xlabel, ylabel],
-        bbox_inches="tight",
-        dpi=200,
+        fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
 
     plt.close()
 
+    return fig
+
+
+def plot_fsat(*, pdata, z_bin, dz=0.5, drn_out=""):
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+    assert HAS_ASTROPY, ASTROPY_MSG
+
+    drn_out = drn_out or "."
+    os.makedirs(drn_out, exist_ok=True)
+
+    logsm_bins = np.linspace(9, 12, 50)
+
+    msk_z01 = np.abs(pdata["redshift_true"] - z_bin[0]) < dz
+    mean_fsat01, __, __ = binned_statistic(
+        pdata["logsm_obs"][msk_z01], pdata["central"][msk_z01] == 0, bins=logsm_bins
+    )
+
+    msk_z12 = np.abs(pdata["redshift_true"] - z_bin[1]) < dz
+    mean_fsat12, __, __ = binned_statistic(
+        pdata["logsm_obs"][msk_z12], pdata["central"][msk_z12] == 0, bins=logsm_bins
+    )
+
+    msk_z23 = np.abs(pdata["redshift_true"] - z_bin[2]) < dz
+    mean_fsat23, __, __ = binned_statistic(
+        pdata["logsm_obs"][msk_z23], pdata["central"][msk_z23] == 0, bins=logsm_bins
+    )
+
+    fig, ax = plt.subplots(1, 1)
+    ax.set_ylim(0, 1)
+    ax.set_xscale("log")
+
+    ax.plot(
+        10 ** logsm_bins[1:], mean_fsat01, color=MBLUE, label=rf"$z={z_bin[0]:.1f}$"
+    )
+    ax.plot(
+        10 ** logsm_bins[1:], mean_fsat12, color=MGREEN, label=rf"$z={z_bin[1]:.1f}$"
+    )
+    ax.plot(10 ** logsm_bins[1:], mean_fsat23, color=MRED, label=rf"$z={z_bin[2]:.1f}$")
+
+    ax.legend()
+    xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
+    ylabel = ax.set_ylabel(r"${\rm satellite\ fraction}$")
+    fn_out = os.path.join(drn_out, "fsat_analysis_cosmos_260316_04_26_2026.png")
+    fig.savefig(
+        fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
+    )
+
+    plt.close()
     return fig
