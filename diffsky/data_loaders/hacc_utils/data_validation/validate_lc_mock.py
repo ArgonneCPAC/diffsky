@@ -50,6 +50,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if len(msg) > 0:
         report["finite_colums"] = msg
 
+    msg = check_all_columns_have_expected_shapes(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["column_sizes"] = msg
+
     msg = check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["nfw_host_distance"] = msg
@@ -150,6 +154,27 @@ def check_all_columns_are_finite(fn_lc_mock, data=None):
         if not np.all(np.isfinite(arr)):
             s = f"Column {key} in {bn} has either NaN or inf"
             msg.append(s)
+
+    return msg
+
+
+def check_all_columns_have_expected_shapes(fn_lc_mock, data=None):
+    bn = os.path.basename(fn_lc_mock)
+
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    sizes = [x.shape[0] for x in data.values()]
+    uniq_sizes, counts = np.unique(sizes, return_counts=True)
+    most_common_size = uniq_sizes[counts == counts.max()]
+
+    msg = []
+    if len(uniq_sizes) > 1:
+        for key, arr in data.items():
+            if arr.shape[0] != most_common_size:
+                s = f"In {bn}, column {key}.shape={arr.shape}, "
+                s += f"but most columns have shape=({most_common_size},)"
+                msg.append(s)
 
     return msg
 
