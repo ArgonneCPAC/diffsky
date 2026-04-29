@@ -79,7 +79,7 @@ def plot_smf(*, pdata, metadata, z_bin, dz=0.25, drn_out=""):
     __ = ax.loglog()
     xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
     ylabel = ax.set_ylabel(r"$\Phi\ {\rm [1/Mpc^{3}/dex]}$")
-    ax.set_title(r"${\rm Stellar\ Mass\ Function}$")
+    ax.set_title(metadata["mock_version_name"])
 
     zlo, zhi = z_bin[0] - dz / 2, z_bin[0] + dz / 2
     msk_z = (pdata["redshift_true"] > zlo) & (pdata["redshift_true"] < zhi)
@@ -183,6 +183,7 @@ def plot_fsat(*, pdata, metadata, z_bin, dz=0.5, drn_out=""):
     ax.legend()
     xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
     ylabel = ax.set_ylabel(r"${\rm satellite\ fraction}$")
+    ax.set_title(metadata["mock_version_name"])
     bn_out = "fsat_" + metadata["mock_version_name"] + ".png"
     fn_out = os.path.join(drn_out, bn_out)
     fig.savefig(
@@ -253,6 +254,7 @@ def plot_hod(
 
     xlabel = ax.set_xlabel(r"$M_{\rm halo}\ [M_{\odot}]$")
     ylabel = ax.set_ylabel(r"$\langle N_{\rm gal}\rangle$")
+    ax.set_title(metadata["mock_version_name"])
 
     red_line = mlines.Line2D([], [], ls="-", c=MRED, label=r"${\rm satellites}$")
     blue_line = mlines.Line2D([], [], ls="-", c=MBLUE, label=r"${\rm centrals}$")
@@ -338,6 +340,7 @@ def plot_csmf_cens(*, pdata, metadata, drn_out=""):
 
     xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
     ylabel = ax.set_ylabel(r"$P(M_{\star}\vert M_{\rm halo})$")
+    ax.set_title(metadata["mock_version_name"])
 
     bn_out = "cen_csmf_" + metadata["mock_version_name"] + ".png"
     fn_out = os.path.join(drn_out, bn_out)
@@ -406,6 +409,7 @@ def plot_csmf_sats(*, pdata, metadata, logsm_cut=9.0, drn_out=""):
     ax.legend()
     xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
     ylabel = ax.set_ylabel(r"$\Phi(M_{\star}\vert M_{\rm host})$")
+    ax.set_title(metadata["mock_version_name"])
 
     bn_out = "sat_csmf_" + metadata["mock_version_name"] + ".png"
     fn_out = os.path.join(drn_out, bn_out)
