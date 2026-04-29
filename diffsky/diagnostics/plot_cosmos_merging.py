@@ -21,8 +21,8 @@ from ..data_loaders import cosmos20_loader as c20
 from ..data_loaders.hacc_utils import lightcone_utils as hlu
 from ..data_loaders.hacc_utils import load_lc_mock
 from ..experimental import precompute_ssp_phot as psspp
-from ..experimental.mc_lightcone_halos import mc_weighted_lightcone_data
-from ..experimental.mc_phot import mc_lc_phot
+from ..experimental.lightcone_generators import weighted_lc_photdata
+from ..experimental.mc_phot import mc_lc_phot_merging
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
 from ..phot_utils import get_wave_eff_table
 
@@ -254,7 +254,7 @@ def get_plotting_data_mock(
         filter_dict[cosmos_key] = i, COSMOS_FILTER_BNAMES[i]
 
     ran_key, sed_key = jran.split(ran_key, 2)
-    diffsky_data = mc_lc_phot(
+    diffsky_data = mc_lc_phot_merging(
         sed_key,
         lc_data,
         diffstarpop_params=diffstarpop_params,
@@ -262,8 +262,10 @@ def get_plotting_data_mock(
         spspop_params=spspop_params,
         scatter_params=scatter_params,
         ssperr_params=ssperr_params,
+        merging_params=merging_params,
         cosmo_params=dsps_cosmo_mock,
         fb=fb,
+        mc_merge=0,
     )
     diffsky_data["filter_dict"] = filter_dict
     _res = hlu.read_hacc_lc_patch_decomposition(metadata["nbody_info"]["sim_name"])
@@ -276,7 +278,6 @@ def get_plotting_data_mock(
     return pdata
 
 
-@lru_cache()
 def get_plotting_data(
     *,
     seed=0,
@@ -285,6 +286,7 @@ def get_plotting_data(
     spspop_params=dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
     scatter_params=dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
     ssperr_params=dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    merging_params=dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
     cosmos=None,
@@ -357,14 +359,14 @@ def get_plotting_data(
 
         ran_key, lc_halo_key = jran.split(ran_key, 2)
         args = (lc_halo_key, *halo_lc_data, *phot_data)
-        lc_data = mc_weighted_lightcone_data(*args)
+        lc_data = weighted_lc_photdata(*args)
     else:
         assert z_min is not None
         assert z_max is not None
         assert sky_area_degsq is not None
 
     ran_key, sed_key = jran.split(ran_key, 2)
-    diffsky_data = mc_lc_phot(
+    diffsky_data = mc_lc_phot_merging(
         sed_key,
         lc_data,
         diffstarpop_params=diffstarpop_params,
@@ -372,9 +374,11 @@ def get_plotting_data(
         spspop_params=spspop_params,
         scatter_params=scatter_params,
         ssperr_params=ssperr_params,
+        merging_params=merging_params,
         cosmo_params=cosmo_params,
         fb=fb,
         skip_param_check=skip_param_check,
+        mc_merge=0,
     )
     diffsky_data["filter_dict"] = filter_dict
     diffsky_data["sky_area_degsq"] = sky_area_degsq
