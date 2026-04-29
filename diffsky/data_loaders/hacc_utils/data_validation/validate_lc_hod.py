@@ -398,7 +398,7 @@ def plot_csmf_sats(*, pdata, logsm_cut=9.0, drn_out=""):
 
     ax.legend()
     xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
-    ylabel = ax.set_ylabel(r"$\langle N_{\rm sat}\vert m_{\star}>9.5\rangle$")
+    ylabel = ax.set_ylabel(r"$\Phi(M_{\star}\vert M_{\rm host})$")
 
     fn_out = os.path.join(drn_out, "sat_csmf_analysis_cosmos_260316_04_26_2026.png")
 
