@@ -343,7 +343,10 @@ def write_batched_lc_sed_mock_to_disk(
         specphot_dict[name] = phot_info["obs_mags"][:, iband]
         if incl_in_situ:
             specphot_dict[name + "_in_situ"] = phot_info["obs_mags_in_situ"][:, iband]
-            specphot_dict["logsm_obs_in_situ"] = phot_info["logsm_obs_in_situ"]
+
+    if incl_in_situ:
+        specphot_dict["logsm_obs_in_situ"] = phot_info["logsm_obs_in_situ"]
+        assert phot_info["logsm_obs_in_situ"].shape == phot_info["logsm_obs"].shape
 
     for linename in lineflux_nicknames:
         specphot_dict[linename] = phot_info[linename]
@@ -398,7 +401,6 @@ def write_batched_lc_dbk_sed_mock_to_disk(
             dbk_phot_dict[name + "_in_situ" + "_knots"] = phot_info[
                 "obs_mags_knots_in_situ"
             ][:, iband]
-            dbk_phot_dict["logsm_obs_in_situ"] = phot_info["logsm_obs_in_situ"]
 
     write_batched_mock_data(
         fnout, dbk_phot_dict, list(dbk_phot_dict.keys()), dataset="data"
