@@ -380,8 +380,8 @@ def add_metadata_dbk_sed_columns(metadata):
 
 
 def add_metadata_dbk_morphology_columns(metadata):
-    metadata["r50_disk"] = (str(u.kpc), "Half-mass radius of disk")
-    metadata["r50_bulge"] = (str(u.kpc), "Half-mass radius of bulge")
+    metadata["r50_disk"] = (str(u.kpc), "3d Half-mass radius of disk")
+    metadata["r50_bulge"] = (str(u.kpc), "3d Half-mass radius of bulge")
     metadata["zscore_r50_disk"] = (
         str(u.dimensionless_unscaled),
         "Gaussian random used to add scatter to disk radius",
