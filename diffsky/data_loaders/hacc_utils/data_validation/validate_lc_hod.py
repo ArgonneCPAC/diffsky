@@ -269,3 +269,71 @@ def plot_hod(*, pdata, logsm_samples=[10, 11], z_plot=0.5, dz=0.5, drn_out=""):
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
     )
+
+
+def plot_csmf_cens(*, pdata, drn_out=""):
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+    assert HAS_ASTROPY, ASTROPY_MSG
+
+    drn_out = drn_out or "."
+    os.makedirs(drn_out, exist_ok=True)
+
+    fig, ax = plt.subplots(1, 1)
+    ax.set_xscale("log")
+    logsm_bins = np.linspace(9, 13, 30)
+
+    msk_cen = pdata["central"] == 1
+
+    lo, hi = 12, 12.25
+    msk_lgmhost = (pdata["logmp_obs_host"] > lo) & (pdata["logmp_obs_host"] < hi)
+    y, x = np.histogram(
+        pdata["logsm_obs"][msk_lgmhost & msk_cen], bins=logsm_bins, density=True
+    )
+    ax.fill_between(
+        10 ** x[1:],
+        np.zeros_like(y),
+        y,
+        color=MBLUE,
+        alpha=0.5,
+        label=r"$M_{\rm halo}\approx10^{12}M_{\odot}$",
+    )
+
+    lo, hi = 13, 13.25
+    msk_lgmhost = (pdata["logmp_obs_host"] > lo) & (pdata["logmp_obs_host"] < hi)
+    y, x = np.histogram(
+        pdata["logsm_obs"][msk_lgmhost & msk_cen], bins=logsm_bins, density=True
+    )
+    ax.fill_between(
+        10 ** x[1:],
+        np.zeros_like(y),
+        y,
+        color=MORANGE,
+        alpha=0.5,
+        label=r"$M_{\rm halo}\approx10^{13}M_{\odot}$",
+    )
+
+    lo, hi = 14, 14.25
+    msk_lgmhost = (pdata["logmp_obs_host"] > lo) & (pdata["logmp_obs_host"] < hi)
+    y, x = np.histogram(
+        pdata["logsm_obs"][msk_lgmhost & msk_cen], bins=logsm_bins, density=True
+    )
+    ax.fill_between(
+        10 ** x[1:],
+        np.zeros_like(y),
+        y,
+        color=MRED,
+        alpha=0.5,
+        label=r"$M_{\rm halo}\approx10^{14}M_{\odot}$",
+    )
+
+    ax.legend(loc="upper right")
+    ymin, ymax = ax.get_ylim()
+    ax.set_ylim(0.01, 2)
+
+    xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
+    ylabel = ax.set_ylabel(r"$P(M_{\star}\vert M_{\rm halo})$")
+    fn_out = os.path.join(drn_out, "cen_csmf_analysis_cosmos_260316_04_26_2026.png")
+
+    fig.savefig(
+        fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
+    )
