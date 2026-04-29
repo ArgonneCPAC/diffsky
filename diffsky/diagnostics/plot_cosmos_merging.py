@@ -172,6 +172,10 @@ def get_plotting_data_mock(
         ssperr_params = dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params._make(
             metadata["param_collection"].ssperr_params
         )
+    if merging_params is None:
+        merging_params = dpwm.DEFAULT_PARAM_COLLECTION.merging_params._make(
+            metadata["param_collection"].merging_params
+        )
 
     mock = Table(load_lc_mock.load_lc_patch_collection(fn_list, keys))
     mock["synthetic"] = False
