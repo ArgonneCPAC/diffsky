@@ -49,3 +49,11 @@ def test_make_color_mag_diagnostic_plots(testing_data, tmp_path):
         model_nickname="default",
         drn_out=str(tmp_path),
     )
+
+
+@pytest.mark.skipif(not plcm.HAS_MATPLOTLIB, reason=plcm.MATPLOTLIB_MSG)
+@pytest.mark.skipif(not plcm.HAS_ASTROPY, reason=ASTROPY_MSG)
+def test_plot_ex_situ_fraction(testing_data, tmp_path):
+    plcm.plot_ex_situ_fraction(
+        pdata=testing_data, model_nickname="default_model", drn_out=str(tmp_path)
+    )

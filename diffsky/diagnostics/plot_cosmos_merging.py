@@ -505,6 +505,7 @@ def plot_app_mag_func(
     """
     assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
+    drn_out = drn_out or "."
     os.makedirs(drn_out, exist_ok=True)
 
     m0_label = pdata.diffsky_data["filter_dict"][m0][1].split("_")[0]
@@ -624,6 +625,7 @@ def plot_color_pdf(
     """
     assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
 
+    drn_out = drn_out or "."
     os.makedirs(drn_out, exist_ok=True)
 
     fig, ax = plt.subplots(1, 1)
@@ -673,6 +675,55 @@ def plot_color_pdf(
     color_label = f"{c0_label}-{c1_label}_PDF_"
     z_m_label = f"z={z_bin:.1f}_{m1_label}={m1_bin:.1f}"
     bn_out = prefix + color_label + z_m_label + ".png"
+    fn_out = os.path.join(drn_out, bn_out)
+    fig.savefig(
+        fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
+    )
+    plt.close()
+
+    return fig
+
+
+def plot_ex_situ_fraction(*, pdata, model_nickname, drn_out=""):
+    """"""
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+
+    drn_out = drn_out or "."
+    os.makedirs(drn_out, exist_ok=True)
+
+    logsm_bins = np.linspace(9, 12, 50)
+
+    dlogsm = 0.1
+    x_collector = []
+    y_collector = []
+
+    for logsm_bin in logsm_bins:
+        msk_cen = pdata.lc_data.is_central == 1
+        msk_logsm = np.abs(pdata.diffsky_data["logsm_obs"] - logsm_bin) < dlogsm
+        x = pdata.diffsky_data["logsm_obs"] - pdata.diffsky_data["logsm_obs_in_situ"]
+        npts = np.sum(msk_cen & msk_logsm)
+        if npts > 2:
+            x_collector.append(logsm_bin)
+            avg_cen = np.average(
+                x[msk_cen & msk_logsm],
+                weights=pdata.lc_data.nhalos[msk_cen & msk_logsm],
+            )
+            y_collector.append(float(avg_cen))
+
+    x_collector = np.array(x_collector)
+    y_collector = np.array(y_collector)
+
+    fig, ax = plt.subplots(1, 1)
+    ax.set_ylim(2e-3, 1)
+    ax.set_xscale("log")
+    ax.loglog()
+
+    ax.plot(10**x_collector, y_collector)
+
+    xlabel = ax.set_xlabel(r"$M_{\star}\ [M_{\odot}]$")
+    ylabel = ax.set_ylabel(r"${\rm ex}$-${\rm situ\ fraction}$")
+
+    bn_out = f"frac_ex_situ_analysis_{model_nickname}.png"
     fn_out = os.path.join(drn_out, bn_out)
     fig.savefig(
         fn_out, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
