@@ -25,7 +25,9 @@ def test_sed_kern(mc_merge, num_halos=70, return_results=False):
     )
     fb = 0.176
 
-    n_gals = lc_data.z_obs.size
+    nhalos_weights = np.where(
+        lc_data.is_central == 1, lc_data.nhalos, lc_data.nhalos * lc_data.nhalos_host
+    )
 
     phot_kern_results, phot_randoms, merging_randoms = pkm._mc_phot_kern_merging(
         ran_key,
@@ -43,7 +45,7 @@ def test_sed_kern(mc_merge, num_halos=70, return_results=False):
         lc_data.logmhost_infall,
         lc_data.t_infall,
         lc_data.is_central,
-        lc_data.nhalos,
+        nhalos_weights,
         lc_data.halo_indx,
         mc_merge,
     )
@@ -51,7 +53,6 @@ def test_sed_kern(mc_merge, num_halos=70, return_results=False):
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
         [getattr(phot_kern_results, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
-    nhalos_weights = np.ones(n_gals)
     sed_kern_results = sedkm._sed_kern(
         phot_randoms,
         merging_randoms,
@@ -94,17 +95,17 @@ def test_sed_kern(mc_merge, num_halos=70, return_results=False):
         )
 
         recomputed_obs_mags = calc_obs_mags_galpop(*args)
-        n_nan_cens = np.sum(~np.isfinite(recomputed_obs_mags[lc_data.is_central]))
-        n_nan_sats = np.sum(~np.isfinite(recomputed_obs_mags[~lc_data.is_central]))
+        n_nan_cens = np.sum(~np.isfinite(recomputed_obs_mags[lc_data.is_central == 1]))
+        n_nan_sats = np.sum(~np.isfinite(recomputed_obs_mags[lc_data.is_central == 0]))
 
         dmag = recomputed_obs_mags - phot_kern_results.obs_mags[:, iband]
 
         assert n_nan_sats == 0, "Some sats have NaN recomputed photometry"
         msg = "Discrepancy in recomputed photometry for sats"
-        assert np.allclose(dmag[~lc_data.is_central], 0.0, atol=0.1), msg
+        assert np.allclose(dmag[lc_data.is_central == 0], 0.0, atol=0.1), msg
 
         assert n_nan_cens == 0, "Some cens have NaN recomputed photometry"
         msg = "Discrepancy in recomputed photometry for cens"
-        assert np.allclose(dmag[lc_data.is_central], 0.0, atol=0.1), msg
+        assert np.allclose(dmag[lc_data.is_central == 1], 0.0, atol=0.1), msg
 
         # assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], atol=0.1)
