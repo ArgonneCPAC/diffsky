@@ -319,6 +319,68 @@ def compute_dbk_phot_from_diffsky_mock(
     return phot_info
 
 
+def compute_dbk_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata, tcurves=None):
+    if tcurves is None:
+        tcurves = metadata["tcurves"]
+
+    param_collection = metadata["param_collection"]
+    mah_params = DEFAULT_MAH_PARAMS._make(
+        [lc_mock_chunk[key] for key in DEFAULT_MAH_PARAMS._fields]
+    )
+    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
+        [lc_mock_chunk[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+    )
+    t_obs = age_at_z(lc_mock_chunk["redshift_true"], *metadata["sim_info"].cosmo_params)
+
+    wave_eff_table = phot_utils.get_wave_eff_table(metadata["z_phot_table"], tcurves)
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves,
+        metadata["ssp_data"],
+        metadata["z_phot_table"],
+        metadata["sim_info"].cosmo_params,
+    )
+    n_chunk = len(t_obs)
+    nhalos_weights = np.ones(n_chunk)
+    halo_indx = lc_mock_chunk["top_host_idx_chunk"]
+    t_infall = lc_mock_chunk["t_peak"]
+
+    args = (
+        lc_mock_chunk["mc_sfh_type"],
+        lc_mock_chunk["uran_av"],
+        lc_mock_chunk["uran_delta"],
+        lc_mock_chunk["uran_funo"],
+        lc_mock_chunk["uran_pburst"],
+        lc_mock_chunk["delta_mag_ssp_scatter"],
+        lc_mock_chunk["uran_fbulge"],
+        lc_mock_chunk["fknot"],
+        lc_mock_chunk["uran_pmerge"],
+        sfh_params,
+        lc_mock_chunk["redshift_true"],
+        t_obs,
+        mah_params,
+        metadata["ssp_data"],
+        precomputed_ssp_mag_table,
+        metadata["z_phot_table"],
+        wave_eff_table,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        param_collection.merging_params,
+        metadata["sim_info"].cosmo_params,
+        metadata["sim_info"].fb,
+        lc_mock_chunk["logmp_infall"],
+        lc_mock_chunk["logmhost_infall"],
+        t_infall,
+        lc_mock_chunk["central"],
+        nhalos_weights,
+        halo_indx,
+    )
+    phot_kern_results = dbk_phot_from_mock_merging._reproduce_dbk_mock_phot_kern(*args)
+    return phot_kern_results
+
+
 def compute_sed_from_diffsky_mock(
     *, diffsky_data, ssp_data, param_collection, sim_info, z_phot_table, tcurves
 ):
