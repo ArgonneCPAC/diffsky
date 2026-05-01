@@ -93,5 +93,18 @@ def test_sed_kern(mc_merge, num_halos=70, return_results=False):
             *DEFAULT_COSMOLOGY,
         )
 
-        mags = calc_obs_mags_galpop(*args)
-        assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], atol=0.1)
+        recomputed_obs_mags = calc_obs_mags_galpop(*args)
+        n_nan_cens = np.sum(~np.isfinite(recomputed_obs_mags[lc_data.is_central]))
+        n_nan_sats = np.sum(~np.isfinite(recomputed_obs_mags[~lc_data.is_central]))
+
+        dmag = recomputed_obs_mags - phot_kern_results.obs_mags[:, iband]
+
+        assert n_nan_sats == 0, "Some sats have NaN recomputed photometry"
+        msg = "Discrepancy in recomputed photometry for sats"
+        assert np.allclose(dmag[~lc_data.is_central], 0.0, atol=0.1), msg
+
+        assert n_nan_cens == 0, "Some cens have NaN recomputed photometry"
+        msg = "Discrepancy in recomputed photometry for cens"
+        assert np.allclose(dmag[lc_data.is_central], 0.0, atol=0.1), msg
+
+        # assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], atol=0.1)
