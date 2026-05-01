@@ -176,18 +176,6 @@ def load_lc_cf_chunk(fn_lc_cf, drn_lc_cores, *, nchunks, chunknum, lc_cores_keys
     return lc_data, diffsky_data
 
 
-def load_lc_mock_chunk(fn_lc_mock, *, nchunks, chunknum, lc_mock_keys=None):
-    with h5py.File(fn_lc_mock, "r") as hdf:
-        if lc_mock_keys is None:
-            lc_mock_keys = list(hdf["data"].keys())
-
-        lc_mock, (istart, iend) = llcc._read_lc_cores_chunk(
-            hdf, nchunks, chunknum, lc_mock_keys, index_dataset="metadata"
-        )
-
-    return lc_mock, (istart, iend)
-
-
 def compute_additional_haloprops(
     diffsky_data, sim_info, halo_indx=None, sec_halo_indx=None
 ):

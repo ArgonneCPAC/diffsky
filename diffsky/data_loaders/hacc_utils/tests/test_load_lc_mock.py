@@ -31,4 +31,4 @@ def test_load_chunked_lc_patch():
 
     nchunks = 10
     chunknum = 0
-    llcm.load_chunked_lc_patch("testing.hdf5", nchunks, chunknum)
+    llcm.load_lc_mock_chunk("testing.hdf5", nchunks, chunknum)

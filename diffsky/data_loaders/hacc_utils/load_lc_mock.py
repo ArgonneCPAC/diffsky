@@ -18,6 +18,7 @@ from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import dbk_kernels, dbk_specphot_kernels, mc_randoms
 from . import hacc_core_utils as hcu
 from . import lc_mock as lcmp
+from . import load_lc_cores as llcc
 
 
 def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list, keys=None):
@@ -114,8 +115,16 @@ def load_lc_patch_collection(fn_list, keys):
     return mock
 
 
-def load_chunked_lc_patch(fn_mock, nchunks, chunknum):
-    raise NotImplementedError("Need a chunked version of the lc_mock reader")
+def load_lc_mock_chunk(fn_lc_mock, *, nchunks, chunknum, lc_mock_keys=None):
+    with h5py.File(fn_lc_mock, "r") as hdf:
+        if lc_mock_keys is None:
+            lc_mock_keys = list(hdf["data"].keys())
+
+        lc_mock, (istart, iend) = llcc._read_lc_cores_chunk(
+            hdf, nchunks, chunknum, lc_mock_keys, index_dataset="metadata"
+        )
+
+    return lc_mock, (istart, iend)
 
 
 def load_diffsky_lc_patch(drn_mock, bn_mock):
