@@ -94,4 +94,4 @@ def test_sed_kern(mc_merge, num_halos=70, return_results=False):
         )
 
         mags = calc_obs_mags_galpop(*args)
-        assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
+        assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], atol=0.1)
