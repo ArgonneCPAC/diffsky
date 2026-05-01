@@ -155,7 +155,10 @@ def load_diffsky_lc_patch(drn_mock, bn_mock):
     return diffsky_lc_patch
 
 
-def compute_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata):
+def compute_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata, tcurves=None):
+    if tcurves is None:
+        tcurves = metadata["tcurves"]
+
     param_collection = metadata["param_collection"]
     mah_params = DEFAULT_MAH_PARAMS._make(
         [lc_mock_chunk[key] for key in DEFAULT_MAH_PARAMS._fields]
@@ -165,12 +168,10 @@ def compute_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata):
     )
     t_obs = age_at_z(lc_mock_chunk["redshift_true"], *metadata["sim_info"].cosmo_params)
 
-    wave_eff_table = phot_utils.get_wave_eff_table(
-        metadata["z_phot_table"], metadata["tcurves"]
-    )
+    wave_eff_table = phot_utils.get_wave_eff_table(metadata["z_phot_table"], tcurves)
 
     precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        metadata["tcurves"],
+        tcurves,
         metadata["ssp_data"],
         metadata["z_phot_table"],
         metadata["sim_info"].cosmo_params,
