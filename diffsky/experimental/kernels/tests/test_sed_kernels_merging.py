@@ -73,24 +73,24 @@ def test_sed_kern(mc_merge, num_halos=70):
         lc_data.halo_indx,
         mc_merge,
     )
-    # rest_sed_recomputed = sed_kern_results[0]
+    rest_sed_recomputed = sed_kern_results.rest_sed
 
-    # # Enforce agreement between precomputed vs exact magnitudes
-    # n_bands = phot_kern_results.obs_mags.shape[1]
-    # for iband in range(n_bands):
-    #     trans_iband = np.interp(
-    #         lc_data.ssp_data.ssp_wave,
-    #         tcurves[iband].wave,
-    #         tcurves[iband].transmission,
-    #     )
-    #     args = (
-    #         lc_data.ssp_data.ssp_wave,
-    #         rest_sed_recomputed,
-    #         lc_data.ssp_data.ssp_wave,
-    #         trans_iband,
-    #         lc_data.z_obs,
-    #         *DEFAULT_COSMOLOGY,
-    #     )
+    # Enforce agreement between precomputed vs exact magnitudes
+    n_bands = phot_kern_results.obs_mags.shape[1]
+    for iband in range(n_bands):
+        trans_iband = np.interp(
+            lc_data.ssp_data.ssp_wave,
+            tcurves[iband].wave,
+            tcurves[iband].transmission,
+        )
+        args = (
+            lc_data.ssp_data.ssp_wave,
+            rest_sed_recomputed,
+            lc_data.ssp_data.ssp_wave,
+            trans_iband,
+            lc_data.z_obs,
+            *DEFAULT_COSMOLOGY,
+        )
 
-    #     mags = calc_obs_mags_galpop(*args)
-    #     assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
+        mags = calc_obs_mags_galpop(*args)
+        assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
