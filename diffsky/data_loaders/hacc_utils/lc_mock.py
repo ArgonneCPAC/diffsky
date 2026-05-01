@@ -529,7 +529,7 @@ def add_dbk_phot_quantities_to_mock(
         diffsky_data["logmhost_infall"],
         diffsky_data["t_infall"],
         lc_data["central"],
-        diffsky_data["nhalos_weights"],
+        diffsky_data["sat_weights"],
         diffsky_data["halo_indx"],
         mc_merge,
     )

@@ -177,7 +177,7 @@ def compute_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata, tcurves=None
         metadata["sim_info"].cosmo_params,
     )
     n_chunk = len(t_obs)
-    nhalos_weights = np.ones(n_chunk)
+    sat_weights = np.ones(n_chunk)
     halo_indx = lc_mock_chunk["top_host_idx_chunk"]
     t_infall = lc_mock_chunk["t_peak"]
 
@@ -208,7 +208,7 @@ def compute_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata, tcurves=None
         lc_mock_chunk["logmhost_infall"],
         t_infall,
         lc_mock_chunk["central"],
-        nhalos_weights,
+        sat_weights,
         halo_indx,
     )
     phot_kern_results = dbk_phot_from_mock_merging._reproduce_mock_phot_kern(*args)
@@ -341,7 +341,7 @@ def compute_dbk_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata, tcurves=
         metadata["sim_info"].cosmo_params,
     )
     n_chunk = len(t_obs)
-    nhalos_weights = np.ones(n_chunk)
+    sat_weights = np.ones(n_chunk)
     halo_indx = lc_mock_chunk["top_host_idx_chunk"]
     t_infall = lc_mock_chunk["t_peak"]
 
@@ -374,7 +374,7 @@ def compute_dbk_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata, tcurves=
         lc_mock_chunk["logmhost_infall"],
         t_infall,
         lc_mock_chunk["central"],
-        nhalos_weights,
+        sat_weights,
         halo_indx,
     )
     phot_kern_results = dbk_phot_from_mock_merging._reproduce_dbk_mock_phot_kern(*args)

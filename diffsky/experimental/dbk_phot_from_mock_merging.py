@@ -35,7 +35,7 @@ def _reproduce_mock_phot_kern(
     logmhost_infall,
     t_infall,
     is_central,
-    nhalos_weights,
+    sat_weights,
     halo_indx,
 ):
     mc_is_q = mc_sfh_type == 0
@@ -72,7 +72,7 @@ def _reproduce_mock_phot_kern(
         logmhost_infall,
         t_infall,
         is_central,
-        nhalos_weights,
+        sat_weights,
         halo_indx,
         mc_merge,
     )
@@ -109,7 +109,7 @@ def _reproduce_dbk_mock_phot_kern(
     logmhost_infall,
     t_infall,
     is_central,
-    nhalos_weights,
+    sat_weights,
     halo_indx,
 ):
     mc_is_q = mc_sfh_type == 0
@@ -146,7 +146,7 @@ def _reproduce_dbk_mock_phot_kern(
         logmhost_infall,
         t_infall,
         is_central,
-        nhalos_weights,
+        sat_weights,
         halo_indx,
         mc_merge,
     )

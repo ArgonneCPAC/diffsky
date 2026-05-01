@@ -34,7 +34,7 @@ def _mc_dbk_specphot_kern_merging(
     logmhost_infall,
     t_infall,
     is_central,
-    nhalos_weights,
+    sat_weights,
     halo_indx,
     mc_merge,
 ):
@@ -67,7 +67,7 @@ def _mc_dbk_specphot_kern_merging(
         logmhost_infall,
         t_infall,
         is_central,
-        nhalos_weights,
+        sat_weights,
         halo_indx,
         mc_merge,
     )
@@ -99,7 +99,7 @@ def _dbk_specphot_kern_merging(
     logmhost_infall,
     t_infall,
     is_central,
-    nhalos_weights,
+    sat_weights,
     halo_indx,
     mc_merge,
 ):
@@ -132,7 +132,7 @@ def _dbk_specphot_kern_merging(
         logmhost_infall,
         t_infall,
         is_central,
-        nhalos_weights,
+        sat_weights,
         halo_indx,
         mc_merge,
     )
@@ -149,7 +149,7 @@ def _dbk_specphot_kern_merging(
     )
     dbk_specphot_info = pkm._update_phot_kern_results_with_merging(*args)
 
-    args = dbk_specphot_info, dbk_specphot_info, nhalos_weights, halo_indx
+    args = dbk_specphot_info, dbk_specphot_info, sat_weights, halo_indx
     linelums_obs, linelum_in_situ = spkm._get_linelum_kern_merging_quantities(*args)
 
     dbk_specphot_info = spkm._get_linelum_results_with_merging(

@@ -182,7 +182,7 @@ def compute_additional_haloprops(
     """"""
     n_gals = len(diffsky_data["t_peak"])
     additional_haloprops = dict()
-    additional_haloprops["nhalos_weights"] = np.ones(n_gals).astype("float")
+    additional_haloprops["sat_weights"] = np.ones(n_gals).astype("float")
     additional_haloprops["t_infall"] = diffsky_data["t_peak"]
 
     if halo_indx is None:

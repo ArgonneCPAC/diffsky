@@ -454,7 +454,7 @@ def check_merging_is_nontrivial(fn_lc_mock, data=None):
                 s = f"`{key}` and `{in_situ_key}` are identical for satellites"
                 msg.append(s)
 
-        return msg
+    return msg
 
 
 def check_recomputed_photometry(
@@ -470,7 +470,7 @@ def check_recomputed_photometry(
     sim_info = lcmp.load_diffsky_sim_info(fn_lc_mock)
 
     if "synthetic" not in fn_lc_mock:
-        mock, __ = load_lc_cf.load_lc_mock_chunk(
+        mock, __ = load_lc_mock.load_lc_mock_chunk(
             fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
         )
         mock = load_lc_cf.compute_additional_haloprops(mock, sim_info)
@@ -508,7 +508,7 @@ def check_recomputed_photometry(
         tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
     )
 
-    nhalos_weights = np.ones_like(t_obs)
+    sat_weights = np.ones_like(t_obs)
     if no_dbk:
         args = (
             mock["mc_sfh_type"],
@@ -537,7 +537,7 @@ def check_recomputed_photometry(
             mock["logmhost_infall"],
             mock["t_infall"],
             mock["central"],
-            nhalos_weights,
+            sat_weights,
             mock["top_host_idx_chunk"],
         )
         phot_info = dbk_phot_from_mock_merging._reproduce_mock_phot_kern(*args)
@@ -573,7 +573,7 @@ def check_recomputed_photometry(
             mock["logmhost_infall"],
             mock["t_infall"],
             mock["central"],
-            nhalos_weights,
+            sat_weights,
             mock["top_host_idx_chunk"],
         )
         _res = dbk_phot_from_mock_merging._reproduce_dbk_mock_phot_kern(*args)
