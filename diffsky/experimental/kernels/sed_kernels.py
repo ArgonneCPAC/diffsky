@@ -93,11 +93,12 @@ def _sed_kern(
     rest_sed = jnp.sum(a * b * c * d, axis=(1, 2)) * mstar
 
     sed_kern_results = SEDKernResults(
-        rest_sed, dust_frac_trans, frac_ssp_errors, ssp_weights
+        rest_sed, dust_frac_trans, frac_ssp_errors, ssp_weights, logsm_obs
     )
     return sed_kern_results
 
 
 SEDKernResults = namedtuple(
-    "SEDKernResults", ("rest_sed", "dust_frac_trans", "frac_ssp_errors", "ssp_weights")
+    "SEDKernResults",
+    ("rest_sed", "dust_frac_trans", "frac_ssp_errors", "ssp_weights", "logsm_obs"),
 )
