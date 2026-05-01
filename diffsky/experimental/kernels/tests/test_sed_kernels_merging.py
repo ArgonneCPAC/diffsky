@@ -25,9 +25,8 @@ def test_sed_kern(mc_merge, num_halos=70, return_results=False):
     )
     fb = 0.176
 
-    nhalos_weights = np.where(
-        lc_data.is_central == 1, lc_data.nhalos, lc_data.nhalos * lc_data.nhalos_host
-    )
+    n_gals = lc_data.z_obs.size
+    nhalos_weights = np.where(lc_data.is_central == 1, np.ones(n_gals), lc_data.nhalos)
 
     phot_kern_results, phot_randoms, merging_randoms = pkm._mc_phot_kern_merging(
         ran_key,
