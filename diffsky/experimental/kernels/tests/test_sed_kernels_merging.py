@@ -10,7 +10,7 @@ from diffstar import DEFAULT_DIFFSTAR_PARAMS
 
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
-from .. import phot_kernels_merging as pkm, sed_kernels_merging as sedkm, mc_randoms
+from .. import phot_kernels_merging as pkm, sed_kernels_merging as sedkm
 from ...tests import test_lightcone_generators as tlcg
 
 _A = [None, 0, None, None, 0, *[None] * 4]

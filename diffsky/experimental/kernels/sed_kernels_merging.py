@@ -109,7 +109,7 @@ def _get_sed_kern_merging_quantities(
         mstar_in_situ, p_merge, nhalos_weights, halo_indx
     )
 
-    rest_sed_in_situ = 10 ** (-0.4 * sed_kern_results.rest_sed)
+    rest_sed_in_situ = sed_kern_results.rest_sed
     rest_sed = merging_kernels.compute_x_tot_from_x_in_situ(
         rest_sed_in_situ,
         p_merge[:, jnp.newaxis],
@@ -131,7 +131,7 @@ def _update_sed_kern_results_with_merging(
 ):
     ex_situ_dict = dict()
     ex_situ_dict["logsm_obs"] = jnp.log10(mstar_obs)
-    ex_situ_dict["rest_sed"] = -2.5 * jnp.log10(rest_sed)
+    ex_situ_dict["rest_sed"] = rest_sed
 
     in_situ_sed_results = in_situ_sed_results._replace(**ex_situ_dict)
 
