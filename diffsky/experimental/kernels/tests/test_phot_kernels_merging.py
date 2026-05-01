@@ -64,7 +64,7 @@ def test_mc_phot_kern_merging(mc_merge, num_halos=250):
     )
     fb = 0.176
 
-    phot_kern_results, phot_randoms = pkm._mc_phot_kern_merging(
+    phot_kern_results, phot_randoms, merging_randoms = pkm._mc_phot_kern_merging(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,

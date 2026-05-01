@@ -25,12 +25,10 @@ def test_sed_kern(mc_merge, num_halos=70, return_results=False):
     )
     fb = 0.176
 
-    merging_key, phot_key = jran.split(ran_key, 2)
     n_gals = lc_data.z_obs.size
-    merging_randoms = mc_randoms.get_merging_randoms(merging_key, n_gals)
 
-    phot_kern_results, phot_randoms = pkm._mc_phot_kern_merging(
-        phot_key,
+    phot_kern_results, phot_randoms, merging_randoms = pkm._mc_phot_kern_merging(
+        ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,

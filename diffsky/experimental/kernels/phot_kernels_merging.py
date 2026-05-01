@@ -70,7 +70,7 @@ def _mc_phot_kern_merging(
         mc_merge,
         n_t_table=n_t_table,
     )
-    return phot_kern_results, phot_randoms
+    return phot_kern_results, phot_randoms, merging_randoms
 
 
 @partial(jjit, static_argnames=["n_t_table"])
