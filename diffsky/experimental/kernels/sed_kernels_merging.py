@@ -32,7 +32,7 @@ def _sed_kern(
     logmhost_infall,
     t_infall,
     is_central,
-    sub_weights,
+    sat_weights,
     halo_indx,
     mc_merge,
     *,
@@ -63,7 +63,7 @@ def _sed_kern(
         logmhost_infall,
         t_infall,
         is_central,
-        sub_weights,
+        sat_weights,
         halo_indx,
         mc_merge,
     )
@@ -91,7 +91,7 @@ def _get_sed_kern_merging_quantities(
     logmhost_infall,
     t_infall,
     is_central,
-    sub_weights,
+    sat_weights,
     halo_indx,
     mc_merge,
 ):
@@ -106,14 +106,14 @@ def _get_sed_kern_merging_quantities(
 
     mstar_in_situ = 10**sed_kern_results.logsm_obs
     mstar_obs = merging_kernels.compute_x_tot_from_x_in_situ(
-        mstar_in_situ, p_merge, sub_weights, halo_indx
+        mstar_in_situ, p_merge, sat_weights, halo_indx
     )
 
     rest_sed_in_situ = sed_kern_results.rest_sed
     rest_sed = merging_kernels.compute_x_tot_from_x_in_situ(
         rest_sed_in_situ,
         p_merge[:, jnp.newaxis],
-        sub_weights[:, jnp.newaxis],
+        sat_weights[:, jnp.newaxis],
         halo_indx,
     )
     return mstar_in_situ, mstar_obs, rest_sed_in_situ, rest_sed, p_merge

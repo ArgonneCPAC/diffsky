@@ -33,7 +33,7 @@ def _mc_phot_kern_merging(
     logmhost_infall,
     t_infall,
     is_central,
-    sub_weights,
+    sat_weights,
     halo_indx,
     mc_merge,
     *,
@@ -65,7 +65,7 @@ def _mc_phot_kern_merging(
         logmhost_infall,
         t_infall,
         is_central,
-        sub_weights,
+        sat_weights,
         halo_indx,
         mc_merge,
         n_t_table=n_t_table,
@@ -96,7 +96,7 @@ def _phot_kern_merging(
     logmhost_infall,
     t_infall,
     is_central,
-    sub_weights,
+    sat_weights,
     halo_indx,
     mc_merge,
     *,
@@ -130,7 +130,7 @@ def _phot_kern_merging(
         logmhost_infall,
         t_infall,
         is_central,
-        sub_weights,
+        sat_weights,
         halo_indx,
         mc_merge,
     )
@@ -157,7 +157,7 @@ def _get_phot_kern_merging_quantities(
     logmhost_infall,
     t_infall,
     is_central,
-    sub_weights,
+    sat_weights,
     halo_indx,
     mc_merge,
 ):
@@ -172,12 +172,12 @@ def _get_phot_kern_merging_quantities(
 
     mstar_in_situ = 10**phot_kern_results.logsm_obs
     mstar_obs = compute_x_tot_from_x_in_situ(
-        mstar_in_situ, p_merge, sub_weights, halo_indx
+        mstar_in_situ, p_merge, sat_weights, halo_indx
     )
 
     flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags)
     flux_obs = compute_x_tot_from_x_in_situ(
-        flux_in_situ, p_merge[:, jnp.newaxis], sub_weights[:, jnp.newaxis], halo_indx
+        flux_in_situ, p_merge[:, jnp.newaxis], sat_weights[:, jnp.newaxis], halo_indx
     )
     return mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge
 
