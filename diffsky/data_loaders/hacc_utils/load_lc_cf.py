@@ -15,6 +15,7 @@ from jax import random as jran
 from ...data_loaders import load_flat_hdf5
 from . import defaults as hacc_defaults
 from . import haccsims
+from . import load_lc_cores as llcc
 
 SIM_INFO_KEYS = ("sim", "cosmo_params", "z_sim", "t_sim", "lgt0", "fb", "num_subvols")
 DiffskySimInfo = namedtuple("DiffskySimInfo", SIM_INFO_KEYS)
@@ -153,39 +154,6 @@ def generate_fake_mah_params(ran_key, t_obs, lgmp_obs, is_central, lgt0):
     return fake_mah_params
 
 
-def _read_lc_cores_chunk(fobj, nchunks, chunknum, keys_to_read, index_dataset=None):
-    """Read a forest-complete chunk of data from lc_cores"""
-
-    if index_dataset is None:
-        index_dataset = fobj
-    else:
-        index_dataset = fobj[index_dataset]
-
-    nindex = len(index_dataset["index"]["offset"])
-    nstart = (nindex // nchunks) * chunknum
-    nend = (nindex // nchunks) * (chunknum + 1)
-
-    read_start = index_dataset["index"]["offset"][nstart]
-    if chunknum == nchunks - 1:
-        read_end = (
-            index_dataset["index"]["offset"][-1] + index_dataset["index"]["count"][-1]
-        )
-    else:
-        read_end = index_dataset["index"]["offset"][nend]
-
-    lc_cores_chunk = {}
-    for key in keys_to_read:
-        lc_cores_chunk[key] = fobj["data"][key][read_start:read_end]
-
-    # shift look-up-indices for the chunk
-    lc_cores_chunk["top_host_idx_chunk"] = lc_cores_chunk["top_host_idx"] - read_start
-    lc_cores_chunk["secondary_top_host_idx_chunk"] = (
-        lc_cores_chunk["secondary_top_host_idx"] - read_start
-    )
-
-    return lc_cores_chunk, (read_start, read_end)
-
-
 def load_lc_cf_chunk(fn_lc_cf, drn_lc_cores, *, nchunks, chunknum, lc_cores_keys=None):
     bn_lc_cf = os.path.basename(fn_lc_cf)
     bn_lc_cores = os.path.basename(bn_lc_cf).replace(".diffsky_data.hdf5", ".hdf5")
@@ -195,7 +163,7 @@ def load_lc_cf_chunk(fn_lc_cf, drn_lc_cores, *, nchunks, chunknum, lc_cores_keys
         if lc_cores_keys is None:
             lc_cores_keys = list(hdf["data"].keys())
 
-        lc_data, (istart, iend) = _read_lc_cores_chunk(
+        lc_data, (istart, iend) = llcc._read_lc_cores_chunk(
             hdf, nchunks, chunknum, lc_cores_keys
         )
 
@@ -213,7 +181,7 @@ def load_lc_mock_chunk(fn_lc_mock, *, nchunks, chunknum, lc_mock_keys=None):
         if lc_mock_keys is None:
             lc_mock_keys = list(hdf["data"].keys())
 
-        lc_mock, (istart, iend) = _read_lc_cores_chunk(
+        lc_mock, (istart, iend) = llcc._read_lc_cores_chunk(
             hdf, nchunks, chunknum, lc_mock_keys, index_dataset="metadata"
         )
 
