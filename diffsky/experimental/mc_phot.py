@@ -100,6 +100,7 @@ def mc_lc_phot_merging(
     if not skip_param_check:
         assert dpwm.check_param_collection_is_ok(param_collection)
 
+    sat_weights = jnp.where(lc_data.is_central == 1, 1.0, lc_data.nhalos)
     _res = mcpk._mc_phot_kern_merging(
         ran_key,
         lc_data.z_obs,
@@ -121,7 +122,7 @@ def mc_lc_phot_merging(
         lc_data.logmhost_infall,
         lc_data.t_infall,
         lc_data.is_central,
-        lc_data.nhalos,
+        sat_weights,
         lc_data.halo_indx,
         mc_merge,
     )
