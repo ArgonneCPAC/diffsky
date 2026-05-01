@@ -18,7 +18,7 @@ calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
 @pytest.mark.parametrize("mc_merge", [0, 1])
-def test_sed_kern(mc_merge, num_halos=70):
+def test_sed_kern(mc_merge, num_halos=70, return_results=False):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
@@ -74,6 +74,9 @@ def test_sed_kern(mc_merge, num_halos=70):
         mc_merge,
     )
     rest_sed_recomputed = sed_kern_results.rest_sed
+
+    if return_results:
+        return sed_kern_results, phot_kern_results, lc_data, tcurves
 
     # Enforce agreement between precomputed vs exact magnitudes
     n_bands = phot_kern_results.obs_mags.shape[1]
