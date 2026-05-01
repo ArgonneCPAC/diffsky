@@ -8,7 +8,7 @@ MC_P_MERGE_MAX = 1.0 - 1e-6
 
 @jjit
 def compute_x_tot_from_x_in_situ(
-    x_in_situ, p_merge, nsat_weights, halo_indx, frac_receive=1.0
+    x_in_situ, p_merge, sub_weights, halo_indx, frac_receive=1.0
 ):
     """Compute quantity X after including effects from merging
 
@@ -20,8 +20,9 @@ def compute_x_tot_from_x_in_situ(
         Probability that the object merges into its associated central
         0<=p_merge<=1, with p_merge=0 for centrals
 
-    nsat_weights : array of shape (n, )
-        Multiplicity factor for satellites
+    sub_weights : array of shape (n, )
+        Multiplicity factor for subhalos
+        Equals 1 for host halos, and <Nsub | Mhost> for subhalos
 
     halo_indx : array of shape (n, )
         Index to deposit quantity X
@@ -42,7 +43,7 @@ def compute_x_tot_from_x_in_situ(
     ngals = x_in_situ.shape[0]
     indx_to_keep = jnp.arange(ngals).astype("i8")
 
-    merge_weight = p_merge * nsat_weights
+    merge_weight = p_merge * sub_weights
 
     x_to_keep = x_in_situ * (1 - p_merge)
     x_to_receive = x_in_situ * merge_weight * frac_receive
