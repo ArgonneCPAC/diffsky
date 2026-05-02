@@ -8,6 +8,7 @@ import numpy as np
 from . import hacc_core_utils as hcu
 from . import lc_mock as lcmp
 from . import load_lc_cores as llcc
+from .. import load_flat_hdf5
 
 
 def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list, keys=None):
