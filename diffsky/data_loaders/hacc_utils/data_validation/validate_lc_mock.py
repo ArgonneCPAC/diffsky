@@ -636,6 +636,7 @@ def check_recomputed_sed(fn_lc_mock, *, nchunks, chunknum, return_results=False)
         try:
             s = "Discrepancy in recomputed photometry"
             assert mean_bias_plus_one_sigma < 0.3
+            assert not np.any(np.abs(dmag) > 2)
         except AssertionError:
             msg.append(s)
 
@@ -682,6 +683,7 @@ def check_recomputed_dbk_sed(fn_lc_mock, *, nchunks, chunknum, return_results=Fa
             try:
                 s = "Discrepancy in recomputed photometry"
                 assert mean_bias_plus_one_sigma < 0.3
+                assert not np.any(np.abs(dmag) > 2)
             except AssertionError:
                 msg.append(s)
 
