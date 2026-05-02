@@ -74,8 +74,9 @@ def compute_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata, tcurves=None
         sat_weights,
         halo_indx,
     )
-    phot_kern_results = dbk_phot_from_mock_merging._reproduce_mock_phot_kern(*args)
-    return phot_kern_results
+    _res = dbk_phot_from_mock_merging._reproduce_mock_phot_kern(*args)
+    phot_kern_results, phot_randoms, merging_randoms = _res
+    return phot_kern_results, phot_randoms, merging_randoms
 
 
 def compute_phot_from_diffsky_mock(
@@ -245,15 +246,15 @@ def compute_dbk_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata, tcurves=
 
 
 def compute_sed_from_diffsky_mock(
-    *, diffsky_data, ssp_data, param_collection, sim_info, z_phot_table, tcurves
+    *, lc_mock_chunk, ssp_data, param_collection, sim_info, z_phot_table, tcurves
 ):
     mah_params = DEFAULT_MAH_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+        [lc_mock_chunk[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+        [lc_mock_chunk[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
-    t_obs = age_at_z(diffsky_data["redshift_true"], *sim_info.cosmo_params)
+    t_obs = age_at_z(lc_mock_chunk["redshift_true"], *sim_info.cosmo_params)
 
     wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
 
@@ -261,16 +262,16 @@ def compute_sed_from_diffsky_mock(
         tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
     )
 
-    mc_is_q = jnp.where(diffsky_data["mc_sfh_type"] == 0, True, False)
+    mc_is_q = jnp.where(lc_mock_chunk["mc_sfh_type"] == 0, True, False)
     args = (
         mc_is_q,
-        diffsky_data["uran_av"],
-        diffsky_data["uran_delta"],
-        diffsky_data["uran_funo"],
-        diffsky_data["uran_pburst"],
-        diffsky_data["delta_mag_ssp_scatter"],
+        lc_mock_chunk["uran_av"],
+        lc_mock_chunk["uran_delta"],
+        lc_mock_chunk["uran_funo"],
+        lc_mock_chunk["uran_pburst"],
+        lc_mock_chunk["delta_mag_ssp_scatter"],
         sfh_params,
-        diffsky_data["redshift_true"],
+        lc_mock_chunk["redshift_true"],
         t_obs,
         mah_params,
         ssp_data,
@@ -292,92 +293,58 @@ def compute_sed_from_diffsky_mock(
     return sed_info
 
 
-def compute_sed_from_diffsky_mock_merging(
-    *, diffsky_data, ssp_data, param_collection, sim_info
-):
-    # wave_eff_table = phot_utils.get_wave_eff_table(metadata["z_phot_table"], tcurves)
+def compute_sed_from_diffsky_mock_merging(lc_mock_chunk, metadata, mc_merge=1):
 
-    # precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-    #     tcurves,
-    #     metadata["ssp_data"],
-    #     metadata["z_phot_table"],
-    #     metadata["sim_info"].cosmo_params,
-    # )
-
-    t_obs = age_at_z(diffsky_data["redshift_true"], *sim_info.cosmo_params)
+    t_obs = age_at_z(lc_mock_chunk["redshift_true"], *metadata["sim_info"].cosmo_params)
 
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+        [lc_mock_chunk[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
     mah_params = DEFAULT_MAH_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+        [lc_mock_chunk[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    # precomputed_ssp_mag_table.shape = (n_gals, n_bands, n_met, n_age)
-    n_bands = 1
-    n_gals = diffsky_data["redshift_true"].size
-    n_met = ssp_data.ssp_lgmet.size
-    n_age = ssp_data.ssp_lg_age_gyr.size
-    precomputed_ssp_mag_table = jnp.ones((n_gals, n_bands, n_met, n_age))
+    t_infall = lc_mock_chunk["t_peak"]
+    n_chunk = len(t_obs)
+    sat_weights = jnp.ones(n_chunk)
+    halo_indx = lc_mock_chunk["top_host_idx_chunk"]
 
-    # wave_eff_table.shape = (n_z_phot_table, n_bands)
-    z_min = diffsky_data["redshift_true"].min()
-    z_max = diffsky_data["redshift_true"].max()
-    dz = z_max - z_min
-    eps = dz / 100.0
-    z_phot_table = jnp.array((z_min - eps, z_max + eps))
-    wave_eff_table = jnp.ones((z_phot_table.size, n_bands))
-
-    mc_is_q = jnp.where(diffsky_data["mc_sfh_type"] == 0, True, False)
-    args = (
+    mc_is_q = jnp.where(lc_mock_chunk["mc_sfh_type"] == 0, True, False)
+    phot_randoms = mc_randoms.PhotRandoms(
         mc_is_q,
-        diffsky_data["uran_av"],
-        diffsky_data["uran_delta"],
-        diffsky_data["uran_funo"],
-        diffsky_data["uran_pburst"],
-        diffsky_data["delta_mag_ssp_scatter"],
-        sfh_params,
-        diffsky_data["redshift_true"],
-        t_obs,
-        mah_params,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
-        param_collection.mzr_params,
-        param_collection.spspop_params,
-        param_collection.scatter_params,
-        param_collection.ssperr_params,
-        sim_info.cosmo_params,
-        sim_info.fb,
+        lc_mock_chunk["uran_av"],
+        lc_mock_chunk["uran_delta"],
+        lc_mock_chunk["uran_funo"],
+        lc_mock_chunk["uran_pburst"],
+        lc_mock_chunk["delta_mag_ssp_scatter"],
     )
-
-    phot_info = dbk_phot_from_mock_merging._reproduce_mock_phot_kern(*args)[0]
+    merging_randoms = mc_randoms.DiffMergeRandoms(lc_mock_chunk["uran_pmerge"])
 
     args = (
         phot_randoms,
         merging_randoms,
         sfh_params,
-        z_obs,
+        lc_mock_chunk["redshift_true"],
         t_obs,
         mah_params,
-        ssp_data,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssp_err_pop_params,
-        merging_params,
-        cosmo_params,
-        fb,
-        logmp_infall,
-        logmhost_infall,
+        metadata["ssp_data"],
+        metadata["param_collection"].mzr_params,
+        metadata["param_collection"].spspop_params,
+        metadata["param_collection"].scatter_params,
+        metadata["param_collection"].ssperr_params,
+        metadata["param_collection"].merging_params,
+        metadata["sim_info"].cosmo_params,
+        metadata["sim_info"].fb,
+        lc_mock_chunk["logmp_infall"],
+        lc_mock_chunk["logmhost_infall"],
         t_infall,
-        is_central,
+        lc_mock_chunk["central"],
         sat_weights,
         halo_indx,
         mc_merge,
     )
     sed_results = sed_kernels_merging._sed_kern(*args)
+    return sed_results
 
 
 def compute_dbk_sed_from_diffsky_mock(

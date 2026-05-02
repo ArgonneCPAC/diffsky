@@ -37,6 +37,8 @@ def _reproduce_mock_phot_kern(
     is_central,
     sat_weights,
     halo_indx,
+    *,
+    mc_merge=1,
 ):
     mc_is_q = mc_sfh_type == 0
     phot_randoms = mc_randoms.PhotRandoms(
@@ -49,7 +51,6 @@ def _reproduce_mock_phot_kern(
     )
     merging_randoms = mc_randoms.DiffMergeRandoms(uran_pmerge)
 
-    mc_merge = 1
     phot_kern_results = phot_kernels_merging._phot_kern_merging(
         phot_randoms,
         merging_randoms,
@@ -76,7 +77,7 @@ def _reproduce_mock_phot_kern(
         halo_indx,
         mc_merge,
     )
-    return phot_kern_results
+    return phot_kern_results, phot_randoms, merging_randoms
 
 
 @jjit
