@@ -6,15 +6,9 @@ from glob import glob
 import h5py
 import numpy as np
 import yaml
-from diffmah import DEFAULT_MAH_PARAMS
-from diffstar import DEFAULT_DIFFSTAR_PARAMS
-from dsps.cosmology.flat_wcdm import age_at_z
-
-from .... import phot_utils
-from ....experimental import dbk_phot_from_mock_merging
-from ....experimental import precompute_ssp_phot as psspp
 from ....param_utils import diffsky_param_wrapper as dpw
 from .. import lc_mock as lcmp
+from .. import sed_from_mock
 from .. import load_flat_hdf5, load_lc_cf, load_lc_mock
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
@@ -98,10 +92,17 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
         pass
     else:
         msg = check_recomputed_photometry(
-            fn_lc_mock, no_dbk=no_dbk, nchunks=nchunks, chunknum_test=chunknum_test
+            fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
         )
         if len(msg) > 0:
             report["recomputed_photometry"] = msg
+
+    if no_dbk is False:
+        msg = check_recomputed_dbk_photometry(
+            fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
+        )
+        if len(msg) > 0:
+            report["recomputed_dbk_photometry"] = msg
 
     return report
 
@@ -457,24 +458,12 @@ def check_merging_is_nontrivial(fn_lc_mock, data=None):
     return msg
 
 
-def check_recomputed_photometry(
-    fn_lc_mock, *, nchunks, chunknum_test, return_results=False, no_dbk=False
-):
-    """Recompute first N_TEST=50 galaxies photometry and enforce agreement"""
-    with h5py.File(fn_lc_mock, "r") as hdf:
-        mock_version_name = hdf["metadata"].attrs["mock_version_name"]
+def load_mock_chunk_testing(fn_lc_mock, *, nchunks, chunknum):
+    metadata = load_lc_mock.load_mock_metadata(fn_lc_mock)
 
-    drn_mock = os.path.dirname(fn_lc_mock)
-    tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
-    ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
-    sim_info = lcmp.load_diffsky_sim_info(fn_lc_mock)
+    synthetic = "synthetic" in os.path.basename(fn_lc_mock)
 
-    if "synthetic" not in fn_lc_mock:
-        mock, __ = load_lc_mock.load_lc_mock_chunk(
-            fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
-        )
-        mock = load_lc_cf.compute_additional_haloprops(mock, sim_info)
-    else:
+    if synthetic:
         _mock = load_flat_hdf5(fn_lc_mock, dataset="data", keys=["central"])
         n = _mock["central"].size
         if n < BATCH_SIZE:
@@ -486,115 +475,34 @@ def check_recomputed_photometry(
         mock["top_host_idx_chunk"] = mock["top_host_idx"]
         mock["secondary_top_host_idx_chunk"] = mock["secondary_top_host_idx"]
         mock = load_lc_cf.compute_additional_haloprops(
-            mock, sim_info, halo_indx=_indx, sec_halo_indx=_indx
+            mock, metadata["sim_info"], halo_indx=_indx, sec_halo_indx=_indx
         )
-
-    mah_params = DEFAULT_MAH_PARAMS._make(
-        [mock[key] for key in DEFAULT_MAH_PARAMS._fields]
-    )
-    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [mock[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
-    )
-    param_collection = lcmp.load_diffsky_param_collection_merging(
-        drn_mock, mock_version_name
-    )
-    t_obs = age_at_z(mock["redshift_true"], *sim_info.cosmo_params)
-
-    # Precompute photometry at each element of the redshift table
-    z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
-    wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
-
-    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
-    )
-
-    sat_weights = np.ones_like(t_obs)
-    if no_dbk:
-        args = (
-            mock["mc_sfh_type"],
-            mock["uran_av"],
-            mock["uran_delta"],
-            mock["uran_funo"],
-            mock["uran_pburst"],
-            mock["delta_mag_ssp_scatter"],
-            mock["uran_pmerge"],
-            sfh_params,
-            mock["redshift_true"],
-            t_obs,
-            mah_params,
-            ssp_data,
-            precomputed_ssp_mag_table,
-            z_phot_table,
-            wave_eff_table,
-            param_collection.mzr_params,
-            param_collection.spspop_params,
-            param_collection.scatter_params,
-            param_collection.ssperr_params,
-            param_collection.merging_params,
-            sim_info.cosmo_params,
-            sim_info.fb,
-            mock["logmp_infall"],
-            mock["logmhost_infall"],
-            mock["t_infall"],
-            mock["central"],
-            sat_weights,
-            mock["top_host_idx_chunk"],
-        )
-        phot_info = dbk_phot_from_mock_merging._reproduce_mock_phot_kern(*args)
-        phot_info = phot_info._asdict()
-
     else:
-        args = (
-            mock["mc_sfh_type"],
-            mock["uran_av"],
-            mock["uran_delta"],
-            mock["uran_funo"],
-            mock["uran_pburst"],
-            mock["delta_mag_ssp_scatter"],
-            mock["uran_fbulge"],
-            mock["fknot"],
-            mock["uran_pmerge"],
-            sfh_params,
-            mock["redshift_true"],
-            t_obs,
-            mah_params,
-            ssp_data,
-            precomputed_ssp_mag_table,
-            z_phot_table,
-            wave_eff_table,
-            param_collection.mzr_params,
-            param_collection.spspop_params,
-            param_collection.scatter_params,
-            param_collection.ssperr_params,
-            param_collection.merging_params,
-            sim_info.cosmo_params,
-            sim_info.fb,
-            mock["logmp_infall"],
-            mock["logmhost_infall"],
-            mock["t_infall"],
-            mock["central"],
-            sat_weights,
-            mock["top_host_idx_chunk"],
+        mock, __ = load_lc_mock.load_lc_mock_chunk(
+            fn_lc_mock, nchunks=nchunks, chunknum=chunknum
         )
-        _res = dbk_phot_from_mock_merging._reproduce_dbk_mock_phot_kern(*args)
-        phot_info, dbk_weights = _res
-        phot_info = phot_info._asdict()
+        mock = load_lc_cf.compute_additional_haloprops(mock, metadata["sim_info"])
+    return mock, metadata
 
-    if return_results:
-        return mock, phot_info, tcurves, args
+
+def check_recomputed_photometry(fn_lc_mock, *, nchunks, chunknum):
+    mock_chunk, metadata = load_mock_chunk_testing(
+        fn_lc_mock, nchunks=nchunks, chunknum=chunknum
+    )
+    phot_info = sed_from_mock.compute_phot_from_mock(mock_chunk, metadata)
 
     RTOL = 0.1
     ATOL = 0.2
     msg = []
-    for i, tcurve_name in enumerate(tcurves._fields):
+    for i, tcurve_name in enumerate(metadata["tcurves"]._fields):
         try:
             assert np.allclose(
-                mock[tcurve_name], phot_info["obs_mags"][:, i], rtol=RTOL
+                mock_chunk[tcurve_name], phot_info["obs_mags"][:, i], rtol=RTOL
             )
             assert np.allclose(
-                mock[tcurve_name], phot_info["obs_mags"][:, i], atol=ATOL
+                mock_chunk[tcurve_name], phot_info["obs_mags"][:, i], atol=ATOL
             )
-            magdiff = mock[tcurve_name] - phot_info["obs_mags"][:, i]
+            magdiff = mock_chunk[tcurve_name] - phot_info["obs_mags"][:, i]
             assert np.mean(np.abs(magdiff) > 0.1) < 0.01
         except AssertionError:
             msg.append("Inconsistent recalculation of obs_mags")
@@ -602,56 +510,70 @@ def check_recomputed_photometry(
         try:
             _k = "_in_situ"
             assert np.allclose(
-                mock[tcurve_name + _k], phot_info["obs_mags" + _k][:, i], rtol=RTOL
+                mock_chunk[tcurve_name + _k],
+                phot_info["obs_mags" + _k][:, i],
+                rtol=RTOL,
             )
             assert np.allclose(
-                mock[tcurve_name + _k], phot_info["obs_mags" + _k][:, i], atol=ATOL
+                mock_chunk[tcurve_name + _k],
+                phot_info["obs_mags" + _k][:, i],
+                atol=ATOL,
             )
-            magdiff = mock[tcurve_name + _k] - phot_info["obs_mags" + _k][:, i]
+            magdiff = mock_chunk[tcurve_name + _k] - phot_info["obs_mags" + _k][:, i]
             assert np.mean(np.abs(magdiff) > 0.1) < 0.01
         except AssertionError:
             msg.append("Inconsistent recalculation of obs_mags_in_situ")
         except KeyError:
             pass  # Not all mocks include in-situ columns
 
+    return msg
+
+
+def check_recomputed_dbk_photometry(fn_lc_mock, *, nchunks, chunknum):
+    mock_chunk, metadata = load_mock_chunk_testing(
+        fn_lc_mock, nchunks=nchunks, chunknum=chunknum
+    )
+    phot_info, dbk_weights = sed_from_mock.compute_dbk_phot_from_mock(
+        mock_chunk, metadata
+    )
+
+    RTOL = 0.1
+    ATOL = 0.2
+    msg = []
+    for i, tcurve_name in enumerate(metadata["tcurves"]._fields):
         try:
             assert np.allclose(
-                mock[tcurve_name + "_bulge"],
+                mock_chunk[tcurve_name + "_bulge"],
                 phot_info["obs_mags" + "_bulge"][:, i],
                 rtol=RTOL,
             )
             assert np.allclose(
-                mock[tcurve_name + "_disk"],
+                mock_chunk[tcurve_name + "_disk"],
                 phot_info["obs_mags" + "_disk"][:, i],
                 rtol=RTOL,
             )
             assert np.allclose(
-                mock[tcurve_name + "_knots"],
+                mock_chunk[tcurve_name + "_knots"],
                 phot_info["obs_mags" + "_knots"][:, i],
                 rtol=RTOL,
             )
 
             assert np.allclose(
-                mock[tcurve_name + "_bulge"],
+                mock_chunk[tcurve_name + "_bulge"],
                 phot_info["obs_mags" + "_bulge"][:, i],
                 atol=ATOL,
             )
             assert np.allclose(
-                mock[tcurve_name + "_disk"],
+                mock_chunk[tcurve_name + "_disk"],
                 phot_info["obs_mags" + "_disk"][:, i],
                 atol=ATOL,
             )
             assert np.allclose(
-                mock[tcurve_name + "_knots"],
+                mock_chunk[tcurve_name + "_knots"],
                 phot_info["obs_mags" + "_knots"][:, i],
                 atol=ATOL,
             )
         except AssertionError:
             msg.append("Inconsistent recalculation of disk/bulge/knot obs_mags")
-        except KeyError:
-            if no_dbk is True:
-                pass
-            else:
-                msg.append("Missing disk/bulge/knot photometry")
 
     return msg

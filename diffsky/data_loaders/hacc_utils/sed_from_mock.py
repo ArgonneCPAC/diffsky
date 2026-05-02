@@ -142,8 +142,12 @@ def compute_dbk_phot_from_mock(mock_chunk, metadata, tcurves=None):
         sat_weights,
         halo_indx,
     )
-    phot_kern_results = dbk_phot_from_mock_merging._reproduce_dbk_mock_phot_kern(*args)
-    return phot_kern_results
+    dbk_phot_info, dbk_weights = (
+        dbk_phot_from_mock_merging._reproduce_dbk_mock_phot_kern(*args)
+    )
+    dbk_phot_info = dbk_phot_info._asdict()
+    dbk_weights = dbk_weights._asdict()
+    return dbk_phot_info, dbk_weights
 
 
 def compute_sed_from_mock(mock_chunk, metadata):
@@ -197,8 +201,9 @@ def compute_sed_from_mock(mock_chunk, metadata):
         halo_indx,
         mc_merge,
     )
-    sed_results = sed_kernels_merging._sed_kern(*args)
-    return sed_results
+    sed_info = sed_kernels_merging._sed_kern(*args)
+    sed_info = sed_info._asdict()
+    return sed_info
 
 
 def compute_dbk_sed_from_mock(mock_chunk, metadata):
