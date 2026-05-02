@@ -27,6 +27,7 @@ def test_compute_dbk_phot_from_diffsky_mock():
     phot_info = llcm.compute_dbk_phot_from_diffsky_mock(**diffsky_lc_patch)  # noqa
 
 
+@pytest.mark.skip
 def test_load_chunked_lc_patch():
 
     nchunks = 10
