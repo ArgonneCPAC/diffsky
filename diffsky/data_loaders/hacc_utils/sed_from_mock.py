@@ -4,17 +4,15 @@ from jax import numpy as jnp
 from diffmah import DEFAULT_MAH_PARAMS
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology.flat_wcdm import age_at_z
-from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
-from collections import namedtuple
+from ...experimental import mc_diffstarpop_wrappers as mcdw
 
 from ... import phot_utils
 from ...experimental import dbk_phot_from_mock_merging
 from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import (
-    dbk_kernels,
-    dbk_specphot_kernels,
     mc_randoms,
     sed_kernels_merging,
+    dbk_sed_kernels_merging,
 )
 
 
@@ -203,81 +201,63 @@ def compute_sed_from_mock(mock_chunk, metadata):
     return sed_results
 
 
-def compute_dbk_sed_from_diffsky_mock_no_merging(
-    *, diffsky_data, ssp_data, param_collection, sim_info, z_phot_table, tcurves
-):
-    dbk_phot_info = compute_dbk_phot_from_diffsky_mock(
-        diffsky_data=diffsky_data,
-        ssp_data=ssp_data,
-        param_collection=param_collection,
-        sim_info=sim_info,
-        z_phot_table=z_phot_table,
-        tcurves=tcurves,
-    )
-    t_obs = age_at_z(diffsky_data["redshift_true"], *sim_info.cosmo_params)
-
-    dbk_randoms = mc_randoms.DBKRandoms(
-        diffsky_data["fknot"], diffsky_data["uran_fbulge"]
-    )
-
-    dbk_phot_info["uran_av"] = diffsky_data["uran_av"]
-    dbk_phot_info["uran_delta"] = diffsky_data["uran_delta"]
-    dbk_phot_info["uran_funo"] = diffsky_data["uran_funo"]
-    dbk_phot_info["delta_mag_ssp_scatter"] = diffsky_data["delta_mag_ssp_scatter"]
-
-    burst_params = DEFAULT_BURST_PARAMS._make(
-        [dbk_phot_info[pname] for pname in DEFAULT_BURST_PARAMS._fields]
-    )
-
-    args = (
-        t_obs,
-        ssp_data,
-        dbk_phot_info["t_table"],
-        dbk_phot_info["sfh_table"],
-        burst_params,
-        dbk_phot_info["lgmet_weights"],
-        dbk_randoms,
-    )
-    dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(*args)
-
-    dbk_phot_info["mstar_bulge"] = dbk_weights.mstar_bulge
-    dbk_phot_info["mstar_disk"] = dbk_weights.mstar_disk
-    dbk_phot_info["mstar_knots"] = dbk_weights.mstar_knots
-
-    DBKPhotInfo = namedtuple("DBKPhotInfo", list(dbk_phot_info.keys()))
-    dbk_phot_info = DBKPhotInfo(**dbk_phot_info)
+def compute_dbk_sed_from_mock(mock_chunk, metadata):
+    t_obs = age_at_z(mock_chunk["redshift_true"], *metadata["sim_info"].cosmo_params)
 
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+        [mock_chunk[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
     mah_params = DEFAULT_MAH_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
+        [mock_chunk[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    mc_is_q = jnp.where(diffsky_data["mc_sfh_type"] == 0, True, False)
-    sed_info, __ = dbk_specphot_kernels._dbk_sed_kern(
+    t_infall = mock_chunk["t_peak"]
+    n_chunk = len(t_obs)
+    sat_weights = jnp.ones(n_chunk)
+    halo_indx = mock_chunk["top_host_idx_chunk"]
+
+    mc_is_q = jnp.where(mock_chunk["mc_sfh_type"] == 0, True, False)
+    phot_randoms = mc_randoms.PhotRandoms(
         mc_is_q,
-        diffsky_data["uran_av"],
-        diffsky_data["uran_delta"],
-        diffsky_data["uran_funo"],
-        diffsky_data["uran_pburst"],
-        diffsky_data["delta_mag_ssp_scatter"],
-        diffsky_data["uran_fbulge"],
-        diffsky_data["fknot"],
+        mock_chunk["uran_av"],
+        mock_chunk["uran_delta"],
+        mock_chunk["uran_funo"],
+        mock_chunk["uran_pburst"],
+        mock_chunk["delta_mag_ssp_scatter"],
+    )
+    merging_randoms = mc_randoms.DiffMergeRandoms(mock_chunk["uran_pmerge"])
+    dbk_randoms = mc_randoms.DBKRandoms(
+        fknot=mock_chunk["fknot"], uran_fbulge=mock_chunk["uran_fbulge"]
+    )
+
+    mc_merge = 1
+
+    args = (
+        phot_randoms,
+        dbk_randoms,
+        merging_randoms,
         sfh_params,
-        diffsky_data["redshift_true"],
+        mock_chunk["redshift_true"],
         t_obs,
         mah_params,
-        ssp_data,
-        param_collection.mzr_params,
-        param_collection.spspop_params,
-        param_collection.scatter_params,
-        param_collection.ssperr_params,
-        sim_info.cosmo_params,
-        sim_info.fb,
+        metadata["ssp_data"],
+        metadata["param_collection"].mzr_params,
+        metadata["param_collection"].spspop_params,
+        metadata["param_collection"].scatter_params,
+        metadata["param_collection"].ssperr_params,
+        metadata["param_collection"].merging_params,
+        metadata["sim_info"].cosmo_params,
+        metadata["sim_info"].fb,
+        mock_chunk["logmp_infall"],
+        mock_chunk["logmhost_infall"],
+        t_infall,
+        mock_chunk["central"],
+        sat_weights,
+        halo_indx,
+        mc_merge,
     )
-    dbk_sed_info = dbk_phot_info._asdict()
-    dbk_sed_info["rest_sed_bulge"] = sed_info.rest_sed_bulge
-    dbk_sed_info["rest_sed_disk"] = sed_info.rest_sed_disk
-    dbk_sed_info["rest_sed_knots"] = sed_info.rest_sed_knots
+    dbk_sed_info = dbk_sed_kernels_merging._dbk_sed_kern(
+        *args, n_t_table=mcdw.N_T_TABLE
+    )
+    dbk_sed_info = dbk_sed_info._asdict()
     return dbk_sed_info
