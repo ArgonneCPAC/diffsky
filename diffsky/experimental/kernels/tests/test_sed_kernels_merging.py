@@ -105,5 +105,3 @@ def test_sed_kern(mc_merge, num_halos=70, return_results=False):
         assert n_nan_cens == 0, "Some cens have NaN recomputed photometry"
         msg = "Discrepancy in recomputed photometry for cens"
         assert np.allclose(dmag[lc_data.is_central == 1], 0.0, atol=0.1), msg
-
-        # assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], atol=0.1)
