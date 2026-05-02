@@ -115,6 +115,14 @@ def load_lc_patch_collection(fn_list, keys):
     return mock
 
 
+def estimate_nchunks(fn_lc_mock, batch_size):
+    """Estimate number of chunks to approximately divide mock into batches of input size"""
+    arr = load_flat_hdf5(fn_lc_mock, dataset="data", keys=["central"])["central"]
+    n = arr.size
+    nchunks = max(1, n // batch_size)
+    return nchunks
+
+
 def load_lc_mock_chunk(fn_lc_mock, *, nchunks, chunknum, lc_mock_keys=None):
     with h5py.File(fn_lc_mock, "r") as hdf:
         if lc_mock_keys is None:
