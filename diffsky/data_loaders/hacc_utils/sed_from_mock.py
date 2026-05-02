@@ -79,52 +79,6 @@ def compute_phot_from_diffsky_mock_merging(lc_mock_chunk, metadata, tcurves=None
     return phot_kern_results, phot_randoms, merging_randoms
 
 
-def compute_phot_from_diffsky_mock(
-    *, diffsky_data, ssp_data, param_collection, sim_info, z_phot_table, tcurves
-):
-    mah_params = DEFAULT_MAH_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
-    )
-    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
-    )
-    t_obs = age_at_z(diffsky_data["redshift_true"], *sim_info.cosmo_params)
-
-    wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
-
-    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
-    )
-
-    mc_is_q = jnp.where(diffsky_data["mc_sfh_type"] == 0, True, False)
-    args = (
-        mc_is_q,
-        diffsky_data["uran_av"],
-        diffsky_data["uran_delta"],
-        diffsky_data["uran_funo"],
-        diffsky_data["uran_pburst"],
-        diffsky_data["delta_mag_ssp_scatter"],
-        sfh_params,
-        diffsky_data["redshift_true"],
-        t_obs,
-        mah_params,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
-        param_collection.mzr_params,
-        param_collection.spspop_params,
-        param_collection.scatter_params,
-        param_collection.ssperr_params,
-        sim_info.cosmo_params,
-        sim_info.fb,
-    )
-
-    phot_info = dbk_phot_from_mock._reproduce_mock_phot_kern(*args)[0]
-    phot_info = phot_info._asdict()
-    return phot_info
-
-
 def compute_dbk_phot_from_diffsky_mock(
     *, diffsky_data, ssp_data, param_collection, sim_info, z_phot_table, tcurves
 ):
