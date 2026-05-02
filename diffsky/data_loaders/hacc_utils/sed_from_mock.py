@@ -18,7 +18,9 @@ from ...experimental.kernels import (
 )
 
 
-def compute_phot_from_mock(mock_chunk, metadata, tcurves=None):
+def compute_phot_from_mock(
+    mock_chunk, metadata, tcurves=None, precomputed_ssp_mag_table=None
+):
     if tcurves is None:
         tcurves = metadata["tcurves"]
 
@@ -33,16 +35,18 @@ def compute_phot_from_mock(mock_chunk, metadata, tcurves=None):
 
     wave_eff_table = phot_utils.get_wave_eff_table(metadata["z_phot_table"], tcurves)
 
-    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        tcurves,
-        metadata["ssp_data"],
-        metadata["z_phot_table"],
-        metadata["sim_info"].cosmo_params,
-    )
     n_chunk = len(t_obs)
     sat_weights = jnp.ones(n_chunk)
     halo_indx = mock_chunk["top_host_idx_chunk"]
     t_infall = mock_chunk["t_peak"]
+
+    if precomputed_ssp_mag_table is None:
+        precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+            tcurves,
+            metadata["ssp_data"],
+            metadata["z_phot_table"],
+            metadata["sim_info"].cosmo_params,
+        )
 
     args = (
         mock_chunk["mc_sfh_type"],
@@ -75,8 +79,11 @@ def compute_phot_from_mock(mock_chunk, metadata, tcurves=None):
         halo_indx,
     )
     _res = dbk_phot_from_mock_merging._reproduce_mock_phot_kern(*args)
-    phot_kern_results, phot_randoms, merging_randoms = _res
-    return phot_kern_results, phot_randoms, merging_randoms
+    phot_info, phot_randoms, merging_randoms = _res
+    phot_info = phot_info._asdict()
+    phot_info.update(phot_randoms._asdict())
+    phot_info.update(merging_randoms._asdict())
+    return phot_info
 
 
 def compute_dbk_phot_from_mock(mock_chunk, metadata, tcurves=None):
