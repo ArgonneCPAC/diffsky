@@ -2,10 +2,13 @@
 
 import os
 from glob import glob
-
+from jax import vmap
 import h5py
 import numpy as np
 import yaml
+from dsps.photometry import photometry_kernels as phk
+
+
 from ....param_utils import diffsky_param_wrapper as dpw
 from .. import lc_mock as lcmp
 from .. import sed_from_mock
@@ -30,6 +33,10 @@ HLINE = "----------"
 CHUNKNUM_TEST = 1
 NCHUNKS = 5
 BATCH_SIZE = 200
+
+
+_A = [None, 0, None, None, 0, *[None] * 4]
+calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
 def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
@@ -103,6 +110,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
         )
         if len(msg) > 0:
             report["recomputed_dbk_photometry"] = msg
+
+    msg = check_recomputed_sed(fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test)
+    if len(msg) > 0:
+        report["recomputed_sed"] = msg
 
     return report
 
@@ -577,3 +588,62 @@ def check_recomputed_dbk_photometry(fn_lc_mock, *, nchunks, chunknum):
             msg.append("Inconsistent recalculation of disk/bulge/knot obs_mags")
 
     return msg
+
+
+def check_recomputed_sed(fn_lc_mock, *, nchunks, chunknum, return_results=False):
+    mock_chunk, metadata = load_mock_chunk_testing(
+        fn_lc_mock, nchunks=nchunks, chunknum=chunknum
+    )
+    sed_info = sed_from_mock.compute_sed_from_mock(mock_chunk, metadata)
+    phot_info = sed_from_mock.compute_phot_from_mock(mock_chunk, metadata)
+
+    msg = []
+    # Enforce agreement between precomputed vs exact magnitudes
+    n_bands = phot_info["obs_mags"].shape[1]
+    for iband in range(n_bands):
+        trans_iband = np.interp(
+            metadata["ssp_data"].ssp_wave,
+            metadata["tcurves"][iband].wave,
+            metadata["tcurves"][iband].transmission,
+        )
+        args = (
+            metadata["ssp_data"].ssp_wave,
+            sed_info["rest_sed"],
+            metadata["ssp_data"].ssp_wave,
+            trans_iband,
+            mock_chunk["redshift_true"],
+            *metadata["sim_info"].cosmo_params,
+        )
+
+        recomputed_obs_mags = calc_obs_mags_galpop(*args)
+        n_nan_cens = np.sum(
+            ~np.isfinite(recomputed_obs_mags[mock_chunk["central"] == 1])
+        )
+        n_nan_sats = np.sum(
+            ~np.isfinite(recomputed_obs_mags[mock_chunk["central"] == 0])
+        )
+
+        try:
+            s = "Some sats have NaN recomputed photometry"
+            assert n_nan_sats == 0, s
+        except AssertionError:
+            msg.append(s)
+
+        try:
+            assert n_nan_cens == 0, "Some cens have NaN recomputed photometry"
+        except AssertionError:
+            msg.append(s)
+
+        dmag = recomputed_obs_mags - phot_info["obs_mags"][:, iband]
+
+        mean_bias_plus_one_sigma = np.abs(np.mean(dmag)) + np.std(dmag)
+        try:
+            s = "Discrepancy in recomputed photometry"
+            assert mean_bias_plus_one_sigma < 0.3
+        except AssertionError:
+            msg.append(s)
+
+    if return_results:
+        return mock_chunk, metadata, sed_info, phot_info
+    else:
+        return msg
