@@ -30,9 +30,7 @@ YAML_REQ_LIST = ("drn_out", "z_min", "z_max")
 HLINE = "----------"
 
 
-CHUNKNUM_TEST = 1
-NCHUNKS = 5
-BATCH_SIZE = 200
+BATCH_SIZE = 50
 
 
 _A = [None, 0, None, None, 0, *[None] * 4]
@@ -75,14 +73,8 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if len(msg) > 0:
         report["reasonable_merging"] = msg
 
-    n_gals_tot = data["central"].size
-    nchunks_guess = n_gals_tot // BATCH_SIZE
-    if nchunks_guess < 3:
-        nchunks = 1
-        chunknum_test = 0
-    else:
-        nchunks = nchunks_guess
-        chunknum_test = 1
+    nchunks = load_lc_mock.estimate_nchunks(fn_lc_mock, BATCH_SIZE)
+    chunknum_test = int(nchunks // 2)
 
     if no_dbk or no_sed:
         pass
@@ -648,7 +640,7 @@ def check_recomputed_sed(fn_lc_mock, *, nchunks, chunknum, return_results=False)
             msg.append(s)
 
     if return_results:
-        return mock_chunk, metadata, sed_info, phot_info
+        return mock_chunk, metadata, sed_info, phot_info, msg
     else:
         return msg
 
@@ -694,6 +686,6 @@ def check_recomputed_dbk_sed(fn_lc_mock, *, nchunks, chunknum, return_results=Fa
                 msg.append(s)
 
     if return_results:
-        return mock_chunk, metadata, sed_info, phot_info
+        return mock_chunk, metadata, sed_info, phot_info, msg
     else:
         return msg
