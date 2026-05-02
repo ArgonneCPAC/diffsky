@@ -85,17 +85,28 @@ def _dbk_sed_kern(
     _w_dd = dbk_weights.ssp_weights_disk.reshape((n_gals, n_met, n_age, 1))
     _w_knot = dbk_weights.ssp_weights_knots.reshape((n_gals, n_met, n_age, 1))
 
-    mb = dbk_weights.mstar_bulge.reshape((n_gals, 1))
-    md = dbk_weights.mstar_disk.reshape((n_gals, 1))
-    mk = dbk_weights.mstar_knots.reshape((n_gals, 1))
+    mb_in_situ = dbk_weights.mstar_bulge
+    md_in_situ = dbk_weights.mstar_disk
+    mk_in_situ = dbk_weights.mstar_knots
+    mstar_in_situ = mb_in_situ + md_in_situ + mk_in_situ
+    mstar_obs = 10**sed_info.logsm_obs
+    mass_ratio = mstar_obs / mstar_in_situ
+    dbk_weights = dbk_weights._replace(
+        mstar_bulge=mass_ratio * mb_in_situ,
+        mstar_disk=mass_ratio * md_in_situ,
+        mstar_knots=mass_ratio * mk_in_situ,
+    )
+    mb_obs = dbk_weights.mstar_bulge.reshape((n_gals, 1))
+    md_obs = dbk_weights.mstar_disk.reshape((n_gals, 1))
+    mk_obs = dbk_weights.mstar_knots.reshape((n_gals, 1))
 
     a = sed_info.dust_frac_trans.reshape((n_gals, 1, n_age, n_wave))
     b = sed_info.frac_ssp_errors.reshape((n_gals, 1, 1, n_wave))
     d = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
 
-    sed_bulge = jnp.sum(a * b * _w_bulge * d, axis=(1, 2)) * mb
-    sed_disk = jnp.sum(a * b * _w_dd * d, axis=(1, 2)) * md
-    sed_knots = jnp.sum(a * b * _w_knot * d, axis=(1, 2)) * mk
+    sed_bulge = jnp.sum(a * b * _w_bulge * d, axis=(1, 2)) * mb_obs
+    sed_disk = jnp.sum(a * b * _w_dd * d, axis=(1, 2)) * md_obs
+    sed_knots = jnp.sum(a * b * _w_knot * d, axis=(1, 2)) * mk_obs
 
     new_keys = ["rest_sed_bulge", "rest_sed_disk", "rest_sed_knots"]
 
