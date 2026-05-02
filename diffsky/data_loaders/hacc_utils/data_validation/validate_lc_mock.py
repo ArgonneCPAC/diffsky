@@ -115,6 +115,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if len(msg) > 0:
         report["recomputed_sed"] = msg
 
+    msg = check_recomputed_dbk_sed(fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test)
+    if len(msg) > 0:
+        report["recomputed_dbk_sed"] = msg
+
     return report
 
 
@@ -642,6 +646,52 @@ def check_recomputed_sed(fn_lc_mock, *, nchunks, chunknum, return_results=False)
             assert mean_bias_plus_one_sigma < 0.3
         except AssertionError:
             msg.append(s)
+
+    if return_results:
+        return mock_chunk, metadata, sed_info, phot_info
+    else:
+        return msg
+
+
+def check_recomputed_dbk_sed(fn_lc_mock, *, nchunks, chunknum, return_results=False):
+    mock_chunk, metadata = load_mock_chunk_testing(
+        fn_lc_mock, nchunks=nchunks, chunknum=chunknum
+    )
+    sed_info = sed_from_mock.compute_dbk_sed_from_mock(mock_chunk, metadata)
+    phot_info, dbk_weights = sed_from_mock.compute_dbk_phot_from_mock(
+        mock_chunk, metadata
+    )
+
+    msg = []
+
+    # Enforce agreement between precomputed vs exact magnitudes
+    n_bands = phot_info["obs_mags"].shape[1]
+    for iband in range(n_bands):
+        trans_iband = np.interp(
+            metadata["ssp_data"].ssp_wave,
+            metadata["tcurves"][iband].wave,
+            metadata["tcurves"][iband].transmission,
+        )
+        for k in ("bulge", "disk", "knots"):
+            sed_key = "_".join(("rest_sed", k))
+            args = (
+                metadata["ssp_data"].ssp_wave,
+                sed_info[sed_key],
+                metadata["ssp_data"].ssp_wave,
+                trans_iband,
+                mock_chunk["redshift_true"],
+                *metadata["sim_info"].cosmo_params,
+            )
+            recomputed_mags = calc_obs_mags_galpop(*args)
+            colname = "_".join(("obs_mags", k))
+            orig_mags = phot_info[colname][:, iband]
+            dmag = recomputed_mags - orig_mags
+            mean_bias_plus_one_sigma = np.abs(np.mean(dmag)) + np.std(dmag)
+            try:
+                s = "Discrepancy in recomputed photometry"
+                assert mean_bias_plus_one_sigma < 0.3
+            except AssertionError:
+                msg.append(s)
 
     if return_results:
         return mock_chunk, metadata, sed_info, phot_info
