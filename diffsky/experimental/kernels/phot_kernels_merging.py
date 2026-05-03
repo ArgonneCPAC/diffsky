@@ -26,7 +26,7 @@ def _mc_phot_kern_merging(
     spspop_params,
     scatter_params,
     ssp_err_pop_params,
-    merge_params,
+    merging_params,
     cosmo_params,
     fb,
     logmp_infall,
@@ -58,7 +58,7 @@ def _mc_phot_kern_merging(
         spspop_params,
         scatter_params,
         ssp_err_pop_params,
-        merge_params,
+        merging_params,
         cosmo_params,
         fb,
         logmp_infall,
@@ -89,7 +89,7 @@ def _phot_kern_merging(
     spspop_params,
     scatter_params,
     ssp_err_pop_params,
-    merge_params,
+    merging_params,
     cosmo_params,
     fb,
     logmp_infall,
@@ -125,7 +125,7 @@ def _phot_kern_merging(
         phot_kern_results,
         merging_randoms,
         t_obs,
-        merge_params,
+        merging_params,
         logmp_infall,
         logmhost_infall,
         t_infall,
@@ -152,7 +152,7 @@ def _get_phot_kern_merging_quantities(
     phot_kern_results,
     merging_randoms,
     t_obs,
-    merge_params,
+    merging_params,
     logmp_infall,
     logmhost_infall,
     t_infall,
@@ -163,7 +163,7 @@ def _get_phot_kern_merging_quantities(
 ):
     upids = jnp.where(is_central == 1, -1.0, 0.0)
     p_merge = merging_model.get_p_merge_from_merging_params(
-        merge_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
+        merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
     )
 
     # If mc_merge=1, implement Monte Carlo merging, else p_merge is a float
