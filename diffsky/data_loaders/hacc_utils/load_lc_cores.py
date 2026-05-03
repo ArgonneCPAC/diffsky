@@ -1,6 +1,20 @@
 """"""
 
 
+def compute_read_start_end_for_chunk(nchunks, chunknum, offset, count):
+    nindex = len(offset)
+    nstart = (nindex // nchunks) * chunknum
+    nend = (nindex // nchunks) * (chunknum + 1)
+
+    read_start = offset[nstart]
+    if chunknum == nchunks - 1:
+        read_end = offset[-1] + count[-1]
+    else:
+        read_end = offset[nend]
+
+    return read_start, read_end
+
+
 def _read_lc_cores_chunk(fobj, nchunks, chunknum, keys_to_read, index_dataset=None):
     """Read a forest-complete chunk of data from lc_cores"""
 
@@ -9,17 +23,12 @@ def _read_lc_cores_chunk(fobj, nchunks, chunknum, keys_to_read, index_dataset=No
     else:
         index_dataset = fobj[index_dataset]
 
-    nindex = len(index_dataset["index"]["offset"])
-    nstart = (nindex // nchunks) * chunknum
-    nend = (nindex // nchunks) * (chunknum + 1)
-
-    read_start = index_dataset["index"]["offset"][nstart]
-    if chunknum == nchunks - 1:
-        read_end = (
-            index_dataset["index"]["offset"][-1] + index_dataset["index"]["count"][-1]
-        )
-    else:
-        read_end = index_dataset["index"]["offset"][nend]
+    read_start, read_end = compute_read_start_end_for_chunk(
+        nchunks,
+        chunknum,
+        index_dataset["index"]["offset"],
+        index_dataset["index"]["count"],
+    )
 
     lc_cores_chunk = {}
     for key in keys_to_read:
