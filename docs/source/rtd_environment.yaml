@@ -12,10 +12,15 @@ dependencies:
   - sphinx=7.2.4
   - sphinx-copybutton
   - numpy>=2
-  - jax>=0.10.0
+  - jax
+  - jaxlib
+  - dsps
   - diffmah>=0.7.2
   - diffstar>=1.0.0
-  - dsps
+  - diffhalos
   - h5py
   - mpi4py
   - mpich
+  - pip:
+    - git+https://github.com/AstroPatty/diffpipe.git
+    - git+https://github.com/ArgonneCPAC/opencosmo.git
