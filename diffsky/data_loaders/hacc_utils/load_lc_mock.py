@@ -70,8 +70,9 @@ def load_mock_metadata(fn_mock):
             metadata_dict["z_phot_table"] = z_phot_table
 
             if "index" in hdf["metadata"].keys():
-                for indx_name, indx_val in hdf["metadata"]["index"].attrs.items():
-                    index_data[indx_name] = indx_val
+                index_data["offset"] = hdf["metadata"]["index"]["offset"][...]
+                index_data["count"] = hdf["metadata"]["index"]["count"][...]
+                index_data["unique_id"] = hdf["metadata"]["index"]["unique_id"][...]
                 metadata_dict["index"] = index_data
 
     drn_mock = os.path.dirname(fn_mock)
@@ -125,29 +126,20 @@ def load_lc_mock_chunk(fn_lc_mock, *, nchunks, chunknum, lc_mock_keys=None):
     return lc_mock, (istart, iend)
 
 
-def load_diffsky_lc_patch(drn_mock, bn_mock):
-    fn_mock = os.path.join(drn_mock, bn_mock)
-    diffsky_data = load_flat_hdf5(fn_mock, dataset="data")
+def get_lc_mock_chunk(lc_mock, metadata, *, nchunks, chunknum, lc_mock_keys=None):
+    if lc_mock_keys is None:
+        lc_mock_keys = list(lc_mock.keys())
 
-    with h5py.File(fn_mock, "r") as hdf:
-        mock_version_name = hdf["metadata"].attrs["mock_version_name"]
-
-    tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
-    ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
-    sim_info = lcmp.load_diffsky_sim_info(fn_mock)
-
-    param_collection = lcmp.load_diffsky_param_collection_merging(
-        drn_mock, mock_version_name
+    offset = metadata["index"]["offset"]
+    count = metadata["index"]["count"]
+    read_start, read_end = llcc.compute_read_start_end_for_chunk(
+        nchunks, chunknum, offset, count
     )
+    lc_mock_chunk = {key: lc_mock[key][read_start:read_end] for key in lc_mock_keys}
+    return lc_mock_chunk
 
-    z_phot_table = lcmp.load_diffsky_z_phot_table(fn_mock)
 
-    diffsky_lc_patch = dict(
-        diffsky_data=diffsky_data,
-        ssp_data=ssp_data,
-        param_collection=param_collection,
-        z_phot_table=z_phot_table,
-        tcurves=tcurves,
-        sim_info=sim_info,
-    )
-    return diffsky_lc_patch
+def load_diffsky_lc_patch(fn_mock, keys=None):
+    diffsky_data = load_flat_hdf5(fn_mock, dataset="data", keys=keys)
+    metadata = load_mock_metadata(fn_mock)
+    return diffsky_data, metadata
