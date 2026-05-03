@@ -42,4 +42,4 @@ All the publicly available mocks are located at the following path on NERSC::
 
 For the most recent version of the mocks::
 
-    cosmos_260316_04_26_2026 (30 deg^2)
+    cosmos_260316_05_03_2026 (30 deg^2)
