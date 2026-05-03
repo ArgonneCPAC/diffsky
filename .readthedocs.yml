@@ -28,10 +28,11 @@ build:
       - mkdir -p docs/source/mock_download_dir
       - cp ci_test_output/dummy_version_name/* docs/source/mock_download_dir/
 
-      - mkdir -p docs/source/download_dir
-      - cp ci_test_output/dummy_version_name/* docs/source/download_dir/
-      - rm docs/source/download_dir/lc_cores*.hdf5
-      # - diffpipe run ci_test_output/dummy_version_name docs/source/download_dir -n 2
+      # Use the toolkit to create OpenCosmo-formatted data
+      # - mkdir -p docs/source/oc_download_dir
+      # - cp ci_test_output/dummy_version_name/* docs/source/oc_download_dir/
+      # - rm docs/source/oc_download_dir/lc_cores*.hdf5
+      # - diffpipe run ci_test_output/dummy_version_name docs/source/oc_download_dir -n 2
 
 conda:
   environment: docs/source/rtd_environment.yaml
