@@ -7,7 +7,6 @@ from dsps.cosmology.flat_wcdm import age_at_z
 from ...experimental import mc_diffstarpop_wrappers as mcdw
 
 from ... import phot_utils
-from ...experimental import dbk_phot_from_mock_merging
 from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import (
     mc_randoms,
@@ -15,6 +14,7 @@ from ...experimental.kernels import (
     sed_kernels_merging,
     dbk_sed_kernels_merging,
 )
+from ...experimental.kernels import dbk_specphot_kernels_merging as dbkspkm
 
 
 def compute_phot_from_mock(
@@ -117,17 +117,29 @@ def compute_dbk_phot_from_mock(mock_chunk, metadata, tcurves=None):
     halo_indx = mock_chunk["top_host_idx_chunk"]
     t_infall = mock_chunk["t_peak"]
 
-    args = (
-        mock_chunk["mc_sfh_type"],
+    mc_is_q = mock_chunk["mc_sfh_type"] == 0
+    phot_randoms = mc_randoms.PhotRandoms(
+        mc_is_q,
         mock_chunk["uran_av"],
         mock_chunk["uran_delta"],
         mock_chunk["uran_funo"],
         mock_chunk["uran_pburst"],
         mock_chunk["delta_mag_ssp_scatter"],
-        mock_chunk["uran_fbulge"],
-        mock_chunk["fknot"],
-        mock_chunk["uran_pmerge"],
+    )
+
+    dbk_randoms = mc_randoms.DBKRandoms(
+        fknot=mock_chunk["fknot"], uran_fbulge=mock_chunk["uran_fbulge"]
+    )
+    merging_randoms = mc_randoms.DiffMergeRandoms(mock_chunk["uran_pmerge"])
+    line_wave_table = jnp.array(metadata["ssp_data"].ssp_emline_wave)
+
+    mc_merge = 1
+
+    args = (
+        phot_randoms,
         sfh_params,
+        dbk_randoms,
+        merging_randoms,
         mock_chunk["redshift_true"],
         t_obs,
         mah_params,
@@ -135,6 +147,7 @@ def compute_dbk_phot_from_mock(mock_chunk, metadata, tcurves=None):
         precomputed_ssp_mag_table,
         metadata["z_phot_table"],
         wave_eff_table,
+        line_wave_table,
         param_collection.mzr_params,
         param_collection.spspop_params,
         param_collection.scatter_params,
@@ -148,10 +161,10 @@ def compute_dbk_phot_from_mock(mock_chunk, metadata, tcurves=None):
         mock_chunk["central"],
         sat_weights,
         halo_indx,
+        mc_merge,
     )
-    dbk_phot_info, dbk_weights = (
-        dbk_phot_from_mock_merging._reproduce_dbk_mock_phot_kern(*args)
-    )
+
+    dbk_phot_info, dbk_weights = dbkspkm._dbk_specphot_kern_merging(*args)
     dbk_phot_info = dbk_phot_info._asdict()
     dbk_weights = dbk_weights._asdict()
     return dbk_phot_info, dbk_weights
