@@ -8,6 +8,7 @@ import numpy as np
 from . import hacc_core_utils as hcu
 from . import lc_mock as lcmp
 from . import load_lc_cores as llcc
+from . import lightcone_utils
 from .. import load_flat_hdf5
 
 
@@ -75,7 +76,17 @@ def load_mock_metadata(fn_mock):
                 index_data["unique_id"] = hdf["metadata"]["index"]["unique_id"][...]
                 metadata_dict["index"] = index_data
 
+    bn_mock = os.path.basename(fn_mock)
+    stepnum, lc_patch = lcmp.get_patch_info_from_mock_basename(bn_mock)
+    metadata_dict["stepnum"] = stepnum
+    metadata_dict["lc_patch"] = lc_patch
+
     drn_mock = os.path.dirname(fn_mock)
+    fn_lc_patch_decomp = os.path.join(drn_mock, "lc_cores-decomposition.txt")
+    if os.path.isfile(fn_lc_patch_decomp):
+        _res = lightcone_utils.read_lc_ra_dec_patch_decomposition(fn_lc_patch_decomp)
+        patch_decomposition, __, solid_angles = _res
+        metadata_dict["sky_area_degsq"] = solid_angles[lc_patch]
 
     ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, metadata_dict["mock_version_name"])
     metadata_dict["ssp_data"] = ssp_data
