@@ -75,7 +75,7 @@ def test_reproduce_mock_dbk_kern():
     mzr_params = dpw.DEFAULT_PARAM_COLLECTION[1]
     spspop_params = dpw.DEFAULT_PARAM_COLLECTION[2]
     scatter_params = dpw.DEFAULT_PARAM_COLLECTION[3]
-    ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
+    ssperr_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
     dbk_phot_info = mc_phot.mc_lc_dbk_phot(
         ran_key,
@@ -84,7 +84,7 @@ def test_reproduce_mock_dbk_kern():
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         DEFAULT_COSMOLOGY,
         FB,
     )
@@ -115,7 +115,7 @@ def test_reproduce_mock_dbk_kern():
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         DEFAULT_COSMOLOGY,
         FB,
     )
@@ -152,7 +152,7 @@ def test_reproduce_mock_phot_kern():
     mzr_params = dpw.DEFAULT_PARAM_COLLECTION[1]
     spspop_params = dpw.DEFAULT_PARAM_COLLECTION[2]
     scatter_params = dpw.DEFAULT_PARAM_COLLECTION[3]
-    ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
+    ssperr_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
     dbk_phot_info = mc_phot.mc_lc_dbk_phot(
         ran_key,
@@ -161,7 +161,7 @@ def test_reproduce_mock_phot_kern():
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         DEFAULT_COSMOLOGY,
         FB,
     )
@@ -190,7 +190,7 @@ def test_reproduce_mock_phot_kern():
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         DEFAULT_COSMOLOGY,
         FB,
     )
@@ -216,7 +216,7 @@ def test_reproduce_mock_sed_kern():
     mzr_params = dpw.DEFAULT_PARAM_COLLECTION[1]
     spspop_params = dpw.DEFAULT_PARAM_COLLECTION[2]
     scatter_params = dpw.DEFAULT_PARAM_COLLECTION[3]
-    ssp_err_pop_params = dpw.DEFAULT_PARAM_COLLECTION[4]
+    ssperr_params = dpw.DEFAULT_PARAM_COLLECTION[4]
 
     dbk_phot_info = mc_phot.mc_lc_dbk_phot(
         ran_key,
@@ -225,7 +225,7 @@ def test_reproduce_mock_sed_kern():
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         DEFAULT_COSMOLOGY,
         FB,
     )
@@ -254,7 +254,7 @@ def test_reproduce_mock_sed_kern():
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         DEFAULT_COSMOLOGY,
         FB,
     )

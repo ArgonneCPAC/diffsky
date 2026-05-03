@@ -1,5 +1,6 @@
 # flake8: noqa: E402
 """ """
+
 from jax import config
 
 config.update("jax_enable_x64", True)
@@ -160,7 +161,7 @@ def multiband_lc_phot_kern(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
     cosmo_params,
     fb,
 ):
@@ -231,10 +232,10 @@ def multiband_lc_phot_kern(
 
     # Delta mags
     frac_ssp_err_q = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
-        ssp_err_pop_params, diffstar_galpop.logsm_obs_q, z_obs, wave_eff_galpop
+        ssperr_params, diffstar_galpop.logsm_obs_q, z_obs, wave_eff_galpop
     )
     frac_ssp_err_ms = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
-        ssp_err_pop_params, diffstar_galpop.logsm_obs_ms, z_obs, wave_eff_galpop
+        ssperr_params, diffstar_galpop.logsm_obs_ms, z_obs, wave_eff_galpop
     )
 
     ran_key, dust_key = jran.split(ran_key, 2)
