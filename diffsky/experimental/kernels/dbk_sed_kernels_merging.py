@@ -1,18 +1,14 @@
 """"""
 
 from collections import namedtuple
-from . import sed_kernels_merging as sedkm
-from .. import mc_diffstarpop_wrappers as mcdw
-
-from collections import namedtuple
 from functools import partial
 
 from jax import jit as jjit
 from jax import numpy as jnp
 
-
-from .. import mc_diffstarpop_wrappers as mcdw
+from . import sed_kernels_merging as sedkm
 from . import dbk_kernels
+from .. import mc_diffstarpop_wrappers as mcdw
 
 
 @partial(jjit, static_argnames=["n_t_table"])
