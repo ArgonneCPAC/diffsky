@@ -136,6 +136,8 @@ def get_lc_mock_chunk(lc_mock, metadata, *, nchunks, chunknum, lc_mock_keys=None
         nchunks, chunknum, offset, count
     )
     lc_mock_chunk = {key: lc_mock[key][read_start:read_end] for key in lc_mock_keys}
+
+    lc_mock_chunk["top_host_idx_chunk"] = lc_mock_chunk["top_host_idx"] - read_start
     return lc_mock_chunk
 
 
