@@ -27,8 +27,8 @@ build:
       - wget -q https://portal.nersc.gov/project/hacc/aphearin/diffsky_data/cosmos_260316_05_03_2026/diffsky_cosmos_260316_05_03_2026_ssp_data.hdf5 -P docs/source/mock_download_dir
       - wget -q https://portal.nersc.gov/project/hacc/aphearin/diffsky_data/cosmos_260316_05_03_2026/diffsky_cosmos_260316_05_03_2026_transmission_curves.hdf5 -P docs/source/mock_download_dir
       - wget -q https://portal.nersc.gov/project/hacc/aphearin/diffsky_data/cosmos_260316_05_03_2026/diffsky_cosmos_260316_05_03_2026_t_table.hdf5 -P docs/source/mock_download_dir
-      - wget -q https://portal.nersc.gov/project/hacc/aphearin/diffsky_data/cosmos_260316_05_03_2026/lc_cores-432.0.diffsky_gals.hdf5 -P docs/source/mock_download_dir
       - wget -q https://portal.nersc.gov/project/hacc/aphearin/diffsky_data/cosmos_260316_05_03_2026/lc_cores-442.0.diffsky_gals.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://portal.nersc.gov/project/hacc/aphearin/diffsky_data/cosmos_260316_05_03_2026/lc_cores-453.0.diffsky_gals.hdf5 -P docs/source/mock_download_dir
       - wget -q https://portal.nersc.gov/project/hacc/aphearin/diffsky_data/cosmos_260316_05_03_2026/lc_cores-decomposition.txt -P docs/source/mock_download_dir
 
 
