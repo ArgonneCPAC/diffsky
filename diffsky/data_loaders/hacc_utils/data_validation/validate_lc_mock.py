@@ -597,7 +597,6 @@ def check_recomputed_sed(fn_lc_mock, *, nchunks, chunknum, return_results=False)
 
     msg = []
     # Enforce agreement between precomputed vs exact magnitudes
-    n_bands = phot_info["obs_mags"].shape[1]
     for iband, tcurve_name in enumerate(metadata["tcurves"]._fields):
         trans_iband = np.interp(
             metadata["ssp_data"].ssp_wave,
@@ -660,7 +659,6 @@ def check_recomputed_dbk_sed(fn_lc_mock, *, nchunks, chunknum, return_results=Fa
     msg = []
 
     # Enforce agreement between precomputed vs exact magnitudes
-    n_bands = phot_info["obs_mags"].shape[1]
     for iband, tcurve_name in enumerate(metadata["tcurves"]._fields):
         trans_iband = np.interp(
             metadata["ssp_data"].ssp_wave,
