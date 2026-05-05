@@ -62,7 +62,7 @@ jobs:
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffhalos.git
           python -m pip install --no-build-isolation --no-deps -e .
 
-      - name: check env
+      - name: check numpy and astropy version
         shell: bash -l {0}
         run: |
           python -c "import numpy, astropy; print(numpy.__version__, astropy.__version__)"

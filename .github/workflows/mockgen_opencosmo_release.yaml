@@ -51,7 +51,7 @@ jobs:
             setuptools \
             "setuptools_scm>=7,<8" \
             matplotlib \
-            astropy>=6.1 \
+            astropy>=7 \
             h5py \
             mpi4py \
             mpich \
