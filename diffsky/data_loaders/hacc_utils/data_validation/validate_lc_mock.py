@@ -512,7 +512,7 @@ def check_recomputed_photometry(fn_lc_mock, *, nchunks, chunknum):
             magdiff = mock_chunk[tcurve_name] - phot_info["obs_mags"][:, i]
             assert np.mean(np.abs(magdiff) > 0.1) < 0.01
         except AssertionError:
-            msg.append("Inconsistent recalculation of obs_mags")
+            msg.append(f"Inconsistent recalculation of approximate {tcurve_name}")
 
         try:
             _k = "_in_situ"
@@ -529,7 +529,9 @@ def check_recomputed_photometry(fn_lc_mock, *, nchunks, chunknum):
             magdiff = mock_chunk[tcurve_name + _k] - phot_info["obs_mags" + _k][:, i]
             assert np.mean(np.abs(magdiff) > 0.1) < 0.01
         except AssertionError:
-            msg.append("Inconsistent recalculation of obs_mags_in_situ")
+            msg.append(
+                f"Inconsistent recalculation of approximate {tcurve_name}_in_situ"
+            )
         except KeyError:
             pass  # Not all mocks include in-situ columns
 
@@ -581,7 +583,7 @@ def check_recomputed_dbk_photometry(fn_lc_mock, *, nchunks, chunknum):
                 atol=ATOL,
             )
         except AssertionError:
-            msg.append("Inconsistent recalculation of disk/bulge/knot obs_mags")
+            msg.append(f"Inconsistent recalculation of disk/bulge/knot {tcurve_name}")
 
     return msg
 
@@ -596,7 +598,7 @@ def check_recomputed_sed(fn_lc_mock, *, nchunks, chunknum, return_results=False)
     msg = []
     # Enforce agreement between precomputed vs exact magnitudes
     n_bands = phot_info["obs_mags"].shape[1]
-    for iband in range(n_bands):
+    for iband, tcurve_name in enumerate(metadata["tcurves"]._fields):
         trans_iband = np.interp(
             metadata["ssp_data"].ssp_wave,
             metadata["tcurves"][iband].wave,
@@ -634,7 +636,7 @@ def check_recomputed_sed(fn_lc_mock, *, nchunks, chunknum, return_results=False)
 
         mean_bias_plus_one_sigma = np.abs(np.mean(dmag)) + np.std(dmag)
         try:
-            s = "Discrepancy in recomputed photometry"
+            s = f"Discrepancy between approx {tcurve_name} and recalculation from SED"
             assert mean_bias_plus_one_sigma < 0.3
             assert not np.any(np.abs(dmag) > 2)
         except AssertionError:
@@ -659,7 +661,7 @@ def check_recomputed_dbk_sed(fn_lc_mock, *, nchunks, chunknum, return_results=Fa
 
     # Enforce agreement between precomputed vs exact magnitudes
     n_bands = phot_info["obs_mags"].shape[1]
-    for iband in range(n_bands):
+    for iband, tcurve_name in enumerate(metadata["tcurves"]._fields):
         trans_iband = np.interp(
             metadata["ssp_data"].ssp_wave,
             metadata["tcurves"][iband].wave,
@@ -681,7 +683,7 @@ def check_recomputed_dbk_sed(fn_lc_mock, *, nchunks, chunknum, return_results=Fa
             dmag = recomputed_mags - orig_mags
             mean_bias_plus_one_sigma = np.abs(np.mean(dmag)) + np.std(dmag)
             try:
-                s = "Discrepancy in recomputed photometry"
+                s = f"Discrepancy between approx {tcurve_name} and recalculation from DBK SED"
                 assert mean_bias_plus_one_sigma < 0.3
                 assert not np.any(np.abs(dmag) > 2)
             except AssertionError:
