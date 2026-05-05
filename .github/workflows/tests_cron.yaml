@@ -49,7 +49,7 @@ jobs:
             setuptools \
             "setuptools_scm>=7,<8" \
             matplotlib \
-            astropy>=6.1 \
+            astropy>=7.0 \
             readme_renderer \
             python-build
           pip uninstall diffmah --yes
