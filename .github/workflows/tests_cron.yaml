@@ -1,4 +1,4 @@
-name: weekly test all deps
+name: weekly pytest latest diffstuff all deps
 
 on:
   workflow_dispatch: null

@@ -1,4 +1,4 @@
-name: pytest all deps
+name: pytest latest diffstuff
 
 on:
   push:
