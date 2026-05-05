@@ -49,7 +49,6 @@ jobs:
             setuptools \
             "setuptools_scm>=7,<8" \
             matplotlib \
-            astropy>=7.0 \
             readme_renderer \
             python-build
           pip uninstall diffmah --yes
@@ -61,11 +60,6 @@ jobs:
           pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffhalos.git
           python -m pip install --no-build-isolation --no-deps -e .
-
-      - name: check numpy and astropy version
-        shell: bash -l {0}
-        run: |
-          python -c "import numpy, astropy; print(numpy.__version__, astropy.__version__)"
 
       - name: test
         shell: bash -l {0}
