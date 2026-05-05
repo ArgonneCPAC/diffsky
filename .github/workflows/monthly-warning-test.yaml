@@ -46,7 +46,6 @@ jobs:
             setuptools \
             "setuptools_scm>=7,<8" \
             matplotlib \
-            astropy>=7 \
             python-build
           pip uninstall diffmah --yes
           pip uninstall diffstar --yes
@@ -58,10 +57,10 @@ jobs:
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffhalos.git
           python -m pip install --no-build-isolation --no-deps -e .
 
-      - name: check numpy and astropy version
+      - name: check numpy version
         shell: bash -l {0}
         run: |
-          python -c "import numpy, astropy; print(numpy.__version__, astropy.__version__)"
+          python -c "import numpy; print(numpy.__version__)"
 
       - name: test that no warnings are raised
         shell: bash -l {0}

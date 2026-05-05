@@ -51,7 +51,6 @@ jobs:
             setuptools \
             "setuptools_scm>=7,<8" \
             matplotlib \
-            astropy>=7 \
             h5py \
             mpi4py \
             mpich
@@ -63,10 +62,10 @@ jobs:
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/dsps.git
           python -m pip install --no-build-isolation --no-deps -e .
 
-      - name: check numpy and astropy version
+      - name: check numpy version
         shell: bash -l {0}
         run: |
-          python -c "import numpy, astropy; print(numpy.__version__, astropy.__version__)"
+          python -c "import numpy; print(numpy.__version__)"
 
       - name: run disk optimization script
         shell: bash -l {0}

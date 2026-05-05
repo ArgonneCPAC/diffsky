@@ -57,6 +57,10 @@ jobs:
           pip install --no-deps git+https://github.com/ArgonneCPAC/diffhalos.git
           python -m pip install --no-build-isolation --no-deps -e .
 
+      - name: check numpy version
+        shell: bash -l {0}
+        run: |
+          python -c "import numpy; print(numpy.__version__)"
 
       - name: test
         shell: bash -l {0}
