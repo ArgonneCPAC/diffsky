@@ -1,4 +1,4 @@
-name: Test script for optimizing galaxy shapes
+name: script optimizing galaxy shapes
 
 on:
   workflow_dispatch: null

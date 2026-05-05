@@ -1,4 +1,4 @@
-name: Test with Main Branch Dependencies
+name: pytest all deps
 
 on:
   push:

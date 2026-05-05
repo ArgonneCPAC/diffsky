@@ -1,4 +1,4 @@
-name: Test against latest diffstuff releases
+name: pytest with latest diffstuff releases
 
 on:
   push:

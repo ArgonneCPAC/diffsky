@@ -1,4 +1,4 @@
-name: Weekly cron testing
+name: weekly test all deps
 
 on:
   workflow_dispatch: null

@@ -1,4 +1,4 @@
-name: Monthly test for warnings in diffstuff main branches
+name: Monthly test for warnings
 
 on:
   workflow_dispatch: null

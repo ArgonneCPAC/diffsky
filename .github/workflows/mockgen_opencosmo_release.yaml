@@ -1,4 +1,4 @@
-name: Test make_lj_mock.py runs with synthetic halos (latest release of opencosmo)
+name: make_lj_mock.py synthetic halos (opencosmo latest)
 
 on:
   workflow_dispatch: null
