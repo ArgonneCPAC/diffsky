@@ -62,7 +62,7 @@ def test_multiband_lc_phot_kern():
 
     spspop_params = spspu.DEFAULT_SPSPOP_PARAMS
     scatter_params = DEFAULT_SCATTER_PARAMS
-    ssp_err_pop_params = ssp_err_model.DEFAULT_SSPERR_PARAMS
+    ssperr_params = ssp_err_model.DEFAULT_SSPERR_PARAMS
 
     args = (
         ran_key,
@@ -79,7 +79,7 @@ def test_multiband_lc_phot_kern():
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         DEFAULT_COSMOLOGY,
         FB,
     )

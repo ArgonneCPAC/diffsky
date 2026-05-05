@@ -25,3 +25,11 @@ def test_load_diffsky_lc_patch():
 def test_compute_dbk_phot_from_diffsky_mock():
     diffsky_lc_patch = llcm.load_diffsky_lc_patch(TESTING_DATA, BN_MOCK)
     phot_info = llcm.compute_dbk_phot_from_diffsky_mock(**diffsky_lc_patch)  # noqa
+
+
+@pytest.mark.skip
+def test_load_chunked_lc_patch():
+
+    nchunks = 10
+    chunknum = 0
+    llcm.load_lc_mock_chunk("testing.hdf5", nchunks, chunknum)

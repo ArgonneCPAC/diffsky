@@ -1,23 +1,15 @@
 """"""
 
 import os
-from collections import namedtuple
 from glob import glob
 
 import h5py
 import numpy as np
-from diffmah import DEFAULT_MAH_PARAMS
-from diffstar import DEFAULT_DIFFSTAR_PARAMS
-from dsps.cosmology.flat_wcdm import age_at_z
-from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
-
-from ... import phot_utils
-from ...data_loaders import load_flat_hdf5
-from ...experimental import dbk_phot_from_mock
-from ...experimental import precompute_ssp_phot as psspp
-from ...experimental.kernels import dbk_kernels, dbk_specphot_kernels, mc_randoms
 from . import hacc_core_utils as hcu
 from . import lc_mock as lcmp
+from . import load_lc_cores as llcc
+from . import lightcone_utils
+from .. import load_flat_hdf5
 
 
 def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list, keys=None):
@@ -79,11 +71,22 @@ def load_mock_metadata(fn_mock):
             metadata_dict["z_phot_table"] = z_phot_table
 
             if "index" in hdf["metadata"].keys():
-                for indx_name, indx_val in hdf["metadata"]["index"].attrs.items():
-                    index_data[indx_name] = indx_val
+                index_data["offset"] = hdf["metadata"]["index"]["offset"][...]
+                index_data["count"] = hdf["metadata"]["index"]["count"][...]
+                index_data["unique_id"] = hdf["metadata"]["index"]["unique_id"][...]
                 metadata_dict["index"] = index_data
 
+    bn_mock = os.path.basename(fn_mock)
+    stepnum, lc_patch = lcmp.get_patch_info_from_mock_basename(bn_mock)
+    metadata_dict["stepnum"] = stepnum
+    metadata_dict["lc_patch"] = lc_patch
+
     drn_mock = os.path.dirname(fn_mock)
+    fn_lc_patch_decomp = os.path.join(drn_mock, "lc_cores-decomposition.txt")
+    if os.path.isfile(fn_lc_patch_decomp):
+        _res = lightcone_utils.read_lc_ra_dec_patch_decomposition(fn_lc_patch_decomp)
+        patch_decomposition, __, solid_angles = _res
+        metadata_dict["sky_area_degsq"] = solid_angles[lc_patch]
 
     ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, metadata_dict["mock_version_name"])
     metadata_dict["ssp_data"] = ssp_data
@@ -94,7 +97,7 @@ def load_mock_metadata(fn_mock):
     sim_info = lcmp.load_diffsky_sim_info(fn_mock)
     metadata_dict["sim_info"] = sim_info
 
-    param_collection = lcmp.load_diffsky_param_collection(
+    param_collection = lcmp.load_diffsky_param_collection_merging(
         drn_mock, metadata_dict["mock_version_name"]
     )
     metadata_dict["param_collection"] = param_collection
@@ -114,259 +117,42 @@ def load_lc_patch_collection(fn_list, keys):
     return mock
 
 
-def load_diffsky_lc_patch(drn_mock, bn_mock):
-    fn_mock = os.path.join(drn_mock, bn_mock)
-    diffsky_data = load_flat_hdf5(fn_mock, dataset="data")
+def estimate_nchunks(fn_lc_mock, batch_size):
+    """Estimate number of chunks to approximately divide mock into batches of input size"""
+    arr = load_flat_hdf5(fn_lc_mock, dataset="data", keys=["central"])["central"]
+    n = arr.size
+    nchunks = max(1, n // batch_size)
+    return nchunks
 
-    with h5py.File(fn_mock, "r") as hdf:
-        mock_version_name = hdf["metadata"].attrs["mock_version_name"]
 
-    tcurves = lcmp.load_diffsky_tcurves(drn_mock, mock_version_name)
-    ssp_data = lcmp.load_diffsky_ssp_data(drn_mock, mock_version_name)
-    sim_info = lcmp.load_diffsky_sim_info(fn_mock)
+def load_lc_mock_chunk(fn_lc_mock, *, nchunks, chunknum, lc_mock_keys=None):
+    with h5py.File(fn_lc_mock, "r") as hdf:
+        if lc_mock_keys is None:
+            lc_mock_keys = list(hdf["data"].keys())
 
-    param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
+        lc_mock, (istart, iend) = llcc._read_lc_cores_chunk(
+            hdf, nchunks, chunknum, lc_mock_keys, index_dataset="metadata"
+        )
 
-    z_phot_table = lcmp.load_diffsky_z_phot_table(fn_mock)
+    return lc_mock, (istart, iend)
 
-    diffsky_lc_patch = dict(
-        diffsky_data=diffsky_data,
-        ssp_data=ssp_data,
-        param_collection=param_collection,
-        z_phot_table=z_phot_table,
-        tcurves=tcurves,
-        sim_info=sim_info,
+
+def get_lc_mock_chunk(lc_mock, metadata, *, nchunks, chunknum, lc_mock_keys=None):
+    if lc_mock_keys is None:
+        lc_mock_keys = list(lc_mock.keys())
+
+    offset = metadata["index"]["offset"]
+    count = metadata["index"]["count"]
+    read_start, read_end = llcc.compute_read_start_end_for_chunk(
+        nchunks, chunknum, offset, count
     )
-    return diffsky_lc_patch
+    lc_mock_chunk = {key: lc_mock[key][read_start:read_end] for key in lc_mock_keys}
+
+    lc_mock_chunk["top_host_idx_chunk"] = lc_mock_chunk["top_host_idx"] - read_start
+    return lc_mock_chunk
 
 
-def compute_phot_from_diffsky_mock(
-    *, diffsky_data, ssp_data, param_collection, sim_info, z_phot_table, tcurves
-):
-    mah_params = DEFAULT_MAH_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
-    )
-    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
-    )
-    t_obs = age_at_z(diffsky_data["redshift_true"], *sim_info.cosmo_params)
-
-    wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
-
-    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
-    )
-
-    mc_is_q = np.where(diffsky_data["mc_sfh_type"] == 0, True, False)
-    args = (
-        mc_is_q,
-        diffsky_data["uran_av"],
-        diffsky_data["uran_delta"],
-        diffsky_data["uran_funo"],
-        diffsky_data["uran_pburst"],
-        diffsky_data["delta_mag_ssp_scatter"],
-        sfh_params,
-        diffsky_data["redshift_true"],
-        t_obs,
-        mah_params,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
-        param_collection.mzr_params,
-        param_collection.spspop_params,
-        param_collection.scatter_params,
-        param_collection.ssperr_params,
-        sim_info.cosmo_params,
-        sim_info.fb,
-    )
-
-    phot_info = dbk_phot_from_mock._reproduce_mock_phot_kern(*args)[0]
-    phot_info = phot_info._asdict()
-    return phot_info
-
-
-def compute_dbk_phot_from_diffsky_mock(
-    *, diffsky_data, ssp_data, param_collection, sim_info, z_phot_table, tcurves
-):
-    mah_params = DEFAULT_MAH_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
-    )
-    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
-    )
-    t_obs = age_at_z(diffsky_data["redshift_true"], *sim_info.cosmo_params)
-
-    wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
-
-    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
-    )
-
-    mc_is_q = np.where(diffsky_data["mc_sfh_type"] == 0, True, False)
-    args = (
-        mc_is_q,
-        diffsky_data["uran_av"],
-        diffsky_data["uran_delta"],
-        diffsky_data["uran_funo"],
-        diffsky_data["uran_pburst"],
-        diffsky_data["delta_mag_ssp_scatter"],
-        sfh_params,
-        diffsky_data["redshift_true"],
-        t_obs,
-        mah_params,
-        diffsky_data["fknot"],
-        diffsky_data["uran_fbulge"],
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
-        param_collection.mzr_params,
-        param_collection.spspop_params,
-        param_collection.scatter_params,
-        param_collection.ssperr_params,
-        sim_info.cosmo_params,
-        sim_info.fb,
-    )
-    _res = dbk_phot_from_mock._reproduce_mock_dbk_kern(*args)
-    (
-        phot_info,
-        phot_randoms,
-        disk_bulge_history,
-        obs_mags_bulge,
-        obs_mags_disk,
-        obs_mags_knots,
-    ) = _res
-    phot_info = phot_info._asdict()
-    phot_info["obs_mags_bulge"] = obs_mags_bulge
-    phot_info["obs_mags_disk"] = obs_mags_disk
-    phot_info["obs_mags_knots"] = obs_mags_knots
-    return phot_info
-
-
-def compute_sed_from_diffsky_mock(
-    *, diffsky_data, ssp_data, param_collection, sim_info, z_phot_table, tcurves
-):
-    mah_params = DEFAULT_MAH_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
-    )
-    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
-    )
-    t_obs = age_at_z(diffsky_data["redshift_true"], *sim_info.cosmo_params)
-
-    wave_eff_table = phot_utils.get_wave_eff_table(z_phot_table, tcurves)
-
-    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
-        tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
-    )
-
-    mc_is_q = np.where(diffsky_data["mc_sfh_type"] == 0, True, False)
-    args = (
-        mc_is_q,
-        diffsky_data["uran_av"],
-        diffsky_data["uran_delta"],
-        diffsky_data["uran_funo"],
-        diffsky_data["uran_pburst"],
-        diffsky_data["delta_mag_ssp_scatter"],
-        sfh_params,
-        diffsky_data["redshift_true"],
-        t_obs,
-        mah_params,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
-        param_collection.mzr_params,
-        param_collection.spspop_params,
-        param_collection.scatter_params,
-        param_collection.ssperr_params,
-        sim_info.cosmo_params,
-        sim_info.fb,
-    )
-
-    phot_info, __, sed_kern_results = dbk_phot_from_mock._reproduce_mock_sed_kern(*args)
-    sed_info = phot_info._asdict()
-    rest_sed = sed_kern_results[0]
-    sed_info["rest_sed"] = rest_sed
-    return sed_info
-
-
-def compute_dbk_sed_from_diffsky_mock(
-    *, diffsky_data, ssp_data, param_collection, sim_info, z_phot_table, tcurves
-):
-    dbk_phot_info = compute_dbk_phot_from_diffsky_mock(
-        diffsky_data=diffsky_data,
-        ssp_data=ssp_data,
-        param_collection=param_collection,
-        sim_info=sim_info,
-        z_phot_table=z_phot_table,
-        tcurves=tcurves,
-    )
-    t_obs = age_at_z(diffsky_data["redshift_true"], *sim_info.cosmo_params)
-
-    dbk_randoms = mc_randoms.DBKRandoms(
-        diffsky_data["fknot"], diffsky_data["uran_fbulge"]
-    )
-
-    dbk_phot_info["uran_av"] = diffsky_data["uran_av"]
-    dbk_phot_info["uran_delta"] = diffsky_data["uran_delta"]
-    dbk_phot_info["uran_funo"] = diffsky_data["uran_funo"]
-    dbk_phot_info["delta_mag_ssp_scatter"] = diffsky_data["delta_mag_ssp_scatter"]
-
-    burst_params = DEFAULT_BURST_PARAMS._make(
-        [dbk_phot_info[pname] for pname in DEFAULT_BURST_PARAMS._fields]
-    )
-
-    args = (
-        t_obs,
-        ssp_data,
-        dbk_phot_info["t_table"],
-        dbk_phot_info["sfh_table"],
-        burst_params,
-        dbk_phot_info["lgmet_weights"],
-        dbk_randoms,
-    )
-    dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(*args)
-
-    dbk_phot_info["mstar_bulge"] = dbk_weights.mstar_bulge
-    dbk_phot_info["mstar_disk"] = dbk_weights.mstar_disk
-    dbk_phot_info["mstar_knots"] = dbk_weights.mstar_knots
-
-    DBKPhotInfo = namedtuple("DBKPhotInfo", list(dbk_phot_info.keys()))
-    dbk_phot_info = DBKPhotInfo(**dbk_phot_info)
-
-    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
-    )
-    mah_params = DEFAULT_MAH_PARAMS._make(
-        [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
-    )
-
-    mc_is_q = np.where(diffsky_data["mc_sfh_type"] == 0, True, False)
-    sed_info, __ = dbk_specphot_kernels._dbk_sed_kern(
-        mc_is_q,
-        diffsky_data["uran_av"],
-        diffsky_data["uran_delta"],
-        diffsky_data["uran_funo"],
-        diffsky_data["uran_pburst"],
-        diffsky_data["delta_mag_ssp_scatter"],
-        diffsky_data["uran_fbulge"],
-        diffsky_data["fknot"],
-        sfh_params,
-        diffsky_data["redshift_true"],
-        t_obs,
-        mah_params,
-        ssp_data,
-        param_collection.mzr_params,
-        param_collection.spspop_params,
-        param_collection.scatter_params,
-        param_collection.ssperr_params,
-        sim_info.cosmo_params,
-        sim_info.fb,
-    )
-    dbk_sed_info = dbk_phot_info._asdict()
-    dbk_sed_info["rest_sed_bulge"] = sed_info.rest_sed_bulge
-    dbk_sed_info["rest_sed_disk"] = sed_info.rest_sed_disk
-    dbk_sed_info["rest_sed_knots"] = sed_info.rest_sed_knots
-    return dbk_sed_info
+def load_diffsky_lc_patch(fn_mock, keys=None):
+    diffsky_data = load_flat_hdf5(fn_mock, dataset="data", keys=keys)
+    metadata = load_mock_metadata(fn_mock)
+    return diffsky_data, metadata

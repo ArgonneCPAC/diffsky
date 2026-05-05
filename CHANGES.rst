@@ -1,6 +1,6 @@
 0.3.5 (unreleased)
 -------------------
-- Upgrade package tooling (https://github.com/ArgonneCPAC/diffsky/pull/410)
+- Incorporate merging into Last Journey mocks (https://github.com/ArgonneCPAC/diffsky/pull/412)
 - Retune bulge shapes to be rounder (https://github.com/ArgonneCPAC/diffsky/pull/386)
 - Retune galaxy sizes vs LSST-DP1 (https://github.com/ArgonneCPAC/diffsky/pull/385)
 - Implement bimodal distribution of B/T and correlated bulge/disk orientations (https://github.com/ArgonneCPAC/diffsky/pull/380)

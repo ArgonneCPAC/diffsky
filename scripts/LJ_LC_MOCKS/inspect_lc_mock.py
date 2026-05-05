@@ -4,9 +4,9 @@ import argparse
 import os
 from glob import glob
 from time import time
-
+import jax
 import numpy as np
-
+import gc
 from diffsky.data_loaders.hacc_utils.data_validation import validate_lc_mock as vlcm
 
 BN_GLOBPAT_LC_MOCK = "lc_cores-*.*.diffsky_gals*.hdf5"
@@ -63,6 +63,8 @@ if __name__ == "__main__":
     failure_collector = []
     no_report_collector = []
     for fn_lc_mock in fn_list_mocks_to_test:
+        jax.clear_caches()
+        gc.collect()
         bn_lc_mock = os.path.basename(fn_lc_mock)
 
         try:

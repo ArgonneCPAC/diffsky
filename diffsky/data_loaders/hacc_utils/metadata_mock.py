@@ -62,9 +62,12 @@ def add_metadata_diffmah_columns(metadata):
 
     metadata["logmp0"] = (str(logMsun), "Log10 of halo mass at z=0")
     metadata["logmp_obs"] = (str(logMsun), "Log10 of halo mass at z")
-    metadata["logmp_obs_host"] = (
+    metadata["logmp_obs_host"] = (str(logMsun), "Log10 of mass of parent halo at z")
+
+    metadata["logmp_infall"] = (str(logMsun), "Log10 of halo mass at time of infall")
+    metadata["logmhost_infall"] = (
         str(logMsun),
-        "Log10 of mass of parent halo at z",
+        "Log10 of parent halo mass at time of infall",
     )
 
     return metadata
@@ -93,6 +96,16 @@ def add_metadata_spspop_columns(metadata):
     metadata["delta_mag_ssp_scatter"] = (
         str(u.dimensionless_unscaled),
         "Array for adding noise to SSP SED errors",
+    )
+
+    metadata["uran_pmerge"] = (
+        str(u.dimensionless_unscaled),
+        "Array for adding noise to merging",
+    )
+
+    metadata["p_merge"] = (
+        str(u.dimensionless_unscaled),
+        "Probability that the galaxy merged its mass with its associated central",
     )
 
     # dust
@@ -126,7 +139,7 @@ def add_metadata_spspop_columns(metadata):
     return metadata
 
 
-def add_metadata_diffstar_columns(metadata):
+def add_metadata_diffstar_columns(metadata, incl_in_situ=False):
 
     metadata["lgmcrit"] = (
         str(u.dimensionless_unscaled),
@@ -176,6 +189,11 @@ def add_metadata_diffstar_columns(metadata):
         "Boolean specifies the type of star formation history."
         "0 for quenched, 1 for smooth main sequence, 2 for bursty main sequence",
     )
+    if incl_in_situ:
+        metadata["logsm_obs_in_situ"] = (
+            str(logMsun),
+            "Log10 of stellar mass at z (in-situ only)",
+        )
 
     return metadata
 
@@ -362,8 +380,8 @@ def add_metadata_dbk_sed_columns(metadata):
 
 
 def add_metadata_dbk_morphology_columns(metadata):
-    metadata["r50_disk"] = (str(u.kpc), "Half-mass radius of disk")
-    metadata["r50_bulge"] = (str(u.kpc), "Half-mass radius of bulge")
+    metadata["r50_disk"] = (str(u.kpc), "2d Half-mass radius of disk")
+    metadata["r50_bulge"] = (str(u.kpc), "2d Half-mass radius of bulge")
     metadata["zscore_r50_disk"] = (
         str(u.dimensionless_unscaled),
         "Gaussian random used to add scatter to disk radius",
@@ -427,7 +445,7 @@ def add_metadata_dbk_morphology_columns(metadata):
     return metadata
 
 
-def get_metadata_all_columns():
+def get_metadata_all_columns(incl_in_situ):
     if not HAS_ASTROPY:
         raise ImportError("Must have astropy installed to attach units to metadata")
 
@@ -441,7 +459,9 @@ def get_metadata_all_columns():
     metadata_all_columns = add_metadata_inertia_tensor_columns(metadata_all_columns)
 
     metadata_all_columns = add_metadata_diffmah_columns(metadata_all_columns)
-    metadata_all_columns = add_metadata_diffstar_columns(metadata_all_columns)
+    metadata_all_columns = add_metadata_diffstar_columns(
+        metadata_all_columns, incl_in_situ=incl_in_situ
+    )
 
     metadata_all_columns = add_metadata_spspop_columns(metadata_all_columns)
     metadata_all_columns = add_metadata_morphology_columns(metadata_all_columns)
@@ -465,6 +485,10 @@ def add_metadata_lc_core_data_columns(metadata):
     )
 
     metadata["top_host_idx"] = (
+        str(u.dimensionless_unscaled),
+        "Index of host core",
+    )
+    metadata["secondary_top_host_idx"] = (
         str(u.dimensionless_unscaled),
         "Index of host core",
     )
@@ -495,7 +519,9 @@ def append_metadata(
     *,
     exclude_colnames=[],
     no_dbk=False,
+    incl_in_situ=False,
 ):
+
     try:
         from astropy import units as u
         from astropy.cosmology import units as cu
@@ -505,7 +531,7 @@ def append_metadata(
 
     u.add_enabled_units(cu)
 
-    column_metadata = get_metadata_all_columns()
+    column_metadata = get_metadata_all_columns(incl_in_situ)
 
     for colname in exclude_colnames:
         column_metadata.pop(colname)
@@ -568,6 +594,10 @@ def append_metadata(
             hdf_out[key_out].attrs["unit"] = str(u.ABmag)
             hdf_out[key_out].attrs["description"] = COMPOSITE_MAG_MSG
 
+            if incl_in_situ:
+                hdf_out[key_out + "_in_situ"].attrs["unit"] = str(u.ABmag)
+                hdf_out[key_out + "_in_situ"].attrs["description"] = COMPOSITE_MAG_MSG
+
             # Component magnitudes
             if no_dbk:
                 pass  # skip dbk metadata
@@ -582,6 +612,11 @@ def append_metadata(
                     hdf_out[key_out].attrs["unit"] = str(u.ABmag)
                     hdf_out[key_out].attrs["description"] = msg
 
+                    if incl_in_situ:
+                        key_out = "data/" + "_".join((nickname, "in_situ", component))
+                        hdf_out[key_out].attrs["unit"] = str(u.ABmag)
+                        hdf_out[key_out].attrs["description"] = COMPOSITE_MAG_MSG
+
         # emission line fluxes
         for linename in lineflux_nicknames:
 
@@ -592,17 +627,21 @@ def append_metadata(
             hdf_out[key_out].attrs["description"] = LINELUM_MSG
 
 
-def append_index_metadata(fnout, drn_lc_cores):
+def append_index_metadata(fnout, drn_lc_cores, synthetic_cores):
     """Copy the index metadata from lc_cores to the output mock data"""
     bn_lc_cores = os.path.basename(fnout).replace(".diffsky_gals.hdf5", ".hdf5")
     fn_lc_cores = os.path.join(drn_lc_cores, bn_lc_cores)
-    index_data = load_flat_hdf5(fn_lc_cores, dataset="index")
+
+    if synthetic_cores == 0:
+        index_data = load_flat_hdf5(fn_lc_cores, dataset="index")
+    elif synthetic_cores == 1:
+        index_data = dict(count=0, offset=0, unique_id=0)
 
     with h5py.File(fnout, "r+") as hdf_out:
         metadata_group = hdf_out.require_group("metadata")
         index_group = metadata_group.require_group("index")
         for key, val in index_data.items():
-            index_group.attrs[key] = val
+            index_group[key] = val
 
 
 def get_dependency_versions():

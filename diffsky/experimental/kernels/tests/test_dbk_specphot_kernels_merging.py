@@ -114,6 +114,7 @@ def test_mc_dbk_specphot_kern_merging(mc_merge, num_halos=150):
     )
     fb = 0.13
 
+    sat_weights = np.where(lc_data.is_central == 1, 1.0, lc_data.nhalos)
     args = (
         ran_key,
         lc_data.z_obs,
@@ -131,7 +132,7 @@ def test_mc_dbk_specphot_kern_merging(mc_merge, num_halos=150):
         lc_data.logmhost_infall,
         lc_data.t_infall,
         lc_data.is_central,
-        lc_data.nhalos,
+        sat_weights,
         lc_data.halo_indx,
         mc_merge,
     )

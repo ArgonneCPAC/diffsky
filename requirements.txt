@@ -5,3 +5,4 @@ diffstar>=1.0.1
 dsps>=0.4.5
 h5py
 diffhalos
+pyyaml

@@ -26,7 +26,7 @@ def _mc_dbk_phot_kern(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
     cosmo_params,
     fb,
 ):
@@ -47,7 +47,7 @@ def _mc_dbk_phot_kern(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )
@@ -70,7 +70,7 @@ def _dbk_phot_kern(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
     cosmo_params,
     fb,
 ):
@@ -87,7 +87,7 @@ def _dbk_phot_kern(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )
@@ -146,7 +146,7 @@ def _mc_dbk_specphot_kern(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
     cosmo_params,
     fb,
 ):
@@ -168,7 +168,7 @@ def _mc_dbk_specphot_kern(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )
@@ -191,7 +191,7 @@ def _dbk_specphot_kern(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
     cosmo_params,
     fb,
 ):
@@ -209,7 +209,7 @@ def _dbk_specphot_kern(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )
@@ -227,7 +227,7 @@ def _dbk_specphot_kern(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )

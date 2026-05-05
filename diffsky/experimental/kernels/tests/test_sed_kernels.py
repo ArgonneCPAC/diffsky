@@ -19,7 +19,7 @@ def test_sed_kern(num_halos=250):
     ran_key = jran.key(0)
     lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
 
-    fb = 0.156
+    fb = 0.116
     ran_key, phot_key = jran.split(ran_key, 2)
 
     phot_kern_results, phot_randoms = phot_kernels._mc_phot_kern(

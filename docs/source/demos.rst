@@ -1,14 +1,15 @@
 Diffsky Code Demos
 ==================
 
+Reading and analyzing Diffsky mocks
+------------------------------------
 .. toctree::
    :maxdepth: 1
    :caption: Notebooks:
 
-   demo_diffmahpop_t_peak.ipynb
-   validate_mc_lightcones.ipynb
-   demo_diffmahpop_lightcone.ipynb
-   demo_diffsky_lightcone.ipynb
    demo_diffsky_recompute_from_mock.ipynb
-   demo_opencosmo.ipynb
-   demo_diffsky_recompute_from_mock_opencosmo.ipynb
+
+
+Generating Diffsky galaxy samples
+---------------------------------
+Docs coming soon!

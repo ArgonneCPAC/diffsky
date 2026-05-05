@@ -24,15 +24,15 @@ def _mc_specphot_kern_merging(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
-    merge_params,
+    ssperr_params,
+    merging_params,
     cosmo_params,
     fb,
     logmp_infall,
     logmhost_infall,
     t_infall,
     is_central,
-    nhalos_weights,
+    sat_weights,
     halo_indx,
     mc_merge,
 ):
@@ -55,15 +55,15 @@ def _mc_specphot_kern_merging(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
-        merge_params,
+        ssperr_params,
+        merging_params,
         cosmo_params,
         fb,
         logmp_infall,
         logmhost_infall,
         t_infall,
         is_central,
-        nhalos_weights,
+        sat_weights,
         halo_indx,
         mc_merge,
     )
@@ -87,15 +87,15 @@ def _specphot_kern_merging(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
-    merge_params,
+    ssperr_params,
+    merging_params,
     cosmo_params,
     fb,
     logmp_infall,
     logmhost_infall,
     t_infall,
     is_central,
-    nhalos_weights,
+    sat_weights,
     halo_indx,
     mc_merge,
 ):
@@ -113,7 +113,7 @@ def _specphot_kern_merging(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )
@@ -123,12 +123,12 @@ def _specphot_kern_merging(
         phot_kern_results,
         merging_randoms,
         t_obs,
-        merge_params,
+        merging_params,
         logmp_infall,
         logmhost_infall,
         t_infall,
         is_central,
-        nhalos_weights,
+        sat_weights,
         halo_indx,
         mc_merge,
     )
@@ -141,10 +141,13 @@ def _specphot_kern_merging(
         flux_in_situ,
         flux_obs,
         p_merge,
+        merging_randoms.uran_pmerge,
     )
-    phot_kern_results = phot_kernels_merging._get_phot_kern_results_with_merging(*args)
+    phot_kern_results = phot_kernels_merging._update_phot_kern_results_with_merging(
+        *args
+    )
 
-    args = phot_kern_results, spec_kern_results, nhalos_weights, halo_indx
+    args = phot_kern_results, spec_kern_results, sat_weights, halo_indx
     linelums_obs, linelum_in_situ = _get_linelum_kern_merging_quantities(*args)
     spec_kern_results = _get_linelum_results_with_merging(
         spec_kern_results, linelums_obs, linelum_in_situ
@@ -155,13 +158,13 @@ def _specphot_kern_merging(
 
 @jjit
 def _get_linelum_kern_merging_quantities(
-    phot_kern_results, spec_kern_results, nhalos_weights, halo_indx
+    phot_kern_results, spec_kern_results, sat_weights, halo_indx
 ):
     linelum_in_situ = spec_kern_results.linelum_gal
     linelums_obs = compute_x_tot_from_x_in_situ(
         linelum_in_situ,
         phot_kern_results.p_merge[:, jnp.newaxis],
-        nhalos_weights[:, jnp.newaxis],
+        sat_weights[:, jnp.newaxis],
         halo_indx,
     )
     return linelums_obs, linelum_in_situ

@@ -81,7 +81,7 @@ def unroll_param_collection_into_flat_array(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
 ):
     diffstarpop_params_flat = diffstarpop_params
 
@@ -102,7 +102,7 @@ def unroll_param_collection_into_flat_array(
         *mzr_params,
         *spspop_params_flat,
         *scatter_params,
-        *ssp_err_pop_params,
+        *ssperr_params,
     )
     return diffsky_params_flat
 
@@ -196,7 +196,7 @@ def unroll_u_param_collection_into_flat_array(
     mzr_u_params,
     spspop_u_params,
     scatter_u_params,
-    ssp_err_pop_u_params,
+    ssperr_u_params,
 ):
     diffstarpop_u_params_flat = diffstarpop_u_params
 
@@ -217,7 +217,7 @@ def unroll_u_param_collection_into_flat_array(
         *mzr_u_params,
         *spspop_u_params_flat,
         *scatter_u_params,
-        *ssp_err_pop_u_params,
+        *ssperr_u_params,
     )
     return diffsky_u_params_flat
 
@@ -228,20 +228,20 @@ def get_u_param_collection_from_param_collection(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
 ):
     diffstarpop_u_params = get_unbounded_diffstarpop_params(diffstarpop_params)
     mzr_u_params = umzr.get_unbounded_mzr_params(mzr_params)
     spspop_u_params = spspu.get_unbounded_spspop_params_tw_dust(spspop_params)
     scatter_u_params = get_unbounded_scatter_params(scatter_params)
-    ssp_err_pop_u_params = ssp_err_model.get_unbounded_ssperr_params(ssp_err_pop_params)
+    ssperr_u_params = ssp_err_model.get_unbounded_ssperr_params(ssperr_params)
 
     u_param_collection = UParamCollection(
         diffstarpop_u_params,
         mzr_u_params,
         spspop_u_params,
         scatter_u_params,
-        ssp_err_pop_u_params,
+        ssperr_u_params,
     )
     return u_param_collection
 
@@ -252,20 +252,20 @@ def get_param_collection_from_u_param_collection(
     mzr_u_params,
     spspop_u_params,
     scatter_u_params,
-    ssp_err_pop_u_params,
+    ssperr_u_params,
 ):
     diffstarpop_params = get_bounded_diffstarpop_params(diffstarpop_u_params)
     mzr_params = umzr.get_bounded_mzr_params(mzr_u_params)
     spspop_params = spspu.get_bounded_spspop_params_tw_dust(spspop_u_params)
     scatter_params = get_bounded_scatter_params(scatter_u_params)
-    ssp_err_pop_params = ssp_err_model.get_bounded_ssperr_params(ssp_err_pop_u_params)
+    ssperr_params = ssp_err_model.get_bounded_ssperr_params(ssperr_u_params)
 
     param_collection = ParamCollection(
         diffstarpop_params,
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
     )
     return param_collection
 
@@ -357,20 +357,18 @@ def get_u_param_collection_from_u_param_array(u_param_arr):
     ]
     scatter_u_params = DEFAULT_SCATTER_U_PARAMS._make(scatter_u_params)
 
-    ssp_err_pop_u_params = [
+    ssperr_u_params = [
         getattr(u_params, name)
         for name in ssp_err_model.DEFAULT_SSPERR_U_PARAMS._fields
     ]
-    ssp_err_pop_u_params = ssp_err_model.DEFAULT_SSPERR_U_PARAMS._make(
-        ssp_err_pop_u_params
-    )
+    ssperr_u_params = ssp_err_model.DEFAULT_SSPERR_U_PARAMS._make(ssperr_u_params)
 
     u_param_collection = UParamCollection(
         diffstarpop_u_params,
         u_mzr_params,
         spspop_u_params,
         scatter_u_params,
-        ssp_err_pop_u_params,
+        ssperr_u_params,
     )
     return u_param_collection
 

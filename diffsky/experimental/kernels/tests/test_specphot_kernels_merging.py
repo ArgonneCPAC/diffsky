@@ -53,6 +53,7 @@ def test_mc_specphot_kern_merging(mc_merge, num_halos=141):
     ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
     lc_data = lc_data._replace(ssp_data=ssp_data)
 
+    sat_weights = np.where(lc_data.is_central == 1, 1.0, lc_data.nhalos)
     phot_kern_results, phot_randoms, spec_kern_results = (
         sppkm._mc_specphot_kern_merging(
             ran_key,
@@ -72,7 +73,7 @@ def test_mc_specphot_kern_merging(mc_merge, num_halos=141):
             lc_data.logmhost_infall,
             lc_data.t_infall,
             lc_data.is_central,
-            lc_data.nhalos,
+            sat_weights,
             lc_data.halo_indx,
             mc_merge,
         )

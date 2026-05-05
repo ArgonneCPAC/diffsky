@@ -1,14 +1,19 @@
-name: pytest latest diffstuff
+name: weekly pytest latest diffstuff no extra deps
 
 on:
+  workflow_dispatch: null
+  schedule:
+    # Runs "every Monday & Thursday at 3:05am Central"
+    - cron: '5 8 * * 1,4'
   push:
     branches:
       - main
   pull_request: null
 
+
 jobs:
   tests:
-    name: pytest with latest releases on conda-forge
+    name: pytest with diffmah/diffstar/dsps@main
     runs-on: "ubuntu-latest"
 
     steps:
@@ -44,9 +49,15 @@ jobs:
             pip \
             setuptools \
             "setuptools_scm>=7,<8" \
-            matplotlib \
             python-build
-          pip install git+https://github.com/ArgonneCPAC/diffhalos.git
+          pip uninstall diffmah --yes
+          pip uninstall diffstar --yes
+          pip uninstall dsps --yes
+          pip uninstall diffhalos --yes
+          pip install --no-deps git+https://github.com/ArgonneCPAC/diffmah.git
+          pip install --no-deps git+https://github.com/ArgonneCPAC/diffstar.git
+          pip install --no-deps git+https://github.com/ArgonneCPAC/dsps.git
+          pip install --no-deps git+https://github.com/ArgonneCPAC/diffhalos.git
           python -m pip install --no-build-isolation --no-deps -e .
 
       - name: check numpy version

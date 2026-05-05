@@ -1,5 +1,6 @@
 # flake8: noqa: E402
 """Kernels used to produce the SFH mock lightcone"""
+
 import jax
 
 jax.config.update("jax_enable_x64", True)
@@ -32,7 +33,8 @@ from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ...experimental.kernels import mc_phot_kernels as mcpk
+from ...experimental.kernels import dbk_specphot_kernels_merging as dbkspkm
+from ...experimental.kernels import phot_kernels as phkern
 from ...experimental.size_modeling import smzr_bulge, smzr_disk
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
@@ -67,6 +69,7 @@ LC_DATA_KEYS_OUT = (
     "y",
     "z",
     "top_host_idx",
+    "secondary_top_host_idx",
     "central",
     "redshift_true",
     "stepnum",
@@ -102,6 +105,8 @@ DIFFSKY_DATA_KEYS_OUT = (
     "logmp_obs",
     *TOP_HOST_SHAPE_KEYS,
     *DEFAULT_MAH_PARAMS._fields,
+    "logmp_infall",
+    "logmhost_infall",
 )
 
 PHOT_INFO_KEYS_OUT = (
@@ -113,6 +118,8 @@ PHOT_INFO_KEYS_OUT = (
     "uran_funo",
     "uran_pburst",
     "delta_mag_ssp_scatter",
+    "uran_pmerge",
+    "p_merge",
 )
 
 MORPH_KEYS_OUT = ("bulge_to_total", *dbk.DEFAULT_FBULGE_PARAMS._fields)
@@ -255,6 +262,15 @@ def write_ancillary_data(
     write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
 
 
+def write_ancillary_data_merging(
+    drn_out, mock_version_name, sim_info, param_collection, tcurves, ssp_data
+):
+    write_diffsky_t_table(drn_out, mock_version_name, sim_info)
+    write_diffsky_param_collection_merging(drn_out, mock_version_name, param_collection)
+    write_diffsky_tcurves_to_disk(drn_out, mock_version_name, tcurves)
+    write_diffsky_ssp_data_to_disk(drn_out, mock_version_name, ssp_data)
+
+
 def get_dsps_transmission_curves(filter_nicknames, drn=None):
     bn_pat_list = [name + "*" for name in filter_nicknames]
     TCurves = namedtuple("TCurves", filter_nicknames)
@@ -312,13 +328,25 @@ def write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data):
 
 
 def write_batched_lc_sed_mock_to_disk(
-    fnout, phot_info, lc_data, diffsky_data, filter_nicknames, lineflux_nicknames
+    fnout,
+    phot_info,
+    lc_data,
+    diffsky_data,
+    filter_nicknames,
+    lineflux_nicknames,
+    incl_in_situ=False,
 ):
     write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data)
 
     specphot_dict = dict()
     for iband, name in enumerate(filter_nicknames):
         specphot_dict[name] = phot_info["obs_mags"][:, iband]
+        if incl_in_situ:
+            specphot_dict[name + "_in_situ"] = phot_info["obs_mags_in_situ"][:, iband]
+
+    if incl_in_situ:
+        specphot_dict["logsm_obs_in_situ"] = phot_info["logsm_obs_in_situ"]
+        assert phot_info["logsm_obs_in_situ"].shape == phot_info["logsm_obs"].shape
 
     for linename in lineflux_nicknames:
         specphot_dict[linename] = phot_info[linename]
@@ -337,10 +365,23 @@ def write_batched_lc_sed_mock_to_disk(
 
 
 def write_batched_lc_dbk_sed_mock_to_disk(
-    fnout, phot_info, lc_data, diffsky_data, filter_nicknames, lineflux_nicknames
+    fnout,
+    phot_info,
+    lc_data,
+    diffsky_data,
+    filter_nicknames,
+    lineflux_nicknames,
+    incl_in_situ=False,
 ):
+
     write_batched_lc_sed_mock_to_disk(
-        fnout, phot_info, lc_data, diffsky_data, filter_nicknames, lineflux_nicknames
+        fnout,
+        phot_info,
+        lc_data,
+        diffsky_data,
+        filter_nicknames,
+        lineflux_nicknames,
+        incl_in_situ=incl_in_situ,
     )
 
     dbk_phot_dict = dict()
@@ -350,6 +391,17 @@ def write_batched_lc_dbk_sed_mock_to_disk(
         dbk_phot_dict[name + "_knots"] = phot_info["obs_mags_knots"][:, iband]
         dbk_phot_dict["fknot"] = phot_info["fknot"]
         dbk_phot_dict["uran_fbulge"] = phot_info["uran_fbulge"]
+        if incl_in_situ:
+            dbk_phot_dict[name + "_in_situ" + "_bulge"] = phot_info[
+                "obs_mags_bulge_in_situ"
+            ][:, iband]
+            dbk_phot_dict[name + "_in_situ" + "_disk"] = phot_info[
+                "obs_mags_disk_in_situ"
+            ][:, iband]
+            dbk_phot_dict[name + "_in_situ" + "_knots"] = phot_info[
+                "obs_mags_knots_in_situ"
+            ][:, iband]
+
     write_batched_mock_data(
         fnout, dbk_phot_dict, list(dbk_phot_dict.keys()), dataset="data"
     )
@@ -392,7 +444,9 @@ def add_peculiar_velocity_to_mock(
     return diffsky_data
 
 
-def add_diffmah_properties_to_mock(diffsky_data, redshift_true, sim_info, ran_key):
+def add_diffmah_properties_to_mock(
+    diffsky_data, redshift_true, sim_info, ran_key, halo_indx, sec_halo_indx
+):
     diffsky_data["t_obs"] = flat_wcdm.age_at_z(redshift_true, *sim_info.cosmo_params)
 
     mah_params = DEFAULT_MAH_PARAMS._make(
@@ -417,6 +471,11 @@ def add_diffmah_properties_to_mock(diffsky_data, redshift_true, sim_info, ran_ke
         np.zeros(mah_params.logm0.size) + diffsky_data["t_obs"],
         sim_info.lgt0,
     )
+
+    diffsky_data = load_lc_cf.compute_additional_haloprops(
+        diffsky_data, sim_info, halo_indx=halo_indx, sec_halo_indx=sec_halo_indx
+    )
+
     return diffsky_data
 
 
@@ -433,7 +492,12 @@ def add_dbk_phot_quantities_to_mock(
 ):
     ran_key, mah_key = jran.split(ran_key, 2)
     diffsky_data = add_diffmah_properties_to_mock(
-        diffsky_data, lc_data["redshift_true"], sim_info, mah_key
+        diffsky_data,
+        lc_data["redshift_true"],
+        sim_info,
+        mah_key,
+        lc_data["top_host_idx_chunk"],
+        lc_data["secondary_top_host_idx_chunk"],
     )
 
     mah_params = DEFAULT_MAH_PARAMS._make(
@@ -442,7 +506,8 @@ def add_dbk_phot_quantities_to_mock(
 
     line_wave_table = np.array(ssp_data.ssp_emline_wave)
 
-    dbk_phot_info, dbk_weights = mcpk._mc_dbk_specphot_kern(
+    mc_merge = 1
+    dbk_phot_info, dbk_weights = dbkspkm._mc_dbk_specphot_kern_merging(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],
@@ -457,10 +522,17 @@ def add_dbk_phot_quantities_to_mock(
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
+        param_collection.merging_params,
         sim_info.cosmo_params,
         sim_info.fb,
+        diffsky_data["logmp_infall"],
+        diffsky_data["logmhost_infall"],
+        diffsky_data["t_infall"],
+        lc_data["central"],
+        diffsky_data["sat_weights"],
+        diffsky_data["halo_indx"],
+        mc_merge,
     )
-
     # Store contents of matrices of line luminosities into dict with line names
     linelum_dict = dict()
     for i, name in enumerate(ssp_data.ssp_emline_wave._fields):
@@ -498,14 +570,19 @@ def add_phot_quantities_to_mock(
 ):
     ran_key, mah_key = jran.split(ran_key, 2)
     diffsky_data = add_diffmah_properties_to_mock(
-        diffsky_data, lc_data["redshift_true"], sim_info, mah_key
+        diffsky_data,
+        lc_data["redshift_true"],
+        sim_info,
+        mah_key,
+        lc_data["top_host_idx_chunk"],
+        lc_data["secondary_top_host_idx_chunk"],
     )
 
     mah_params = DEFAULT_MAH_PARAMS._make(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    phot_info, phot_randoms = mcpk._mc_phot_kern(
+    phot_info, phot_randoms = phkern._mc_phot_kern(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],

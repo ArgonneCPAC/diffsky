@@ -1,4 +1,4 @@
-name: Flake8 test of source code
+name: Flake8 source code
 
 on:
   push:

@@ -5,8 +5,7 @@ import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
-from ....merging import merging_model
-from ....param_utils import diffsky_param_wrapper as dpw
+from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
 from .. import phot_kernels_merging as pkm
 
@@ -65,7 +64,8 @@ def test_mc_phot_kern_merging(mc_merge, num_halos=250):
     )
     fb = 0.176
 
-    phot_kern_results, phot_randoms = pkm._mc_phot_kern_merging(
+    sat_weights = np.where(lc_data.is_central == 1, 1.0, lc_data.nhalos)
+    phot_kern_results, phot_randoms, merging_randoms = pkm._mc_phot_kern_merging(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -74,15 +74,14 @@ def test_mc_phot_kern_merging(mc_merge, num_halos=250):
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
-        merging_model.DEFAULT_MERGE_PARAMS,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
         lc_data.logmp_infall,
         lc_data.logmhost_infall,
         lc_data.t_infall,
         lc_data.is_central,
-        lc_data.nhalos,
+        sat_weights,
         lc_data.halo_indx,
         mc_merge,
     )

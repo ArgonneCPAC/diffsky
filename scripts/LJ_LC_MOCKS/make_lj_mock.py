@@ -37,8 +37,8 @@ from diffsky.data_loaders.hacc_utils import metadata_mock
 from diffsky.data_loaders.mock_utils import get_mock_version_name
 from diffsky.experimental import mc_lightcone_halos as mclh
 from diffsky.experimental import precompute_ssp_phot as psspp
-from diffsky.param_utils import diffsky_param_wrapper as dpw
-from diffsky.param_utils import get_mock_params as gmp
+from diffsky.param_utils import COSMOS_PARAM_FITS_MERGING
+from diffsky.param_utils import diffsky_param_wrapper_merging as dpwm
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
@@ -111,6 +111,7 @@ if __name__ == "__main__":
     batch_size = config.get("batch_size", 20_000)
     no_dbk = config.get("no_dbk", False)
     no_sed = config.get("no_sed", False)
+    incl_in_situ = config.get("incl_in_situ", False)
     bn_ssp_data = config.get("bn_ssp_data", SSP_SED_BNAME)
 
     if mock_version_name_in == "":
@@ -182,10 +183,8 @@ if __name__ == "__main__":
     for line_name in OUTPUT_LINE_NICKNAMES:
         assert line_name in ssp_data.ssp_emline_wave._fields
 
-    param_collection = gmp.get_param_collection_for_mock(
-        cosmos_fit=cosmos_fit, sfh_model=sfh_model, rank=0
-    )
-    dpw.check_param_collection_is_ok(param_collection)
+    param_collection = COSMOS_PARAM_FITS_MERGING[cosmos_fit]
+    dpwm.check_param_collection_is_ok(param_collection)
 
     n_z_phot_table = 15
 
@@ -363,6 +362,7 @@ if __name__ == "__main__":
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
                         OUTPUT_LINE_NICKNAMES,
+                        incl_in_situ=incl_in_situ,
                     )
                 else:
                     lcmp_repro.write_batched_lc_dbk_sed_mock_to_disk(
@@ -372,6 +372,7 @@ if __name__ == "__main__":
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
                         OUTPUT_LINE_NICKNAMES,
+                        incl_in_situ=incl_in_situ,
                     )
 
             if synthetic_cores == 1:
@@ -392,8 +393,9 @@ if __name__ == "__main__":
                     dataset="data",
                 )
 
+        metadata_mock.append_index_metadata(fn_out, indir_lc_data, synthetic_cores)
+
         if synthetic_cores == 0:
-            metadata_mock.append_index_metadata(fn_out, indir_lc_data)
 
             lc_cores_poskeys = (
                 "x",
@@ -441,6 +443,7 @@ if __name__ == "__main__":
             OUTPUT_LINE_NICKNAMES,
             exclude_colnames=exclude_colnames,
             no_dbk=no_dbk,
+            incl_in_situ=incl_in_situ,
         )
 
         if rank == 0:
@@ -451,7 +454,7 @@ if __name__ == "__main__":
                 fn_sky_decomp = os.path.join(indir_lc_data, bn_sky_decomp)
                 shutil.copy2(fn_sky_decomp, drn_out)
 
-            lcmp_repro.write_ancillary_data(
+            lcmp_repro.write_ancillary_data_merging(
                 drn_out,
                 mock_version_name,
                 sim_info,

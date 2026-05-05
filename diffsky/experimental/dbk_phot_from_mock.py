@@ -55,7 +55,7 @@ def _reproduce_mock_phot_kern(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
     cosmo_params,
     fb,
 ):
@@ -82,7 +82,7 @@ def _reproduce_mock_phot_kern(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )
@@ -108,7 +108,7 @@ def _reproduce_mock_sed_kern(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
     cosmo_params,
     fb,
 ):
@@ -130,7 +130,7 @@ def _reproduce_mock_sed_kern(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )
@@ -144,7 +144,7 @@ def _reproduce_mock_sed_kern(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )
@@ -172,7 +172,7 @@ def _reproduce_mock_dbk_kern(
     mzr_params,
     spspop_params,
     scatter_params,
-    ssp_err_pop_params,
+    ssperr_params,
     cosmo_params,
     fb,
 ):
@@ -194,7 +194,7 @@ def _reproduce_mock_dbk_kern(
         mzr_params,
         spspop_params,
         scatter_params,
-        ssp_err_pop_params,
+        ssperr_params,
         cosmo_params,
         fb,
     )

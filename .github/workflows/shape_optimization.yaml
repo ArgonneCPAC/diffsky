@@ -1,4 +1,4 @@
-name: Test script for optimizing galaxy shapes
+name: script optimizing galaxy shapes
 
 on:
   workflow_dispatch: null
@@ -30,7 +30,7 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v4
         with:
-          python-version: 3.11
+          python-version: 3.12
           channels: conda-forge
           channel-priority: strict
           show-channel-urls: true
@@ -51,7 +51,6 @@ jobs:
             setuptools \
             "setuptools_scm>=7,<8" \
             matplotlib \
-            astropy \
             h5py \
             mpi4py \
             mpich
@@ -62,6 +61,11 @@ jobs:
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffstar.git
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/dsps.git
           python -m pip install --no-build-isolation --no-deps -e .
+
+      - name: check numpy version
+        shell: bash -l {0}
+        run: |
+          python -c "import numpy; print(numpy.__version__)"
 
       - name: run disk optimization script
         shell: bash -l {0}
