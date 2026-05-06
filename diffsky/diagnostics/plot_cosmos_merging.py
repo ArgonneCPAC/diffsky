@@ -528,13 +528,9 @@ def plot_app_mag_func(
     msk_z = np.abs(pdata.cosmos["photoz"] - z_bin) < dz
     msk_z_pred = np.abs(pdata.lc_data.z_obs - z_bin) < dz
 
-    gal_weights = np.where(
-        pdata.lc_data.is_central == 1,
-        pdata.lc_data.nhalos,
-        pdata.lc_data.nhalos * pdata.lc_data.nhalos_host,
-    )
+    gal_weight = pdata.lc_data.cen_weight * pdata.lc_data.sat_weight
 
-    w_pred = gal_weights[msk_z_pred]
+    w_pred = gal_weight[msk_z_pred]
     pred_norm_factor = pdata.diffsky_data["sky_area_degsq"] * dmagbins * 2 * dz
     target_norm_factor = c20.SKY_AREA * dmagbins * 2 * dz
 
@@ -658,12 +654,8 @@ def plot_color_pdf(
         color_target, bins=50, label=r"${\rm COSMOS}$", density=True, alpha=0.7
     )
 
-    gal_weights = np.where(
-        pdata.lc_data.is_central == 1,
-        pdata.lc_data.nhalos,
-        pdata.lc_data.nhalos * pdata.lc_data.nhalos_host,
-    )
-    w_pred = gal_weights[msk_sample_pred]
+    gal_weight = pdata.lc_data.cen_weight * pdata.lc_data.sat_weight
+    w_pred = gal_weight[msk_sample_pred]
 
     indx_c0 = pdata.diffsky_data["filter_dict"][c0][0]
     indx_c1 = pdata.diffsky_data["filter_dict"][c1][0]
@@ -708,11 +700,7 @@ def plot_ex_situ_fraction(*, pdata, model_nickname, drn_out=""):
     x_collector = []
     y_collector = []
 
-    gal_weights = np.where(
-        pdata.lc_data.is_central == 1,
-        pdata.lc_data.nhalos,
-        pdata.lc_data.nhalos * pdata.lc_data.nhalos_host,
-    )
+    gal_weight = pdata.lc_data.cen_weight * pdata.lc_data.sat_weight
 
     for logsm_bin in logsm_bins:
         msk_cen = pdata.lc_data.is_central == 1
@@ -723,7 +711,7 @@ def plot_ex_situ_fraction(*, pdata, model_nickname, drn_out=""):
             x_collector.append(logsm_bin)
             avg_cen = np.average(
                 x[msk_cen & msk_logsm],
-                weights=gal_weights[msk_cen & msk_logsm],
+                weights=gal_weight[msk_cen & msk_logsm],
             )
             y_collector.append(float(avg_cen))
 
