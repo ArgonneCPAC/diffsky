@@ -25,8 +25,6 @@ def test_sed_kern(mc_merge, num_halos=5, return_results=False):
     )
     fb = 0.176
 
-    sat_weights = np.where(lc_data.is_central == 1, 1.0, lc_data.nhalos)
-
     phot_kern_results, phot_randoms, merging_randoms = pkm._mc_phot_kern_merging(
         ran_key,
         lc_data.z_obs,
@@ -43,7 +41,7 @@ def test_sed_kern(mc_merge, num_halos=5, return_results=False):
         lc_data.logmhost_infall,
         lc_data.t_infall,
         lc_data.is_central,
-        sat_weights,
+        lc_data.sat_weight,
         lc_data.halo_indx,
         mc_merge,
     )
@@ -66,7 +64,7 @@ def test_sed_kern(mc_merge, num_halos=5, return_results=False):
         lc_data.logmhost_infall,
         lc_data.t_infall,
         lc_data.is_central,
-        sat_weights,
+        lc_data.sat_weight,
         lc_data.halo_indx,
         mc_merge,
     )

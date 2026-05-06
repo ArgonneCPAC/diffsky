@@ -81,8 +81,8 @@ def weighted_lc_halos_photdata(
     lc_data: namedtuple
         Population of num_halos halos along with data needed to compute photometry
 
-            nhalos: ndarray of shape (num_halos, )
-                weight of the (sub)halo
+            cen_weight: ndarray of shape (n_halos_tot, )
+                For centrals, cen_weight is determined by the halo mass function (HMF)
 
             z_obs: ndarray of shape (num_halos, )
                 redshift values
@@ -127,7 +127,7 @@ def weighted_lc_halos_photdata(
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
     lc_data = LCHalosData(
-        halopop.nhalos,
+        halopop.cen_weight,
         halopop.z_obs,
         halopop.t_obs,
         halopop.logmp_obs,
@@ -234,12 +234,15 @@ def weighted_lc_photdata(
             logt0: float
                 Base-10 log of z=0 age of the Universe for the input cosmology
 
-            nhalos: ndarray of shape (n_halos_tot, )
-                weight of the (sub)halo
+            cen_weight: ndarray of shape (n_halos_tot, )
 
-            nhalos_host: ndarray of shape (n_halos_tot, )
-                weight of the host halo
-                Equal to nhalos for central halos
+                For centrals, cen_weight is determined by the halo mass function (HMF)
+                For satellites, cen_weight is HMF weight of the associated central
+
+            sat_weight: ndarray of shape (n_halos_tot, )
+                Multiplicity factor of the subhalo richness
+                Equals 1 for central halos
+                For subhalos, halopop.sat_weight = <Nsat(Msub) | Mhost>
 
             nsub_per_host: int
                 number of subhalos per host halo
@@ -298,7 +301,7 @@ def weighted_lc_photdata(
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
     lc_data = LCData(
-        halopop.nhalos,
+        halopop.cen_weight,
         halopop.z_obs,
         halopop.t_obs,
         halopop.logmp_obs,
@@ -309,7 +312,7 @@ def weighted_lc_photdata(
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
-        halopop.nhalos_host,
+        halopop.sat_weight,
         t_infall,
         logmp_infall,
         logmhost_infall,
@@ -349,7 +352,7 @@ def passively_add_emlines_to_lc_data(ssp_data, lc_data):
 
 
 _LCDHKEYS = (
-    "nhalos",
+    "cen_weight",
     "z_obs",
     "t_obs",
     "logmp_obs",
@@ -365,7 +368,7 @@ LCHalosData = namedtuple("LCHalosData", _LCDHKEYS)
 
 _LCDKEYS = (
     *_LCDHKEYS,
-    "nhalos_host",
+    "sat_weight",
     "t_infall",
     "logmp_infall",
     "logmhost_infall",
