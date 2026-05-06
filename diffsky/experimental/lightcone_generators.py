@@ -161,7 +161,7 @@ def weighted_lc_photdata(
     logmp_cutoff=11.0,
 ):
     """
-    Generate a weighted lightcone of host halos,
+    Generate a weighted lightcone of host halos and subhalos,
     and additional data needed for photometry calculations.
 
     This function is a wrapper around
