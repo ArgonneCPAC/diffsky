@@ -55,7 +55,8 @@ QMSB = namedtuple("QMSB", ("q", "smooth_ms", "bursty_ms"))
 
 AgeWeights = namedtuple("AgeWeights", ("ms", "q"))
 MetWeights = namedtuple("MetWeights", ("ms", "q"))
-SSPWeights = namedtuple("SSPWeights", ("weights", "age_weights", "lgmet_weights"))
+SmoothSSPWeights = namedtuple("SmoothSSPWeights", ("age_weights", "lgmet_weights"))
+SSPWeights = namedtuple("SSPWeights", ("weights", *SmoothSSPWeights._fields))
 Burstiness = namedtuple(
     "Burstiness", ("age_weights", "weights", "burst_params", "p_burst")
 )
@@ -90,11 +91,12 @@ def get_lgmet_weights(logsm_obs, ssp_data, t_obs, mzr_params, lgmet_scatter):
 def get_smooth_ssp_weights(
     t_table, sfh_table, logsm_obs, ssp_data, t_obs, mzr_params, lgmet_scatter
 ):
-    age_weights_smooth = get_age_weights_smooth(t_table, sfh_table, ssp_data, t_obs)
+    age_weights = get_age_weights_smooth(t_table, sfh_table, ssp_data, t_obs)
     lgmet_weights = get_lgmet_weights(
         logsm_obs, ssp_data, t_obs, mzr_params, lgmet_scatter
     )
-    return age_weights_smooth, lgmet_weights
+    smooth_ssp_weights = SmoothSSPWeights(age_weights, lgmet_weights)
+    return smooth_ssp_weights
 
 
 @jjit
