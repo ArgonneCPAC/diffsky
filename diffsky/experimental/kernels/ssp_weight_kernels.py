@@ -300,7 +300,7 @@ def _compute_linelum_from_weights(
     """
 
     n_gal = logsm_obs.size
-    (n_met, n_age, n_line) = ssp_data.ssp_emline_luminosity.shape
+    n_met, n_age, n_line = ssp_data.ssp_emline_luminosity.shape
 
     _ftrans = frac_trans.reshape((n_gal, n_line, 1, n_age))
     _weights = ssp_weights.reshape((n_gal, 1, n_met, n_age))
