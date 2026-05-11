@@ -114,6 +114,44 @@ def diffstarpop_cen_wrapper(
 
 
 @jjit
+def mc_diffstarpop_wrapper(diffstarpop_params, ran_key, mah_params, cosmo_params):
+    n_gals = mah_params.logm0.size
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t0)
+    ZZ = jnp.zeros(n_gals)
+
+    logmp0 = logmh_at_t_obs(mah_params, t0 + ZZ, lgt0)
+
+    upid = jnp.zeros(n_gals).astype(int) - 1
+    lgmu_infall = jnp.zeros(n_gals) - 1.0
+    logmhost_infall = jnp.copy(logmp0)
+    lgmu_infall = jnp.zeros(n_gals) - 1.0
+    gyr_since_infall = jnp.zeros(n_gals)
+
+    _res = mc_diffstar_params_galpop(
+        diffstarpop_params,
+        logmp0,
+        mah_params.t_peak,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        ran_key,
+    )
+    sfh_params_ms, sfh_params_q, frac_q, mc_is_q = _res
+    sfh_params = mc_select_diffstar_params(sfh_params_ms, sfh_params_q, mc_is_q)
+
+    DiffstarPopResults = namedtuple(
+        "DiffstarPopResults",
+        ["sfh_params", "sfh_params_ms", "sfh_params_q", "mc_is_q", "frac_q"],
+    )
+    diffstarpop_results = DiffstarPopResults(
+        sfh_params, sfh_params_ms, sfh_params_q, mc_is_q, frac_q
+    )
+    return diffstarpop_results
+
+
+@jjit
 def mc_diffstarpop_cens_wrapper(diffstarpop_params, ran_key, mah_params, cosmo_params):
     n_gals = mah_params.logm0.size
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
