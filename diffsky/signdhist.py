@@ -1,4 +1,4 @@
-"""JAX kernels for N-dimensional triweighted histograms"""
+"""JAX kernels for N-dimensional jax.nn.sigmoid histograms"""
 
 from jax import numpy as jnp
 from jax import vmap
