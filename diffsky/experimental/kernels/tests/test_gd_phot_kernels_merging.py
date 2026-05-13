@@ -7,7 +7,8 @@ from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import gd_phot_kernels_merging as pkm
+from .. import gd_phot_kernels_merging as gd_pkm
+from .. import phot_kernels_merging as pkm_orig
 
 TOL = 1e-8
 
@@ -64,7 +65,7 @@ def test_mc_phot_kern_merging(mc_merge, num_halos=250):
     )
     fb = 0.176
 
-    phot_kern_results, phot_randoms, merging_randoms = pkm._mc_phot_kern_merging(
+    phot_kern_results, phot_randoms, merging_randoms = gd_pkm._mc_phot_kern_merging(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -86,3 +87,28 @@ def test_mc_phot_kern_merging(mc_merge, num_halos=250):
     )
 
     check_phot_kern_merging_results(phot_kern_results, lc_data)
+
+    phot_kern_results_orig, __, __ = pkm_orig._mc_phot_kern_merging(
+        ran_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.sat_weight,
+        lc_data.halo_indx,
+        mc_merge,
+    )
+
+    assert np.allclose(
+        phot_kern_results_orig.obs_mags, phot_kern_results.obs_mags, rtol=1e-5
+    )
