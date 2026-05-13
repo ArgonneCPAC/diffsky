@@ -289,6 +289,9 @@ def _phot_kern(
         ssp_photflux_table,
         frac_ssp_errors_mc,
         wave_eff_galpop,
+        obs_mags_ms,
+        obs_mags_q,
+        obs_mags_bursty,
     )
     return phot_kern_results
 
@@ -309,5 +312,8 @@ PHOT_KERN_KEYS = (
     "ssp_photflux_table",
     "frac_ssp_errors",
     "wave_eff_galpop",
+    "obs_mags_ms",
+    "obs_mags_q",
+    "obs_mags_bursty",
 )
 PhotKernResults = namedtuple("PhotKernResults", PHOT_KERN_KEYS)
