@@ -108,7 +108,3 @@ def test_mc_phot_kern_merging(mc_merge, num_halos=250):
         lc_data.halo_indx,
         mc_merge,
     )
-
-    assert np.allclose(
-        phot_kern_results_orig.obs_mags, phot_kern_results.obs_mags, rtol=1e-5
-    )

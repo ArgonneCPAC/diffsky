@@ -39,9 +39,19 @@ def _mc_phot_kern_merging(
     *,
     n_t_table=mcdw.N_T_TABLE,
 ):
+    upid = jnp.where(is_central == 1, -1, halo_indx)
+    lgmu_infall = logmp_infall - logmhost_infall
+    gyr_since_infall = t_obs - t_infall
     phot_randoms, diffstarpop_results, merging_randoms = (
         mc_randoms.get_phot_merge_randoms(
-            ran_key, diffstarpop_params, mah_params, cosmo_params
+            ran_key,
+            diffstarpop_params,
+            mah_params,
+            upid,
+            lgmu_infall,
+            logmhost_infall,
+            gyr_since_infall,
+            cosmo_params,
         )
     )
 
