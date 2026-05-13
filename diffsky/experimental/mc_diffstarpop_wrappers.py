@@ -196,8 +196,31 @@ def compute_diffstar_info(mah_params, sfh_params, t_obs, cosmo_params, fb, n_t_t
     t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
     sfh_table = compute_diffstar_sfh_wrapper(sfh_params, mah_params, t_table, lgt0, fb)
     logsm_obs, logssfr_obs = _get_sfh_info_at_t_obs(t_table, sfh_table, t_obs)
-    DiffstarInfo = namedtuple(
-        "DiffstarInfo", ["t_table", "sfh_table", "logsm_obs", "logssfr_obs"]
+    return t_table, sfh_table, logsm_obs, logssfr_obs
+
+
+@partial(jjit, static_argnames=["n_t_table"])
+def get_diffstar_info(mah_params, sfh_params, t_obs, cosmo_params, fb, n_t_table):
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t0)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
+    sfh_table = compute_diffstar_sfh_wrapper(sfh_params, mah_params, t_table, lgt0, fb)
+    logsm_obs, logssfr_obs = _get_sfh_info_at_t_obs(t_table, sfh_table, t_obs)
+    diffstar_info = DiffstarInfo(
+        mah_params, sfh_params, t_table, sfh_table, t_obs, logsm_obs, logssfr_obs
     )
-    diffstar_info = DiffstarInfo(t_table, sfh_table, logsm_obs, logssfr_obs)
     return diffstar_info
+
+
+DiffstarInfo = namedtuple(
+    "DiffstarInfo",
+    [
+        "mah_params",
+        "sfh_params",
+        "t_table",
+        "sfh_table",
+        "t_obs",
+        "logsm_obs",
+        "logssfr_obs",
+    ],
+)
