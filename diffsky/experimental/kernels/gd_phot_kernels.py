@@ -43,12 +43,12 @@ def _mc_phot_kern(
     *,
     n_t_table=mcdw.N_T_TABLE,
 ):
-    phot_randoms, sfh_params = mc_randoms.get_mc_phot_randoms(
+    phot_randoms, diffstarpop_results = mc_randoms.get_phot_randoms(
         ran_key, diffstarpop_params, mah_params, cosmo_params
     )
     phot_kern_results = _phot_kern(
         phot_randoms,
-        sfh_params,
+        diffstarpop_results,
         z_obs,
         t_obs,
         mah_params,
@@ -64,13 +64,13 @@ def _mc_phot_kern(
         fb,
         n_t_table=n_t_table,
     )
-    return phot_kern_results, phot_randoms
+    return phot_kern_results, phot_randoms, diffstarpop_results
 
 
 @partial(jjit, static_argnames=["n_t_table"])
 def _phot_kern(
     phot_randoms,
-    sfh_params,
+    diffstarpop_results,
     z_obs,
     t_obs,
     mah_params,
@@ -99,7 +99,7 @@ def _phot_kern(
     wave_eff_galpop = interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
     t_table, sfh_table, logsm_obs, logssfr_obs = mcdw.compute_diffstar_info(
-        mah_params, sfh_params, t_obs, cosmo_params, fb, n_t_table
+        mah_params, diffstarpop_results.sfh_params, t_obs, cosmo_params, fb, n_t_table
     )
 
     age_weights_smooth, lgmet_weights = sspwk.get_smooth_ssp_weights(
@@ -155,7 +155,7 @@ def _phot_kern(
     phot_kern_results = PhotKernResults(
         obs_mags,
         t_table,
-        *sfh_params,
+        *diffstarpop_results.sfh_params,
         sfh_table,
         logsm_obs,
         logssfr_obs,
