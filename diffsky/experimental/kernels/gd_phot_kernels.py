@@ -101,6 +101,17 @@ def _phot_kern(
     diffstar_info_mc = mcdw.get_diffstar_info(
         mah_params, diffstarpop_results.sfh_params, t_obs, cosmo_params, fb, n_t_table
     )
+    diffstar_info_q = mcdw.get_diffstar_info(
+        mah_params, diffstarpop_results.sfh_params_q, t_obs, cosmo_params, fb, n_t_table
+    )
+    diffstar_info_ms = mcdw.get_diffstar_info(
+        mah_params,
+        diffstarpop_results.sfh_params_ms,
+        t_obs,
+        cosmo_params,
+        fb,
+        n_t_table,
+    )
 
     smooth_ssp_weights = sspwk.get_smooth_ssp_weights(
         diffstar_info_mc.t_table,
