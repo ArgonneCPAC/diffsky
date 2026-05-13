@@ -153,7 +153,7 @@ def _phot_kern(
         spspop_params.burstpop_params,
     )
 
-    dust_frac_trans, dust_params = sspwk.compute_dust_attenuation(
+    dust_frac_trans_mc, dust_params_mc = sspwk.compute_dust_attenuation(
         phot_randoms.uran_av,
         phot_randoms.uran_delta,
         phot_randoms.uran_funo,
@@ -168,31 +168,31 @@ def _phot_kern(
     # dust_frac_trans.shape = (n_gals, n_bands, n_age)
 
     # Throw out redundant dust params repeated at each λ_eff
-    dust_params = dust_params._replace(
-        av=dust_params.av[:, 0, -1],
-        delta=dust_params.delta[:, 0],
-        funo=dust_params.funo[:, 0],
+    dust_params_mc = dust_params_mc._replace(
+        av=dust_params_mc.av[:, 0, -1],
+        delta=dust_params_mc.delta[:, 0],
+        funo=dust_params_mc.funo[:, 0],
     )
 
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
-    frac_ssp_errors_nonoise = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
+    frac_ssp_errors_nonoise_mc = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
         ssperr_params, diffstar_info_mc.logsm_obs, z_obs, wave_eff_galpop
     )
-    frac_ssp_errors = ssp_err_model.get_noisy_frac_ssp_errors(
-        wave_eff_galpop, frac_ssp_errors_nonoise, phot_randoms.delta_mag_ssp_scatter
+    frac_ssp_errors_mc = ssp_err_model.get_noisy_frac_ssp_errors(
+        wave_eff_galpop, frac_ssp_errors_nonoise_mc, phot_randoms.delta_mag_ssp_scatter
     )
 
-    obs_mags = sspwk._compute_obs_mags_from_weights(
+    obs_mags_mc = sspwk._compute_obs_mags_from_weights(
         diffstar_info_mc.logsm_obs,
-        dust_frac_trans,
-        frac_ssp_errors,
+        dust_frac_trans_mc,
+        frac_ssp_errors_mc,
         ssp_photflux_table,
         burstiness_info.ssp_weights_mc,
     )
 
     phot_kern_results = PhotKernResults(
-        obs_mags,
+        obs_mags_mc,
         diffstar_info_mc.t_table,
         *diffstarpop_results.sfh_params,
         diffstar_info_mc.sfh_table,
@@ -202,10 +202,10 @@ def _phot_kern(
         burstiness_info.ssp_weights_mc,
         smooth_ssp_weights_mc.lgmet_weights,
         *burstiness_info.burst_params_mc,
-        *dust_params,
-        dust_frac_trans,
+        *dust_params_mc,
+        dust_frac_trans_mc,
         ssp_photflux_table,
-        frac_ssp_errors,
+        frac_ssp_errors_mc,
         wave_eff_galpop,
     )
     return phot_kern_results
