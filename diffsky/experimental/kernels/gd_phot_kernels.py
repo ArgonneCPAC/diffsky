@@ -98,19 +98,25 @@ def _phot_kern(
     # For each filter, calculate λ_eff in the restframe of each galaxy
     wave_eff_galpop = interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
-    t_table, sfh_table, logsm_obs, logssfr_obs = mcdw.compute_diffstar_info(
+    diffstar_info_mc = mcdw.get_diffstar_info(
         mah_params, diffstarpop_results.sfh_params, t_obs, cosmo_params, fb, n_t_table
     )
 
     smooth_ssp_weights = sspwk.get_smooth_ssp_weights(
-        t_table, sfh_table, logsm_obs, ssp_data, t_obs, mzr_params, LGMET_SCATTER
+        diffstar_info_mc.t_table,
+        diffstar_info_mc.sfh_table,
+        diffstar_info_mc.logsm_obs,
+        ssp_data,
+        t_obs,
+        mzr_params,
+        LGMET_SCATTER,
     )
 
     burstiness_info = sspwk.get_burstiness(
         phot_randoms.uran_pburst,
         phot_randoms.mc_is_q,
-        logsm_obs,
-        logssfr_obs,
+        diffstar_info_mc.logsm_obs,
+        diffstar_info_mc.logssfr_obs,
         smooth_ssp_weights.age_weights,
         smooth_ssp_weights.lgmet_weights,
         ssp_data,
@@ -121,8 +127,8 @@ def _phot_kern(
         phot_randoms.uran_av,
         phot_randoms.uran_delta,
         phot_randoms.uran_funo,
-        logsm_obs,
-        logssfr_obs,
+        diffstar_info_mc.logsm_obs,
+        diffstar_info_mc.logssfr_obs,
         ssp_data,
         z_obs,
         wave_eff_galpop,
@@ -141,14 +147,14 @@ def _phot_kern(
     # Calculate mean fractional change to the SSP fluxes in each band for each galaxy
     # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
     frac_ssp_errors_nonoise = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
-        ssperr_params, logsm_obs, z_obs, wave_eff_galpop
+        ssperr_params, diffstar_info_mc.logsm_obs, z_obs, wave_eff_galpop
     )
     frac_ssp_errors = ssp_err_model.get_noisy_frac_ssp_errors(
         wave_eff_galpop, frac_ssp_errors_nonoise, phot_randoms.delta_mag_ssp_scatter
     )
 
     obs_mags = sspwk._compute_obs_mags_from_weights(
-        logsm_obs,
+        diffstar_info_mc.logsm_obs,
         dust_frac_trans,
         frac_ssp_errors,
         ssp_photflux_table,
@@ -157,11 +163,11 @@ def _phot_kern(
 
     phot_kern_results = PhotKernResults(
         obs_mags,
-        t_table,
+        diffstar_info_mc.t_table,
         *diffstarpop_results.sfh_params,
-        sfh_table,
-        logsm_obs,
-        logssfr_obs,
+        diffstar_info_mc.sfh_table,
+        diffstar_info_mc.logsm_obs,
+        diffstar_info_mc.logssfr_obs,
         burstiness_info.mc_sfh_type,
         burstiness_info.ssp_weights_mc,
         smooth_ssp_weights.lgmet_weights,
