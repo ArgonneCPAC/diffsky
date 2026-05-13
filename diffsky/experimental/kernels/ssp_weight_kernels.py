@@ -65,6 +65,17 @@ FracSSPErr = namedtuple("FracSSPErr", ("ms", "q"))
 DustAttenuation = namedtuple(
     "DustAttenuation", ("frac_trans", "dust_params", "dust_scatter")
 )
+BurstinessInfo = namedtuple(
+    "BurstinessInfo",
+    (
+        "ssp_weights_mc",
+        "ssp_weights_smooth",
+        "ssp_weights_bursty",
+        "burst_params_mc",
+        "burst_params_bursty",
+        "mc_sfh_type",
+    ),
+)
 
 
 @jjit
@@ -195,24 +206,16 @@ def get_burstiness(
     )
 
     ssp_weights_smooth = combine_age_met_weights(age_weights_smooth, lgmet_weights)
+    ssp_weights_bursty = combine_age_met_weights(age_weights_bursty, lgmet_weights)
     ssp_weights_mc = combine_age_met_weights(age_weights_mc, lgmet_weights)
 
-    BurstinessInfo = namedtuple(
-        "BurstinessInfo",
-        (
-            "ssp_weights_mc",
-            "burst_params_mc",
-            "mc_sfh_type",
-            "burst_params_bursty",
-            "ssp_weights_smooth",
-        ),
-    )
     burstiness_info = BurstinessInfo(
         ssp_weights_mc,
-        burst_params_mc,
-        mc_sfh_type,
-        burst_params_bursty,
         ssp_weights_smooth,
+        ssp_weights_bursty,
+        burst_params_mc,
+        burst_params_bursty,
+        mc_sfh_type,
     )
     return burstiness_info
 
