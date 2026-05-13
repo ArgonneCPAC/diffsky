@@ -35,6 +35,25 @@ def test_mc_phot_kern():
 
     test_mc_phot.check_phot_kern_results(mc_gd_phot_kern_results)
 
+    n_gals, n_bands = mc_gd_phot_kern_results.obs_mags.shape
+    obs_mags_mc = np.zeros((n_gals, n_bands))
+    obs_mags_mc = np.where(
+        mc_gd_phot_kern_results.mc_sfh_type.reshape((n_gals, 1)) == 0,
+        mc_gd_phot_kern_results.obs_mags_q,
+        obs_mags_mc,
+    )
+    obs_mags_mc = np.where(
+        mc_gd_phot_kern_results.mc_sfh_type.reshape((n_gals, 1)) == 1,
+        mc_gd_phot_kern_results.obs_mags_ms,
+        obs_mags_mc,
+    )
+    obs_mags_mc = np.where(
+        mc_gd_phot_kern_results.mc_sfh_type.reshape((n_gals, 1)) == 2,
+        mc_gd_phot_kern_results.obs_mags_bursty,
+        obs_mags_mc,
+    )
+    assert np.allclose(obs_mags_mc, mc_gd_phot_kern_results.obs_mags, rtol=1e-5)
+
     gd_phot_kern_results = gd_phot_kernels._phot_kern(
         mc_gd_phot_randoms,
         diffstarpop_results,
