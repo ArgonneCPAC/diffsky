@@ -153,6 +153,50 @@ def compute_burstiness(
     return ssp_weights, burst_params, mc_sfh_type
 
 
+@jjit
+def get_burstiness(
+    uran_pburst,
+    mc_is_q,
+    logsm_obs,
+    logssfr_obs,
+    age_weights_smooth,
+    lgmet_weights,
+    ssp_data,
+    burstpop_params,
+):
+    n_gals = mc_is_q.shape[0]
+
+    _args = (
+        burstpop_params,
+        logsm_obs,
+        logssfr_obs,
+        ssp_data.ssp_lg_age_gyr,
+        age_weights_smooth,
+    )
+    _res = _calc_bursty_age_weights_vmap(*_args)
+    age_weights_bursty, burst_params = _res
+
+    # Calculate the frequency of SFH bursts
+    p_burst = freqburst_mono.get_freqburst_from_freqburst_params(
+        burstpop_params.freqburst_params, logsm_obs, logssfr_obs
+    )
+
+    mc_sfh_type = jnp.where(mc_is_q, 0, 1).astype(int)
+    msk_bursty = (uran_pburst < p_burst) & (mc_sfh_type == 1)
+    mc_sfh_type = jnp.where(msk_bursty, 2, mc_sfh_type).astype(int)
+
+    lgfburst = jnp.where(mc_sfh_type < 2, LGFBURST_MIN + 0.01, burst_params.lgfburst)
+    burst_params_mc = burst_params._replace(lgfburst=lgfburst)
+
+    age_weights = jnp.where(
+        mc_sfh_type.reshape((n_gals, 1)) == 2, age_weights_bursty, age_weights_smooth
+    )
+
+    ssp_weights_mc = combine_age_met_weights(age_weights, lgmet_weights)
+
+    return ssp_weights_mc, burst_params_mc, mc_sfh_type
+
+
 @partial(jjit, static_argnames=["n_gals"])
 def get_dust_randoms(dust_key, n_gals):
     # Generate randoms for stochasticity in dust attenuation curves
