@@ -89,6 +89,15 @@ def _phot_kern(
 ):
     """Populate the input lightcone with galaxy SEDs"""
 
+    # Interpolate SSP mag table to z_obs of each galaxy
+    photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
+        z_obs, z_phot_table, precomputed_ssp_mag_table
+    )
+    ssp_photflux_table = 10 ** (-0.4 * photmag_table_galpop)
+
+    # For each filter, calculate λ_eff in the restframe of each galaxy
+    wave_eff_galpop = interp_vmap2(z_obs, z_phot_table, wave_eff_table)
+
     t_table, sfh_table, logsm_obs, logssfr_obs = mcdw.compute_diffstar_info(
         mah_params, sfh_params, t_obs, cosmo_params, fb, n_t_table
     )
@@ -108,15 +117,6 @@ def _phot_kern(
         spspop_params.burstpop_params,
     )
     ssp_weights, burst_params, mc_sfh_type = _res
-
-    # Interpolate SSP mag table to z_obs of each galaxy
-    photmag_table_galpop = photerp.interpolate_ssp_photmag_table(
-        z_obs, z_phot_table, precomputed_ssp_mag_table
-    )
-    ssp_photflux_table = 10 ** (-0.4 * photmag_table_galpop)
-
-    # For each filter, calculate λ_eff in the restframe of each galaxy
-    wave_eff_galpop = interp_vmap2(z_obs, z_phot_table, wave_eff_table)
 
     dust_frac_trans, dust_params = sspwk.compute_dust_attenuation(
         phot_randoms.uran_av,
