@@ -142,13 +142,33 @@ def _phot_kern(
         LGMET_SCATTER,
     )
 
-    burstiness_info = sspwk.get_burstiness(
+    burstiness_info_mc = sspwk.get_burstiness(
         phot_randoms.uran_pburst,
         phot_randoms.mc_is_q,
         diffstar_info_mc.logsm_obs,
         diffstar_info_mc.logssfr_obs,
         smooth_ssp_weights_mc.age_weights,
         smooth_ssp_weights_mc.lgmet_weights,
+        ssp_data,
+        spspop_params.burstpop_params,
+    )
+    burstiness_info_ms = sspwk.get_burstiness(
+        phot_randoms.uran_pburst,
+        phot_randoms.mc_is_q,
+        diffstar_info_ms.logsm_obs,
+        diffstar_info_ms.logssfr_obs,
+        smooth_ssp_weights_ms.age_weights,
+        smooth_ssp_weights_ms.lgmet_weights,
+        ssp_data,
+        spspop_params.burstpop_params,
+    )
+    burstiness_info_q = sspwk.get_burstiness(
+        phot_randoms.uran_pburst,
+        phot_randoms.mc_is_q,
+        diffstar_info_q.logsm_obs,
+        diffstar_info_q.logssfr_obs,
+        smooth_ssp_weights_q.age_weights,
+        smooth_ssp_weights_q.lgmet_weights,
         ssp_data,
         spspop_params.burstpop_params,
     )
@@ -167,6 +187,31 @@ def _phot_kern(
     )
     # dust_frac_trans.shape = (n_gals, n_bands, n_age)
 
+    dust_frac_trans_ms, __ = sspwk.compute_dust_attenuation(
+        phot_randoms.uran_av,
+        phot_randoms.uran_delta,
+        phot_randoms.uran_funo,
+        diffstar_info_ms.logsm_obs,
+        diffstar_info_ms.logssfr_obs,
+        ssp_data,
+        z_obs,
+        wave_eff_galpop,
+        spspop_params.dustpop_params,
+        scatter_params,
+    )
+    dust_frac_trans_q, __ = sspwk.compute_dust_attenuation(
+        phot_randoms.uran_av,
+        phot_randoms.uran_delta,
+        phot_randoms.uran_funo,
+        diffstar_info_q.logsm_obs,
+        diffstar_info_q.logssfr_obs,
+        ssp_data,
+        z_obs,
+        wave_eff_galpop,
+        spspop_params.dustpop_params,
+        scatter_params,
+    )
+
     # Throw out redundant dust params repeated at each λ_eff
     dust_params_mc = dust_params_mc._replace(
         av=dust_params_mc.av[:, 0, -1],
@@ -183,12 +228,49 @@ def _phot_kern(
         wave_eff_galpop, frac_ssp_errors_nonoise_mc, phot_randoms.delta_mag_ssp_scatter
     )
 
+    frac_ssp_errors_nonoise_ms = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
+        ssperr_params, diffstar_info_ms.logsm_obs, z_obs, wave_eff_galpop
+    )
+    frac_ssp_errors_ms = ssp_err_model.get_noisy_frac_ssp_errors(
+        wave_eff_galpop, frac_ssp_errors_nonoise_ms, phot_randoms.delta_mag_ssp_scatter
+    )
+
+    frac_ssp_errors_nonoise_q = ssp_err_model.frac_ssp_err_at_z_obs_galpop(
+        ssperr_params, diffstar_info_q.logsm_obs, z_obs, wave_eff_galpop
+    )
+    frac_ssp_errors_q = ssp_err_model.get_noisy_frac_ssp_errors(
+        wave_eff_galpop, frac_ssp_errors_nonoise_q, phot_randoms.delta_mag_ssp_scatter
+    )
+
     obs_mags_mc = sspwk._compute_obs_mags_from_weights(
         diffstar_info_mc.logsm_obs,
         dust_frac_trans_mc,
         frac_ssp_errors_mc,
         ssp_photflux_table,
-        burstiness_info.ssp_weights_mc,
+        burstiness_info_mc.ssp_weights_mc,
+    )
+
+    obs_mags_ms = sspwk._compute_obs_mags_from_weights(
+        diffstar_info_ms.logsm_obs,
+        dust_frac_trans_ms,
+        frac_ssp_errors_ms,
+        ssp_photflux_table,
+        burstiness_info_ms.ssp_weights_smooth,
+    )
+    obs_mags_q = sspwk._compute_obs_mags_from_weights(
+        diffstar_info_q.logsm_obs,
+        dust_frac_trans_q,
+        frac_ssp_errors_q,
+        ssp_photflux_table,
+        burstiness_info_q.ssp_weights_smooth,
+    )
+
+    obs_mags_bursty = sspwk._compute_obs_mags_from_weights(
+        diffstar_info_ms.logsm_obs,
+        dust_frac_trans_ms,
+        frac_ssp_errors_ms,
+        ssp_photflux_table,
+        burstiness_info_ms.ssp_weights_bursty,
     )
 
     phot_kern_results = PhotKernResults(
@@ -198,10 +280,10 @@ def _phot_kern(
         diffstar_info_mc.sfh_table,
         diffstar_info_mc.logsm_obs,
         diffstar_info_mc.logssfr_obs,
-        burstiness_info.mc_sfh_type,
-        burstiness_info.ssp_weights_mc,
+        burstiness_info_mc.mc_sfh_type,
+        burstiness_info_mc.ssp_weights_mc,
         smooth_ssp_weights_mc.lgmet_weights,
-        *burstiness_info.burst_params_mc,
+        *burstiness_info_mc.burst_params_mc,
         *dust_params_mc,
         dust_frac_trans_mc,
         ssp_photflux_table,
