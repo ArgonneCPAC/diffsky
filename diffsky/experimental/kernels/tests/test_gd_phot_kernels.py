@@ -35,7 +35,7 @@ def test_mc_phot_kern(num_halos=75):
 
     test_mc_phot.check_phot_kern_results(mc_gd_phot_kern_results)
 
-    return mc_gd_phot_kern_results
+    # return mc_gd_phot_kern_results
 
     n_gals, n_bands = mc_gd_phot_kern_results.obs_mags.shape
     obs_mags_mc = np.zeros((n_gals, n_bands))
