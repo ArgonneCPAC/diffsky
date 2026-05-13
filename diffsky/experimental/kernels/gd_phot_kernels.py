@@ -102,7 +102,7 @@ def _phot_kern(
         mah_params, diffstarpop_results.sfh_params, t_obs, cosmo_params, fb, n_t_table
     )
 
-    age_weights_smooth, lgmet_weights = sspwk.get_smooth_ssp_weights(
+    smooth_ssp_weights = sspwk.get_smooth_ssp_weights(
         t_table, sfh_table, logsm_obs, ssp_data, t_obs, mzr_params, LGMET_SCATTER
     )
 
@@ -111,8 +111,8 @@ def _phot_kern(
         phot_randoms.mc_is_q,
         logsm_obs,
         logssfr_obs,
-        age_weights_smooth,
-        lgmet_weights,
+        smooth_ssp_weights.age_weights,
+        smooth_ssp_weights.lgmet_weights,
         ssp_data,
         spspop_params.burstpop_params,
     )
@@ -161,7 +161,7 @@ def _phot_kern(
         logssfr_obs,
         mc_sfh_type,
         ssp_weights,
-        lgmet_weights,
+        smooth_ssp_weights.lgmet_weights,
         *burst_params,
         *dust_params,
         dust_frac_trans,
