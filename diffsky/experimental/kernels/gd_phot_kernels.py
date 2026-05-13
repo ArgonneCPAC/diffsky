@@ -106,7 +106,7 @@ def _phot_kern(
         t_table, sfh_table, logsm_obs, ssp_data, t_obs, mzr_params, LGMET_SCATTER
     )
 
-    _res = sspwk.get_burstiness(
+    burstiness_info = sspwk.get_burstiness(
         phot_randoms.uran_pburst,
         phot_randoms.mc_is_q,
         logsm_obs,
@@ -116,7 +116,6 @@ def _phot_kern(
         ssp_data,
         spspop_params.burstpop_params,
     )
-    ssp_weights, burst_params, mc_sfh_type = _res
 
     dust_frac_trans, dust_params = sspwk.compute_dust_attenuation(
         phot_randoms.uran_av,
@@ -149,7 +148,11 @@ def _phot_kern(
     )
 
     obs_mags = sspwk._compute_obs_mags_from_weights(
-        logsm_obs, dust_frac_trans, frac_ssp_errors, ssp_photflux_table, ssp_weights
+        logsm_obs,
+        dust_frac_trans,
+        frac_ssp_errors,
+        ssp_photflux_table,
+        burstiness_info.ssp_weights_mc,
     )
 
     phot_kern_results = PhotKernResults(
@@ -159,10 +162,10 @@ def _phot_kern(
         sfh_table,
         logsm_obs,
         logssfr_obs,
-        mc_sfh_type,
-        ssp_weights,
+        burstiness_info.mc_sfh_type,
+        burstiness_info.ssp_weights_mc,
         smooth_ssp_weights.lgmet_weights,
-        *burst_params,
+        *burstiness_info.burst_params_mc,
         *dust_params,
         dust_frac_trans,
         ssp_photflux_table,

@@ -194,7 +194,11 @@ def get_burstiness(
 
     ssp_weights_mc = combine_age_met_weights(age_weights, lgmet_weights)
 
-    return ssp_weights_mc, burst_params_mc, mc_sfh_type
+    BurstinessInfo = namedtuple(
+        "BurstinessInfo", ("ssp_weights_mc", "burst_params_mc", "mc_sfh_type")
+    )
+    burstiness_info = BurstinessInfo(ssp_weights_mc, burst_params_mc, mc_sfh_type)
+    return burstiness_info
 
 
 @partial(jjit, static_argnames=["n_gals"])
