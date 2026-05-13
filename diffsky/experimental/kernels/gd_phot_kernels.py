@@ -29,6 +29,10 @@ def _mc_phot_kern(
     z_obs,
     t_obs,
     mah_params,
+    upid,
+    lgmu_infall,
+    logmhost_infall,
+    gyr_since_infall,
     ssp_data,
     precomputed_ssp_mag_table,
     z_phot_table,
@@ -44,7 +48,14 @@ def _mc_phot_kern(
     n_t_table=mcdw.N_T_TABLE,
 ):
     phot_randoms, diffstarpop_results = mc_randoms.get_phot_randoms(
-        ran_key, diffstarpop_params, mah_params, cosmo_params
+        ran_key,
+        diffstarpop_params,
+        mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        cosmo_params,
     )
     phot_kern_results = _phot_kern(
         phot_randoms,
