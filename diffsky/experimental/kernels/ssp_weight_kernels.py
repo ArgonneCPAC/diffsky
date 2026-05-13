@@ -74,6 +74,7 @@ BurstinessInfo = namedtuple(
         "burst_params_mc",
         "burst_params_bursty",
         "mc_sfh_type",
+        "p_burst",
     ),
 )
 
@@ -216,6 +217,7 @@ def get_burstiness(
         burst_params_mc,
         burst_params_bursty,
         mc_sfh_type,
+        p_burst,
     )
     return burstiness_info
 

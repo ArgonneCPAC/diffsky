@@ -11,9 +11,9 @@ from ...tests import test_mc_phot
 from .. import gd_phot_kernels, phot_kernels
 
 
-def test_mc_phot_kern():
+def test_mc_phot_kern(num_halos=75):
     ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
 
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)
@@ -34,6 +34,8 @@ def test_mc_phot_kern():
     mc_gd_phot_kern_results, mc_gd_phot_randoms, diffstarpop_results = _res
 
     test_mc_phot.check_phot_kern_results(mc_gd_phot_kern_results)
+
+    return mc_gd_phot_kern_results
 
     n_gals, n_bands = mc_gd_phot_kern_results.obs_mags.shape
     obs_mags_mc = np.zeros((n_gals, n_bands))
