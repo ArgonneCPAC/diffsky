@@ -113,10 +113,29 @@ def _phot_kern(
         n_t_table,
     )
 
-    smooth_ssp_weights = sspwk.get_smooth_ssp_weights(
+    smooth_ssp_weights_mc = sspwk.get_smooth_ssp_weights(
         diffstar_info_mc.t_table,
         diffstar_info_mc.sfh_table,
         diffstar_info_mc.logsm_obs,
+        ssp_data,
+        t_obs,
+        mzr_params,
+        LGMET_SCATTER,
+    )
+
+    smooth_ssp_weights_q = sspwk.get_smooth_ssp_weights(
+        diffstar_info_q.t_table,
+        diffstar_info_q.sfh_table,
+        diffstar_info_q.logsm_obs,
+        ssp_data,
+        t_obs,
+        mzr_params,
+        LGMET_SCATTER,
+    )
+    smooth_ssp_weights_ms = sspwk.get_smooth_ssp_weights(
+        diffstar_info_ms.t_table,
+        diffstar_info_ms.sfh_table,
+        diffstar_info_ms.logsm_obs,
         ssp_data,
         t_obs,
         mzr_params,
@@ -128,8 +147,8 @@ def _phot_kern(
         phot_randoms.mc_is_q,
         diffstar_info_mc.logsm_obs,
         diffstar_info_mc.logssfr_obs,
-        smooth_ssp_weights.age_weights,
-        smooth_ssp_weights.lgmet_weights,
+        smooth_ssp_weights_mc.age_weights,
+        smooth_ssp_weights_mc.lgmet_weights,
         ssp_data,
         spspop_params.burstpop_params,
     )
@@ -181,7 +200,7 @@ def _phot_kern(
         diffstar_info_mc.logssfr_obs,
         burstiness_info.mc_sfh_type,
         burstiness_info.ssp_weights_mc,
-        smooth_ssp_weights.lgmet_weights,
+        smooth_ssp_weights_mc.lgmet_weights,
         *burstiness_info.burst_params_mc,
         *dust_params,
         dust_frac_trans,
