@@ -106,7 +106,7 @@ def _phot_kern(
         t_table, sfh_table, logsm_obs, ssp_data, t_obs, mzr_params, LGMET_SCATTER
     )
 
-    _res = sspwk.compute_burstiness(
+    _res = sspwk.get_burstiness(
         phot_randoms.uran_pburst,
         phot_randoms.mc_is_q,
         logsm_obs,
