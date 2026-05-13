@@ -8,7 +8,7 @@ from jax import random as jran
 from ....param_utils import diffsky_param_wrapper as dpw
 from ...tests import test_mc_lightcone_halos as tmclh
 from ...tests import test_mc_phot
-from .. import gd_phot_kernels
+from .. import gd_phot_kernels, phot_kernels
 
 
 def test_mc_phot_kern():
@@ -57,3 +57,25 @@ def test_mc_phot_kern():
 
     for x, x2 in zip(phot_kern_results, phot_kern_results2):
         assert np.allclose(x, x2)
+
+    phot_kern_results3 = phot_kernels._phot_kern(
+        phot_randoms,
+        sfh_params,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
+        dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
+        dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
+        dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+
+    assert np.allclose(
+        phot_kern_results.obs_mags, phot_kern_results3.obs_mags, rtol=1e-5
+    )
