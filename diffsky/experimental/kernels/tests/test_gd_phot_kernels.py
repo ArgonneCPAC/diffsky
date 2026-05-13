@@ -96,10 +96,9 @@ def test_mc_phot_kern():
         fb,
     )
 
-    return phot_kern_results, phot_kern_results2, phot_kern_results3, phot_kern_results4
-    # assert np.allclose(
-    #     phot_kern_results.obs_mags, phot_kern_results3.obs_mags, rtol=1e-5
-    # )
+    assert np.allclose(
+        phot_kern_results.obs_mags, phot_kern_results3.obs_mags, rtol=1e-5
+    )
 
     assert np.allclose(
         phot_kern_results3.obs_mags, phot_kern_results4.obs_mags, rtol=1e-5

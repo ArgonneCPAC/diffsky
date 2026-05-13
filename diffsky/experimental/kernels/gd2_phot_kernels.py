@@ -43,12 +43,12 @@ def _mc_phot_kern(
     *,
     n_t_table=mcdw.N_T_TABLE,
 ):
-    phot_randoms, sfh_params = mc_randoms.get_mc_phot_randoms(
+    phot_randoms, diffstarpop_results = mc_randoms.get_phot_randoms(
         ran_key, diffstarpop_params, mah_params, cosmo_params
     )
     phot_kern_results = _phot_kern(
         phot_randoms,
-        sfh_params,
+        diffstarpop_results.sfh_params,
         z_obs,
         t_obs,
         mah_params,

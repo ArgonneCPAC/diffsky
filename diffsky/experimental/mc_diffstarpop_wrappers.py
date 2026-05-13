@@ -139,7 +139,7 @@ def mc_diffstarpop_wrapper(diffstarpop_params, ran_key, mah_params, cosmo_params
         ran_key,
     )
     sfh_params_ms, sfh_params_q, frac_q, mc_is_q = _res
-    sfh_params = mc_select_diffstar_params(sfh_params_ms, sfh_params_q, mc_is_q)
+    sfh_params = mc_select_diffstar_params(sfh_params_q, sfh_params_ms, mc_is_q)
 
     DiffstarPopResults = namedtuple(
         "DiffstarPopResults",
