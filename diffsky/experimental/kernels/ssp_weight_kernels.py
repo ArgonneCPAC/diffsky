@@ -174,7 +174,7 @@ def get_burstiness(
         age_weights_smooth,
     )
     _res = _calc_bursty_age_weights_vmap(*_args)
-    age_weights_bursty, burst_params = _res
+    age_weights_bursty, burst_params_bursty = _res
 
     # Calculate the frequency of SFH bursts
     p_burst = freqburst_mono.get_freqburst_from_freqburst_params(
@@ -185,19 +185,35 @@ def get_burstiness(
     msk_bursty = (uran_pburst < p_burst) & (mc_sfh_type == 1)
     mc_sfh_type = jnp.where(msk_bursty, 2, mc_sfh_type).astype(int)
 
-    lgfburst = jnp.where(mc_sfh_type < 2, LGFBURST_MIN + 0.01, burst_params.lgfburst)
-    burst_params_mc = burst_params._replace(lgfburst=lgfburst)
+    lgfburst_mc = jnp.where(
+        mc_sfh_type < 2, LGFBURST_MIN + 0.01, burst_params_bursty.lgfburst
+    )
+    burst_params_mc = burst_params_bursty._replace(lgfburst=lgfburst_mc)
 
-    age_weights = jnp.where(
+    age_weights_mc = jnp.where(
         mc_sfh_type.reshape((n_gals, 1)) == 2, age_weights_bursty, age_weights_smooth
     )
 
-    ssp_weights_mc = combine_age_met_weights(age_weights, lgmet_weights)
+    ssp_weights_smooth = combine_age_met_weights(age_weights_smooth, lgmet_weights)
+    ssp_weights_mc = combine_age_met_weights(age_weights_mc, lgmet_weights)
 
     BurstinessInfo = namedtuple(
-        "BurstinessInfo", ("ssp_weights_mc", "burst_params_mc", "mc_sfh_type")
+        "BurstinessInfo",
+        (
+            "ssp_weights_mc",
+            "burst_params_mc",
+            "mc_sfh_type",
+            "burst_params_bursty",
+            "ssp_weights_smooth",
+        ),
     )
-    burstiness_info = BurstinessInfo(ssp_weights_mc, burst_params_mc, mc_sfh_type)
+    burstiness_info = BurstinessInfo(
+        ssp_weights_mc,
+        burst_params_mc,
+        mc_sfh_type,
+        burst_params_bursty,
+        ssp_weights_smooth,
+    )
     return burstiness_info
 
 
