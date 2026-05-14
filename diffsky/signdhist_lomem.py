@@ -131,8 +131,8 @@ def nnsig_ndhist_weighted(nddata, ndsig, ydata, ndbins_lo, ndbins_hi):
     nddata : ndarray of shape (npts, ndim)
         Collection of npts data points residing in an ndim-dimensional space
 
-    ndsig : ndarray of shape (npts, ndim)
-        Sigmoid scatter for each point in each dimension
+    ndsig : ndarray of shape (nbins, ndim)
+        Sigmoid scatter for each bin in each dimension
 
     ydata : ndarray of shape (npts, )
         Quantity to be summed
