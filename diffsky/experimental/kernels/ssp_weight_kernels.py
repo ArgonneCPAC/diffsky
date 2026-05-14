@@ -55,7 +55,8 @@ QMSB = namedtuple("QMSB", ("q", "smooth_ms", "bursty_ms"))
 
 AgeWeights = namedtuple("AgeWeights", ("ms", "q"))
 MetWeights = namedtuple("MetWeights", ("ms", "q"))
-SSPWeights = namedtuple("SSPWeights", ("weights", "age_weights", "lgmet_weights"))
+SmoothSSPWeights = namedtuple("SmoothSSPWeights", ("age_weights", "lgmet_weights"))
+SSPWeights = namedtuple("SSPWeights", ("weights", *SmoothSSPWeights._fields))
 Burstiness = namedtuple(
     "Burstiness", ("age_weights", "weights", "burst_params", "p_burst")
 )
@@ -63,6 +64,18 @@ FracSSPErr = namedtuple("FracSSPErr", ("ms", "q"))
 
 DustAttenuation = namedtuple(
     "DustAttenuation", ("frac_trans", "dust_params", "dust_scatter")
+)
+BurstinessInfo = namedtuple(
+    "BurstinessInfo",
+    (
+        "ssp_weights_mc",
+        "ssp_weights_smooth",
+        "ssp_weights_bursty",
+        "burst_params_mc",
+        "burst_params_bursty",
+        "mc_sfh_type",
+        "p_burst",
+    ),
 )
 
 
@@ -90,11 +103,12 @@ def get_lgmet_weights(logsm_obs, ssp_data, t_obs, mzr_params, lgmet_scatter):
 def get_smooth_ssp_weights(
     t_table, sfh_table, logsm_obs, ssp_data, t_obs, mzr_params, lgmet_scatter
 ):
-    age_weights_smooth = get_age_weights_smooth(t_table, sfh_table, ssp_data, t_obs)
+    age_weights = get_age_weights_smooth(t_table, sfh_table, ssp_data, t_obs)
     lgmet_weights = get_lgmet_weights(
         logsm_obs, ssp_data, t_obs, mzr_params, lgmet_scatter
     )
-    return age_weights_smooth, lgmet_weights
+    smooth_ssp_weights = SmoothSSPWeights(age_weights, lgmet_weights)
+    return smooth_ssp_weights
 
 
 @jjit
@@ -149,6 +163,63 @@ def compute_burstiness(
     ssp_weights = combine_age_met_weights(age_weights, lgmet_weights)
 
     return ssp_weights, burst_params, mc_sfh_type
+
+
+@jjit
+def get_burstiness(
+    uran_pburst,
+    mc_is_q,
+    logsm_obs,
+    logssfr_obs,
+    age_weights_smooth,
+    lgmet_weights,
+    ssp_data,
+    burstpop_params,
+):
+    n_gals = mc_is_q.shape[0]
+
+    _args = (
+        burstpop_params,
+        logsm_obs,
+        logssfr_obs,
+        ssp_data.ssp_lg_age_gyr,
+        age_weights_smooth,
+    )
+    _res = _calc_bursty_age_weights_vmap(*_args)
+    age_weights_bursty, burst_params_bursty = _res
+
+    # Calculate the frequency of SFH bursts
+    p_burst = freqburst_mono.get_freqburst_from_freqburst_params(
+        burstpop_params.freqburst_params, logsm_obs, logssfr_obs
+    )
+
+    mc_sfh_type = jnp.where(mc_is_q, 0, 1).astype(int)
+    msk_bursty = (uran_pburst < p_burst) & (mc_sfh_type == 1)
+    mc_sfh_type = jnp.where(msk_bursty, 2, mc_sfh_type).astype(int)
+
+    lgfburst_mc = jnp.where(
+        mc_sfh_type < 2, LGFBURST_MIN + 0.01, burst_params_bursty.lgfburst
+    )
+    burst_params_mc = burst_params_bursty._replace(lgfburst=lgfburst_mc)
+
+    age_weights_mc = jnp.where(
+        mc_sfh_type.reshape((n_gals, 1)) == 2, age_weights_bursty, age_weights_smooth
+    )
+
+    ssp_weights_smooth = combine_age_met_weights(age_weights_smooth, lgmet_weights)
+    ssp_weights_bursty = combine_age_met_weights(age_weights_bursty, lgmet_weights)
+    ssp_weights_mc = combine_age_met_weights(age_weights_mc, lgmet_weights)
+
+    burstiness_info = BurstinessInfo(
+        ssp_weights_mc,
+        ssp_weights_smooth,
+        ssp_weights_bursty,
+        burst_params_mc,
+        burst_params_bursty,
+        mc_sfh_type,
+        p_burst,
+    )
+    return burstiness_info
 
 
 @partial(jjit, static_argnames=["n_gals"])
@@ -300,7 +371,7 @@ def _compute_linelum_from_weights(
     """
 
     n_gal = logsm_obs.size
-    (n_met, n_age, n_line) = ssp_data.ssp_emline_luminosity.shape
+    n_met, n_age, n_line = ssp_data.ssp_emline_luminosity.shape
 
     _ftrans = frac_trans.reshape((n_gal, n_line, 1, n_age))
     _weights = ssp_weights.reshape((n_gal, 1, n_met, n_age))

@@ -112,7 +112,7 @@ def p_infall(t_obs, k_infall, t_infall, t_delay, p_max):
         slope of merging probability sigmoid
 
     t_infall : float
-        infall time [Gyr]
+        age of the universe at infall time [Gyr]
 
     t_delay : float
         delay time [Gyr]
