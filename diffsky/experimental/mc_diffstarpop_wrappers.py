@@ -142,6 +142,20 @@ def mc_diffstarpop_wrapper(
         ran_key,
     )
     sfh_params_ms, sfh_params_q, frac_q, mc_is_q = _res
+
+    """Modify sat quench model here"""
+    t_peak = mah_params.t_peak
+    t_q = 10**sfh_params_q.lg_qt
+
+    is_sat = upid != -1
+
+    clipped_t_q = jnp.minimum(t_peak, t_q)  # whichever comes first
+    t_q = jnp.where(is_sat, clipped_t_q, t_q)
+
+    sfh_params_q = sfh_params_q._replace(lg_qt=jnp.log10(t_q))
+
+    """ end Modify sat quench model"""
+
     sfh_params = mc_select_diffstar_params(sfh_params_q, sfh_params_ms, mc_is_q)
 
     DiffstarPopResults = namedtuple(
