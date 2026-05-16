@@ -3,12 +3,13 @@
 from collections import namedtuple
 from functools import partial
 
+from dsps.utils import _sigmoid
 from jax import jit as jjit
 from jax import numpy as jnp
 
 from ...merging import compute_x_tot_from_x_in_situ, merging_kernels, merging_model
 from .. import mc_diffstarpop_wrappers as mcdw
-from . import mc_randoms, gd_phot_kernels
+from . import gd_phot_kernels, mc_randoms
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -42,17 +43,19 @@ def _mc_phot_kern_merging(
     upid = jnp.where(is_central == 1, -1, halo_indx)
     lgmu_infall = logmp_infall - logmhost_infall
     gyr_since_infall = t_obs - t_infall
-    phot_randoms, diffstarpop_results, merging_randoms = (
-        mc_randoms.get_phot_merge_randoms(
-            ran_key,
-            diffstarpop_params,
-            mah_params,
-            upid,
-            lgmu_infall,
-            logmhost_infall,
-            gyr_since_infall,
-            cosmo_params,
-        )
+    (
+        phot_randoms,
+        diffstarpop_results,
+        merging_randoms,
+    ) = mc_randoms.get_phot_merge_randoms(
+        ran_key,
+        diffstarpop_params,
+        mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        cosmo_params,
     )
 
     phot_kern_results = _phot_kern_merging(
@@ -192,6 +195,23 @@ def _get_phot_kern_merging_quantities(
     flux_obs = compute_x_tot_from_x_in_situ(
         flux_in_situ, p_merge[:, jnp.newaxis], sat_weights[:, jnp.newaxis], halo_indx
     )
+
+    # updated lines #
+    n_gals = phot_kern_results.obs_mags_q.shape[0]
+    fq = phot_kern_results.frac_q
+    fq_merge = _update_fq_based_on_p_merge(fq)
+    weights_q = fq_merge
+    weights_ms = (1 - fq_merge) * (1 - phot_kern_results.p_burst)
+    weights_bursty = (1 - fq_merge) * phot_kern_results.p_burst
+
+    obs_mags_weighted = (
+        (weights_q.reshape((n_gals, 1)) * phot_kern_results.obs_mags_q)
+        + (weights_ms.reshape((n_gals, 1)) * phot_kern_results.obs_mags_ms)
+        + (weights_bursty.reshape((n_gals, 1)) * phot_kern_results.obs_mags_bursty)
+    )
+    phot_kern_results = phot_kern_results._replace(obs_mags_weighted=obs_mags_weighted)
+    # updated lines end #
+
     weighted_flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags_weighted)
     flux_obs_weighted = compute_x_tot_from_x_in_situ(
         weighted_flux_in_situ,
@@ -201,6 +221,22 @@ def _get_phot_kern_merging_quantities(
     )
 
     return mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, flux_obs_weighted, p_merge
+
+
+# updated lines #
+@jjit
+def _update_fq_based_on_p_merge(fq, p_merge, p_merge_x0=0.5, k=20, fq_hi=1.0):
+    fq_merge = _sigmoid(
+        p_merge,
+        p_merge_x0,
+        k,
+        fq,
+        fq_hi,
+    )
+    return fq_merge
+
+
+# updated lines end #
 
 
 @jjit
