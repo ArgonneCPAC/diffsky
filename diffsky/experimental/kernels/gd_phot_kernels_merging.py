@@ -199,7 +199,7 @@ def _get_phot_kern_merging_quantities(
     # updated lines #
     n_gals = phot_kern_results.obs_mags_q.shape[0]
     fq = phot_kern_results.frac_q
-    fq_merge = _update_fq_based_on_p_merge(fq)
+    fq_merge = _update_fq_based_on_p_merge(fq, p_merge)
     weights_q = fq_merge
     weights_ms = (1 - fq_merge) * (1 - phot_kern_results.p_burst)
     weights_bursty = (1 - fq_merge) * phot_kern_results.p_burst
