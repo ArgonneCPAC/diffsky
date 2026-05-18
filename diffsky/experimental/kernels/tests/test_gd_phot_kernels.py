@@ -6,9 +6,11 @@ from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper as dpw
+from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_mc_phot
 from .. import gd_phot_kernels, phot_kernels
 from ...tests import test_lightcone_generators as tlcg
+from ....merging import merging_model
 
 
 def test_mc_phot_kern(num_halos=75):
@@ -42,7 +44,7 @@ def test_mc_phot_kern(num_halos=75):
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
     )
@@ -71,20 +73,32 @@ def test_mc_phot_kern(num_halos=75):
     )
     assert np.allclose(obs_mags_mc, mc_gd_phot_kern_results.obs_mags, rtol=1e-5)
 
+    t_infall = lc_data.t_obs - gyr_since_infall
+    logmp_infall = lgmu_infall + logmhost_infall
+    p_merge_smooth = merging_model.get_p_merge_from_merging_params(
+        dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
+        logmp_infall,
+        logmhost_infall,
+        lc_data.t_obs,
+        t_infall,
+        upid,
+    )
+
     gd_phot_kern_results = gd_phot_kernels._phot_kern(
         mc_gd_phot_randoms,
         diffstarpop_results,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
+        p_merge_smooth,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
-        dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
-        dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
-        dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.mzr_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
         DEFAULT_COSMOLOGY,
         fb,
     )
@@ -171,7 +185,7 @@ def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
     )
@@ -196,7 +210,7 @@ def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
     )

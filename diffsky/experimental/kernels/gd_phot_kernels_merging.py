@@ -114,12 +114,18 @@ def _phot_kern_merging(
     *,
     n_t_table=mcdw.N_T_TABLE,
 ):
+    upids = jnp.where(is_central == 1, -1.0, 0.0)
+    p_merge_smooth = merging_model.get_p_merge_from_merging_params(
+        merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
+    )
+
     phot_kern_results = gd_phot_kernels._phot_kern(
         phot_randoms,
         diffstarpop_results,
         z_obs,
         t_obs,
         mah_params,
+        p_merge_smooth,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -136,12 +142,7 @@ def _phot_kern_merging(
     _res = _get_phot_kern_merging_quantities(
         phot_kern_results,
         merging_randoms,
-        t_obs,
-        merging_params,
-        logmp_infall,
-        logmhost_infall,
-        t_infall,
-        is_central,
+        p_merge_smooth,
         sat_weights,
         halo_indx,
         mc_merge,
@@ -164,24 +165,17 @@ def _phot_kern_merging(
 def _get_phot_kern_merging_quantities(
     phot_kern_results,
     merging_randoms,
-    t_obs,
-    merging_params,
-    logmp_infall,
-    logmhost_infall,
-    t_infall,
-    is_central,
+    p_merge_smooth,
     sat_weights,
     halo_indx,
     mc_merge,
 ):
-    upids = jnp.where(is_central == 1, -1.0, 0.0)
-    p_merge = merging_model.get_p_merge_from_merging_params(
-        merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
-    )
 
     # If mc_merge=1, implement Monte Carlo merging, else p_merge is a float
-    mc_p_merge = merging_kernels.get_mc_p_merge(merging_randoms.uran_pmerge, p_merge)
-    p_merge = jnp.where(mc_merge < 1, p_merge, mc_p_merge)
+    mc_p_merge = merging_kernels.get_mc_p_merge(
+        merging_randoms.uran_pmerge, p_merge_smooth
+    )
+    p_merge = jnp.where(mc_merge < 1, p_merge_smooth, mc_p_merge)
 
     mstar_in_situ = 10**phot_kern_results.logsm_obs
     mstar_obs = compute_x_tot_from_x_in_situ(
