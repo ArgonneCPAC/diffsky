@@ -13,32 +13,38 @@ from ..burstpop.diffqburstpop_mono import DiffburstPopParams, DiffburstPopUParam
 from ..burstpop.fburstpop_mono import (
     DEFAULT_FBURSTPOP_PARAMS,
     ZEROBURST_FBURSTPOP_PARAMS,
+    FBURSTPOP_PBOUNDS,
     get_bounded_fburstpop_params,
     get_unbounded_fburstpop_params,
 )
 from ..burstpop.freqburst_mono import (
     DEFAULT_FREQBURST_PARAMS,
     ZEROBURST_FREQBURST_PARAMS,
+    FREQBURST_PBOUNDS,
     get_bounded_freqburst_params,
     get_unbounded_freqburst_params,
 )
 from ..burstpop.tburstpop import (
     DEFAULT_TBURSTPOP_PARAMS,
+    TBURSTPOP_PBOUNDS,
     get_bounded_tburstpop_params,
     get_unbounded_tburstpop_params,
 )
 from ..dustpop.avpop_mono import (
     DEFAULT_AVPOP_PARAMS,
+    AVPOP_PBOUNDS,
     get_bounded_avpop_params,
     get_unbounded_avpop_params,
 )
 from ..dustpop.deltapop import (
     DEFAULT_DELTAPOP_PARAMS,
+    DELTAPOP_PBOUNDS,
     get_bounded_deltapop_params,
     get_unbounded_deltapop_params,
 )
 from ..dustpop.funopop_ssfr import (
     DEFAULT_FUNOPOP_PARAMS,
+    FUNOPOP_PBOUNDS,
     get_bounded_funopop_params,
     get_unbounded_funopop_params,
 )
@@ -50,16 +56,22 @@ DEFAULT_DIFFBURSTPOP_PARAMS = DiffburstPopParams(
 ZERO_DIFFBURSTPOP_PARAMS = DiffburstPopParams(
     ZEROBURST_FREQBURST_PARAMS, ZEROBURST_FBURSTPOP_PARAMS, DEFAULT_TBURSTPOP_PARAMS
 )
+BOUNDS_DIFFBURSTPOP_PARAMS = DiffburstPopParams(
+    FREQBURST_PBOUNDS, FBURSTPOP_PBOUNDS, TBURSTPOP_PBOUNDS
+)
 
 DEFAULT_DUSTPOP_PARAMS = DustPopParams(
     DEFAULT_AVPOP_PARAMS, DEFAULT_DELTAPOP_PARAMS, DEFAULT_FUNOPOP_PARAMS
 )
+BOUNDS_DUSTPOP_PARAMS = DustPopParams(AVPOP_PBOUNDS, DELTAPOP_PBOUNDS, FUNOPOP_PBOUNDS)
 
 SPSPopParams = namedtuple("SPSPopParams", ["burstpop_params", "dustpop_params"])
 DEFAULT_SPSPOP_PARAMS = SPSPopParams(
     DEFAULT_DIFFBURSTPOP_PARAMS, DEFAULT_DUSTPOP_PARAMS
 )
 SPSPopUParams = namedtuple("SPSPopUParams", ["u_burstpop_params", "u_dustpop_params"])
+
+BOUNDS_SPSPOP_PARAMS = SPSPopParams(BOUNDS_DIFFBURSTPOP_PARAMS, BOUNDS_DUSTPOP_PARAMS)
 
 
 @jjit
