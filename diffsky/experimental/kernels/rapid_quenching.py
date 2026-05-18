@@ -2,15 +2,51 @@
 
 from collections import namedtuple
 from dsps.utils import _sigmoid
-
+from jax import numpy as jnp
 from jax import jit as jjit
 from jax import vmap
+from . import ssp_weight_kernels as sspwk
 
 RapidQParams = namedtuple("RapidQParams", ("rq_p_merge_x0", "rq_lg_age_gyr_max"))
-DEFAULT_RQ_PARAMS = RapidQParams(rq_p_merge_x0=0.2, rq_lg_age_gyr_max=-1.5)
+DEFAULT_RQ_PARAMS = RapidQParams(rq_p_merge_x0=0.2, rq_lg_age_gyr_max=-1.0)
 DEFAULT_RQ_BOUNDS = RapidQParams(
     rq_p_merge_x0=(0.01, 1.0), rq_lg_age_gyr_max=(-5.0, 0.0)
 )
+
+
+@jjit
+def modify_burstiness_info_with_rapid_quenching(
+    burstiness_info, p_merge, ssp_data, lgmet_weights
+):
+    age_weights_mc = jnp.sum(burstiness_info.ssp_weights_mc, axis=1)
+    age_weights_mc_rq, __ = get_age_weights_rq_vmap(
+        age_weights_mc, p_merge, ssp_data.ssp_lg_age_gyr, DEFAULT_RQ_PARAMS
+    )
+    ssp_weights_mc_rq = sspwk.combine_age_met_weights(age_weights_mc_rq, lgmet_weights)
+
+    age_weights_smooth = jnp.sum(burstiness_info.ssp_weights_smooth, axis=1)
+    age_weights_smooth_rq, __ = get_age_weights_rq_vmap(
+        age_weights_smooth, p_merge, ssp_data.ssp_lg_age_gyr, DEFAULT_RQ_PARAMS
+    )
+    ssp_weights_smooth_rq = sspwk.combine_age_met_weights(
+        age_weights_smooth_rq, lgmet_weights
+    )
+
+    age_weights_bursty = jnp.sum(burstiness_info.ssp_weights_bursty, axis=1)
+    age_weights_bursty_rq, __ = get_age_weights_rq_vmap(
+        age_weights_bursty, p_merge, ssp_data.ssp_lg_age_gyr, DEFAULT_RQ_PARAMS
+    )
+    ssp_weights_bursty_rq = sspwk.combine_age_met_weights(
+        age_weights_bursty_rq, lgmet_weights
+    )
+
+    burstiness_info_rq = burstiness_info._replace(
+        ssp_weights_mc=ssp_weights_mc_rq,
+        ssp_weights_smooth=ssp_weights_smooth_rq,
+        ssp_weights_bursty=ssp_weights_bursty_rq,
+    )
+
+    return burstiness_info_rq
 
 
 @jjit
