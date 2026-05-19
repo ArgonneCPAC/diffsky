@@ -6,6 +6,7 @@ import numpy as np
 from diffstar.diffstarpop import (
     DEFAULT_DIFFSTARPOP_PARAMS,
     DEFAULT_DIFFSTARPOP_U_PARAMS,
+    DIFFSTARPOP_PBOUNDS,
     get_bounded_diffstarpop_params,
     get_unbounded_diffstarpop_params,
 )
@@ -15,6 +16,7 @@ from jax import jit as jjit
 from ..experimental.scatter import (
     DEFAULT_SCATTER_PARAMS,
     DEFAULT_SCATTER_U_PARAMS,
+    SCATTER_PBOUNDS,
     get_bounded_scatter_params,
     get_unbounded_scatter_params,
 )
@@ -47,6 +49,14 @@ UParamCollection = namedtuple(
         "scatter_u_params",
         "ssperr_u_params",
     ),
+)
+
+BOUND_PARAM_COLLECTION = ParamCollection(
+    DIFFSTARPOP_PBOUNDS,
+    umzr.MZR_PBOUNDS,
+    spspu.SPSPOP_PBOUNDS,
+    SCATTER_PBOUNDS,
+    ssp_err_model.SSPERR_PBOUNDS,
 )
 
 

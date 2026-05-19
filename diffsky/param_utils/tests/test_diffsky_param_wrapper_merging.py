@@ -147,3 +147,19 @@ def test_default_diffsky_params_are_ok():
         dpwm.DEFAULT_PARAM_COLLECTION
     )
     assert param_collection_is_ok
+
+
+def test_default_values_within_bounds():
+
+    bounds_coll = dpwm.BOUND_PARAM_COLLECTION
+    values_coll = dpwm.DEFAULT_PARAM_COLLECTION
+
+    bounds = dpwm.unroll_param_collection_into_flat_array(*bounds_coll)
+    values = dpwm.unroll_param_collection_into_flat_array(*values_coll)
+
+    # Compare structures
+    assert len(values) == len(bounds)
+
+    # Check if the values are within the bounds
+    for val, (low, high) in zip(values, bounds):
+        assert low <= val <= high
