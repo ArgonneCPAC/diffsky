@@ -6,7 +6,7 @@ import numpy as np
 from diffstar.diffstarpop import (
     DEFAULT_DIFFSTARPOP_PARAMS,
     DEFAULT_DIFFSTARPOP_U_PARAMS,
-    BOUNDS_DIFFSTARPOP_PARAMS,
+    DIFFSTARPOP_PBOUNDS,
     get_bounded_diffstarpop_params,
     get_unbounded_diffstarpop_params,
 )
@@ -52,9 +52,9 @@ UParamCollection = namedtuple(
 )
 
 BOUND_PARAM_COLLECTION = ParamCollection(
-    BOUNDS_DIFFSTARPOP_PARAMS,
-    umzr.BOUNDS_MZR_PARAMS,
-    spspu.BOUNDS_SPSPOP_PARAMS,
+    DIFFSTARPOP_PBOUNDS,
+    umzr.MZR_PBOUNDS,
+    spspu.SPSPOP_PBOUNDS,
     SCATTER_PBOUNDS,
     ssp_err_model.SSPERR_PBOUNDS,
 )
