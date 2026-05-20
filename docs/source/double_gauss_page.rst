@@ -9,5 +9,5 @@ We recommend reading the tutorial notebook alongside the supplementary source co
 .. toctree::
     :maxdepth: 1
 
-    double_gaussian_holder.rst
     double_gauss_demo.ipynb
+    double_gaussian_code_holder.rst

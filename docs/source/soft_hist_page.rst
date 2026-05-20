@@ -8,5 +8,5 @@ We recommend reading the tutorial notebook alongside the supplementary source co
 .. toctree::
     :maxdepth: 1
 
-    single_gaussian_holder.rst
     softhist_demo.ipynb
+    single_gaussian_code_holder.rst
