@@ -7,7 +7,10 @@ see the :doc:`background` section.
 
 Reading and analyzing Diffsky mocks
 ------------------------------------
-Docs coming soon!
+.. toctree::
+    :maxdepth: 1
+
+    demo_diffsky_recompute_from_mock.ipynb
 
 Generating Diffsky galaxy samples
 ---------------------------------
