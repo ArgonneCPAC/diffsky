@@ -3,9 +3,9 @@
 from jax import numpy as jnp
 from jax import jit as jjit
 from jax import random as jran
+from jax import value_and_grad
 from collections import namedtuple
 from diffsky.signdhist_lomem import nnsig_ndhist
-from jax import value_and_grad
 
 GParams = namedtuple("GParams", ("mu", "sig"))
 DEFAULT_PARAMS = GParams(mu=-1.0, sig=1.0)

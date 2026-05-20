@@ -1,20 +1,21 @@
 """Demo code to fit a 2d Gaussian model with soft histograms and jax.grad"""
 
 from jax import numpy as jnp
-from collections import namedtuple
 from jax import random as jran
 from jax import jit as jjit
-from diffsky.signdhist_lomem import nnsig_ndhist
 from jax import value_and_grad
+from collections import namedtuple
+from diffsky.signdhist_lomem import nnsig_ndhist
 
 DGParams = namedtuple("DGParams", ("mu0", "sig0", "mu1", "sig1", "frac0"))
-
 DEFAULT_PARAMS = DGParams(mu0=-1.0, sig0=0.5, mu1=1.0, sig1=1.0, frac0=0.75)
+
 NPTS = 20_000
 
 
 @jjit
 def mc_double_gaussian(params, ran_key):
+    """Draw a stochastic Monte Carlo realization of a double Gaussian"""
     u_key, n0_key, n1_key = jran.split(ran_key, 3)
     uran = jran.uniform(u_key, minval=0, maxval=1, shape=(NPTS,))
     n0 = jran.normal(n0_key, shape=(NPTS,)) * params.sig0 + params.mu0
@@ -26,6 +27,8 @@ def mc_double_gaussian(params, ran_key):
 
 @jjit
 def predict_soft_xhist_mc(params, xbins, ran_key):
+    """Predict histogram counts by applying soft histogram to
+    a stochastic Monte Carlo realization of a double Gaussian"""
     xdata = mc_double_gaussian(params, ran_key)
     xhist = soft_xhist(xdata, xbins)
     return xhist
@@ -33,6 +36,8 @@ def predict_soft_xhist_mc(params, xbins, ran_key):
 
 @jjit
 def predict_soft_xhist_weighted(params, xbins, ran_key):
+    """Predict histogram counts by applying soft histogram to
+    a PDF-weighted Monte Carlo realization of a double Gaussian"""
     n0_key, n1_key = jran.split(ran_key, 2)
     n0 = jran.normal(n0_key, shape=(NPTS,)) * params.sig0 + params.mu0
     n1 = jran.normal(n1_key, shape=(NPTS,)) * params.sig1 + params.mu1
@@ -65,6 +70,7 @@ def _mae_kern(x, y):
 
 @jjit
 def weighted_mae_loss(params, loss_data):
+    """Loss function based on a PDF-weighted soft histogram"""
     xhist_target, xbins, ran_key = loss_data
     xhist_pred = predict_soft_xhist_weighted(params, xbins, ran_key)
     loss = _mae_kern(xhist_pred, xhist_target)
@@ -73,6 +79,7 @@ def weighted_mae_loss(params, loss_data):
 
 @jjit
 def mc_mae_loss(params, loss_data):
+    """Loss function based on a stochastic Monte Carlo with a soft histogram"""
     xhist_target, xbins, ran_key = loss_data
     xhist_pred = predict_soft_xhist_mc(params, xbins, ran_key)
     loss = _mae_kern(xhist_pred, xhist_target)
