@@ -8,5 +8,5 @@ that is not necessarily part of Diffsky.
 .. toctree::
     :maxdepth: 1
 
-    soft_hist_page.rst
-    double_gauss_page.rst
+    gaussian_examples/soft_hist_page.rst
+    gaussian_examples/double_gauss_page.rst
