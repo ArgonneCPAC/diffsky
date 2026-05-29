@@ -1,8 +1,8 @@
 numpy>=2
 jax
 diffmah>=0.7.3
-diffstar>=1.0.1
-dsps>=0.4.5
+diffstar>=1.0.3
+dsps>=0.4.8
 h5py
 diffhalos
 pyyaml
