@@ -1,5 +1,6 @@
 0.3.5 (unreleased)
 -------------------
+- Incorporate rapid quenching kernel into satellites (https://github.com/ArgonneCPAC/diffsky/pull/425)
 - Incorporate merging into Last Journey mocks (https://github.com/ArgonneCPAC/diffsky/pull/412)
 - Retune bulge shapes to be rounder (https://github.com/ArgonneCPAC/diffsky/pull/386)
 - Retune galaxy sizes vs LSST-DP1 (https://github.com/ArgonneCPAC/diffsky/pull/385)
