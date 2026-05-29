@@ -114,6 +114,47 @@ def diffstarpop_cen_wrapper(
 
 
 @jjit
+def mc_diffstarpop_wrapper(
+    diffstarpop_params,
+    ran_key,
+    mah_params,
+    upid,
+    lgmu_infall,
+    logmhost_infall,
+    gyr_since_infall,
+    cosmo_params,
+):
+    n_gals = mah_params.logm0.size
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t0)
+    ZZ = jnp.zeros(n_gals)
+
+    logmp0 = logmh_at_t_obs(mah_params, t0 + ZZ, lgt0)
+
+    _res = mc_diffstar_params_galpop(
+        diffstarpop_params,
+        logmp0,
+        mah_params.t_peak,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        ran_key,
+    )
+    sfh_params_ms, sfh_params_q, frac_q, mc_is_q = _res
+    sfh_params = mc_select_diffstar_params(sfh_params_q, sfh_params_ms, mc_is_q)
+
+    DiffstarPopResults = namedtuple(
+        "DiffstarPopResults",
+        ["sfh_params", "sfh_params_ms", "sfh_params_q", "mc_is_q", "frac_q"],
+    )
+    diffstarpop_results = DiffstarPopResults(
+        sfh_params, sfh_params_ms, sfh_params_q, mc_is_q, frac_q
+    )
+    return diffstarpop_results
+
+
+@jjit
 def mc_diffstarpop_cens_wrapper(diffstarpop_params, ran_key, mah_params, cosmo_params):
     n_gals = mah_params.logm0.size
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
@@ -159,3 +200,30 @@ def compute_diffstar_info(mah_params, sfh_params, t_obs, cosmo_params, fb, n_t_t
     sfh_table = compute_diffstar_sfh_wrapper(sfh_params, mah_params, t_table, lgt0, fb)
     logsm_obs, logssfr_obs = _get_sfh_info_at_t_obs(t_table, sfh_table, t_obs)
     return t_table, sfh_table, logsm_obs, logssfr_obs
+
+
+@partial(jjit, static_argnames=["n_t_table"])
+def get_diffstar_info(mah_params, sfh_params, t_obs, cosmo_params, fb, n_t_table):
+    t0 = flat_wcdm.age_at_z0(*cosmo_params)
+    lgt0 = jnp.log10(t0)
+    t_table = jnp.linspace(T_TABLE_MIN, t0, n_t_table)
+    sfh_table = compute_diffstar_sfh_wrapper(sfh_params, mah_params, t_table, lgt0, fb)
+    logsm_obs, logssfr_obs = _get_sfh_info_at_t_obs(t_table, sfh_table, t_obs)
+    diffstar_info = DiffstarInfo(
+        mah_params, sfh_params, t_table, sfh_table, t_obs, logsm_obs, logssfr_obs
+    )
+    return diffstar_info
+
+
+DiffstarInfo = namedtuple(
+    "DiffstarInfo",
+    [
+        "mah_params",
+        "sfh_params",
+        "t_table",
+        "sfh_table",
+        "t_obs",
+        "logsm_obs",
+        "logssfr_obs",
+    ],
+)
