@@ -10,13 +10,13 @@ from jax import numpy as jnp
 from jax import vmap
 
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
+from ...merging import merging_model
 from ...ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
 from .. import photometry_interpolation as photerp
 from . import constants, mc_randoms
-from . import ssp_weight_kernels as sspwk
 from . import rapid_quenching as rq
-from ...merging import merging_model
+from . import ssp_weight_kernels as sspwk
 
 LGMET_SCATTER = constants.LGMET_SCATTER
 
@@ -349,6 +349,8 @@ def _phot_kern(
         obs_mags_bursty,
         diffstarpop_results.frac_q,
         obs_mags_weighted,
+        diffstar_info_ms,
+        diffstar_info_q,
     )
     return phot_kern_results
 
@@ -374,5 +376,7 @@ PHOT_KERN_KEYS = (
     "obs_mags_bursty",
     "frac_q",
     "obs_mags_weighted",
+    "diffstar_info_ms",
+    "diffstar_info_q",
 )
 PhotKernResults = namedtuple("PhotKernResults", PHOT_KERN_KEYS)
