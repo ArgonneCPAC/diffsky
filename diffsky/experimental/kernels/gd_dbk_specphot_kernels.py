@@ -329,11 +329,16 @@ def _dbk_sed_kern(
     z_obs,
     t_obs,
     mah_params,
+    upid,
+    lgmu_infall,
+    logmhost_infall,
+    gyr_since_infall,
     ssp_data,
     mzr_params,
     spspop_params,
     scatter_params,
     ssperr_params,
+    merging_params,
     cosmo_params,
     fb,
 ):
@@ -354,6 +359,12 @@ def _dbk_sed_kern(
     n_age = ssp_data.ssp_lg_age_gyr.size
     precomputed_ssp_mag_table = jnp.ones((n_z, n_bands, n_met, n_age))
     wave_eff_table = jnp.ones((n_z, n_bands))
+
+    t_infall = t_obs - gyr_since_infall
+    logmp_infall = lgmu_infall + logmhost_infall
+    p_merge_smooth = merging_model.get_p_merge_from_merging_params(
+        merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upid
+    )
 
     dbk_phot_info, dbk_weights = _dbk_phot_kern(
         phot_randoms,
