@@ -6,9 +6,10 @@ from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
 
+from ...merging import merging_model
 from ...ssp_err_model import ssp_err_model
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
-from . import dbk_kernels, linelum_kernels, mc_randoms, phot_kernels
+from . import dbk_kernels, gd_linelum_kernels, gd_phot_kernels, mc_randoms
 from . import ssp_weight_kernels as sspwk
 
 
@@ -18,6 +19,10 @@ def _mc_dbk_phot_kern(
     z_obs,
     t_obs,
     mah_params,
+    upid,
+    lgmu_infall,
+    logmhost_infall,
+    gyr_since_infall,
     ssp_data,
     precomputed_ssp_mag_table,
     z_phot_table,
@@ -27,19 +32,35 @@ def _mc_dbk_phot_kern(
     spspop_params,
     scatter_params,
     ssperr_params,
+    merging_params,
     cosmo_params,
     fb,
 ):
-    phot_randoms, sfh_params, dbk_randoms = mc_randoms.get_mc_dbk_phot_randoms(
-        ran_key, diffstarpop_params, mah_params, cosmo_params
+    phot_randoms, diffstarpop_results, dbk_randoms = mc_randoms.get_dbk_phot_randoms(
+        ran_key,
+        diffstarpop_params,
+        mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        cosmo_params,
     )
+
+    t_infall = t_obs - gyr_since_infall
+    logmp_infall = lgmu_infall + logmhost_infall
+    p_merge_smooth = merging_model.get_p_merge_from_merging_params(
+        merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upid
+    )
+
     dbk_phot_info, dbk_weights = _dbk_phot_kern(
         phot_randoms,
-        sfh_params,
+        diffstarpop_results,
         dbk_randoms,
         z_obs,
         t_obs,
         mah_params,
+        p_merge_smooth,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -58,11 +79,12 @@ def _mc_dbk_phot_kern(
 @jjit
 def _dbk_phot_kern(
     phot_randoms,
-    sfh_params,
+    diffstarpop_results,
     dbk_randoms,
     z_obs,
     t_obs,
     mah_params,
+    p_merge_smooth,
     ssp_data,
     precomputed_ssp_mag_table,
     z_phot_table,
@@ -74,12 +96,13 @@ def _dbk_phot_kern(
     cosmo_params,
     fb,
 ):
-    phot_kern_results = phot_kernels._phot_kern(
+    phot_kern_results = gd_phot_kernels._phot_kern(
         phot_randoms,
-        sfh_params,
+        diffstarpop_results,
         z_obs,
         t_obs,
         mah_params,
+        p_merge_smooth,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -137,6 +160,10 @@ def _mc_dbk_specphot_kern(
     z_obs,
     t_obs,
     mah_params,
+    upid,
+    lgmu_infall,
+    logmhost_infall,
+    gyr_since_infall,
     ssp_data,
     precomputed_ssp_mag_table,
     z_phot_table,
@@ -147,19 +174,35 @@ def _mc_dbk_specphot_kern(
     spspop_params,
     scatter_params,
     ssperr_params,
+    merging_params,
     cosmo_params,
     fb,
 ):
-    phot_randoms, sfh_params, dbk_randoms = mc_randoms.get_mc_dbk_phot_randoms(
-        ran_key, diffstarpop_params, mah_params, cosmo_params
+    phot_randoms, diffstarpop_results, dbk_randoms = mc_randoms.get_dbk_phot_randoms(
+        ran_key,
+        diffstarpop_params,
+        mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        cosmo_params,
     )
+
+    t_infall = t_obs - gyr_since_infall
+    logmp_infall = lgmu_infall + logmhost_infall
+    p_merge_smooth = merging_model.get_p_merge_from_merging_params(
+        merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upid
+    )
+
     dbk_specphot_info, dbk_weights = _dbk_specphot_kern(
         phot_randoms,
-        sfh_params,
+        diffstarpop_results,
         dbk_randoms,
         z_obs,
         t_obs,
         mah_params,
+        p_merge_smooth,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -178,11 +221,12 @@ def _mc_dbk_specphot_kern(
 @jjit
 def _dbk_specphot_kern(
     phot_randoms,
-    sfh_params,
+    diffstarpop_results,
     dbk_randoms,
     z_obs,
     t_obs,
     mah_params,
+    p_merge_smooth,
     ssp_data,
     precomputed_ssp_mag_table,
     z_phot_table,
@@ -195,12 +239,13 @@ def _dbk_specphot_kern(
     cosmo_params,
     fb,
 ):
-    phot_kern_results, spec_kern_results = linelum_kernels._specphot_kern(
+    phot_kern_results, spec_kern_results = gd_linelum_kernels._specphot_kern(
         phot_randoms,
-        sfh_params,
+        diffstarpop_results,
         z_obs,
         t_obs,
         mah_params,
+        p_merge_smooth,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -215,11 +260,12 @@ def _dbk_specphot_kern(
     )
     dbk_phot_info, dbk_weights = _dbk_phot_kern(
         phot_randoms,
-        sfh_params,
+        diffstarpop_results,
         dbk_randoms,
         z_obs,
         t_obs,
         mah_params,
+        p_merge_smooth,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -279,7 +325,7 @@ def _dbk_sed_kern(
     delta_mag_ssp_scatter,
     uran_fbulge,
     fknot,
-    sfh_params,
+    diffstarpop_results,
     z_obs,
     t_obs,
     mah_params,
@@ -311,11 +357,12 @@ def _dbk_sed_kern(
 
     dbk_phot_info, dbk_weights = _dbk_phot_kern(
         phot_randoms,
-        sfh_params,
+        diffstarpop_results,
         dbk_randoms,
         z_obs,
         t_obs,
         mah_params,
+        p_merge_smooth,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -390,7 +437,7 @@ DBK_PHOT_EXTRA_FIELDS = (
 MCDBKPhotInfo = namedtuple(
     "MCDBKPhotInfo",
     (
-        *phot_kernels.PhotKernResults._fields,
+        *gd_phot_kernels.PhotKernResults._fields,
         *mc_randoms.PhotRandoms._fields,
         *mc_randoms.DBKRandoms._fields,
         *DBK_PHOT_EXTRA_FIELDS,

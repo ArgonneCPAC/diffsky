@@ -5,7 +5,7 @@ from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
-from ....param_utils import diffsky_param_wrapper as dpw
+from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ... import dbk_phot_from_mock
 from ...tests import test_lightcone_generators as tlcg
 from .. import gd_dbk_specphot_kernels as gd_dbkspk
@@ -17,17 +17,29 @@ def test_mc_dbk_phot_kern(num_halos=19):
         num_halos=num_halos
     )
     fb = 0.196
+    upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
+    lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
+    gyr_since_infall = lc_data.t_infall - lc_data.t_obs
 
     args = (
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
+        upid,
+        lgmu_infall,
+        lc_data.logmhost_infall,
+        gyr_since_infall,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
+        dpwm.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.mzr_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
         DEFAULT_COSMOLOGY,
         fb,
     )
@@ -42,17 +54,30 @@ def test_mc_dbk_specphot_kern(num_halos=13):
     )
     fb = 0.196
 
+    upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
+    lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
+    gyr_since_infall = lc_data.t_infall - lc_data.t_obs
+
     args = (
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
+        upid,
+        lgmu_infall,
+        lc_data.logmhost_infall,
+        gyr_since_infall,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
         lc_data.line_wave_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
+        dpwm.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.mzr_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
         DEFAULT_COSMOLOGY,
         fb,
     )
