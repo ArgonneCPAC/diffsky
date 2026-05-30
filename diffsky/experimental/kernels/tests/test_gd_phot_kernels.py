@@ -103,8 +103,14 @@ def test_mc_phot_kern(num_halos=75):
         fb,
     )
 
+    skip_keys = (
+        "burstiness_info_q",
+        "burstiness_info_ms",
+        "diffstar_info_ms",
+        "diffstar_info_q",
+    )
     for key in mc_gd_phot_kern_results._fields:
-        if key not in ("diffstar_info_ms", "diffstar_info_q"):
+        if key not in skip_keys:
             x = getattr(mc_gd_phot_kern_results, key)
             x2 = getattr(gd_phot_kern_results, key)
             assert np.allclose(x, x2)

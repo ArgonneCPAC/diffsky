@@ -351,6 +351,8 @@ def _phot_kern(
         obs_mags_weighted,
         diffstar_info_ms,
         diffstar_info_q,
+        burstiness_info_ms,
+        burstiness_info_q,
     )
     return phot_kern_results
 
@@ -378,5 +380,7 @@ PHOT_KERN_KEYS = (
     "obs_mags_weighted",
     "diffstar_info_ms",
     "diffstar_info_q",
+    "burstiness_info_ms",
+    "burstiness_info_q",
 )
 PhotKernResults = namedtuple("PhotKernResults", PHOT_KERN_KEYS)
