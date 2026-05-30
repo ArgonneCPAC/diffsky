@@ -161,9 +161,15 @@ def _specphot_kern_merging(
     phot_kern_results = func(*args)
 
     args = phot_kern_results, spec_kern_results, sat_weights, halo_indx
-    linelums_obs, linelum_in_situ = _get_linelum_kern_merging_quantities(*args)
+    _res = _get_linelum_kern_merging_quantities(*args)
+    linelums_obs, linelum_in_situ_mc, linelum_weighted, linelum_in_situ_weighted = _res
+
     spec_kern_results = _get_linelum_results_with_merging(
-        spec_kern_results, linelums_obs, linelum_in_situ
+        spec_kern_results,
+        linelums_obs,
+        linelum_in_situ_mc,
+        linelum_weighted,
+        linelum_in_situ_weighted,
     )
 
     return phot_kern_results, spec_kern_results
@@ -173,24 +179,44 @@ def _specphot_kern_merging(
 def _get_linelum_kern_merging_quantities(
     phot_kern_results, spec_kern_results, sat_weights, halo_indx
 ):
-    linelum_in_situ = spec_kern_results.linelum_gal
+    linelum_in_situ_mc = spec_kern_results.linelum_gal
     linelums_obs = compute_x_tot_from_x_in_situ(
-        linelum_in_situ,
+        linelum_in_situ_mc,
         phot_kern_results.p_merge[:, jnp.newaxis],
         sat_weights[:, jnp.newaxis],
         halo_indx,
     )
-    return linelums_obs, linelum_in_situ
+
+    linelum_in_situ_weighted = spec_kern_results.linelum_weighted
+    linelum_weighted = compute_x_tot_from_x_in_situ(
+        linelum_in_situ_weighted,
+        phot_kern_results.p_merge[:, jnp.newaxis],
+        sat_weights[:, jnp.newaxis],
+        halo_indx,
+    )
+
+    return linelums_obs, linelum_in_situ_mc, linelum_weighted, linelum_in_situ_weighted
 
 
 @jjit
-def _get_linelum_results_with_merging(spec_kern_results, linelums_obs, linelum_in_situ):
-    spec_kern_results = spec_kern_results._replace(linelum_gal=linelums_obs)
+def _get_linelum_results_with_merging(
+    spec_kern_results,
+    linelums_obs,
+    linelum_in_situ,
+    linelum_weighted,
+    linelum_in_situ_weighted,
+):
+    spec_kern_results = spec_kern_results._replace(
+        linelum_gal=linelums_obs, linelum_weighted=linelum_weighted
+    )
 
-    new_keys = ["linelum_gal_in_situ"]
+    new_keys = ["linelum_gal_in_situ", "linelum_in_situ_weighted"]
     fields = list(spec_kern_results._fields) + new_keys
     SpecKernResults = namedtuple("SpecKernResults", fields)
+
     spec_kern_results = SpecKernResults(
-        **spec_kern_results._asdict(), linelum_gal_in_situ=linelum_in_situ
+        **spec_kern_results._asdict(),
+        linelum_gal_in_situ=linelum_in_situ,
+        linelum_in_situ_weighted=linelum_in_situ_weighted,
     )
     return spec_kern_results

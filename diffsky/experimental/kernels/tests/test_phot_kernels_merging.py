@@ -16,8 +16,19 @@ def check_phot_kern_merging_results(phot_kern_results, lc_data):
     n_gals = lc_data.z_obs.size
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
 
-    for arr in phot_kern_results:
-        assert np.all(np.isfinite(arr))
+    skip_fields = (
+        "diffstar_info_ms",
+        "diffstar_info_q",
+        "burstiness_info_ms",
+        "burstiness_info_q",
+    )
+    for key in phot_kern_results._fields:
+        if key not in skip_fields:
+            arr = getattr(phot_kern_results, key)
+            try:
+                assert np.all(np.isfinite(arr))
+            except ValueError:
+                raise ValueError(f"{key} is not a flat array")
 
     assert np.all(phot_kern_results.p_merge >= 0)
     assert np.all(phot_kern_results.p_merge <= 1)
