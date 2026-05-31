@@ -135,7 +135,7 @@ def modify_lgfburst_with_rapid_quenching(p_merge, lgfb_orig):
         DEFAULT_RQ_PARAMS.rq_p_merge_x0,
         K_P_MERGE,
         lgfb_orig,
-        diffburst.LGFBURST_MIN + 0.1,
+        diffburst.LGFBURST_MIN + 0.01,
     )
     return lgfb_rq
 
