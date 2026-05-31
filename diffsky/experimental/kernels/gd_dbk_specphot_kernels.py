@@ -9,7 +9,13 @@ from jax import numpy as jnp
 from ...merging import merging_model
 from ...ssp_err_model import ssp_err_model
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
-from . import dbk_kernels, gd_linelum_kernels, gd_phot_kernels, mc_randoms
+from . import (
+    dbk_kernels,
+    gd_dbk_kernels,
+    gd_linelum_kernels,
+    gd_phot_kernels,
+    mc_randoms,
+)
 from . import ssp_weight_kernels as sspwk
 
 
@@ -120,7 +126,8 @@ def _dbk_phot_kern(
         lgyr_peak=phot_kern_results.lgyr_peak,
         lgyr_max=phot_kern_results.lgyr_max,
     )
-    dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(
+    age_weights = jnp.sum(phot_kern_results.ssp_weights, axis=1)
+    dbk_weights, disk_bulge_history = gd_dbk_kernels._dbk_kern(
         t_obs,
         ssp_data,
         phot_kern_results.t_table,
@@ -128,6 +135,9 @@ def _dbk_phot_kern(
         burst_params,
         phot_kern_results.lgmet_weights,
         dbk_randoms,
+        phot_kern_results.logsm_obs,
+        age_weights,
+        p_merge_smooth,
     )
 
     _ret3 = dbk_kernels._get_dbk_phot_from_dbk_weights(
