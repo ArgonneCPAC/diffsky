@@ -164,7 +164,17 @@ def _phot_kern(
         LGMET_SCATTER,
     )
 
-    burstiness_info_mc = sspwk.get_burstiness(
+    smooth_ssp_weights_mc = rq.modify_smooth_ssp_weights_with_rapid_quenching(
+        smooth_ssp_weights_mc, p_merge_smooth, ssp_data
+    )
+    smooth_ssp_weights_ms = rq.modify_smooth_ssp_weights_with_rapid_quenching(
+        smooth_ssp_weights_ms, p_merge_smooth, ssp_data
+    )
+    smooth_ssp_weights_q = rq.modify_smooth_ssp_weights_with_rapid_quenching(
+        smooth_ssp_weights_q, p_merge_smooth, ssp_data
+    )
+
+    burstiness_info_mc = rq.get_burstiness_rq(
         phot_randoms.uran_pburst,
         phot_randoms.mc_is_q,
         diffstar_info_mc.logsm_obs,
@@ -173,16 +183,10 @@ def _phot_kern(
         smooth_ssp_weights_mc.lgmet_weights,
         ssp_data,
         spspop_params.burstpop_params,
-    )
-
-    burstiness_info_mc = rq.modify_burstiness_info_with_rapid_quenching(
-        burstiness_info_mc,
         p_merge_smooth,
-        ssp_data,
-        smooth_ssp_weights_mc.lgmet_weights,
     )
 
-    burstiness_info_ms = sspwk.get_burstiness(
+    burstiness_info_ms = rq.get_burstiness_rq(
         phot_randoms.uran_pburst,
         phot_randoms.mc_is_q,
         diffstar_info_ms.logsm_obs,
@@ -191,15 +195,10 @@ def _phot_kern(
         smooth_ssp_weights_ms.lgmet_weights,
         ssp_data,
         spspop_params.burstpop_params,
-    )
-    burstiness_info_ms = rq.modify_burstiness_info_with_rapid_quenching(
-        burstiness_info_ms,
         p_merge_smooth,
-        ssp_data,
-        smooth_ssp_weights_ms.lgmet_weights,
     )
 
-    burstiness_info_q = sspwk.get_burstiness(
+    burstiness_info_q = rq.get_burstiness_rq(
         phot_randoms.uran_pburst,
         phot_randoms.mc_is_q,
         diffstar_info_q.logsm_obs,
@@ -208,12 +207,7 @@ def _phot_kern(
         smooth_ssp_weights_q.lgmet_weights,
         ssp_data,
         spspop_params.burstpop_params,
-    )
-    burstiness_info_q = rq.modify_burstiness_info_with_rapid_quenching(
-        burstiness_info_q,
         p_merge_smooth,
-        ssp_data,
-        smooth_ssp_weights_q.lgmet_weights,
     )
 
     dust_frac_trans_mc, dust_params_mc = sspwk.compute_dust_attenuation(
