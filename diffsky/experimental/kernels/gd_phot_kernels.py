@@ -135,7 +135,7 @@ def _phot_kern(
         n_t_table,
     )
 
-    smooth_ssp_weights_mc = sspwk.get_smooth_ssp_weights(
+    smooth_ssp_weights_mc = rq.get_smooth_ssp_weights_rq(
         diffstar_info_mc.t_table,
         diffstar_info_mc.sfh_table,
         diffstar_info_mc.logsm_obs,
@@ -143,9 +143,10 @@ def _phot_kern(
         t_obs,
         mzr_params,
         LGMET_SCATTER,
+        p_merge_smooth,
     )
 
-    smooth_ssp_weights_q = sspwk.get_smooth_ssp_weights(
+    smooth_ssp_weights_q = rq.get_smooth_ssp_weights_rq(
         diffstar_info_q.t_table,
         diffstar_info_q.sfh_table,
         diffstar_info_q.logsm_obs,
@@ -153,8 +154,9 @@ def _phot_kern(
         t_obs,
         mzr_params,
         LGMET_SCATTER,
+        p_merge_smooth,
     )
-    smooth_ssp_weights_ms = sspwk.get_smooth_ssp_weights(
+    smooth_ssp_weights_ms = rq.get_smooth_ssp_weights_rq(
         diffstar_info_ms.t_table,
         diffstar_info_ms.sfh_table,
         diffstar_info_ms.logsm_obs,
@@ -162,16 +164,7 @@ def _phot_kern(
         t_obs,
         mzr_params,
         LGMET_SCATTER,
-    )
-
-    smooth_ssp_weights_mc = rq.modify_smooth_ssp_weights_with_rapid_quenching(
-        smooth_ssp_weights_mc, p_merge_smooth, ssp_data
-    )
-    smooth_ssp_weights_ms = rq.modify_smooth_ssp_weights_with_rapid_quenching(
-        smooth_ssp_weights_ms, p_merge_smooth, ssp_data
-    )
-    smooth_ssp_weights_q = rq.modify_smooth_ssp_weights_with_rapid_quenching(
-        smooth_ssp_weights_q, p_merge_smooth, ssp_data
+        p_merge_smooth,
     )
 
     burstiness_info_mc = rq.get_burstiness_rq(

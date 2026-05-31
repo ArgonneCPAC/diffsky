@@ -25,6 +25,26 @@ calc_bursty_age_weights_vmap = jjit(vmap(calc_bursty_age_weights, in_axes=(0, 0,
 
 
 @jjit
+def get_smooth_ssp_weights_rq(
+    t_table,
+    sfh_table,
+    logsm_obs,
+    ssp_data,
+    t_obs,
+    mzr_params,
+    lgmet_scatter,
+    p_merge_smooth,
+):
+    smooth_ssp_weights = sspwk.get_smooth_ssp_weights(
+        t_table, sfh_table, logsm_obs, ssp_data, t_obs, mzr_params, lgmet_scatter
+    )
+    smooth_ssp_weights_rq = modify_smooth_ssp_weights_with_rapid_quenching(
+        smooth_ssp_weights, p_merge_smooth, ssp_data
+    )
+    return smooth_ssp_weights_rq
+
+
+@jjit
 def get_burstiness_rq(
     uran_pburst,
     mc_is_q,
