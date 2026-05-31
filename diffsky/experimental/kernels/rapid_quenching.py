@@ -1,10 +1,12 @@
 """"""
 
 from collections import namedtuple
+
 from dsps.utils import _sigmoid
-from jax import numpy as jnp
 from jax import jit as jjit
+from jax import numpy as jnp
 from jax import vmap
+
 from . import ssp_weight_kernels as sspwk
 
 RapidQParams = namedtuple("RapidQParams", ("rq_p_merge_x0", "rq_lg_age_gyr_max"))
@@ -12,6 +14,20 @@ DEFAULT_RQ_PARAMS = RapidQParams(rq_p_merge_x0=0.2, rq_lg_age_gyr_max=-1.0)
 DEFAULT_RQ_BOUNDS = RapidQParams(
     rq_p_merge_x0=(0.01, 1.0), rq_lg_age_gyr_max=(-5.0, 0.0)
 )
+
+
+@jjit
+def modify_smooth_ssp_weights_with_rapid_quenching(
+    ssp_weights_smooth, p_merge, ssp_data
+):
+    age_weights_rq, __ = get_age_weights_rq_vmap(
+        ssp_weights_smooth.age_weights,
+        p_merge,
+        ssp_data.ssp_lg_age_gyr,
+        DEFAULT_RQ_PARAMS,
+    )
+    ssp_weights_rq = ssp_weights_smooth._replace(age_weights=age_weights_rq)
+    return ssp_weights_rq
 
 
 @jjit
