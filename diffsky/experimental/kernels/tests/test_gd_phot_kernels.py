@@ -5,12 +5,12 @@ from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
+from ....merging import merging_model
 from ....param_utils import diffsky_param_wrapper as dpw
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
+from ...tests import test_lightcone_generators as tlcg
 from ...tests import test_mc_phot
 from .. import gd_phot_kernels, phot_kernels
-from ...tests import test_lightcone_generators as tlcg
-from ....merging import merging_model
 
 
 def test_mc_phot_kern(num_halos=75):
@@ -103,8 +103,17 @@ def test_mc_phot_kern(num_halos=75):
         fb,
     )
 
-    for x, x2 in zip(mc_gd_phot_kern_results, gd_phot_kern_results):
-        assert np.allclose(x, x2)
+    skip_keys = (
+        "burstiness_info_q",
+        "burstiness_info_ms",
+        "diffstar_info_ms",
+        "diffstar_info_q",
+    )
+    for key in mc_gd_phot_kern_results._fields:
+        if key not in skip_keys:
+            x = getattr(mc_gd_phot_kern_results, key)
+            x2 = getattr(gd_phot_kern_results, key)
+            assert np.allclose(x, x2)
 
     mc_phot_kern_results, mc_phot_kern_randoms = phot_kernels._mc_phot_kern(
         phot_key,

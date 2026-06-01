@@ -21,6 +21,10 @@ MCDiffstar = namedtuple(
     "MCDiffstar",
     ("diffstar_params_ms", "diffstar_params_q", "sfh_ms", "sfh_q", "frac_q", "mc_is_q"),
 )
+DiffstarPopResults = namedtuple(
+    "DiffstarPopResults",
+    ["sfh_params", "sfh_params_ms", "sfh_params_q", "mc_is_q", "frac_q"],
+)
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 
@@ -144,10 +148,6 @@ def mc_diffstarpop_wrapper(
     sfh_params_ms, sfh_params_q, frac_q, mc_is_q = _res
     sfh_params = mc_select_diffstar_params(sfh_params_q, sfh_params_ms, mc_is_q)
 
-    DiffstarPopResults = namedtuple(
-        "DiffstarPopResults",
-        ["sfh_params", "sfh_params_ms", "sfh_params_q", "mc_is_q", "frac_q"],
-    )
     diffstarpop_results = DiffstarPopResults(
         sfh_params, sfh_params_ms, sfh_params_q, mc_is_q, frac_q
     )

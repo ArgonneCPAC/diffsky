@@ -134,6 +134,33 @@ def get_mc_dbk_phot_randoms(ran_key, diffstarpop_params, mah_params, cosmo_param
 
 
 @jjit
+def get_dbk_phot_randoms(
+    ran_key,
+    diffstarpop_params,
+    mah_params,
+    upid,
+    lgmu_infall,
+    logmhost_infall,
+    gyr_since_infall,
+    cosmo_params,
+):
+    phot_key, dbk_key = jran.split(ran_key, 2)
+    phot_randoms, diffstarpop_results = get_phot_randoms(
+        phot_key,
+        diffstarpop_params,
+        mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        cosmo_params,
+    )
+    n_gals = diffstarpop_results.sfh_params[0].shape[0]
+    dbk_randoms = get_mc_dbk_randoms(dbk_key, n_gals)
+    return phot_randoms, diffstarpop_results, dbk_randoms
+
+
+@jjit
 def get_mc_phot_merge_randoms(ran_key, diffstarpop_params, mah_params, cosmo_params):
     phot_key, merge_key = jran.split(ran_key, 2)
     phot_randoms, sfh_params = get_mc_phot_randoms(
@@ -185,3 +212,32 @@ def get_mc_dbk_phot_merge_randoms(
     merging_randoms = get_merging_randoms(merge_key, n_gals)
 
     return phot_randoms, sfh_params, dbk_randoms, merging_randoms
+
+
+@jjit
+def get_dbk_phot_merge_randoms(
+    ran_key,
+    diffstarpop_params,
+    mah_params,
+    upid,
+    lgmu_infall,
+    logmhost_infall,
+    gyr_since_infall,
+    cosmo_params,
+):
+    phot_key, dbk_key, merge_key = jran.split(ran_key, 3)
+    phot_randoms, diffstarpop_results = get_phot_randoms(
+        phot_key,
+        diffstarpop_params,
+        mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        cosmo_params,
+    )
+    n_gals = diffstarpop_results.sfh_params[0].shape[0]
+    dbk_randoms = get_mc_dbk_randoms(dbk_key, n_gals)
+    merging_randoms = get_merging_randoms(merge_key, n_gals)
+
+    return phot_randoms, diffstarpop_results, dbk_randoms, merging_randoms

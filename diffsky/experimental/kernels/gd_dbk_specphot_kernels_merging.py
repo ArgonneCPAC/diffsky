@@ -5,10 +5,11 @@ from collections import namedtuple
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from . import dbk_specphot_kernels as dbkspk
+from ...merging import merging_model
+from . import gd_dbk_specphot_kernels as gd_dbkspk
+from . import gd_phot_kernels_merging as gd_pkm
+from . import gd_specphot_kernels_merging as gd_spkm
 from . import mc_randoms
-from . import phot_kernels_merging as pkm
-from . import specphot_kernels_merging as spkm
 
 
 @jjit
@@ -38,14 +39,24 @@ def _mc_dbk_specphot_kern_merging(
     halo_indx,
     mc_merge,
 ):
-    _res = mc_randoms.get_mc_dbk_phot_merge_randoms(
-        ran_key, diffstarpop_params, mah_params, cosmo_params
+    upid = jnp.where(is_central == 1, -1, halo_indx)
+    lgmu_infall = logmp_infall - logmhost_infall
+    gyr_since_infall = t_obs - t_infall
+    _res = mc_randoms.get_dbk_phot_merge_randoms(
+        ran_key,
+        diffstarpop_params,
+        mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        cosmo_params,
     )
-    phot_randoms, sfh_params, dbk_randoms, merging_randoms = _res
+    phot_randoms, diffstarpop_results, dbk_randoms, merging_randoms = _res
 
     dbk_specphot_info, dbk_weights = _dbk_specphot_kern_merging(
         phot_randoms,
-        sfh_params,
+        diffstarpop_results,
         dbk_randoms,
         merging_randoms,
         z_obs,
@@ -77,7 +88,7 @@ def _mc_dbk_specphot_kern_merging(
 @jjit
 def _dbk_specphot_kern_merging(
     phot_randoms,
-    sfh_params,
+    diffstarpop_results,
     dbk_randoms,
     merging_randoms,
     z_obs,
@@ -103,13 +114,19 @@ def _dbk_specphot_kern_merging(
     halo_indx,
     mc_merge,
 ):
-    dbk_specphot_info, dbk_weights = dbkspk._dbk_specphot_kern(
+    upid = jnp.where(is_central == 1, -1, halo_indx)
+    p_merge_smooth = merging_model.get_p_merge_from_merging_params(
+        merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upid
+    )
+
+    dbk_specphot_info, dbk_weights = gd_dbkspk._dbk_specphot_kern(
         phot_randoms,
-        sfh_params,
+        diffstarpop_results,
         dbk_randoms,
         z_obs,
         t_obs,
         mah_params,
+        p_merge_smooth,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -123,20 +140,15 @@ def _dbk_specphot_kern_merging(
         fb,
     )
 
-    _res = pkm._get_phot_kern_merging_quantities(
+    _res = gd_pkm._get_phot_kern_merging_quantities(
         dbk_specphot_info,
         merging_randoms,
-        t_obs,
-        merging_params,
-        logmp_infall,
-        logmhost_infall,
-        t_infall,
-        is_central,
+        p_merge_smooth,
         sat_weights,
         halo_indx,
         mc_merge,
     )
-    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge = _res
+    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, flux_obs_weighted, p_merge = _res
 
     args = (
         dbk_specphot_info,
@@ -144,16 +156,23 @@ def _dbk_specphot_kern_merging(
         mstar_obs,
         flux_in_situ,
         flux_obs,
+        flux_obs_weighted,
         p_merge,
         merging_randoms.uran_pmerge,
     )
-    dbk_specphot_info = pkm._update_phot_kern_results_with_merging(*args)
+    func = gd_pkm._update_phot_kern_results_with_merging
+    dbk_specphot_info = func(*args)
 
     args = dbk_specphot_info, dbk_specphot_info, sat_weights, halo_indx
-    linelums_obs, linelum_in_situ = spkm._get_linelum_kern_merging_quantities(*args)
+    _res = gd_spkm._get_linelum_kern_merging_quantities(*args)
+    linelums_obs, linelum_in_situ_mc, linelum_weighted, linelum_in_situ_weighted = _res
 
-    dbk_specphot_info = spkm._update_linelum_results_with_merging(
-        dbk_specphot_info, linelums_obs, linelum_in_situ
+    dbk_specphot_info = gd_spkm._update_linelum_results_with_merging(
+        dbk_specphot_info,
+        linelums_obs,
+        linelum_in_situ_mc,
+        linelum_weighted,
+        linelum_in_situ_weighted,
     )
 
     dbk_specphot_info, dbk_weights = _update_dbk_specphot_info_with_merging(

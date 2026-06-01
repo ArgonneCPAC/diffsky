@@ -10,13 +10,13 @@ from jax import numpy as jnp
 from jax import vmap
 
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
+from ...merging import merging_model
 from ...ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
 from .. import photometry_interpolation as photerp
 from . import constants, mc_randoms
-from . import ssp_weight_kernels as sspwk
 from . import rapid_quenching as rq
-from ...merging import merging_model
+from . import ssp_weight_kernels as sspwk
 
 LGMET_SCATTER = constants.LGMET_SCATTER
 
@@ -135,7 +135,7 @@ def _phot_kern(
         n_t_table,
     )
 
-    smooth_ssp_weights_mc = sspwk.get_smooth_ssp_weights(
+    smooth_ssp_weights_mc = rq.get_smooth_ssp_weights_rq(
         diffstar_info_mc.t_table,
         diffstar_info_mc.sfh_table,
         diffstar_info_mc.logsm_obs,
@@ -143,9 +143,10 @@ def _phot_kern(
         t_obs,
         mzr_params,
         LGMET_SCATTER,
+        p_merge_smooth,
     )
 
-    smooth_ssp_weights_q = sspwk.get_smooth_ssp_weights(
+    smooth_ssp_weights_q = rq.get_smooth_ssp_weights_rq(
         diffstar_info_q.t_table,
         diffstar_info_q.sfh_table,
         diffstar_info_q.logsm_obs,
@@ -153,8 +154,9 @@ def _phot_kern(
         t_obs,
         mzr_params,
         LGMET_SCATTER,
+        p_merge_smooth,
     )
-    smooth_ssp_weights_ms = sspwk.get_smooth_ssp_weights(
+    smooth_ssp_weights_ms = rq.get_smooth_ssp_weights_rq(
         diffstar_info_ms.t_table,
         diffstar_info_ms.sfh_table,
         diffstar_info_ms.logsm_obs,
@@ -162,9 +164,10 @@ def _phot_kern(
         t_obs,
         mzr_params,
         LGMET_SCATTER,
+        p_merge_smooth,
     )
 
-    burstiness_info_mc = sspwk.get_burstiness(
+    burstiness_info_mc = rq.get_burstiness_rq(
         phot_randoms.uran_pburst,
         phot_randoms.mc_is_q,
         diffstar_info_mc.logsm_obs,
@@ -173,16 +176,10 @@ def _phot_kern(
         smooth_ssp_weights_mc.lgmet_weights,
         ssp_data,
         spspop_params.burstpop_params,
-    )
-
-    burstiness_info_mc = rq.modify_burstiness_info_with_rapid_quenching(
-        burstiness_info_mc,
         p_merge_smooth,
-        ssp_data,
-        smooth_ssp_weights_mc.lgmet_weights,
     )
 
-    burstiness_info_ms = sspwk.get_burstiness(
+    burstiness_info_ms = rq.get_burstiness_rq(
         phot_randoms.uran_pburst,
         phot_randoms.mc_is_q,
         diffstar_info_ms.logsm_obs,
@@ -191,15 +188,10 @@ def _phot_kern(
         smooth_ssp_weights_ms.lgmet_weights,
         ssp_data,
         spspop_params.burstpop_params,
-    )
-    burstiness_info_ms = rq.modify_burstiness_info_with_rapid_quenching(
-        burstiness_info_ms,
         p_merge_smooth,
-        ssp_data,
-        smooth_ssp_weights_ms.lgmet_weights,
     )
 
-    burstiness_info_q = sspwk.get_burstiness(
+    burstiness_info_q = rq.get_burstiness_rq(
         phot_randoms.uran_pburst,
         phot_randoms.mc_is_q,
         diffstar_info_q.logsm_obs,
@@ -208,12 +200,7 @@ def _phot_kern(
         smooth_ssp_weights_q.lgmet_weights,
         ssp_data,
         spspop_params.burstpop_params,
-    )
-    burstiness_info_q = rq.modify_burstiness_info_with_rapid_quenching(
-        burstiness_info_q,
         p_merge_smooth,
-        ssp_data,
-        smooth_ssp_weights_q.lgmet_weights,
     )
 
     dust_frac_trans_mc, dust_params_mc = sspwk.compute_dust_attenuation(
@@ -349,6 +336,10 @@ def _phot_kern(
         obs_mags_bursty,
         diffstarpop_results.frac_q,
         obs_mags_weighted,
+        diffstar_info_ms,
+        diffstar_info_q,
+        burstiness_info_ms,
+        burstiness_info_q,
     )
     return phot_kern_results
 
@@ -374,5 +365,9 @@ PHOT_KERN_KEYS = (
     "obs_mags_bursty",
     "frac_q",
     "obs_mags_weighted",
+    "diffstar_info_ms",
+    "diffstar_info_q",
+    "burstiness_info_ms",
+    "burstiness_info_q",
 )
 PhotKernResults = namedtuple("PhotKernResults", PHOT_KERN_KEYS)

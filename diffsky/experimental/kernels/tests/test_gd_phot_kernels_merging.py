@@ -17,8 +17,21 @@ def check_phot_kern_merging_results(phot_kern_results, lc_data):
     n_gals = lc_data.z_obs.size
     n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
 
-    for arr in phot_kern_results:
-        assert np.all(np.isfinite(arr))
+    skip_keys = (
+        "burstiness_info_q",
+        "burstiness_info_ms",
+        "diffstar_info_ms",
+        "diffstar_info_q",
+    )
+    for key in phot_kern_results._fields:
+        if key not in skip_keys:
+            x = getattr(phot_kern_results, key)
+            assert np.all(np.isfinite(x))
+
+    for key in skip_keys:
+        data = getattr(phot_kern_results, key)
+        for x in data:
+            assert np.all(np.isfinite(x))
 
     assert np.all(phot_kern_results.p_merge >= 0)
     assert np.all(phot_kern_results.p_merge <= 1)
