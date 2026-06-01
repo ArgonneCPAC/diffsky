@@ -152,18 +152,18 @@ def _dbk_specphot_kern_merging(
     args = dbk_specphot_info, dbk_specphot_info, sat_weights, halo_indx
     linelums_obs, linelum_in_situ = spkm._get_linelum_kern_merging_quantities(*args)
 
-    dbk_specphot_info = spkm._get_linelum_results_with_merging(
+    dbk_specphot_info = spkm._update_linelum_results_with_merging(
         dbk_specphot_info, linelums_obs, linelum_in_situ
     )
 
-    dbk_specphot_info, dbk_weights = _get_dbk_specphot_info_with_merging(
+    dbk_specphot_info, dbk_weights = _update_dbk_specphot_info_with_merging(
         dbk_specphot_info, dbk_weights, mstar_in_situ, mstar_obs, flux_in_situ, flux_obs
     )
     return dbk_specphot_info, dbk_weights
 
 
 @jjit
-def _get_dbk_specphot_info_with_merging(
+def _update_dbk_specphot_info_with_merging(
     dbk_specphot_info, dbk_weights, mstar_in_situ, mstar_obs, flux_in_situ, flux_obs
 ):
     n_gals = dbk_specphot_info.logsm_obs.size

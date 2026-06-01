@@ -149,7 +149,7 @@ def _specphot_kern_merging(
 
     args = phot_kern_results, spec_kern_results, sat_weights, halo_indx
     linelums_obs, linelum_in_situ = _get_linelum_kern_merging_quantities(*args)
-    spec_kern_results = _get_linelum_results_with_merging(
+    spec_kern_results = _update_linelum_results_with_merging(
         spec_kern_results, linelums_obs, linelum_in_situ
     )
 
@@ -171,7 +171,9 @@ def _get_linelum_kern_merging_quantities(
 
 
 @jjit
-def _get_linelum_results_with_merging(spec_kern_results, linelums_obs, linelum_in_situ):
+def _update_linelum_results_with_merging(
+    spec_kern_results, linelums_obs, linelum_in_situ
+):
     spec_kern_results = spec_kern_results._replace(linelum_gal=linelums_obs)
 
     new_keys = ["linelum_gal_in_situ"]

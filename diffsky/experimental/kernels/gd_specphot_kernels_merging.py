@@ -164,7 +164,7 @@ def _specphot_kern_merging(
     _res = _get_linelum_kern_merging_quantities(*args)
     linelums_obs, linelum_in_situ_mc, linelum_weighted, linelum_in_situ_weighted = _res
 
-    spec_kern_results = _get_linelum_results_with_merging(
+    spec_kern_results = _update_linelum_results_with_merging(
         spec_kern_results,
         linelums_obs,
         linelum_in_situ_mc,
@@ -199,7 +199,7 @@ def _get_linelum_kern_merging_quantities(
 
 
 @jjit
-def _get_linelum_results_with_merging(
+def _update_linelum_results_with_merging(
     spec_kern_results,
     linelums_obs,
     linelum_in_situ,
