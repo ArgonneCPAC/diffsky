@@ -22,8 +22,19 @@ def check_spec_kern_merging_results(spec_kern_results, lc_data):
     assert spec_kern_results.linelum_gal.shape == (n_gals, n_lines)
     assert spec_kern_results.linelum_gal_in_situ.shape == (n_gals, n_lines)
 
-    for arr in spec_kern_results:
-        assert np.all(np.isfinite(arr))
+    skip_fields = (
+        "diffstar_info_ms",
+        "diffstar_info_q",
+        "burstiness_info_ms",
+        "burstiness_info_q",
+    )
+    for key in spec_kern_results._fields:
+        if key not in skip_fields:
+            arr = getattr(spec_kern_results, key)
+            try:
+                assert np.all(np.isfinite(arr))
+            except ValueError:
+                raise ValueError(f"{key} is not a flat array")
 
     msk_cen = lc_data.is_central == 1
     msk_sat = ~msk_cen
