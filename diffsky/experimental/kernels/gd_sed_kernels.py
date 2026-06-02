@@ -124,6 +124,7 @@ def _sed_kern(
         burstiness_info.burst_params_mc,
         t_table,
         sfh_table,
+        p_merge_smooth,
     )
     return sed_kern_results
 
@@ -140,5 +141,6 @@ SEDKernResults = namedtuple(
         "burst_params",
         "t_table",
         "sfh_table",
+        "p_merge_smooth",
     ),
 )
