@@ -96,6 +96,8 @@ def test_sed_kern(mc_merge, num_halos=5, return_results=False):
         mc_merge,
     )
 
+    return dbk_sed_info, sed_kern_results, lc_data
+
     rest_sed_dbk_recomputed = (
         dbk_sed_info.rest_sed_bulge
         + dbk_sed_info.rest_sed_disk
