@@ -112,7 +112,7 @@ def _sed_kern(
     mstar = 10 ** logsm_obs.reshape((n_gals, 1))
     rest_sed = jnp.sum(a * b * c * d, axis=(1, 2)) * mstar
 
-    lgmet_weights = jnp.sum(burstiness_info.ssp_weights_mc, axis=1)
+    lgmet_weights = jnp.sum(burstiness_info.ssp_weights_mc, axis=2)
 
     sed_kern_results = SEDKernResults(
         rest_sed,

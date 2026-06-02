@@ -65,6 +65,9 @@ def test_sed_kern(num_halos=150):
     )
     rest_sed_recomputed = sed_kern_results[0]
 
+    n_met = lc_data.ssp_data.ssp_lgmet.size
+    assert sed_kern_results.lgmet_weights.shape[1] == n_met
+
     # Enforce agreement between precomputed vs exact magnitudes
     n_bands = phot_kern_results.obs_mags.shape[1]
     for iband in range(n_bands):
