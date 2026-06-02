@@ -1,15 +1,14 @@
 """"""
 
 from collections import namedtuple
-from . import sed_kernels
 from functools import partial
 
 from jax import jit as jjit
 from jax import numpy as jnp
 
-
+from ...merging import merging_kernels
 from .. import mc_diffstarpop_wrappers as mcdw
-from ...merging import merging_model, merging_kernels
+from . import gd_sed_kernels
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -39,33 +38,32 @@ def _sed_kern(
     n_t_table=mcdw.N_T_TABLE,
 ):
     """"""
-    in_situ_sed_results = sed_kernels._sed_kern(
+    upid = jnp.where(is_central == 1, -1, halo_indx)
+    lgmu_infall = logmp_infall - logmhost_infall
+    gyr_since_infall = t_obs - t_infall
+
+    in_situ_sed_results = gd_sed_kernels._sed_kern(
         phot_randoms,
         sfh_params,
         z_obs,
         t_obs,
         mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
         ssp_data,
         mzr_params,
         spspop_params,
         scatter_params,
         ssperr_params,
+        merging_params,
         cosmo_params,
         fb,
         n_t_table=n_t_table,
     )
     _res = _get_sed_kern_merging_quantities(
-        in_situ_sed_results,
-        merging_randoms,
-        t_obs,
-        merging_params,
-        logmp_infall,
-        logmhost_infall,
-        t_infall,
-        is_central,
-        sat_weights,
-        halo_indx,
-        mc_merge,
+        in_situ_sed_results, merging_randoms, sat_weights, halo_indx, mc_merge
     )
     mstar_in_situ, mstar_obs, rest_sed_in_situ, rest_sed, p_merge = _res
 
@@ -83,26 +81,13 @@ def _sed_kern(
 
 @jjit
 def _get_sed_kern_merging_quantities(
-    sed_kern_results,
-    merging_randoms,
-    t_obs,
-    merging_params,
-    logmp_infall,
-    logmhost_infall,
-    t_infall,
-    is_central,
-    sat_weights,
-    halo_indx,
-    mc_merge,
+    sed_kern_results, merging_randoms, sat_weights, halo_indx, mc_merge
 ):
-    upids = jnp.where(is_central == 1, -1.0, 0.0)
-    p_merge = merging_model.get_p_merge_from_merging_params(
-        merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
-    )
-
     # If mc_merge=1, implement Monte Carlo merging, else p_merge is a float
-    mc_p_merge = merging_kernels.get_mc_p_merge(merging_randoms.uran_pmerge, p_merge)
-    p_merge = jnp.where(mc_merge < 1, p_merge, mc_p_merge)
+    mc_p_merge = merging_kernels.get_mc_p_merge(
+        merging_randoms.uran_pmerge, sed_kern_results.p_merge_smooth
+    )
+    p_merge = jnp.where(mc_merge < 1, sed_kern_results.p_merge_smooth, mc_p_merge)
 
     mstar_in_situ = 10**sed_kern_results.logsm_obs
     mstar_obs = merging_kernels.compute_x_tot_from_x_in_situ(
@@ -141,7 +126,7 @@ def _update_sed_kern_results_with_merging(
 
     new_keys = ["logsm_obs_in_situ", "rest_sed_in_situ", "p_merge", "uran_pmerge"]
     fields = list(in_situ_sed_results._fields) + new_keys
-    SEDResults = namedtuple("PhotKernResults", fields)
+    SEDResults = namedtuple("SEDResults", fields)
 
     sed_results = SEDResults(
         **in_situ_sed_results._asdict(),
