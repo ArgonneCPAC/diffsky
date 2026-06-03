@@ -84,8 +84,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("config_yaml", help="YAML configuration file")
+    parser.add_argument(
+        "-synthetic_cores",
+        help="Make mock with synthetic centrals. Overrides config_yaml when not -1",
+        default=-1,
+        type=int,
+    )
 
-    config_path = parser.parse_args().config_yaml
+    cl_args = parser.parse_args()
+    config_path = cl_args.config_yaml
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
@@ -113,6 +120,10 @@ if __name__ == "__main__":
     no_sed = config.get("no_sed", False)
     incl_in_situ = config.get("incl_in_situ", False)
     bn_ssp_data = config.get("bn_ssp_data", SSP_SED_BNAME)
+
+    if cl_args.synthetic_cores != -1:
+        # override the yaml file (convenient for job submission scripts)
+        synthetic_cores = cl_args.synthetic_cores
 
     if mock_version_name_in == "":
         mock_version_name = get_mock_version_name(mock_nickname)
