@@ -70,7 +70,9 @@ def get_dbk_weights_rq(
     mstar_knots = fknot * mstar_ddk  # mass of knots
     mstar_dd = mstar_ddk - mstar_knots  # mass of diffuse disk
 
-    # m_ddk*W_ddk = m_dd*W_dd + m_k*W_k
+    mstar_ddk_smooth = mstar_ddk - mstar_burst
+
+    # m_tot*W_tot = m_ddk*W_ddk + m_bulge*W_bulge
     _A = mstar_tot.reshape((n_gals, 1)) * age_weights_tot
     _B = mstar_bulge.reshape((n_gals, 1)) * age_weights_bulge
     age_weights_ddk = (_A - _B) / mstar_ddk.reshape((n_gals, 1))
@@ -83,7 +85,6 @@ def get_dbk_weights_rq(
     # m_ddk*W_ddk = m_ddk_smooth*W_ddk_smooth + m_burst*W_burst
     _C = mstar_ddk.reshape((n_gals, 1)) * age_weights_ddk
     _D = mstar_burst.reshape((n_gals, 1)) * age_weights_pureburst
-    mstar_ddk_smooth = mstar_ddk - mstar_burst
     age_weights_ddk_smooth = (_C - _D) / mstar_ddk_smooth.reshape((n_gals, 1))
 
     # m_k*W_k = m_ks_smooth*W_ddk_smooth + m_burst_knot*W_burst
@@ -94,6 +95,7 @@ def get_dbk_weights_rq(
     _F = mstar_knots_burst.reshape((n_gals, 1)) * age_weights_pureburst
     age_weights_knots = (_E + _F) / mstar_knots.reshape((n_gals, 1))
 
+    # m_dd*W_dd = m_dds*W_ddk_smooth + m_ddb*W_burst
     mstar_dd_burst = jnp.where(mburst_by_mknot > 1, mstar_burst - mstar_knots, 0.0)
     mstar_dd_smooth = mstar_dd - mstar_dd_burst
     _G = mstar_dd_smooth.reshape((n_gals, 1)) * age_weights_ddk_smooth
