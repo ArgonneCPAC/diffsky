@@ -96,7 +96,8 @@ def test_sed_kern(mc_merge, num_halos=5, return_results=False):
         mc_merge,
     )
 
-    return dbk_sed_info, sed_kern_results, lc_data
+    if return_results:
+        return dbk_sed_info, sed_kern_results, lc_data
 
     rest_sed_dbk_recomputed = (
         dbk_sed_info.rest_sed_bulge
@@ -108,9 +109,6 @@ def test_sed_kern(mc_merge, num_halos=5, return_results=False):
     assert np.allclose(
         np.log10(rest_sed_dbk_recomputed), np.log10(rest_sed_recomputed), atol=0.2
     )
-
-    if return_results:
-        return sed_kern_results, phot_kern_results, lc_data, tcurves
 
     # Enforce agreement between precomputed vs exact magnitudes
     n_bands = phot_kern_results.obs_mags.shape[1]

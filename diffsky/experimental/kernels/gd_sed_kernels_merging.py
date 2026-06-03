@@ -65,7 +65,15 @@ def _sed_kern(
     _res = _get_sed_kern_merging_quantities(
         in_situ_sed_results, merging_randoms, sat_weights, halo_indx, mc_merge
     )
-    mstar_in_situ, mstar_obs, rest_sed_in_situ, rest_sed, p_merge = _res
+    (
+        mstar_in_situ,
+        mstar_obs,
+        rest_sed_in_situ,
+        rest_sed,
+        p_merge,
+        ssp_weights,
+        ssp_weights_in_situ,
+    ) = _res
 
     sed_results = _update_sed_kern_results_with_merging(
         in_situ_sed_results,
@@ -75,6 +83,8 @@ def _sed_kern(
         rest_sed,
         p_merge,
         merging_randoms.uran_pmerge,
+        ssp_weights,
+        ssp_weights_in_situ,
     )
     return sed_results
 
@@ -101,7 +111,25 @@ def _get_sed_kern_merging_quantities(
         sat_weights[:, jnp.newaxis],
         halo_indx,
     )
-    return mstar_in_situ, mstar_obs, rest_sed_in_situ, rest_sed, p_merge
+
+    ssp_weights_in_situ = sed_kern_results.ssp_weights
+    ssp_weights = merging_kernels.get_in_plus_ex_situ_ssp_weights(
+        mstar_in_situ,
+        ssp_weights_in_situ,
+        p_merge,
+        sat_weights,
+        halo_indx,
+    )
+
+    return (
+        mstar_in_situ,
+        mstar_obs,
+        rest_sed_in_situ,
+        rest_sed,
+        p_merge,
+        ssp_weights,
+        ssp_weights_in_situ,
+    )
 
 
 @jjit
@@ -113,18 +141,28 @@ def _update_sed_kern_results_with_merging(
     rest_sed,
     p_merge,
     uran_pmerge,
+    ssp_weights,
+    ssp_weights_in_situ,
 ):
     ex_situ_dict = dict()
     ex_situ_dict["logsm_obs"] = jnp.log10(mstar_obs)
     ex_situ_dict["rest_sed"] = rest_sed
+    ex_situ_dict["ssp_weights"] = ssp_weights
 
     in_situ_sed_results = in_situ_sed_results._replace(**ex_situ_dict)
 
     in_situ_dict = dict()
     in_situ_dict["logsm_obs" + "_in_situ"] = jnp.log10(mstar_in_situ)
     in_situ_dict["rest_sed" + "_in_situ"] = rest_sed_in_situ
+    in_situ_dict["ssp_weights" + "_in_situ"] = ssp_weights_in_situ
 
-    new_keys = ["logsm_obs_in_situ", "rest_sed_in_situ", "p_merge", "uran_pmerge"]
+    new_keys = [
+        "logsm_obs_in_situ",
+        "rest_sed_in_situ",
+        "p_merge",
+        "uran_pmerge",
+        "ssp_weights_in_situ",
+    ]
     fields = list(in_situ_sed_results._fields) + new_keys
     SEDResults = namedtuple("SEDResults", fields)
 
