@@ -64,6 +64,7 @@ def _dbk_sed_kern(
         n_t_table=n_t_table,
     )
 
+    lgmet_weights = jnp.sum(sed_info.ssp_weights, axis=2)
     age_weights = jnp.sum(sed_info.ssp_weights, axis=1)
     args = (
         t_obs,
@@ -71,7 +72,7 @@ def _dbk_sed_kern(
         sed_info.t_table,
         sed_info.sfh_table,
         sed_info.burst_params,
-        sed_info.lgmet_weights,
+        lgmet_weights,
         dbk_randoms,
         sed_info.logsm_obs,
         age_weights,
