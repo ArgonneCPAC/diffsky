@@ -1,6 +1,7 @@
 """ """
 
 from collections import namedtuple
+from warnings import warn
 
 import numpy as np
 from diffstar.diffstarpop import (
@@ -121,7 +122,13 @@ def unroll_param_collection_into_flat_array(
 def get_param_collection_from_flat_array(all_params_flat):
     all_pnames_flat = get_flat_param_names()
     DiffskyParams = namedtuple("DiffskyParams", all_pnames_flat)
-    named_params = DiffskyParams(*all_params_flat)
+    warn("There are extra parameters being loaded!")
+    all_params = all_params_flat._asdict()
+    all_params = {
+        name: value for name, value in all_params.items() if name in all_pnames_flat
+    }
+
+    named_params = DiffskyParams(**all_params)
 
     diffstarpop_params = DEFAULT_DIFFSTARPOP_PARAMS._make(
         [getattr(named_params, pname) for pname in DEFAULT_DIFFSTARPOP_PARAMS._fields]

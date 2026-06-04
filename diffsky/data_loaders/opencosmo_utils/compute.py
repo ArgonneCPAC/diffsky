@@ -1,6 +1,7 @@
 from collections import namedtuple
 from typing import Callable, Optional
 
+import jax.numpy as jnp
 import numpy as np
 import opencosmo as oc
 from diffmah import DiffmahParams
@@ -10,7 +11,12 @@ from dsps.cosmology import age_at_z
 from ... import phot_utils
 from ...experimental import dbk_phot_from_mock
 from ...experimental import precompute_ssp_phot as psspp
-from ...experimental.kernels import dbk_specphot_kernels
+from ...experimental.kernels import (
+    dbk_specphot_kernels,
+    dbk_specphot_kernels_merging,
+    mc_randoms,
+    phot_kernels_merging,
+)
 
 
 def __get_z_phot_tables(catalog: oc.Lightcone):
@@ -78,7 +84,7 @@ def compute_phot_from_diffsky_mock(
 
 
     """
-    func = dbk_phot_from_mock._reproduce_mock_phot_kern
+    func = phot_kernels_merging._phot_kern_merging
     z_phot_tables = __get_z_phot_tables(catalog)
     suffix = ""
     if set(bands).intersection(catalog.columns):
@@ -147,7 +153,7 @@ def compute_dbk_phot_from_diffsky_mock(
     if set(bands).intersection(catalog.columns):
         suffix = "_new"
     z_phot_tables = __get_z_phot_tables(catalog)
-    func = dbk_phot_from_mock._reproduce_mock_dbk_kern
+    func = dbk_specphot_kernels_merging._dbk_specphot_kern_merging
     result = __run_photometry(
         func,
         __unpack_dbk_photometry,
@@ -293,7 +299,7 @@ def compute_dbk_seds_from_diffsky_mock(
 
 
 def __unpack_photometry(data, band_names, suffix, *args):
-    return __unpack_photometry_array(data[0].obs_mags, band_names, suffix)
+    return __unpack_photometry_array(data.obs_mags, band_names, suffix)
 
 
 def __unpack_dbk_photometry(data, band_names, suffix, include_extras):
@@ -365,32 +371,57 @@ def __run_photometry(
         age_at_z_,
         vectorize=True,
         cosmology=cosmology_parameters,
-        format="numpy",
+        format="jax",
     )
     if dbk:
         to_compute = __compute_dbk_photometry_managed
     else:
         to_compute = __compute_photometry_managed
 
-    return catalog.evaluate(
-        to_compute,
-        to_compute=function,
-        unpack_func=unpack_func,
-        band_names=band_names,
-        cosmology=cosmology_parameters,
-        ssp_data=aux_data["ssp_data"],
-        precomputed_ssp_mag_table=precomputed_ssp_mag_tables,
-        wave_eff_table=wave_eff_tables,
-        param_collection=aux_data["param_collection"],
-        z_phot_table=z_phot_tables,
-        Ob0=catalog.cosmology.Ob0,
-        include_extras=include_extras,
-        suffix=suffix,
-        insert=insert,
-        vectorize=True,
-        format="numpy",
-        batch_size=batch_size,
-    )
+    BATCH_SIZE = 50
+    central_indices = np.where(catalog.select("central").get_data("numpy"))[0]
+    split_indices = np.arange(BATCH_SIZE, len(central_indices), BATCH_SIZE)
+    batches = np.split(central_indices, split_indices)
+
+    chunked_output = []
+    for row_batch in batches:
+        batch_catalog = catalog.take_rows(row_batch)
+        batch_ssp_mag_table = {
+            k: v
+            for k, v in precomputed_ssp_mag_tables.items()
+            if k in batch_catalog.keys()
+        }
+        batch_wave_eff_table = {
+            k: v for k, v in wave_eff_tables.items() if k in batch_catalog.keys()
+        }
+        batch_z_phot_table = {
+            k: v for k, v in z_phot_tables.items() if k in batch_catalog.keys()
+        }
+        batch_output = catalog.take_rows(row_batch).evaluate(
+            to_compute,
+            to_compute=function,
+            unpack_func=unpack_func,
+            band_names=band_names,
+            cosmology=cosmology_parameters,
+            ssp_data=aux_data["ssp_data"],
+            precomputed_ssp_mag_table=batch_ssp_mag_table,
+            wave_eff_table=batch_wave_eff_table,
+            param_collection=aux_data["param_collection"],
+            z_phot_table=batch_z_phot_table,
+            Ob0=catalog.cosmology.Ob0,
+            include_extras=include_extras,
+            suffix=suffix,
+            insert=insert,
+            vectorize=True,
+            format="jax",
+            # batch_size=batch_size,
+        )
+        chunked_output.append(batch_output)
+    all_bands = chunked_output[0].keys()
+    output = {}
+    for band in all_bands:
+        output[band] = np.concatenate([o[band] for o in chunked_output])
+    return output
 
 
 def __prep_cosmology_parameters(cosmology):
@@ -439,6 +470,7 @@ def __compute_dbk_sed_managed(
     lg_rejuv,  # Q params
     delta_mag_ssp_scatter,
     redshift_true,
+    top_host_idx,
     ssp_data,
     param_collection,
     cosmology,
@@ -446,7 +478,6 @@ def __compute_dbk_sed_managed(
     suffix="",
 ):
 
-    mc_is_q = mc_sfh_type == 0
     mah_params = DiffmahParams(
         logm0=logm0,
         logtc=logtc,
@@ -464,6 +495,8 @@ def __compute_dbk_sed_managed(
         lg_drop=lg_drop,
         lg_rejuv=lg_rejuv,
     )
+
+    mc_is_q = mc_sfh_type == 0
 
     args = (
         mc_is_q,
@@ -503,12 +536,17 @@ def __compute_photometry_managed(
     logtc,
     early_index,
     late_index,
+    logmp_infall,
+    logmhost_infall,
+    central,
     t_peak,  # diffmah params
+    t_obs,
     lgmcrit,
     lgy_at_mcrit,
     indx_lo,
     indx_hi,  # ms params
     lg_qt,
+    uran_pmerge,
     qlglgdt,
     lg_drop,
     lg_rejuv,  # Q params
@@ -518,7 +556,7 @@ def __compute_photometry_managed(
     uran_pburst,
     delta_mag_ssp_scatter,  # randoms
     redshift_true,
-    t_obs,
+    top_host_idx,
     mc_sfh_type,
     ssp_data,
     precomputed_ssp_mag_table,
@@ -548,14 +586,16 @@ def __compute_photometry_managed(
         lg_drop=lg_drop,
         lg_rejuv=lg_rejuv,
     )
+    phot_randoms = mc_randoms.PhotRandoms(
+        mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
+    )
+    merging_randoms = mc_randoms.DiffMergeRandoms(uran_pmerge)
 
+    sat_weights = jnp.ones(len(redshift_true))
+    mc_merge = 1
     args = (
-        mc_is_q,
-        uran_av,
-        uran_delta,
-        uran_funo,
-        uran_pburst,
-        delta_mag_ssp_scatter,
+        phot_randoms,
+        merging_randoms,
         sfh_params,
         redshift_true,
         t_obs,
@@ -568,8 +608,16 @@ def __compute_photometry_managed(
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
+        param_collection.merging_params,
         cosmology,
         Ob0 / cosmology.Om0,
+        logmp_infall,
+        logmhost_infall,
+        t_peak,
+        central,
+        sat_weights,
+        top_host_idx,
+        mc_merge,
     )
     result = to_compute(*args)
     return unpack_func(result, band_names, suffix, include_extras)
