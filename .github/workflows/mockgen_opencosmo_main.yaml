@@ -79,15 +79,15 @@ jobs:
 
           # Download data
           cd dsps_drn
-          wget https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/fsps_v0.4.7_mist_c3k_a_kroupa_wNE_logGasU-2.0_logGasZ0.0.sparse.h5
+          wget --tries=5 --timeout=60 --waitretry=10 --retry-connrefused -c https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/fsps_v0.4.7_mist_c3k_a_kroupa_wNE_logGasU-2.0_logGasZ0.0.sparse.h5
 
           cd filters
-          wget https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_u_transmission.h5
-          wget https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_g_transmission.h5
-          wget https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_r_transmission.h5
-          wget https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_i_transmission.h5
-          wget https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_z_transmission.h5
-          wget https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_y_transmission.h5
+          wget --tries=5 --timeout=60 --waitretry=10 --retry-connrefused -c https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_u_transmission.h5
+          wget --tries=5 --timeout=60 --waitretry=10 --retry-connrefused -c https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_g_transmission.h5
+          wget --tries=5 --timeout=60 --waitretry=10 --retry-connrefused -c https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_r_transmission.h5
+          wget --tries=5 --timeout=60 --waitretry=10 --retry-connrefused -c https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_i_transmission.h5
+          wget --tries=5 --timeout=60 --waitretry=10 --retry-connrefused -c https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_z_transmission.h5
+          wget --tries=5 --timeout=60 --waitretry=10 --retry-connrefused -c https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_y_transmission.h5
           cd ..
           cd ..
 
