@@ -90,6 +90,7 @@ def compute_phot_from_diffsky_mock(
 
 
     """
+    __validate_batch_size(batch_size)
     func = phot_kernels_merging._phot_kern_merging
     z_phot_tables = __get_z_phot_tables(catalog)
     suffix = ""
@@ -159,6 +160,7 @@ def compute_dbk_phot_from_diffsky_mock(
         insert = False, return the computed photometry directly.
 
     """
+    __validate_batch_size(batch_size)
 
     suffix = ""
     if set(bands).intersection(catalog.columns):
@@ -220,6 +222,7 @@ def compute_seds_from_diffsky_mock(
         insert = False, return the computed photometry directly.
 
     """
+    __validate_batch_size(batch_size)
 
     result = __run_sed_computation(catalog, aux_data, __compute_sed_managed, batch_size)
     if insert:
@@ -266,6 +269,7 @@ def compute_dbk_seds_from_diffsky_mock(
 
 
     """
+    __validate_batch_size(batch_size)
     result = __run_sed_computation(
         catalog, aux_data, __compute_dbk_sed_managed, batch_size
     )
@@ -305,6 +309,23 @@ def __unpack_dbk_photometry(data, band_names, suffix, gal_id, include_extras):
 def __unpack_photometry_array(data, band_names, suffix):
     to_unpack = np.array(data).T
     return {f"{name}{suffix}": to_unpack[i] for i, name in enumerate(band_names)}
+
+
+def __validate_batch_size(batch_size):
+    if batch_size == -1:
+        return
+    if not isinstance(batch_size, int) or batch_size < 1:
+        raise ValueError(
+            f"batch_size must be -1 (no batching) or a positive integer, got {batch_size!r}"
+        )
+
+
+def __split_central_indices(catalog: oc.Lightcone, batch_size: int):
+    central_indices = np.where(catalog.select("central").get_data("numpy"))[0]
+    if batch_size == -1:
+        return [central_indices]
+    split_indices = np.arange(batch_size, len(central_indices), batch_size)
+    return np.split(central_indices, split_indices)
 
 
 def __run_photometry(
@@ -356,9 +377,7 @@ def __run_photometry(
     else:
         to_compute = __compute_photometry_managed
 
-    central_indices = np.where(catalog.select("central").get_data("numpy"))[0]
-    split_indices = np.arange(batch_size, len(central_indices), batch_size)
-    batches = np.split(central_indices, split_indices)
+    batches = __split_central_indices(catalog, batch_size)
 
     chunked_output = []
     for row_batch in batches:
@@ -443,9 +462,7 @@ def __run_sed_computation(
         format="jax",
     )
 
-    central_indices = np.where(catalog.select("central").get_data("numpy"))[0]
-    split_indices = np.arange(batch_size, len(central_indices), batch_size)
-    batches = np.split(central_indices, split_indices)
+    batches = __split_central_indices(catalog, batch_size)
 
     chunked_output = []
     for row_batch in batches:
