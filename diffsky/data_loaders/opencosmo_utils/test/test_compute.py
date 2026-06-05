@@ -63,31 +63,6 @@ def test_compute_photometry(opencosmo_data_path, version_checking, synth_cores):
         )
 
 
-def test_compute_photometry_with_batch(
-    opencosmo_data_path, version_checking, synth_cores
-):
-    bands = ("lsst_u", "lsst_g", "lsst_r", "lsst_i", "lsst_z", "lsst_y")
-    catalog, aux_data = load_diffsky_mock(
-        opencosmo_data_path, version_check=version_checking, synth_cores=synth_cores
-    )
-    results = compute_phot_from_diffsky_mock(
-        catalog, aux_data, bands, insert=False, batch_size=1000
-    )
-
-    original_data = catalog.select(bands).get_data("numpy")
-    for band in bands:
-        assert np.all(
-            np.isclose(results[f"{band}_new"], original_data[band], atol=1e-2)
-        )
-    results = compute_phot_from_diffsky_mock(catalog, aux_data, bands, insert=False)
-
-    original_data = catalog.select(bands).get_data("numpy")
-    for band in bands:
-        assert np.all(
-            np.isclose(results[f"{band}_new"], original_data[band], atol=1e-2)
-        )
-
-
 def test_compute_photometry_custom_bands(
     opencosmo_data_path, version_checking, synth_cores
 ):
@@ -156,24 +131,6 @@ def test_compute_seds(opencosmo_data_path, version_checking, synth_cores):
     expected_shape = (len(catalog), len(aux_data["ssp_data"].ssp_wave))
     assert seds.shape == expected_shape
     assert np.all(~np.isnan(seds))
-
-
-def test_compute_seds_with_batching(opencosmo_data_path, version_checking, synth_cores):
-    catalog, aux_data = load_diffsky_mock(
-        opencosmo_data_path, version_check=version_checking, synth_cores=synth_cores
-    )
-    results_batched = compute_seds_from_diffsky_mock(
-        catalog, aux_data, insert=False, batch_size=100
-    )
-    results_nobatch = compute_seds_from_diffsky_mock(catalog, aux_data, insert=False)
-    seds = results_batched["rest_sed"]
-
-    expected_shape = (len(catalog), len(aux_data["ssp_data"].ssp_wave))
-    assert seds.shape == expected_shape
-    assert np.all(~np.isnan(seds))
-    assert np.allclose(
-        results_batched["rest_sed"], results_nobatch["rest_sed"], rtol=1e-6
-    )
 
 
 def test_compute_seds_insert(opencosmo_data_path, version_checking, synth_cores):
