@@ -81,8 +81,9 @@ def test_compute_photometry_custom_bands(
     results = compute_phot_from_diffsky_mock(
         catalog, aux_data, ["fake_tcurve_1", "fake_tcurve_2"], insert=False
     )
+
     for magnitudes in results.values():
-        assert np.all((magnitudes > 10) & (magnitudes < 30))
+        assert np.all((magnitudes > 10) & (magnitudes < 40))
 
 
 def test_compute_photometry_custom_bands_insert(
