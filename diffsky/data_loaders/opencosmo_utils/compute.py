@@ -298,19 +298,27 @@ def compute_dbk_seds_from_diffsky_mock(
     return result
 
 
-def __unpack_photometry(data, band_names, suffix, *args):
-    return __unpack_photometry_array(data.obs_mags, band_names, suffix)
+def __unpack_photometry(data, band_names, suffix, gal_id, *args):
+    result = __unpack_photometry_array(data.obs_mags, band_names, suffix)
+    result["gal_id"] = gal_id
+    return result
 
 
-def __unpack_dbk_photometry(data, band_names, suffix, include_extras):
-    (phot_info, _, _, obs_mag_bulge, obs_mag_disk, obs_mag_knots) = data
+def __unpack_dbk_photometry(data, band_names, suffix, gal_id, include_extras):
+
+    phot_info, dbk_weights = data
+    obs_mags_disk = phot_info.obs_mags_disk
+    obs_mags_bulge = phot_info.obs_mags_bulge
+    obs_mags_knot = phot_info.obs_mags_knots
+
     bulge_bands = [f"{bn}_bulge" for bn in band_names]
     disk_bands = [f"{bn}_disk" for bn in band_names]
     knot_bands = [f"{bn}_knots" for bn in band_names]
 
-    output = __unpack_photometry_array(obs_mag_bulge, bulge_bands, suffix)
-    output |= __unpack_photometry_array(obs_mag_disk, disk_bands, suffix)
-    output |= __unpack_photometry_array(obs_mag_knots, knot_bands, suffix)
+    output = __unpack_photometry_array(obs_mags_bulge, bulge_bands, suffix)
+    output |= __unpack_photometry_array(obs_mags_disk, disk_bands, suffix)
+    output |= __unpack_photometry_array(obs_mags_knot, knot_bands, suffix)
+    output["gal_id"] = gal_id
     if include_extras is not None:
         phot_info = phot_info._asdict()
         output |= {name: np.array(phot_info[name]) for name in include_extras}
@@ -419,9 +427,15 @@ def __run_photometry(
         chunked_output.append(batch_output)
     all_bands = chunked_output[0].keys()
     output = {}
+
     for band in all_bands:
         output[band] = np.concatenate([o[band] for o in chunked_output])
-    return output
+
+    input_gal_id = catalog.select("gal_id").get_data("numpy")
+    output_gal_id = output.pop("gal_id")
+    permutation = np.argsort(output_gal_id)[np.argsort(np.argsort(input_gal_id))]
+
+    return {name: band[permutation] for name, band in output.items()}
 
 
 def __prep_cosmology_parameters(cosmology):
@@ -559,6 +573,7 @@ def __compute_photometry_managed(
     top_host_idx,
     mc_sfh_type,
     ssp_data,
+    gal_id,
     precomputed_ssp_mag_table,
     z_phot_table,
     wave_eff_table,
@@ -620,7 +635,7 @@ def __compute_photometry_managed(
         mc_merge,
     )
     result = to_compute(*args)
-    return unpack_func(result, band_names, suffix, include_extras)
+    return unpack_func(result, band_names, suffix, gal_id, include_extras)
 
 
 def __compute_dbk_photometry_managed(
@@ -631,6 +646,10 @@ def __compute_dbk_photometry_managed(
     logtc,
     early_index,
     late_index,
+    logmp_infall,
+    logmhost_infall,
+    central,
+    top_host_idx,
     t_peak,  # diffmah params
     lgmcrit,
     lgy_at_mcrit,
@@ -645,12 +664,14 @@ def __compute_dbk_photometry_managed(
     uran_funo,
     uran_pburst,
     uran_fbulge,
+    uran_pmerge,
     delta_mag_ssp_scatter,  # randoms
     redshift_true,
     t_obs,
     mc_sfh_type,
     fknot,
     ssp_data,
+    gal_id,
     precomputed_ssp_mag_table,
     z_phot_table,
     wave_eff_table,
@@ -678,30 +699,42 @@ def __compute_dbk_photometry_managed(
         lg_drop=lg_drop,
         lg_rejuv=lg_rejuv,
     )
+    phot_randoms = mc_randoms.PhotRandoms(
+        mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
+    )
+    dbk_randoms = mc_randoms.DBKRandoms(fknot, uran_fbulge)
+    merging_randoms = mc_randoms.DiffMergeRandoms(uran_pmerge)
+    line_wave_table = jnp.array(ssp_data.ssp_emline_wave)
+    sat_weights = jnp.ones(len(t_obs))
+    mc_merge = 1
 
     args = (
-        mc_is_q,
-        uran_av,
-        uran_delta,
-        uran_funo,
-        uran_pburst,
-        delta_mag_ssp_scatter,
+        phot_randoms,
         sfh_params,
+        dbk_randoms,
+        merging_randoms,
         redshift_true,
         t_obs,
         mah_params,
-        fknot,
-        uran_fbulge,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
+        line_wave_table,
         param_collection.mzr_params,
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
+        param_collection.merging_params,
         cosmology,
         Ob0 / cosmology.Om0,
+        logmp_infall,
+        logmhost_infall,
+        t_peak,
+        central,
+        sat_weights,
+        top_host_idx,
+        mc_merge,
     )
     result = to_compute(*args)
-    return unpack_func(result, band_names, suffix, include_extras)
+    return unpack_func(result, band_names, suffix, gal_id, include_extras)
