@@ -7,16 +7,28 @@ from time import time
 
 import h5py
 import numpy as np
+import yaml
 from astropy import units as u
+
+from diffsky.data_loaders.mock_utils import get_mock_version_name
 
 GALAXY_ID_COLNAME = "gal_id"
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("drn", help="Directory with mock data")
+    parser.add_argument("config_yaml", help="YAML configuration file")
     args = parser.parse_args()
-    drn = args.drn
+
+    cl_args = parser.parse_args()
+    config_path = cl_args.config_yaml
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    drn_out = config["drn_out"]
+    mock_nickname = config["mock_nickname"]
+    mock_version_name = get_mock_version_name(mock_nickname)
+    drn = os.path.join(drn_out, mock_version_name)
 
     fn_list = glob(os.path.join(drn, "lc_cores-*.hdf5"))
     bn_list = [os.path.basename(fn) for fn in fn_list]
