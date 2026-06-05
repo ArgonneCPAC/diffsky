@@ -90,7 +90,7 @@ jobs:
         timeout-minutes: 5
         shell: bash -l {0}
         run: |
-          WGET_OPTS="--tries=3 --timeout=30 --waitretry=5 --retry-connrefused"
+          WGET_OPTS="-4 --tries=3 --timeout=30 --waitretry=5 --retry-connrefused"
 
           # Create data directory
           mkdir -p dsps_drn/filters
