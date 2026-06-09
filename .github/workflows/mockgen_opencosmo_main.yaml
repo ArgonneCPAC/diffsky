@@ -74,8 +74,8 @@ jobs:
       - name: check download IP addresses
         shell: bash -l {0}
         run: |
-          curl -4 ifconfig.co
-          curl -6 ifconfig.co
+          curl -4 https://api.ipify.org
+          curl -6 https://api6.ipify.org || echo "No IPv6"
 
       - name: download dsps data
         shell: bash -l {0}
