@@ -96,8 +96,16 @@ def test_sed_kern(mc_merge, num_halos=25, return_results=False):
         mc_merge,
     )
 
+    ret = (
+        lc_data,
+        phot_kern_results,
+        phot_randoms,
+        merging_randoms,
+        dbk_sed_info,
+        sed_kern_results,
+    )
     if return_results:
-        return dbk_sed_info, sed_kern_results, lc_data
+        return ret
 
     rest_sed_dbk_recomputed = (
         dbk_sed_info.rest_sed_bulge
