@@ -71,6 +71,12 @@ jobs:
 
           python -m pip install --no-build-isolation --no-deps -e .
 
+      - name: check download IP addresses
+        shell: bash -l {0}
+        run: |
+          curl -4 ifconfig.co
+          curl -6 ifconfig.co
+
       - name: download dsps data
         shell: bash -l {0}
         run: |
