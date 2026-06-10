@@ -112,3 +112,11 @@ def test_dbk_sed_kern(num_halos=50):
         + dbk_sed_kern_results.rest_sed_knots
     )
     assert np.allclose(log_sed_composite, log_sed_sum, atol=0.1)
+
+    # Enforce component masses sum to composite mass
+    mstar_sum = (
+        dbk_sed_kern_results.mstar_bulge
+        + dbk_sed_kern_results.mstar_disk
+        + dbk_sed_kern_results.mstar_knots
+    )
+    assert np.allclose(np.log10(mstar_sum), dbk_sed_kern_results.logsm_obs, atol=0.01)

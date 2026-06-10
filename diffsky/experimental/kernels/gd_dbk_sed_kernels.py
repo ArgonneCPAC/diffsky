@@ -99,14 +99,25 @@ def _dbk_sed_kern(
     mk = dbk_weights.mstar_knots.reshape((n_gals, 1))
     sed_knots = jnp.sum(a * b * c_k * d, axis=(1, 2)) * mk
 
-    new_keys = ["rest_sed_bulge", "rest_sed_disk", "rest_sed_knots"]
-
-    fields = list(sed_info._fields) + new_keys
-    SEDInfo = namedtuple("SEDInfo", fields)
-    sed_info = SEDInfo(
+    sed_info = DBKSEDInfo(
         **sed_info._asdict(),
         rest_sed_bulge=sed_bulge,
         rest_sed_disk=sed_disk,
         rest_sed_knots=sed_knots,
+        mstar_bulge=dbk_weights.mstar_bulge,
+        mstar_disk=dbk_weights.mstar_disk,
+        mstar_knots=dbk_weights.mstar_knots,
     )
     return sed_info
+
+
+_DBK_SED_EXTRA_FIELDS = [
+    "rest_sed_bulge",
+    "rest_sed_disk",
+    "rest_sed_knots",
+    "mstar_bulge",
+    "mstar_disk",
+    "mstar_knots",
+]
+_DBK_SED_FIELDS = list(gd_sed_kernels.SEDKernResults._fields) + _DBK_SED_EXTRA_FIELDS
+DBKSEDInfo = namedtuple("DBKSEDInfo", _DBK_SED_FIELDS)
