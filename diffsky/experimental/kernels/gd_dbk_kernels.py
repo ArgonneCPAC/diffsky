@@ -2,16 +2,20 @@
 
 from collections import namedtuple
 
+from dsps.sfh import diffburst
 from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
 
 from ..disk_bulge_modeling import dbpop
-from . import dbk_kernels
 from . import rapid_quenching as rq
 from . import ssp_weight_kernels as sspwk
 
 interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
+_BPOP = (None, 0, 0)
+get_pureburst_age_weights = jjit(
+    vmap(diffburst._pureburst_age_weights_from_params, in_axes=_BPOP)
+)
 
 
 @jjit
@@ -80,7 +84,7 @@ def get_dbk_weights_rq(
     age_weights_ddk = (_A - _B) / mstar_ddk.reshape((n_gals, 1))
 
     ssp_lg_age_yr = ssp_data.ssp_lg_age_gyr + 9.0
-    age_weights_pureburst = dbk_kernels.get_pureburst_age_weights(
+    age_weights_pureburst = get_pureburst_age_weights(
         ssp_lg_age_yr, burst_params.lgyr_peak, burst_params.lgyr_max
     )
 
@@ -108,7 +112,7 @@ def get_dbk_weights_rq(
     ssp_weights_disk = sspwk.combine_age_met_weights(age_weights_dd, lgmet_weights)
     ssp_weights_knots = sspwk.combine_age_met_weights(age_weights_knots, lgmet_weights)
 
-    dbk_weights_rq = dbk_kernels.DBKWeights(
+    dbk_weights_rq = DBKWeights(
         ssp_weights_bulge=ssp_weights_bulge,
         ssp_weights_disk=ssp_weights_disk,
         ssp_weights_knots=ssp_weights_knots,
@@ -202,4 +206,15 @@ DBKPhotInfo = namedtuple(
 )
 DBKSpecInfo = namedtuple(
     "DBKSpecInfo", ("linelum_bulge", "linelum_disk", "linelum_knots")
+)
+DBKWeights = namedtuple(
+    "DBKWeights",
+    (
+        "ssp_weights_bulge",
+        "ssp_weights_disk",
+        "ssp_weights_knots",
+        "mstar_bulge",
+        "mstar_disk",
+        "mstar_knots",
+    ),
 )

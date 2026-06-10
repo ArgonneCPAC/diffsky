@@ -103,3 +103,12 @@ def test_dbk_sed_kern(num_halos=50):
 
         mags = calc_obs_mags_galpop(*args)
         assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
+
+    # Enforce agreement between composite SED and sum of component SEDs
+    log_sed_composite = np.log10(dbk_sed_kern_results.rest_sed)
+    log_sed_sum = np.log10(
+        dbk_sed_kern_results.rest_sed_bulge
+        + dbk_sed_kern_results.rest_sed_disk
+        + dbk_sed_kern_results.rest_sed_knots
+    )
+    assert np.allclose(log_sed_composite, log_sed_sum, atol=0.1)
