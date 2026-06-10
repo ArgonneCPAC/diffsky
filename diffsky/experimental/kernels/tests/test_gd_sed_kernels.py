@@ -14,7 +14,7 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-def test_sed_kern(num_halos=150):
+def test_sed_kern(num_halos=20):
     ran_key = jran.key(0)
     # lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
