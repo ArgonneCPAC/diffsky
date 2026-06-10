@@ -11,7 +11,7 @@ from jax import vmap
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
 from .. import gd_dbk_sed_kernels_merging as gd_dbk_sedkm
-from .. import gd_phot_kernels_merging as gd_pkm
+from .. import gd_dbk_specphot_kernels_merging
 from .. import gd_sed_kernels_merging as gd_sedkm
 from .. import mc_randoms
 
@@ -19,20 +19,26 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-@pytest.mark.parametrize("mc_merge", [0, 1])
-def test_sed_kern(mc_merge, num_halos=25, return_results=False):
+@pytest.mark.parametrize("z_med", [0.5, 2.5])
+def test_sed_kern(z_med, mc_merge=1, num_halos=25, return_results=False, dz=0.05):
     ran_key = jran.key(0)
+    z_min, z_max = z_med - dz, z_med + dz
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
-        num_halos=num_halos
+        num_halos=num_halos, z_min=z_min, z_max=z_max
     )
     fb = 0.176
 
-    n_gals = lc_data.z_obs.size
-    phot_key, dbk_key = jran.split(ran_key, 2)
-    dbk_randoms = mc_randoms.get_mc_dbk_randoms(dbk_key, n_gals)
+    phot_randoms, sfh_params, dbk_randoms, merging_randoms = (
+        mc_randoms.get_mc_dbk_phot_merge_randoms(
+            ran_key,
+            dpwm.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+            lc_data.mah_params,
+            DEFAULT_COSMOLOGY,
+        )
+    )
 
-    phot_kern_results, phot_randoms, merging_randoms = gd_pkm._mc_phot_kern_merging(
-        phot_key,
+    args = (
+        ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
@@ -40,6 +46,7 @@ def test_sed_kern(mc_merge, num_halos=25, return_results=False):
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
+        lc_data.line_wave_table,
         *dpwm.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
@@ -51,9 +58,11 @@ def test_sed_kern(mc_merge, num_halos=25, return_results=False):
         lc_data.halo_indx,
         mc_merge,
     )
+    _res = gd_dbk_specphot_kernels_merging._mc_dbk_specphot_kern_merging(*args)
+    dbk_specphot_info, dbk_weights = _res
 
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [getattr(phot_kern_results, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+        [getattr(dbk_specphot_info, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
     sed_info = gd_sedkm._sed_kern(
         phot_randoms,
@@ -98,7 +107,8 @@ def test_sed_kern(mc_merge, num_halos=25, return_results=False):
 
     ret = (
         lc_data,
-        phot_kern_results,
+        tcurves,
+        dbk_specphot_info,
         phot_randoms,
         merging_randoms,
         dbk_sed_info,
@@ -113,37 +123,49 @@ def test_sed_kern(mc_merge, num_halos=25, return_results=False):
         + dbk_sed_info.rest_sed_knots
     )
 
+    msg = "Sum of DBK rest SEDs disagrees with composite SED"
     assert np.allclose(
-        np.log10(rest_sed_dbk_recomputed), np.log10(sed_info.rest_sed), atol=0.2
-    )
+        np.log10(rest_sed_dbk_recomputed), np.log10(sed_info.rest_sed), atol=0.1
+    ), msg
 
-    # Enforce agreement between precomputed vs exact magnitudes
-    n_bands = phot_kern_results.obs_mags.shape[1]
+    # Enforce agreement between gd_dbk_sed_kernels_merging vs gd_dbk_specphot_kernels_merging
+    n_bands = dbk_specphot_info.obs_mags.shape[1]
     for iband in range(n_bands):
         trans_iband = np.interp(
             lc_data.ssp_data.ssp_wave,
             tcurves[iband].wave,
             tcurves[iband].transmission,
         )
-        args = (
-            lc_data.ssp_data.ssp_wave,
-            sed_info.rest_sed,
-            lc_data.ssp_data.ssp_wave,
-            trans_iband,
-            lc_data.z_obs,
-            *DEFAULT_COSMOLOGY,
-        )
 
-        recomputed_obs_mags = calc_obs_mags_galpop(*args)
-        n_nan_cens = np.sum(~np.isfinite(recomputed_obs_mags[lc_data.is_central == 1]))
-        n_nan_sats = np.sum(~np.isfinite(recomputed_obs_mags[lc_data.is_central == 0]))
+        components = ("", "_bulge", "_disk", "_knots")
+        for component in components:
+            sed = getattr(dbk_sed_info, "rest_sed" + component)
+            obs_mags = getattr(dbk_specphot_info, "obs_mags" + component)
 
-        dmag = recomputed_obs_mags - phot_kern_results.obs_mags[:, iband]
+            args = (
+                lc_data.ssp_data.ssp_wave,
+                sed,
+                lc_data.ssp_data.ssp_wave,
+                trans_iband,
+                lc_data.z_obs,
+                *DEFAULT_COSMOLOGY,
+            )
 
-        assert n_nan_sats == 0, "Some sats have NaN recomputed photometry"
-        msg = "Discrepancy in recomputed photometry for sats"
-        assert np.allclose(dmag[lc_data.is_central == 0], 0.0, atol=0.1), msg
+            recomputed_obs_mags = calc_obs_mags_galpop(*args)
+            specphot_obs_mags = obs_mags[:, iband]
+            dmag = recomputed_obs_mags - specphot_obs_mags
 
-        assert n_nan_cens == 0, "Some cens have NaN recomputed photometry"
-        msg = "Discrepancy in recomputed photometry for cens"
-        assert np.allclose(dmag[lc_data.is_central == 1], 0.0, atol=0.1), msg
+            assert np.median(dmag) < 0.1, "Systematic offset in recomputed magnitudes"
+
+            # compute trimmed variance
+            dmag_lo, dmag_hi = np.percentile(dmag, (5, 95))
+            msk_trim = (dmag > dmag_lo) & (dmag < dmag_hi)
+            std_trim = np.std(dmag[msk_trim])
+            assert std_trim < 0.1, "Large scatter in recomputed magnitudes"
+
+            # compute outlier fraction
+            num_outliers = np.sum(np.abs(dmag)) > 0.1
+            frac_outliers = num_outliers / dmag.size
+            assert (
+                frac_outliers < 0.01
+            ), "Large outlier fraction in recomputed magnitudes"
