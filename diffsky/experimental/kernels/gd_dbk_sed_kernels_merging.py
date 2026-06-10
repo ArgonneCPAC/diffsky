@@ -111,13 +111,11 @@ def _get_dbk_sed_kern_merging_quantities(
     mstar_disk = mass_ratio * md_in_situ
     mstar_knots = mass_ratio * mk_in_situ
 
-    mb = mstar_bulge.reshape((n_gals, 1))
-    md = mstar_disk.reshape((n_gals, 1))
-    mk = mstar_knots.reshape((n_gals, 1))
+    ratio = mass_ratio.reshape((n_gals, 1))
 
-    rest_sed_bulge = mb * dbk_sed_info_in_situ.rest_sed_bulge
-    rest_sed_disk = md * dbk_sed_info_in_situ.rest_sed_disk
-    rest_sed_knots = mk * dbk_sed_info_in_situ.rest_sed_knots
+    rest_sed_bulge = ratio * dbk_sed_info_in_situ.rest_sed_bulge
+    rest_sed_disk = ratio * dbk_sed_info_in_situ.rest_sed_disk
+    rest_sed_knots = ratio * dbk_sed_info_in_situ.rest_sed_knots
 
     return (
         mstar_in_situ,
