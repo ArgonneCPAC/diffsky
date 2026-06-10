@@ -188,7 +188,8 @@ def compute_seds_from_diffsky_mock(
         The number of systems to compute the SED for at once. Note this is NOT
         the number of individual objects, but rather the number of central+satellite
         groups that are computed per pass. If you find yourself running out of memory,
-        adjust this number down.
+        adjust this number down. Computing SEDs can take significantly more memory
+        than photometry.
 
     Returns:
     --------
@@ -233,7 +234,8 @@ def compute_dbk_seds_from_diffsky_mock(
         The number of systems to compute the SED for at once. Note this is NOT
         the number of individual objects, but rather the number of central+satellite
         groups that are computed per pass. If you find yourself running out of memory,
-        adjust this number down.
+        adjust this number down. Computing SEDs can take significanty more memory
+        than photometry.
 
     Returns:
     --------
