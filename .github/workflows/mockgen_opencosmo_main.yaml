@@ -71,6 +71,12 @@ jobs:
 
           python -m pip install --no-build-isolation --no-deps -e .
 
+      - name: check download IP addresses
+        shell: bash -l {0}
+        run: |
+          curl -4 https://api.ipify.org
+          curl -6 https://api6.ipify.org || echo "No IPv6"
+
       - name: download dsps data
         timeout-minutes: 5
         shell: bash -l {0}
