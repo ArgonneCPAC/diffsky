@@ -7,7 +7,7 @@ import numpy as np
 import opencosmo as oc
 
 from ..hacc_utils.lc_mock import (
-    load_diffsky_param_collection,
+    load_diffsky_param_collection_merging,
     load_diffsky_ssp_data,
     load_diffsky_t_table,
     load_diffsky_tcurves,
@@ -58,7 +58,7 @@ def load_diffsky_mock(
         aux_data = __load_aux_data(path, mock_name)
     except FileNotFoundError:
         aux_data = None
-    catalog = oc.open(data_files, synth_cores=synth_cores)
+    catalog = oc.open(data_files, synth_cores=synth_cores, keep_top_host=True)
     check_versions(catalog, version_check)
 
     return catalog, aux_data
@@ -121,7 +121,7 @@ def __load_aux_data(path: Path, mock_name: str):
     )  # note pathlib.Path is compatible with os.path calls
     t_table = load_diffsky_t_table(path, mock_name)
     ssp_data = load_diffsky_ssp_data(path, mock_name)
-    param_collection = load_diffsky_param_collection(path, mock_name)
+    param_collection = load_diffsky_param_collection_merging(path, mock_name)
 
     diffsky_aux_data = dict(
         ssp_data=ssp_data,
