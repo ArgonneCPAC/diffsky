@@ -7,8 +7,8 @@ from jax import jit as jjit
 from jax import numpy as jnp
 
 from .. import mc_diffstarpop_wrappers as mcdw
-from . import gd_dbk_kernels
-from . import gd_sed_kernels_merging as gd_sedkm
+from . import gd_dbk_sed_kernels as gd_sedk
+from . import gd_sed_kernels_merging
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -39,9 +39,9 @@ def _dbk_sed_kern(
     n_t_table=mcdw.N_T_TABLE,
 ):
     """"""
-    sed_info = gd_sedkm._sed_kern(
+    dbk_sed_info_in_situ = gd_sedk._dbk_sed_kern(
         phot_randoms,
-        merging_randoms,
+        dbk_randoms,
         sfh_params,
         z_obs,
         t_obs,
@@ -58,66 +58,123 @@ def _dbk_sed_kern(
         logmhost_infall,
         t_infall,
         is_central,
-        sat_weights,
         halo_indx,
-        mc_merge,
         n_t_table=n_t_table,
     )
 
-    lgmet_weights = jnp.sum(sed_info.ssp_weights, axis=2)
-    age_weights = jnp.sum(sed_info.ssp_weights, axis=1)
-    args = (
-        t_obs,
-        ssp_data,
-        sed_info.t_table,
-        sed_info.sfh_table,
-        sed_info.burst_params,
-        lgmet_weights,
-        dbk_randoms,
-        sed_info.logsm_obs,
-        age_weights,
-        sed_info.p_merge_smooth,
+    dbk_sed_merging_quantities = _get_dbk_sed_kern_merging_quantities(
+        dbk_sed_info_in_situ,
+        merging_randoms,
+        sat_weights,
+        halo_indx,
+        mc_merge,
     )
-    dbk_weights, disk_bulge_history = gd_dbk_kernels._dbk_kern(*args)
 
-    n_gals = z_obs.size
-    n_met, n_age, n_wave = ssp_data.ssp_flux.shape
+    dbk_sed_info = _update_dbk_sed_kern_results_with_merging(
+        dbk_sed_info_in_situ, merging_randoms, *dbk_sed_merging_quantities
+    )
 
-    _w_bulge = dbk_weights.ssp_weights_bulge.reshape((n_gals, n_met, n_age, 1))
-    _w_dd = dbk_weights.ssp_weights_disk.reshape((n_gals, n_met, n_age, 1))
-    _w_knot = dbk_weights.ssp_weights_knots.reshape((n_gals, n_met, n_age, 1))
+    return dbk_sed_info
 
-    mb_in_situ = dbk_weights.mstar_bulge
-    md_in_situ = dbk_weights.mstar_disk
-    mk_in_situ = dbk_weights.mstar_knots
+
+@jjit
+def _get_dbk_sed_kern_merging_quantities(
+    dbk_sed_info_in_situ,
+    merging_randoms,
+    sat_weights,
+    halo_indx,
+    mc_merge,
+):
+    _res = gd_sed_kernels_merging._get_sed_kern_merging_quantities(
+        dbk_sed_info_in_situ, merging_randoms, sat_weights, halo_indx, mc_merge
+    )
+    (
+        mstar_in_situ,
+        mstar_obs,
+        rest_sed_in_situ,
+        rest_sed,
+        p_merge,
+        ssp_weights,
+        ssp_weights_in_situ,
+    ) = _res
+
+    mb_in_situ = dbk_sed_info_in_situ.mstar_bulge
+    md_in_situ = dbk_sed_info_in_situ.mstar_disk
+    mk_in_situ = dbk_sed_info_in_situ.mstar_knots
     mstar_in_situ = mb_in_situ + md_in_situ + mk_in_situ
-    mstar_obs = 10**sed_info.logsm_obs
+    mstar_obs = 10**dbk_sed_info_in_situ.logsm_obs
     mass_ratio = mstar_obs / mstar_in_situ
-    dbk_weights = dbk_weights._replace(
-        mstar_bulge=mass_ratio * mb_in_situ,
-        mstar_disk=mass_ratio * md_in_situ,
-        mstar_knots=mass_ratio * mk_in_situ,
+
+    n_gals = mstar_obs.shape[0]
+
+    mstar_bulge = mass_ratio * mb_in_situ
+    mstar_disk = mass_ratio * md_in_situ
+    mstar_knots = mass_ratio * mk_in_situ
+
+    mb = mstar_bulge.reshape((n_gals, 1))
+    md = mstar_disk.reshape((n_gals, 1))
+    mk = mstar_knots.reshape((n_gals, 1))
+
+    rest_sed_bulge = mb * dbk_sed_info_in_situ.rest_sed_bulge
+    rest_sed_disk = md * dbk_sed_info_in_situ.rest_sed_disk
+    rest_sed_knots = mk * dbk_sed_info_in_situ.rest_sed_knots
+
+    return (
+        mstar_in_situ,
+        mstar_obs,
+        rest_sed_in_situ,
+        rest_sed,
+        p_merge,
+        mstar_bulge,
+        mstar_disk,
+        mstar_knots,
+        rest_sed_bulge,
+        rest_sed_disk,
+        rest_sed_knots,
     )
-    mb_obs = dbk_weights.mstar_bulge.reshape((n_gals, 1))
-    md_obs = dbk_weights.mstar_disk.reshape((n_gals, 1))
-    mk_obs = dbk_weights.mstar_knots.reshape((n_gals, 1))
 
-    a = sed_info.dust_frac_trans.reshape((n_gals, 1, n_age, n_wave))
-    b = sed_info.frac_ssp_errors.reshape((n_gals, 1, 1, n_wave))
-    d = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
 
-    sed_bulge = jnp.sum(a * b * _w_bulge * d, axis=(1, 2)) * mb_obs
-    sed_disk = jnp.sum(a * b * _w_dd * d, axis=(1, 2)) * md_obs
-    sed_knots = jnp.sum(a * b * _w_knot * d, axis=(1, 2)) * mk_obs
+@jjit
+def _update_dbk_sed_kern_results_with_merging(
+    dbk_sed_info_in_situ,
+    merging_randoms,
+    mstar_in_situ,
+    mstar_obs,
+    rest_sed_in_situ,
+    rest_sed,
+    p_merge,
+    mstar_bulge,
+    mstar_disk,
+    mstar_knots,
+    rest_sed_bulge,
+    rest_sed_disk,
+    rest_sed_knots,
+):
+    ex_situ_dict = dict()
+    ex_situ_dict["logsm_obs"] = jnp.log10(mstar_obs)
+    ex_situ_dict["rest_sed"] = rest_sed
+    ex_situ_dict["mstar_bulge"] = mstar_bulge
+    ex_situ_dict["mstar_disk"] = mstar_disk
+    ex_situ_dict["mstar_knots"] = mstar_knots
 
-    new_keys = ["rest_sed_bulge", "rest_sed_disk", "rest_sed_knots"]
+    ex_situ_dict["rest_sed_bulge"] = rest_sed_bulge
+    ex_situ_dict["rest_sed_disk"] = rest_sed_disk
+    ex_situ_dict["rest_sed_knots"] = rest_sed_knots
 
-    fields = list(sed_info._fields) + new_keys
-    SEDInfo = namedtuple("SEDInfo", fields)
-    sed_info = SEDInfo(
-        **sed_info._asdict(),
-        rest_sed_bulge=sed_bulge,
-        rest_sed_disk=sed_disk,
-        rest_sed_knots=sed_knots,
+    dbk_sed_info = dbk_sed_info_in_situ._replace(**ex_situ_dict)
+
+    in_situ_dict = dict()
+    in_situ_dict["logsm_obs" + "_in_situ"] = jnp.log10(mstar_in_situ)
+    in_situ_dict["rest_sed_in_situ"] = rest_sed_in_situ
+
+    new_keys = ["logsm_obs_in_situ", "rest_sed_in_situ", "p_merge", "uran_pmerge"]
+    fields = list(dbk_sed_info._fields) + new_keys
+    DBKSEDInfo = namedtuple("DBKSEDInfo", fields)
+
+    dbk_sed_info = DBKSEDInfo(
+        **dbk_sed_info._asdict(),
+        **in_situ_dict,
+        p_merge=p_merge,
+        uran_pmerge=merging_randoms.uran_pmerge,
     )
-    return sed_info
+    return dbk_sed_info
