@@ -19,8 +19,8 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-# @pytest.mark.parametrize("mc_merge", [0, 1])
-def test_sed_kern(mc_merge=1, num_halos=25, return_results=False):
+@pytest.mark.parametrize("mc_merge", [0, 1])
+def test_sed_kern(mc_merge, num_halos=25, return_results=False):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
