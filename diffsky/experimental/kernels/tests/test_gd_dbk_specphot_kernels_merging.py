@@ -61,6 +61,15 @@ def check_dbk_specphot_kern_merging_results(dbk_specphot_info, dbk_weights, lc_d
     msk_cen = lc_data.is_central == 1
     msk_sat = ~msk_cen
 
+    # Enforce component magnitudes add to composite magnitudes
+    obs_flux_sum = (
+        10 ** (-0.4 * dbk_specphot_info.obs_mags_bulge)
+        + 10 ** (-0.4 * dbk_specphot_info.obs_mags_disk)
+        + 10 ** (-0.4 * dbk_specphot_info.obs_mags_knots)
+    )
+    obs_mags_sum = -2.5 * np.log10(obs_flux_sum)
+    assert np.allclose(obs_mags_sum, dbk_specphot_info.obs_mags, atol=0.01)
+
     # Enforce centrals can only get more massive and satellites less massive
     name = "logsm_obs"
     x = getattr(dbk_specphot_info, name)
