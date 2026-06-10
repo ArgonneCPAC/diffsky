@@ -84,6 +84,12 @@ def test_dbk_sed_kern(num_halos=50):
         lc_data.halo_indx,
     )
 
+    assert np.allclose(
+        np.log10(sed_kern_results.rest_sed),
+        np.log10(dbk_sed_kern_results.rest_sed),
+        atol=0.1,
+    )
+
     # Enforce agreement between precomputed vs exact magnitudes
     n_bands = phot_kern_results.obs_mags.shape[1]
     for iband in range(n_bands):
