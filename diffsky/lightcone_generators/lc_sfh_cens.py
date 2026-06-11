@@ -1,4 +1,4 @@
-""""""
+"""Lightcone generators of central galaxies with diffstar SFH"""
 
 from collections import namedtuple
 
@@ -50,6 +50,21 @@ def weighted_lc_halos_sfh(
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
 ):
+    """Weighted lightcone of host halos with diffstar SFH
+
+    Parameters
+    ----------
+    ran_key : jax.random.key()
+    n_host_halos : int
+    z_min, z_max : floats
+    lgmp_min, lgmp_max : floats
+    sky_area_degsq : float
+
+    Returns
+    -------
+    sfh_lightcone : namedtuple
+
+    """
     ran_key, halo_key = jran.split(ran_key, 2)
     args = (halo_key, n_host_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
     halopop = mclh.weighted_lc_halos(*args, cosmo_params=cosmo_params)

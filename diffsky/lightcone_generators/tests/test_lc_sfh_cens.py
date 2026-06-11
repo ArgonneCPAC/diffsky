@@ -3,7 +3,7 @@
 import numpy as np
 from jax import random as jran
 
-from .. import mc_lightcone_cens as mclcc
+from .. import lc_sfh_cens
 
 
 def test_weighted_lc_halos_sfh():
@@ -21,6 +21,6 @@ def test_weighted_lc_halos_sfh():
         lgmp_max,
         sky_area_degsq,
     )
-    sfh_lightcone = mclcc.weighted_lc_halos_sfh(*args)
+    sfh_lightcone = lc_sfh_cens.weighted_lc_halos_sfh(*args)
     for x in sfh_lightcone:
         assert np.all(np.isfinite(x))
