@@ -52,20 +52,21 @@ def _get_weighted_lc_halos_photdata_for_unit_testing(num_halos=75):
 
 
 def _get_weighted_lc_photdata_for_unit_testing(
-    num_halos=75, n_lines=3, z_min=0.1, z_max=3.0, n_z_phot_table=15
+    num_halos=75, n_lines=3, z_min=0.1, z_max=3.0, n_z_phot_table=15, ssp_data=None
 ):
     ran_key = jran.key(0)
 
     lgmp_min, lgmp_max = 10.0, 15.0
     sky_area_degsq = 100.0
 
-    ssp_data = load_ssp_data.load_fake_ssp_data()
+    if ssp_data is None:
+        ssp_data = load_ssp_data.load_fake_ssp_data()
 
     _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
     wave, u, g, r, i, z, y = _res
 
-    tcurve_list = [TransmissionCurve(wave, x) for x in (u, g, r, i, z, y)]
-    names = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
+    tcurve_list = [TransmissionCurve(wave, x) for x in (u, i, y)]
+    names = [f"lsst_{x}" for x in ("u", "i", "y")]
     TransmissionCurves = namedtuple("TransmissionCurves", names)
     tcurves = TransmissionCurves(*tcurve_list)
 

@@ -68,6 +68,10 @@ jobs:
 
       - name: test
         shell: bash -l {0}
+        env:
+          OMP_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
         run: |
           pytest -v diffsky --cov --cov-report=xml
 

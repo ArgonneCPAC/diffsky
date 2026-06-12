@@ -1,17 +1,17 @@
 """"""
 
-import pytest
 import numpy as np
+import pytest
+from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
 from jax import vmap
-from diffstar import DEFAULT_DIFFSTAR_PARAMS
-
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
-from .. import phot_kernels_merging as pkm, sed_kernels_merging as sedkm
 from ...tests import test_lightcone_generators as tlcg
+from .. import phot_kernels_merging as pkm
+from .. import sed_kernels_merging as sedkm
 
 _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
