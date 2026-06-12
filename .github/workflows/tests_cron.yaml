@@ -68,6 +68,9 @@ jobs:
 
       - name: test
         shell: bash -l {0}
+        env:
+          XLA_PYTHON_CLIENT_ALLOCATOR: platform
+          XLA_FLAGS: "--xla_cpu_multi_thread_eigen_intraop_parallelism=1"
         run: |
           pytest -v diffsky --cov --cov-report=xml
 
