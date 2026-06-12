@@ -45,6 +45,7 @@ jobs:
             flake8 \
             pytest \
             pytest-xdist \
+            pytest-forked \
             pytest-cov \
             pip \
             setuptools \
