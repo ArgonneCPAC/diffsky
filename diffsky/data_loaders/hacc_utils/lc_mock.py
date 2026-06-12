@@ -33,8 +33,8 @@ from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ...experimental.kernels import dbk_specphot_kernels_merging as dbkspkm
-from ...experimental.kernels import phot_kernels as phkern
+from ...experimental.kernels import gd_dbk_specphot_kernels_merging as gd_dbkspkm
+from ...experimental.kernels import gd_phot_kernels as gd_phkern
 from ...experimental.size_modeling import smzr_bulge, smzr_disk
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
@@ -507,7 +507,7 @@ def add_dbk_phot_quantities_to_mock(
     line_wave_table = np.array(ssp_data.ssp_emline_wave)
 
     mc_merge = 1
-    dbk_phot_info, dbk_weights = dbkspkm._mc_dbk_specphot_kern_merging(
+    dbk_phot_info, dbk_weights = gd_dbkspkm._mc_dbk_specphot_kern_merging(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],
@@ -582,11 +582,18 @@ def add_phot_quantities_to_mock(
         [diffsky_data[key] for key in DEFAULT_MAH_PARAMS._fields]
     )
 
-    phot_info, phot_randoms = phkern._mc_phot_kern(
+    upid = np.where(lc_data["central"] == 1, -1, lc_data["top_host_idx_chunk"])
+    lgmu_infall = diffsky_data["logmp_infall"] - diffsky_data["logmhost_infall"]
+    gyr_since_infall = diffsky_data["t_obs"] - diffsky_data["t_infall"]
+    phot_info, phot_randoms, diffstarpop_results = gd_phkern._mc_phot_kern(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],
         mah_params,
+        upid,
+        lgmu_infall,
+        diffsky_data["logmhost_infall"],
+        gyr_since_infall,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
@@ -596,6 +603,7 @@ def add_phot_quantities_to_mock(
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
+        param_collection.merging_params,
         sim_info.cosmo_params,
         sim_info.fb,
     )
