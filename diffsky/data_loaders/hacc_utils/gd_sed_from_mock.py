@@ -12,13 +12,13 @@ from ... import phot_utils
 from ...experimental import mc_diffstarpop_wrappers as mcdw
 from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import (
-    dbk_sed_kernels_merging,
+    gd_dbk_sed_kernels_merging,
 )
-from ...experimental.kernels import dbk_specphot_kernels_merging as dbkspkm
+from ...experimental.kernels import gd_dbk_specphot_kernels_merging as gd_dbkspkm
 from ...experimental.kernels import (
     gd_phot_kernels_merging,
+    gd_sed_kernels_merging,
     mc_randoms,
-    sed_kernels_merging,
 )
 
 DiffstarPopResultsMock = namedtuple(
@@ -116,6 +116,12 @@ def compute_dbk_phot_from_mock(mock_chunk, metadata, tcurves=None):
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
         [mock_chunk[key] for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
+    mc_is_q = mock_chunk["mc_sfh_type"] == 0
+    dummy_frac_q = np.zeros(mc_is_q.size) + 0.5
+    diffstarpop_results_mock = DiffstarPopResultsMock(
+        sfh_params, sfh_params, sfh_params, mc_is_q, dummy_frac_q
+    )
+
     t_obs = age_at_z(mock_chunk["redshift_true"], *metadata["sim_info"].cosmo_params)
 
     wave_eff_table = phot_utils.get_wave_eff_table(metadata["z_phot_table"], tcurves)
@@ -151,7 +157,7 @@ def compute_dbk_phot_from_mock(mock_chunk, metadata, tcurves=None):
 
     args = (
         phot_randoms,
-        sfh_params,
+        diffstarpop_results_mock,
         dbk_randoms,
         merging_randoms,
         mock_chunk["redshift_true"],
@@ -178,7 +184,7 @@ def compute_dbk_phot_from_mock(mock_chunk, metadata, tcurves=None):
         mc_merge,
     )
 
-    dbk_phot_info, dbk_weights = dbkspkm._dbk_specphot_kern_merging(*args)
+    dbk_phot_info, dbk_weights = gd_dbkspkm._dbk_specphot_kern_merging(*args)
     dbk_phot_info = dbk_phot_info._asdict()
     dbk_weights = dbk_weights._asdict()
     return dbk_phot_info, dbk_weights
@@ -235,7 +241,7 @@ def compute_sed_from_mock(mock_chunk, metadata):
         halo_indx,
         mc_merge,
     )
-    sed_info = sed_kernels_merging._sed_kern(*args)
+    sed_info = gd_sed_kernels_merging._sed_kern(*args)
     sed_info = sed_info._asdict()
     return sed_info
 
@@ -295,7 +301,7 @@ def compute_dbk_sed_from_mock(mock_chunk, metadata):
         halo_indx,
         mc_merge,
     )
-    dbk_sed_info = dbk_sed_kernels_merging._dbk_sed_kern(
+    dbk_sed_info = gd_dbk_sed_kernels_merging._dbk_sed_kern(
         *args, n_t_table=mcdw.N_T_TABLE
     )
     dbk_sed_info = dbk_sed_info._asdict()
