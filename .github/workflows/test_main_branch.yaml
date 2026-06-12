@@ -40,7 +40,6 @@ jobs:
             flake8 \
             pytest \
             pytest-xdist \
-            pytest-forked \
             pytest-cov \
             pip \
             setuptools \
@@ -70,7 +69,7 @@ jobs:
           MKL_NUM_THREADS: "1"
           OPENBLAS_NUM_THREADS: "1"
         run: |
-          pytest -v diffsky --cov --cov-report=xml --forked
+          pytest -v diffsky --cov --cov-report=xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v6

@@ -41,7 +41,6 @@ jobs:
             flake8 \
             pytest \
             pytest-xdist \
-            pytest-forked \
             pytest-cov \
             pip \
             setuptools \
@@ -71,4 +70,4 @@ jobs:
           OPENBLAS_NUM_THREADS: "1"
         run: |
           export PYTHONWARNINGS=error
-          pytest -v diffsky --cov --cov-report=xml --forked
+          pytest -v diffsky --cov --cov-report=xml
