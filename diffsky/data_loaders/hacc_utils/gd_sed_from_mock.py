@@ -11,11 +11,11 @@ from jax import numpy as jnp
 from ... import phot_utils
 from ...experimental import mc_diffstarpop_wrappers as mcdw
 from ...experimental import precompute_ssp_phot as psspp
-from ...experimental.kernels import (
+from ...experimental.v2_funcs import (
     gd_dbk_sed_kernels_merging,
 )
-from ...experimental.kernels import gd_dbk_specphot_kernels_merging as gd_dbkspkm
-from ...experimental.kernels import (
+from ...experimental.v2_funcs import gd_dbk_specphot_kernels_merging as gd_dbkspkm
+from ...experimental.v2_funcs import (
     gd_phot_kernels_merging,
     gd_sed_kernels_merging,
     mc_randoms,
