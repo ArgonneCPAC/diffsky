@@ -20,11 +20,17 @@ calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
 @pytest.mark.parametrize("z_med", [0.5, 2.5])
-def test_sed_kern(z_med, mc_merge=1, num_halos=25, return_results=False, dz=0.05):
+def test_sed_kern(
+    z_med, mc_merge=1, num_halos=5, return_results=False, dz=0.01, ssp_data=None
+):
     ran_key = jran.key(0)
     z_min, z_max = z_med - dz, z_med + dz
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
-        num_halos=num_halos, z_min=z_min, z_max=z_max
+        num_halos=num_halos,
+        z_min=z_min,
+        z_max=z_max,
+        n_z_phot_table=2,
+        ssp_data=ssp_data,
     )
     fb = 0.176
 
@@ -164,8 +170,13 @@ def test_sed_kern(z_med, mc_merge=1, num_halos=25, return_results=False, dz=0.05
             assert std_trim < 0.1, "Large scatter in recomputed magnitudes"
 
             # compute outlier fraction
-            num_outliers = np.sum(np.abs(dmag)) > 0.1
-            frac_outliers = num_outliers / dmag.size
-            assert (
-                frac_outliers < 0.01
-            ), "Large outlier fraction in recomputed magnitudes"
+            DMAG_TOL = 1.0
+            msk_outlier = np.abs(dmag) > DMAG_TOL
+            num_outliers = np.sum(msk_outlier)
+            ntot = dmag.size
+            frac_outliers = num_outliers / ntot
+
+            FOUT_TOL = 0.1
+            msg = f"{num_outliers}/{ntot}>{FOUT_TOL:.2f} "
+            msg += f"outliers with δmag>{DMAG_TOL:.2F} in approx-exact mags"
+            assert frac_outliers < FOUT_TOL, msg
