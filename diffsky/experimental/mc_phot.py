@@ -10,12 +10,11 @@ from collections import namedtuple
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
-from jax import numpy as jnp
 
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
-from .kernels import dbk_specphot_kernels as dbkspk
-from .kernels import mc_phot_kernels as mcpk
+from .kernels import gd_dbk_specphot_kernels as dbkspk
+from .kernels import gd_mc_phot_kernels as mcpk
 from .kernels import mc_randoms
 
 

@@ -2,14 +2,18 @@
 
 from . import (
     constants,
-    dbk_kernels,
-    dbk_specphot_kernels,
+)
+from . import gd_dbk_kernels as dbk_kernels
+from . import gd_dbk_specphot_kernels as dbk_specphot_kernels
+from . import (
     gd_linelum_kernels,
     gd_phot_kernels,
     gd_phot_kernels_merging,
+)
+from . import gd_sed_kernels as sed_kernels
+from . import (
     gd_specphot_kernels_merging,
     mc_randoms,
-    sed_kernels,
 )
 
 # constants
@@ -19,7 +23,6 @@ LGMET_SCATTER = constants.LGMET_SCATTER
 # kernels
 _mc_phot_kern = gd_phot_kernels._mc_phot_kern
 _phot_kern = gd_phot_kernels._phot_kern
-_mc_dbk_kern = dbk_kernels._mc_dbk_kern
 _dbk_kern = dbk_kernels._dbk_kern  # noqa
 _mc_specphot_kern = gd_linelum_kernels._mc_specphot_kern
 _specphot_kern = gd_linelum_kernels._specphot_kern

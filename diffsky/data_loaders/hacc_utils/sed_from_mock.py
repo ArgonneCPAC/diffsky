@@ -8,11 +8,11 @@ from jax import numpy as jnp
 from ... import phot_utils
 from ...experimental import mc_diffstarpop_wrappers as mcdw
 from ...experimental import precompute_ssp_phot as psspp
-from ...experimental.v2_funcs import (
+from ...experimental.kernels import (
     dbk_sed_kernels_merging,
 )
-from ...experimental.v2_funcs import dbk_specphot_kernels_merging as dbkspkm
-from ...experimental.v2_funcs import (
+from ...experimental.kernels import dbk_specphot_kernels_merging as dbkspkm
+from ...experimental.kernels import (
     mc_randoms,
     phot_kernels_merging,
     sed_kernels_merging,
