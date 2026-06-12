@@ -64,8 +64,6 @@ jobs:
 
       - name: test that no warnings are raised
         shell: bash -l {0}
-        env:
-          XLA_FLAGS: "--xla_cpu_multi_thread_eigen_intraop_parallelism=1"
         run: |
           export PYTHONWARNINGS=error
           pytest -v diffsky --cov --cov-report=xml
