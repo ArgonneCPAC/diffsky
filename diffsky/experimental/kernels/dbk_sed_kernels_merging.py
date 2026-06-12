@@ -6,9 +6,9 @@ from functools import partial
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from . import sed_kernels_merging as sedkm
-from . import dbk_kernels
 from .. import mc_diffstarpop_wrappers as mcdw
+from . import dbk_kernels
+from . import sed_kernels_merging as sedkm
 
 
 @partial(jjit, static_argnames=["n_t_table"])
