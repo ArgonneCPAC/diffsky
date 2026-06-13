@@ -1,105 +1,20 @@
 """"""
 
 import numpy as np
+import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
-from ....merging import merging_model
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from ...tests import test_mc_phot
-from .. import phot_kernels_in_situ
+from .. import phot_kernels as gd_pkm
+
+TOL = 1e-8
 
 
-def test_mc_phot_kern(num_halos=75):
-    ran_key = jran.key(0)
-    # lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
-        num_halos=num_halos
-    )
-
-    fb = 0.156
-    ran_key, phot_key = jran.split(ran_key, 2)
-
-    # Assume all galaxies are centrals so we can test against phot_kernels_in_situ.py,
-    # which does not implement satellite quenching
+def check_phot_kern_merging_results(phot_kern_results, lc_data):
     n_gals = lc_data.z_obs.size
-    upid = np.zeros(n_gals).astype(int) - 1
-    lgmu_infall = np.zeros(n_gals).astype(int)
-    logmhost_infall = np.zeros(n_gals).astype(int)
-    gyr_since_infall = np.zeros(n_gals).astype(int)
-
-    _res = phot_kernels_in_situ._mc_phot_kern(
-        phot_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        upid,
-        lgmu_infall,
-        logmhost_infall,
-        gyr_since_infall,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        *dpwm.DEFAULT_PARAM_COLLECTION,
-        DEFAULT_COSMOLOGY,
-        fb,
-    )
-    mc_gd_phot_kern_results, mc_gd_phot_randoms, diffstarpop_results = _res
-
-    test_mc_phot.check_phot_kern_results(mc_gd_phot_kern_results)
-
-    # return mc_gd_phot_kern_results
-
-    n_gals, n_bands = mc_gd_phot_kern_results.obs_mags.shape
-    obs_mags_mc = np.zeros((n_gals, n_bands))
-    obs_mags_mc = np.where(
-        mc_gd_phot_kern_results.mc_sfh_type.reshape((n_gals, 1)) == 0,
-        mc_gd_phot_kern_results.obs_mags_q,
-        obs_mags_mc,
-    )
-    obs_mags_mc = np.where(
-        mc_gd_phot_kern_results.mc_sfh_type.reshape((n_gals, 1)) == 1,
-        mc_gd_phot_kern_results.obs_mags_ms,
-        obs_mags_mc,
-    )
-    obs_mags_mc = np.where(
-        mc_gd_phot_kern_results.mc_sfh_type.reshape((n_gals, 1)) == 2,
-        mc_gd_phot_kern_results.obs_mags_bursty,
-        obs_mags_mc,
-    )
-    assert np.allclose(obs_mags_mc, mc_gd_phot_kern_results.obs_mags, rtol=1e-5)
-
-    t_infall = lc_data.t_obs - gyr_since_infall
-    logmp_infall = lgmu_infall + logmhost_infall
-    p_merge_smooth = merging_model.get_p_merge_from_merging_params(
-        dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
-        logmp_infall,
-        logmhost_infall,
-        lc_data.t_obs,
-        t_infall,
-        upid,
-    )
-
-    gd_phot_kern_results = phot_kernels_in_situ._phot_kern(
-        mc_gd_phot_randoms,
-        diffstarpop_results,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        p_merge_smooth,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        dpwm.DEFAULT_PARAM_COLLECTION.mzr_params,
-        dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
-        dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
-        dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
-        DEFAULT_COSMOLOGY,
-        fb,
-    )
+    n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
 
     skip_keys = (
         "burstiness_info_q",
@@ -107,39 +22,66 @@ def test_mc_phot_kern(num_halos=75):
         "diffstar_info_ms",
         "diffstar_info_q",
     )
-    for key in mc_gd_phot_kern_results._fields:
+    for key in phot_kern_results._fields:
         if key not in skip_keys:
-            x = getattr(mc_gd_phot_kern_results, key)
-            x2 = getattr(gd_phot_kern_results, key)
-            assert np.allclose(x, x2)
+            x = getattr(phot_kern_results, key)
+            assert np.all(np.isfinite(x))
+
+    for key in skip_keys:
+        data = getattr(phot_kern_results, key)
+        for x in data:
+            assert np.all(np.isfinite(x))
+
+    assert np.all(phot_kern_results.p_merge >= 0)
+    assert np.all(phot_kern_results.p_merge <= 1)
+    assert np.any(phot_kern_results.p_merge > 0)
+    assert np.any(phot_kern_results.p_merge < 1)
+
+    # Enforce consistent array shapes
+    assert phot_kern_results.p_merge.shape == (n_gals,)
+    assert phot_kern_results.logsm_obs.shape == (n_gals,)
+    assert phot_kern_results.logsm_obs_in_situ.shape == (n_gals,)
+    assert phot_kern_results.obs_mags.shape == (n_gals, n_bands)
+    assert phot_kern_results.obs_mags_in_situ.shape == (n_gals, n_bands)
+
+    msk_cen = lc_data.is_central == 1
+    msk_sat = ~msk_cen
+
+    # Enforce centrals can only get brighter and satellites can only get dimmer
+    name = "obs_mags"
+    x = getattr(phot_kern_results, name)
+    y = getattr(phot_kern_results, name + "_in_situ")
+    assert np.all(x[msk_cen] <= y[msk_cen] + TOL)
+    assert np.all(x[msk_sat] >= y[msk_sat] - TOL)
+
+    # Enforce merging is nontrivial
+    assert np.any(x[msk_cen] < y[msk_cen])
+    assert np.any(x[msk_sat] > y[msk_sat])
+
+    # Enforce centrals can only get more massive and satellites less massive
+    name = "logsm_obs"
+    x = getattr(phot_kern_results, name)
+    y = getattr(phot_kern_results, name + "_in_situ")
+    assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
+    assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
+    # Enforce merging is nontrivial
+    assert np.any(x[msk_cen] > y[msk_cen])
+    assert np.any(x[msk_sat] < y[msk_sat])
 
 
-def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
+@pytest.mark.parametrize("mc_merge", [0, 1])
+def test_mc_phot_kern_merging(mc_merge, num_halos=250):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )
+    fb = 0.176
 
-    fb = 0.156
-    ran_key, phot_key = jran.split(ran_key, 2)
-
-    # Assume all galaxies are centrals so we can test against phot_kernels_in_situ.py,
-    # which does not implement satellite quenching
-    n_gals = lc_data.z_obs.size
-    upid_cens = np.zeros(n_gals).astype(int) - 1
-    lgmu_infall_cens = np.zeros(n_gals).astype(int)
-    logmhost_infall_cens = np.zeros(n_gals).astype(int)
-    gyr_since_infall_cens = np.zeros(n_gals).astype(int)
-
-    _res = phot_kernels_in_situ._mc_phot_kern(
-        phot_key,
+    phot_kern_results, phot_randoms, merging_randoms = gd_pkm._mc_phot_kern_merging(
+        ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
-        upid_cens,
-        lgmu_infall_cens,
-        logmhost_infall_cens,
-        gyr_since_infall_cens,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
@@ -147,37 +89,13 @@ def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
         *dpwm.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
-    )
-    mc_gd_phot_kern_results_all_cens = _res[0]
-
-    test_mc_phot.check_phot_kern_results(mc_gd_phot_kern_results_all_cens)
-
-    upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
-    gyr_since_infall = lc_data.t_obs - lc_data.t_infall
-    lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
-
-    _res = phot_kernels_in_situ._mc_phot_kern(
-        phot_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        upid,
-        lgmu_infall,
+        lc_data.logmp_infall,
         lc_data.logmhost_infall,
-        gyr_since_infall,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        *dpwm.DEFAULT_PARAM_COLLECTION,
-        DEFAULT_COSMOLOGY,
-        fb,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.sat_weight,
+        lc_data.halo_indx,
+        mc_merge,
     )
-    mc_gd_phot_kern_results_with_sats = _res[0]
-    test_mc_phot.check_phot_kern_results(mc_gd_phot_kern_results_with_sats)
 
-    assert not np.allclose(
-        mc_gd_phot_kern_results_with_sats.obs_mags,
-        mc_gd_phot_kern_results_all_cens.obs_mags,
-        rtol=1e-3,
-    )
+    check_phot_kern_merging_results(phot_kern_results, lc_data)
