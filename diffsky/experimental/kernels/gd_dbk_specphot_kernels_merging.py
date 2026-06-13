@@ -217,8 +217,15 @@ def _update_dbk_specphot_info_with_merging(
         mstar_knots=dbk_weights.mstar_knots * frac_dm,
     )
 
-    new_keys = list(in_situ_dict.keys())
+    dbk_keys = ["mstar_bulge", "mstar_disk", "mstar_knots"]
+    new_keys = list(in_situ_dict.keys()) + dbk_keys
     dbk_specphot_info_keys = list(dbk_specphot_info._fields) + new_keys
     MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_info_keys)
-    dbk_specphot_info = MCDBKSpecPhotInfo(**dbk_specphot_info._asdict(), **in_situ_dict)
+    dbk_specphot_info = MCDBKSpecPhotInfo(
+        **dbk_specphot_info._asdict(),
+        **in_situ_dict,
+        mstar_bulge=dbk_weights.mstar_bulge,
+        mstar_disk=dbk_weights.mstar_disk,
+        mstar_knots=dbk_weights.mstar_knots,
+    )
     return dbk_specphot_info, dbk_weights

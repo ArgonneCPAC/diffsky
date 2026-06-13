@@ -15,7 +15,6 @@ from jax import jit as jjit
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
 from .kernels import _dbk_sed_kern, _mc_phot_kern_merging, _sed_kern
-from .kernels import gd_dbk_specphot_kernels as dbkspk
 from .kernels import gd_dbk_specphot_kernels_merging as dbkspkm
 from .kernels import gd_mc_phot_kernels as mcpk
 from .kernels import mc_randoms
@@ -272,7 +271,7 @@ def mc_lc_dbk_specphot(
         mc_merge,
     )
     dbk_phot_info, dbk_weights = dbkspkm._mc_dbk_specphot_kern_merging(*args)
-    return dbk_phot_info, dbk_weights
+    return dbk_phot_info
 
 
 @jjit
