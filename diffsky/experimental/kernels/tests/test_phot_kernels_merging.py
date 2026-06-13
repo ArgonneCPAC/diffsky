@@ -7,7 +7,7 @@ from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import phot_kernels_merging as gd_pkm
+from .. import shambalam as gd_pkm
 
 TOL = 1e-8
 

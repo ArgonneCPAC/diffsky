@@ -10,7 +10,7 @@ from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import phot_kernels_merging as gd_pkm
+from .. import shambalam as gd_pkm
 from .. import sed_kernels as gd_sedkm
 
 _A = [None, 0, None, None, 0, *[None] * 4]

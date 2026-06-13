@@ -14,7 +14,7 @@ from ...experimental.kernels import (
 from ...experimental.kernels import dbk_specphot_kernels as dbkspkm
 from ...experimental.kernels import (
     mc_randoms,
-    phot_kernels_merging,
+    shambalam,
     sed_kernels,
 )
 
@@ -86,7 +86,7 @@ def compute_phot_from_mock(
         halo_indx,
         mc_merge,
     )
-    phot_info = phot_kernels_merging._phot_kern_merging(*args)
+    phot_info = shambalam._phot_kern_merging(*args)
     phot_info = phot_info._asdict()
     phot_info.update(phot_randoms._asdict())
     phot_info.update(merging_randoms._asdict())
