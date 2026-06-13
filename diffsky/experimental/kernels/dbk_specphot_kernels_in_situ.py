@@ -9,7 +9,7 @@ from jax import numpy as jnp
 from ...merging import merging_model
 from ...ssp_err_model import ssp_err_model
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
-from . import dbk_kernels, linelum_kernels, phot_kernels, mc_randoms
+from . import dbk_kernels, linelum_kernels_in_situ, phot_kernels, mc_randoms
 from . import ssp_weight_kernels as sspwk
 
 
@@ -243,7 +243,7 @@ def _dbk_specphot_kern(
     cosmo_params,
     fb,
 ):
-    phot_kern_results, spec_kern_results = linelum_kernels._specphot_kern(
+    phot_kern_results, spec_kern_results = linelum_kernels_in_situ._specphot_kern(
         phot_randoms,
         diffstarpop_results,
         z_obs,

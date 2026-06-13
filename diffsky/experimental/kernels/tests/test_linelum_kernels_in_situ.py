@@ -7,7 +7,7 @@ from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import linelum_kernels, phot_kernels
+from .. import linelum_kernels_in_situ, phot_kernels
 
 
 def test_mc_specphot_kern(num_halos=150):
@@ -69,8 +69,8 @@ def test_mc_specphot_kern(num_halos=150):
         DEFAULT_COSMOLOGY,
         fb,
     )
-    _specphot_res = linelum_kernels._mc_specphot_kern(*args)
-    # _specphot_res = linelum_kernels._mc_specphot_kern(
+    _specphot_res = linelum_kernels_in_situ._mc_specphot_kern(*args)
+    # _specphot_res = linelum_kernels_in_situ._mc_specphot_kern(
     #     phot_key,
     #     lc_data.z_obs,
     #     lc_data.t_obs,

@@ -6,7 +6,7 @@ from jax import jit as jjit
 from jax import numpy as jnp
 
 from ...merging import compute_x_tot_from_x_in_situ, merging_model
-from . import linelum_kernels, phot_kernels_merging, mc_randoms
+from . import linelum_kernels_in_situ, phot_kernels_merging, mc_randoms
 
 
 @jjit
@@ -116,7 +116,7 @@ def _specphot_kern_merging(
         merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
     )
 
-    _res = linelum_kernels._specphot_kern(
+    _res = linelum_kernels_in_situ._specphot_kern(
         phot_randoms,
         diffstarpop_results,
         z_obs,
