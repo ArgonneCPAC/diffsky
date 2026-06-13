@@ -8,15 +8,20 @@ from diffmah import DiffmahParams
 from diffstar import DiffstarParams
 
 from ... import phot_utils
+from ...experimental import mc_diffstarpop_wrappers as mcdw
 from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import (
-    dbk_sed_kernels,
     dbk_photline_kernels,
+    dbk_sed_kernels,
     mc_randoms,
     phot_kernels,
     sed_kernels,
 )
 from . import utils
+
+DiffstarPopResultsMock = namedtuple(
+    "DiffstarPopResultsMock", mcdw.DiffstarPopResults._fields
+)
 
 
 def compute_phot_from_diffsky_mock(
@@ -446,6 +451,11 @@ def __compute_sed_managed(
         lg_rejuv=lg_rejuv,
     )
     mc_is_q = mc_sfh_type == 0
+    dummy_frac_q = jnp.ones(mc_is_q.size)
+    diffstarpop_results_mock = DiffstarPopResultsMock(
+        sfh_params, sfh_params, sfh_params, mc_is_q, dummy_frac_q
+    )
+
     phot_randoms = mc_randoms.PhotRandoms(
         mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
     )
@@ -456,7 +466,7 @@ def __compute_sed_managed(
     args = (
         phot_randoms,
         merging_randoms,
-        sfh_params,
+        diffstarpop_results_mock,
         redshift_true,
         t_obs,
         mah_params,
@@ -533,6 +543,11 @@ def __compute_dbk_sed_managed(
         lg_rejuv=lg_rejuv,
     )
     mc_is_q = mc_sfh_type == 0
+    dummy_frac_q = jnp.ones(mc_is_q.size)
+    diffstarpop_results_mock = DiffstarPopResultsMock(
+        sfh_params, sfh_params, sfh_params, mc_is_q, dummy_frac_q
+    )
+
     phot_randoms = mc_randoms.PhotRandoms(
         mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
     )
@@ -545,7 +560,7 @@ def __compute_dbk_sed_managed(
         phot_randoms,
         dbk_randoms,
         merging_randoms,
-        sfh_params,
+        diffstarpop_results_mock,
         redshift_true,
         t_obs,
         mah_params,
@@ -633,6 +648,11 @@ def __compute_photometry_managed(
         lg_drop=lg_drop,
         lg_rejuv=lg_rejuv,
     )
+    dummy_frac_q = jnp.ones(mc_is_q.size)
+    diffstarpop_results_mock = DiffstarPopResultsMock(
+        sfh_params, sfh_params, sfh_params, mc_is_q, dummy_frac_q
+    )
+
     phot_randoms = mc_randoms.PhotRandoms(
         mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
     )
@@ -643,7 +663,7 @@ def __compute_photometry_managed(
     args = (
         phot_randoms,
         merging_randoms,
-        sfh_params,
+        diffstarpop_results_mock,
         redshift_true,
         t_obs,
         mah_params,
@@ -731,6 +751,11 @@ def __compute_dbk_photometry_managed(
         lg_drop=lg_drop,
         lg_rejuv=lg_rejuv,
     )
+    dummy_frac_q = jnp.ones(mc_is_q.size)
+    diffstarpop_results_mock = DiffstarPopResultsMock(
+        sfh_params, sfh_params, sfh_params, mc_is_q, dummy_frac_q
+    )
+
     phot_randoms = mc_randoms.PhotRandoms(
         mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
     )
@@ -742,7 +767,7 @@ def __compute_dbk_photometry_managed(
 
     args = (
         phot_randoms,
-        sfh_params,
+        diffstarpop_results_mock,
         dbk_randoms,
         merging_randoms,
         redshift_true,
