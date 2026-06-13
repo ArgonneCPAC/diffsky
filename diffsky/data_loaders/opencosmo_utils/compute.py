@@ -451,10 +451,6 @@ def __compute_sed_managed(
         lg_rejuv=lg_rejuv,
     )
     mc_is_q = mc_sfh_type == 0
-    dummy_frac_q = jnp.ones(mc_is_q.size)
-    diffstarpop_results_mock = DiffstarPopResultsMock(
-        sfh_params, sfh_params, sfh_params, mc_is_q, dummy_frac_q
-    )
 
     phot_randoms = mc_randoms.PhotRandoms(
         mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
@@ -466,7 +462,7 @@ def __compute_sed_managed(
     args = (
         phot_randoms,
         merging_randoms,
-        diffstarpop_results_mock,
+        sfh_params,
         redshift_true,
         t_obs,
         mah_params,
@@ -543,10 +539,6 @@ def __compute_dbk_sed_managed(
         lg_rejuv=lg_rejuv,
     )
     mc_is_q = mc_sfh_type == 0
-    dummy_frac_q = jnp.ones(mc_is_q.size)
-    diffstarpop_results_mock = DiffstarPopResultsMock(
-        sfh_params, sfh_params, sfh_params, mc_is_q, dummy_frac_q
-    )
 
     phot_randoms = mc_randoms.PhotRandoms(
         mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
@@ -560,7 +552,7 @@ def __compute_dbk_sed_managed(
         phot_randoms,
         dbk_randoms,
         merging_randoms,
-        diffstarpop_results_mock,
+        sfh_params,
         redshift_true,
         t_obs,
         mah_params,
