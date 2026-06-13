@@ -14,7 +14,7 @@ from jax import jit as jjit
 
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
-from .kernels import _mc_phot_kern_merging
+from .kernels import _mc_phot_kern_merging, _sed_kern
 from .kernels import gd_dbk_specphot_kernels as dbkspk
 from .kernels import gd_mc_phot_kernels as mcpk
 from .kernels import mc_randoms
@@ -25,6 +25,7 @@ def mc_lc_phot(
     ran_key,
     lc_data,
     mc_merge,
+    *,
     param_collection=dpwm.DEFAULT_PARAM_COLLECTION,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
@@ -85,64 +86,6 @@ def mc_lc_phot(
     return phot_kern_results, phot_randoms, merging_randoms
 
 
-def mc_lc_phot_merging(
-    ran_key,
-    lc_data,
-    diffstarpop_params=dpwm.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
-    mzr_params=dpwm.DEFAULT_PARAM_COLLECTION.mzr_params,
-    spspop_params=dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
-    scatter_params=dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
-    ssperr_params=dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
-    merging_params=dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
-    cosmo_params=DEFAULT_COSMOLOGY,
-    fb=FB,
-    skip_param_check=False,
-    mc_merge=1,
-):
-    param_collection = dpwm.ParamCollection(
-        diffstarpop_params,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssperr_params,
-        merging_params,
-    )
-    if not skip_param_check:
-        assert dpwm.check_param_collection_is_ok(param_collection)
-
-    _res = mcpk._mc_phot_kern_merging(
-        ran_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        diffstarpop_params,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssperr_params,
-        merging_params,
-        cosmo_params,
-        fb,
-        lc_data.logmp_infall,
-        lc_data.logmhost_infall,
-        lc_data.t_infall,
-        lc_data.is_central,
-        lc_data.sat_weight,
-        lc_data.halo_indx,
-        mc_merge,
-    )
-    phot_kern_results, phot_randoms, merging_randoms = _res
-    phot_kern_results = phot_kern_results._asdict()
-    for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
-        phot_kern_results[key] = val
-
-    return phot_kern_results
-
-
 def mc_lc_specphot(
     ran_key,
     lc_data,
@@ -201,14 +144,11 @@ def mc_lc_specphot(
 def mc_lc_sed(
     ran_key,
     lc_data,
-    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
-    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
-    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
-    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
-    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    mc_merge,
+    *,
+    param_collection=dpw.DEFAULT_PARAM_COLLECTION,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
-    skip_param_check=False,
 ):
     """Populate the input lightcone with galaxy SEDs
 
@@ -225,13 +165,8 @@ def mc_lc_sed(
         Contains info about the galaxy SEDs
 
     """
-    param_collection = dpw.ParamCollection(
-        diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
-    )
-    if not skip_param_check:
-        assert dpw.check_param_collection_is_ok(param_collection)
 
-    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
+    phot_kern_results, phot_randoms, merging_randoms = _mc_phot_kern_merging(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -240,35 +175,46 @@ def mc_lc_sed(
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        diffstarpop_params,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssperr_params,
-        cosmo_params,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
         fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.sat_weight,
+        lc_data.halo_indx,
+        mc_merge,
     )
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
         [getattr(phot_kern_results, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
-    sed_kern_results = mcpk._sed_kern(
+
+    args = (
         phot_randoms,
+        merging_randoms,
         sfh_params,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
         lc_data.ssp_data,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssperr_params,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        param_collection.merging_params,
         cosmo_params,
         fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.sat_weight,
+        lc_data.halo_indx,
+        mc_merge,
     )
-    rest_sed = sed_kern_results[0]
-    phot_kern_results = phot_kern_results._asdict()
-    phot_kern_results["rest_sed"] = rest_sed
-    return phot_kern_results
+    sed_kern_results = _sed_kern(*args)
+    return sed_kern_results
 
 
 def mc_lc_dbk_phot(

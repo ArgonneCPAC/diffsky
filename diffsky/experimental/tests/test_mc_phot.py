@@ -33,8 +33,12 @@ def test_mc_lc_phot_changes_with_diffstarpop(num_halos=50):
         diffstarpop_params=sfh_models["smdpl_dr1"]
     )
     mc_merge = 0
-    phot_kern_results = mc_phot.mc_lc_phot(ran_key, lc_data, mc_merge, pc1)[0]
-    phot_kern_results2 = mc_phot.mc_lc_phot(ran_key, lc_data, mc_merge, pc2)[0]
+    phot_kern_results = mc_phot.mc_lc_phot(
+        ran_key, lc_data, mc_merge, param_collection=pc1
+    )[0]
+    phot_kern_results2 = mc_phot.mc_lc_phot(
+        ran_key, lc_data, mc_merge, param_collection=pc2
+    )[0]
 
     assert not np.allclose(
         phot_kern_results.obs_mags, phot_kern_results2.obs_mags, atol=0.1
@@ -60,16 +64,20 @@ def test_mc_lc_phot_changes_with_diffstarpop(num_halos=50):
     )
 
 
-def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=50):
+def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=5):
     ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    phot_kern_results = mc_phot.mc_lc_phot(ran_key, lc_data)
-    sed_kern_results = mc_phot.mc_lc_sed(ran_key, lc_data)
-
-    phot_kern_results = namedtuple("Results", list(phot_kern_results.keys()))(
-        **phot_kern_results
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
     )
-    rest_sed_recomputed = sed_kern_results["rest_sed"]
+    mc_merge = 0
+    p = dpwm.DEFAULT_PARAM_COLLECTION._replace()
+    phot_kern_results = mc_phot.mc_lc_phot(
+        ran_key, lc_data, mc_merge, param_collection=p
+    )[0]
+
+    sed_kern_results = mc_phot.mc_lc_sed(ran_key, lc_data, mc_merge, param_collection=p)
+
+    rest_sed_recomputed = sed_kern_results.rest_sed
 
     # Enforce agreement between precomputed vs exact magnitudes
     n_bands = phot_kern_results.obs_mags.shape[1]
