@@ -8,7 +8,7 @@ from jax import numpy as jnp
 
 from ...merging import compute_x_tot_from_x_in_situ, merging_kernels, merging_model
 from .. import mc_diffstarpop_wrappers as mcdw
-from . import mc_randoms, gd_phot_kernels
+from . import mc_randoms, phot_kernels
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -119,7 +119,7 @@ def _phot_kern_merging(
         merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
     )
 
-    phot_kern_results = gd_phot_kernels._phot_kern(
+    phot_kern_results = phot_kernels._phot_kern(
         phot_randoms,
         diffstarpop_results,
         z_obs,
