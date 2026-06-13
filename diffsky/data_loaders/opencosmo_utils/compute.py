@@ -10,7 +10,7 @@ from diffstar import DiffstarParams
 from ... import phot_utils
 from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import (
-    dbk_sed_kernels_merging,
+    dbk_sed_kernels,
     dbk_specphot_kernels_merging,
     mc_randoms,
     phot_kernels_merging,
@@ -565,7 +565,7 @@ def __compute_dbk_sed_managed(
         top_host_idx,
         mc_merge,
     )
-    sed_info = dbk_sed_kernels_merging._dbk_sed_kern(*args)
+    sed_info = dbk_sed_kernels._dbk_sed_kern(*args)
     return {
         "rest_sed_bulge": sed_info.rest_sed_bulge,
         "rest_sed_disk": sed_info.rest_sed_disk,
