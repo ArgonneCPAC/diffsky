@@ -14,7 +14,7 @@ from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import (
     dbk_sed_kernels_merging,
 )
-from ...experimental.kernels import gd_dbk_specphot_kernels_merging as gd_dbkspkm
+from ...experimental.kernels import dbk_specphot_kernels_merging as gd_dbkspkm
 from ...experimental.kernels import (
     gd_phot_kernels_merging,
     gd_sed_kernels_merging,
