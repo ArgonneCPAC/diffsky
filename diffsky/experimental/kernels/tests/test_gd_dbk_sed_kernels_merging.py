@@ -10,7 +10,7 @@ from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import gd_dbk_sed_kernels_merging as gd_dbk_sedkm
+from .. import dbk_sed_kernels_merging as gd_dbk_sedkm
 from .. import gd_dbk_specphot_kernels_merging
 from .. import gd_sed_kernels_merging as gd_sedkm
 from .. import mc_randoms
@@ -134,7 +134,7 @@ def test_sed_kern(
         np.log10(rest_sed_dbk_recomputed), np.log10(sed_info.rest_sed), atol=0.1
     ), msg
 
-    # Enforce agreement between gd_dbk_sed_kernels_merging vs gd_dbk_specphot_kernels_merging
+    # Enforce agreement between dbk_sed_kernels_merging vs gd_dbk_specphot_kernels_merging
     n_bands = dbk_specphot_info.obs_mags.shape[1]
     for iband in range(n_bands):
         trans_iband = np.interp(

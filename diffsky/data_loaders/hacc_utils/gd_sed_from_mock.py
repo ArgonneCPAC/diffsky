@@ -12,7 +12,7 @@ from ... import phot_utils
 from ...experimental import mc_diffstarpop_wrappers as mcdw
 from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import (
-    gd_dbk_sed_kernels_merging,
+    dbk_sed_kernels_merging,
 )
 from ...experimental.kernels import gd_dbk_specphot_kernels_merging as gd_dbkspkm
 from ...experimental.kernels import (
@@ -301,7 +301,7 @@ def compute_dbk_sed_from_mock(mock_chunk, metadata):
         halo_indx,
         mc_merge,
     )
-    dbk_sed_info = gd_dbk_sed_kernels_merging._dbk_sed_kern(
+    dbk_sed_info = dbk_sed_kernels_merging._dbk_sed_kern(
         *args, n_t_table=mcdw.N_T_TABLE
     )
     dbk_sed_info = dbk_sed_info._asdict()
