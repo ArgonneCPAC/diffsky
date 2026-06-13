@@ -8,7 +8,7 @@ from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import phot_kernels, gd_sed_kernels
+from .. import phot_kernels, sed_kernels
 
 _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
@@ -46,7 +46,7 @@ def test_sed_kern(num_halos=5):
         )
     )
 
-    sed_kern_results = gd_sed_kernels._sed_kern(
+    sed_kern_results = sed_kernels._sed_kern(
         phot_randoms,
         diffstarpop_results.sfh_params,
         lc_data.z_obs,

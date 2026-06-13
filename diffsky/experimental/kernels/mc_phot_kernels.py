@@ -10,7 +10,7 @@ from . import (
     phot_kernels,
     phot_kernels_merging,
 )
-from . import gd_sed_kernels as sed_kernels
+from . import sed_kernels as sed_kernels
 from . import (
     gd_specphot_kernels_merging,
     mc_randoms,
