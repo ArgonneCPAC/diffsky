@@ -7,7 +7,7 @@ from jax import jit as jjit
 from jax import numpy as jnp
 
 from .. import mc_diffstarpop_wrappers as mcdw
-from . import dbk_sed_kernels as gd_sedk
+from . import dbk_sed_kernels_in_situ as gd_sedk
 from . import sed_kernels_merging
 
 
