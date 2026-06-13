@@ -12,7 +12,7 @@ from . import (
 )
 from . import sed_kernels as sed_kernels
 from . import (
-    gd_specphot_kernels_merging,
+    specphot_kernels_merging,
     mc_randoms,
 )
 
@@ -31,8 +31,8 @@ _sed_kern = sed_kernels._sed_kern
 _get_dbk_linelum_decomposition = dbk_kernels._get_dbk_linelum_decomposition
 _mc_phot_kern_merging = phot_kernels_merging._mc_phot_kern_merging
 _phot_kern_merging = phot_kernels_merging._phot_kern_merging
-_mc_specphot_kern_merging = gd_specphot_kernels_merging._mc_specphot_kern_merging
-_specphot_kern_merging = gd_specphot_kernels_merging._specphot_kern_merging
+_mc_specphot_kern_merging = specphot_kernels_merging._mc_specphot_kern_merging
+_specphot_kern_merging = specphot_kernels_merging._specphot_kern_merging
 
 _mc_dbk_phot_kern = dbk_specphot_kernels._mc_dbk_phot_kern
 _mc_dbk_specphot_kern = dbk_specphot_kernels._mc_dbk_specphot_kern

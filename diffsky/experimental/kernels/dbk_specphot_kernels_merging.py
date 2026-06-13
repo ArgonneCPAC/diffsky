@@ -8,7 +8,7 @@ from jax import numpy as jnp
 from ...merging import merging_model
 from . import dbk_specphot_kernels as gd_dbkspk
 from . import phot_kernels_merging as gd_pkm
-from . import gd_specphot_kernels_merging as gd_spkm
+from . import specphot_kernels_merging as gd_spkm
 from . import mc_randoms
 
 
