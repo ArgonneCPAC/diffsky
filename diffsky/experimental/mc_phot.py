@@ -14,10 +14,14 @@ from jax import jit as jjit
 
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
-from .kernels import _dbk_sed_kern, _mc_phot_kern_merging, _sed_kern
-from .kernels import gd_dbk_specphot_kernels_merging as dbkspkm
-from .kernels import gd_mc_phot_kernels as mcpk
-from .kernels import mc_randoms
+from .kernels import (
+    _dbk_sed_kern,
+    _mc_dbk_specphot_kern_merging,
+    _mc_phot_kern_merging,
+    _mc_specphot_kern_merging,
+    _sed_kern,
+    mc_randoms,
+)
 
 
 @jjit
@@ -86,15 +90,13 @@ def mc_lc_phot(
     return phot_kern_results, phot_randoms, merging_randoms
 
 
+@jjit
 def mc_lc_specphot(
     ran_key,
     lc_data,
-    line_wave_table,
-    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
-    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
-    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
-    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
-    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    mc_merge,
+    *,
+    param_collection=dpwm.DEFAULT_PARAM_COLLECTION,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
 ):
@@ -113,7 +115,7 @@ def mc_lc_specphot(
         Contains info about the galaxy SEDs
 
     """
-    phot_kern_results, phot_randoms, spec_kern_results = mcpk._mc_specphot_kern(
+    args = (
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -122,23 +124,36 @@ def mc_lc_specphot(
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        line_wave_table,
-        diffstarpop_params,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssperr_params,
+        lc_data.line_wave_table,
+        param_collection.diffstarpop_params,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        param_collection.merging_params,
         cosmo_params,
         fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.sat_weight,
+        lc_data.halo_indx,
+        mc_merge,
     )
-    phot_kern_results = phot_kern_results._asdict()
-    for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
-        phot_kern_results[key] = val
 
-    for i, emline_name in enumerate(lc_data.ssp_data.ssp_emline_wave._fields):
-        phot_kern_results[emline_name] = spec_kern_results.linelum_gal[:, i]
+    _res = _mc_specphot_kern_merging(*args)
+    phot_kern_results, phot_randoms, spec_kern_results = _res
 
-    return phot_kern_results
+    line_fields = list(lc_data.ssp_data.ssp_emline_wave._fields)
+    fields = list(phot_kern_results._fields) + line_fields
+    n_lines = len(line_fields)
+    lines = [spec_kern_results.linelum_gal[:, i] for i in range(n_lines)]
+
+    SpecPhotResults = namedtuple("SpecPhotResults", fields)
+    spec_phot_results = SpecPhotResults(*phot_kern_results, *lines)
+
+    return spec_phot_results
 
 
 @jjit
@@ -270,7 +285,7 @@ def mc_lc_dbk_specphot(
         lc_data.halo_indx,
         mc_merge,
     )
-    dbk_phot_info, dbk_weights = dbkspkm._mc_dbk_specphot_kern_merging(*args)
+    dbk_phot_info, dbk_weights = _mc_dbk_specphot_kern_merging(*args)
     return dbk_phot_info
 
 

@@ -17,6 +17,17 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
+def check_phot_kern_results(phot_kern_results):
+    assert np.all(np.isfinite(phot_kern_results.obs_mags))
+    assert np.all(phot_kern_results.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7)
+
+    assert np.allclose(
+        np.sum(phot_kern_results.ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4
+    )
+    assert np.all(phot_kern_results.frac_ssp_errors > 0)
+    assert np.all(phot_kern_results.frac_ssp_errors < 5)
+
+
 def test_mc_lc_phot_changes_with_diffstarpop(num_halos=20):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
@@ -57,6 +68,25 @@ def test_mc_lc_phot_changes_with_diffstarpop(num_halos=20):
     assert not np.allclose(
         phot_kern_results.obs_mags_weighted, phot_kern_results.obs_mags
     )
+
+
+def test_mc_lc_phot_agrees_with_mc_lc_specphot(num_halos=20):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+
+    pc1 = dpwm.DEFAULT_PARAM_COLLECTION._replace()
+    mc_merge = 0
+    phot_kern_results = mc_phot.mc_lc_phot(
+        ran_key, lc_data, mc_merge, param_collection=pc1
+    )[0]
+    spec_phot_results = mc_phot.mc_lc_specphot(
+        ran_key, lc_data, mc_merge, param_collection=pc1
+    )
+    check_phot_kern_results(phot_kern_results)
+    check_phot_kern_results(spec_phot_results)
+    assert np.allclose(phot_kern_results.obs_mags, spec_phot_results.obs_mags)
 
 
 def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=5):
@@ -136,17 +166,6 @@ def test_mc_lc_dbk_specphot(num_halos=20):
 
     std_magdiff = np.std(magdiff, axis=0)
     assert np.all(std_magdiff < 0.01)
-
-
-def check_phot_kern_results(phot_kern_results):
-    assert np.all(np.isfinite(phot_kern_results.obs_mags))
-    assert np.all(phot_kern_results.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7)
-
-    assert np.allclose(
-        np.sum(phot_kern_results.ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4
-    )
-    assert np.all(phot_kern_results.frac_ssp_errors > 0)
-    assert np.all(phot_kern_results.frac_ssp_errors < 5)
 
 
 def test_mc_lc_dbk_sed(num_halos=10):
