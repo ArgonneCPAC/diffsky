@@ -11,7 +11,7 @@ from ...disk_bulge_modeling import dbpop
 from ...tests import test_lightcone_generators as tlcg
 from ...tests import test_mc_phot
 from .. import dbk_kernels
-from .. import dbk_specphot_kernels_in_situ as gd_dbkspk
+from .. import dbk_photline_kernels_in_situ as gd_dbkspk
 from .. import mc_randoms, phot_kernels
 
 
@@ -266,29 +266,29 @@ def test_get_dbk_linelum_decomposition(num_halos=55, n_lines=4):
         DEFAULT_COSMOLOGY,
         fb,
     )
-    dbk_specphot_info, dbk_weights = gd_dbkspk._mc_dbk_specphot_kern(*args)
+    dbk_photline_info, dbk_weights = gd_dbkspk._mc_dbk_photline_kern(*args)
 
     for key in ("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots"):
-        assert np.all(np.isfinite(getattr(dbk_specphot_info, key)))
+        assert np.all(np.isfinite(getattr(dbk_photline_info, key)))
 
-    assert dbk_specphot_info.linelum_gal.shape == (n_gals, n_lines)
-    assert dbk_specphot_info.linelum_bulge.shape == (n_gals, n_lines)
-    assert dbk_specphot_info.linelum_disk.shape == (n_gals, n_lines)
-    assert dbk_specphot_info.linelum_knots.shape == (n_gals, n_lines)
+    assert dbk_photline_info.linelum_gal.shape == (n_gals, n_lines)
+    assert dbk_photline_info.linelum_bulge.shape == (n_gals, n_lines)
+    assert dbk_photline_info.linelum_disk.shape == (n_gals, n_lines)
+    assert dbk_photline_info.linelum_knots.shape == (n_gals, n_lines)
 
     component_lines_sum = (
-        dbk_specphot_info.linelum_bulge
-        + dbk_specphot_info.linelum_disk
-        + dbk_specphot_info.linelum_knots
+        dbk_photline_info.linelum_bulge
+        + dbk_photline_info.linelum_disk
+        + dbk_photline_info.linelum_knots
     )
-    logdiff = np.log10(component_lines_sum) - np.log10(dbk_specphot_info.linelum_gal)
+    logdiff = np.log10(component_lines_sum) - np.log10(dbk_photline_info.linelum_gal)
     assert np.allclose(logdiff, 0.0, atol=0.01)
 
     _ret3 = dbk_kernels._get_dbk_phot_from_dbk_weights(
-        dbk_specphot_info.ssp_photflux_table,
+        dbk_photline_info.ssp_photflux_table,
         dbk_weights,
-        dbk_specphot_info.dust_frac_trans,
-        dbk_specphot_info.frac_ssp_errors,
+        dbk_photline_info.dust_frac_trans,
+        dbk_photline_info.frac_ssp_errors,
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
     obs_mags_sum = -2.5 * np.log10(
@@ -296,4 +296,4 @@ def test_get_dbk_linelum_decomposition(num_halos=55, n_lines=4):
         + 10 ** (-0.4 * obs_mags_disk)
         + 10 ** (-0.4 * obs_mags_knots)
     )
-    assert np.allclose(dbk_specphot_info.obs_mags, obs_mags_sum, atol=0.01)
+    assert np.allclose(dbk_photline_info.obs_mags, obs_mags_sum, atol=0.01)

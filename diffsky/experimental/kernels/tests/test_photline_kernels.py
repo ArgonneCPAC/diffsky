@@ -9,14 +9,14 @@ from jax import random as jran
 from ....merging import merging_model
 from ....param_utils import diffsky_param_wrapper as dpw
 from ...tests import test_lightcone_generators as tlcg
-from .. import specphot_kernels as sppkm
+from .. import photline_kernels as sppkm
 from .helpers import check_phot_kern_merging_results, check_spec_kern_merging_results
 
 TOL = 1e-8
 
 
 @pytest.mark.parametrize("mc_merge", [0, 1])
-def test_mc_specphot_kern_merging(mc_merge, num_halos=141):
+def test_mc_photline_kern_merging(mc_merge, num_halos=141):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
@@ -30,7 +30,7 @@ def test_mc_specphot_kern_merging(mc_merge, num_halos=141):
     lc_data = lc_data._replace(ssp_data=ssp_data)
 
     phot_kern_results, phot_randoms, spec_kern_results = (
-        sppkm._mc_specphot_kern_merging(
+        sppkm._mc_photline_kern_merging(
             ran_key,
             lc_data.z_obs,
             lc_data.t_obs,

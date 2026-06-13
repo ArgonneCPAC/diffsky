@@ -11,7 +11,7 @@ from ... import phot_utils
 from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import (
     dbk_sed_kernels,
-    dbk_specphot_kernels,
+    dbk_photline_kernels,
     mc_randoms,
     shambalam,
     sed_kernels,
@@ -141,7 +141,7 @@ def compute_dbk_phot_from_diffsky_mock(
     if set(bands).intersection(catalog.columns):
         suffix = "_new"
     z_phot_tables = utils.get_z_phot_tables(catalog)
-    func = dbk_specphot_kernels._dbk_specphot_kern_merging
+    func = dbk_photline_kernels._dbk_photline_kern_merging
     result = __run_photometry(
         func,
         utils.unpack_dbk_photometry,

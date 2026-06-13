@@ -70,7 +70,7 @@ def test_mc_lc_phot_changes_with_diffstarpop(num_halos=20):
     )
 
 
-def test_mc_lc_phot_agrees_with_mc_lc_specphot(num_halos=20):
+def test_mc_lc_phot_agrees_with_mc_lc_photline(num_halos=20):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
@@ -81,7 +81,7 @@ def test_mc_lc_phot_agrees_with_mc_lc_specphot(num_halos=20):
     phot_kern_results = mc_phot.mc_lc_phot(
         ran_key, lc_data, mc_merge, param_collection=pc1
     )[0]
-    spec_phot_results = mc_phot.mc_lc_specphot(
+    spec_phot_results = mc_phot.mc_lc_photline(
         ran_key, lc_data, mc_merge, param_collection=pc1
     )
     check_phot_kern_results(phot_kern_results)
@@ -125,13 +125,13 @@ def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=5):
         assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
 
 
-def test_mc_lc_dbk_specphot(num_halos=20):
+def test_mc_lc_dbk_photline(num_halos=20):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )
     mc_merge = 0
-    dbk_phot_info = mc_phot.mc_lc_dbk_specphot(ran_key, lc_data, mc_merge)
+    dbk_phot_info = mc_phot.mc_lc_dbk_photline(ran_key, lc_data, mc_merge)
     dbk_phot_info = dbk_phot_info._asdict()
 
     np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_phot_info["mstar_bulge"]))

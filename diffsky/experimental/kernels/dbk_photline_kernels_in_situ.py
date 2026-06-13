@@ -159,7 +159,7 @@ def _dbk_phot_kern(
 
 
 @jjit
-def _mc_dbk_specphot_kern(
+def _mc_dbk_photline_kern(
     ran_key,
     z_obs,
     t_obs,
@@ -199,7 +199,7 @@ def _mc_dbk_specphot_kern(
         merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upid
     )
 
-    dbk_specphot_info, dbk_weights = _dbk_specphot_kern(
+    dbk_photline_info, dbk_weights = _dbk_photline_kern(
         phot_randoms,
         diffstarpop_results,
         dbk_randoms,
@@ -219,11 +219,11 @@ def _mc_dbk_specphot_kern(
         cosmo_params,
         fb,
     )
-    return dbk_specphot_info, dbk_weights
+    return dbk_photline_info, dbk_weights
 
 
 @jjit
-def _dbk_specphot_kern(
+def _dbk_photline_kern(
     phot_randoms,
     diffstarpop_results,
     dbk_randoms,
@@ -243,7 +243,7 @@ def _dbk_specphot_kern(
     cosmo_params,
     fb,
 ):
-    phot_kern_results, spec_kern_results = linelum_kernels_in_situ._specphot_kern(
+    phot_kern_results, spec_kern_results = linelum_kernels_in_situ._photline_kern(
         phot_randoms,
         diffstarpop_results,
         z_obs,
@@ -299,7 +299,7 @@ def _dbk_specphot_kern(
         [getattr(dbk_phot_info, p) for p in dbk.FbulgeParams._fields]
     )
 
-    dbk_specphot_info = MCDBKSpecPhotInfo(
+    dbk_photline_info = MCDBKSpecPhotInfo(
         **phot_kern_results._asdict(),
         **phot_randoms._asdict(),
         **dbk_randoms._asdict(),
@@ -317,7 +317,7 @@ def _dbk_specphot_kern(
         linelum_disk=linelum_disk,
         linelum_knots=linelum_knots,
     )
-    return dbk_specphot_info, dbk_weights
+    return dbk_photline_info, dbk_weights
 
 
 @jjit
@@ -460,7 +460,7 @@ MCDBKPhotInfo = namedtuple(
     ),
 )
 
-_dbk_specphot_keys = (
+_dbk_photline_keys = (
     *MCDBKPhotInfo._fields,
     *(
         "linelum_gal",
@@ -470,7 +470,7 @@ _dbk_specphot_keys = (
         "linelum_knots",
     ),
 )
-MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", _dbk_specphot_keys)
+MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", _dbk_photline_keys)
 
 DBKSEDInfo = namedtuple(
     "DBKSEDInfo", ("rest_sed_bulge", "rest_sed_disk", "rest_sed_knots")

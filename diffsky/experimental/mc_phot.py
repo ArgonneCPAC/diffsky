@@ -16,9 +16,9 @@ from ..param_utils import diffsky_param_wrapper as dpw
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
 from .kernels import (
     _dbk_sed_kern,
-    _mc_dbk_specphot_kern_merging,
+    _mc_dbk_photline_kern_merging,
     _mc_phot_kern_merging,
-    _mc_specphot_kern_merging,
+    _mc_photline_kern_merging,
     _sed_kern,
     mc_randoms,
 )
@@ -91,7 +91,7 @@ def mc_lc_phot(
 
 
 @jjit
-def mc_lc_specphot(
+def mc_lc_photline(
     ran_key,
     lc_data,
     mc_merge,
@@ -142,7 +142,7 @@ def mc_lc_specphot(
         mc_merge,
     )
 
-    _res = _mc_specphot_kern_merging(*args)
+    _res = _mc_photline_kern_merging(*args)
     phot_kern_results, phot_randoms, spec_kern_results = _res
 
     line_fields = list(lc_data.ssp_data.ssp_emline_wave._fields)
@@ -234,7 +234,7 @@ def mc_lc_sed(
 
 
 @jjit
-def mc_lc_dbk_specphot(
+def mc_lc_dbk_photline(
     ran_key,
     lc_data,
     mc_merge,
@@ -285,7 +285,7 @@ def mc_lc_dbk_specphot(
         lc_data.halo_indx,
         mc_merge,
     )
-    dbk_phot_info, dbk_weights = _mc_dbk_specphot_kern_merging(*args)
+    dbk_phot_info, dbk_weights = _mc_dbk_photline_kern_merging(*args)
     return dbk_phot_info
 
 

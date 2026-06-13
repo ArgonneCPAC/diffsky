@@ -10,7 +10,7 @@ from ...tests import test_lightcone_generators as tlcg
 from .. import linelum_kernels_in_situ, phot_kernels
 
 
-def test_mc_specphot_kern(num_halos=150):
+def test_mc_photline_kern(num_halos=150):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
@@ -69,8 +69,8 @@ def test_mc_specphot_kern(num_halos=150):
         DEFAULT_COSMOLOGY,
         fb,
     )
-    _specphot_res = linelum_kernels_in_situ._mc_specphot_kern(*args)
-    # _specphot_res = linelum_kernels_in_situ._mc_specphot_kern(
+    _photline_res = linelum_kernels_in_situ._mc_photline_kern(*args)
+    # _photline_res = linelum_kernels_in_situ._mc_photline_kern(
     #     phot_key,
     #     lc_data.z_obs,
     #     lc_data.t_obs,
@@ -89,7 +89,7 @@ def test_mc_specphot_kern(num_halos=150):
     #     fb,
     # )
 
-    phot_kern_results2, phot_randoms2, spec_kern_results = _specphot_res
+    phot_kern_results2, phot_randoms2, spec_kern_results = _photline_res
     assert np.allclose(
         phot_kern_results.obs_mags, phot_kern_results2.obs_mags, rtol=1e-4
     )

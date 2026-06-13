@@ -10,7 +10,7 @@ from . import linelum_kernels_in_situ, shambalam, mc_randoms
 
 
 @jjit
-def _mc_specphot_kern_merging(
+def _mc_photline_kern_merging(
     ran_key,
     z_obs,
     t_obs,
@@ -52,7 +52,7 @@ def _mc_specphot_kern_merging(
         )
     )
 
-    phot_kern_results, spec_kern_results = _specphot_kern_merging(
+    phot_kern_results, spec_kern_results = _photline_kern_merging(
         phot_randoms,
         merging_randoms,
         diffstarpop_results,
@@ -84,7 +84,7 @@ def _mc_specphot_kern_merging(
 
 
 @jjit
-def _specphot_kern_merging(
+def _photline_kern_merging(
     phot_randoms,
     merging_randoms,
     diffstarpop_results,
@@ -116,7 +116,7 @@ def _specphot_kern_merging(
         merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upids
     )
 
-    _res = linelum_kernels_in_situ._specphot_kern(
+    _res = linelum_kernels_in_situ._photline_kern(
         phot_randoms,
         diffstarpop_results,
         z_obs,

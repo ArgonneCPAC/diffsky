@@ -11,7 +11,7 @@ from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import (
     dbk_sed_kernels,
 )
-from ...experimental.kernels import dbk_specphot_kernels as dbkspkm
+from ...experimental.kernels import dbk_photline_kernels as dbkspkm
 from ...experimental.kernels import (
     mc_randoms,
     shambalam,
@@ -166,7 +166,7 @@ def compute_dbk_phot_from_mock(mock_chunk, metadata, tcurves=None):
         mc_merge,
     )
 
-    dbk_phot_info, dbk_weights = dbkspkm._dbk_specphot_kern_merging(*args)
+    dbk_phot_info, dbk_weights = dbkspkm._dbk_photline_kern_merging(*args)
     dbk_phot_info = dbk_phot_info._asdict()
     dbk_weights = dbk_weights._asdict()
     return dbk_phot_info, dbk_weights

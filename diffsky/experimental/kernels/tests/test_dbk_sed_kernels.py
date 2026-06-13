@@ -11,7 +11,7 @@ from jax import vmap
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
 from .. import dbk_sed_kernels as gd_dbk_sedkm
-from .. import dbk_specphot_kernels
+from .. import dbk_photline_kernels
 from .. import sed_kernels as gd_sedkm
 from .. import mc_randoms
 
@@ -64,11 +64,11 @@ def test_sed_kern(
         lc_data.halo_indx,
         mc_merge,
     )
-    _res = dbk_specphot_kernels._mc_dbk_specphot_kern_merging(*args)
-    dbk_specphot_info, dbk_weights = _res
+    _res = dbk_photline_kernels._mc_dbk_photline_kern_merging(*args)
+    dbk_photline_info, dbk_weights = _res
 
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [getattr(dbk_specphot_info, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
+        [getattr(dbk_photline_info, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
     sed_info = gd_sedkm._sed_kern(
         phot_randoms,
@@ -114,7 +114,7 @@ def test_sed_kern(
     ret = (
         lc_data,
         tcurves,
-        dbk_specphot_info,
+        dbk_photline_info,
         phot_randoms,
         merging_randoms,
         dbk_sed_info,
@@ -134,8 +134,8 @@ def test_sed_kern(
         np.log10(rest_sed_dbk_recomputed), np.log10(sed_info.rest_sed), atol=0.1
     ), msg
 
-    # Enforce agreement between dbk_sed_kernels vs dbk_specphot_kernels
-    n_bands = dbk_specphot_info.obs_mags.shape[1]
+    # Enforce agreement between dbk_sed_kernels vs dbk_photline_kernels
+    n_bands = dbk_photline_info.obs_mags.shape[1]
     for iband in range(n_bands):
         trans_iband = np.interp(
             lc_data.ssp_data.ssp_wave,
@@ -146,7 +146,7 @@ def test_sed_kern(
         components = ("", "_bulge", "_disk", "_knots")
         for component in components:
             sed = getattr(dbk_sed_info, "rest_sed" + component)
-            obs_mags = getattr(dbk_specphot_info, "obs_mags" + component)
+            obs_mags = getattr(dbk_photline_info, "obs_mags" + component)
 
             args = (
                 lc_data.ssp_data.ssp_wave,
@@ -158,8 +158,8 @@ def test_sed_kern(
             )
 
             recomputed_obs_mags = calc_obs_mags_galpop(*args)
-            specphot_obs_mags = obs_mags[:, iband]
-            dmag = recomputed_obs_mags - specphot_obs_mags
+            photline_obs_mags = obs_mags[:, iband]
+            dmag = recomputed_obs_mags - photline_obs_mags
 
             assert np.median(dmag) < 0.1, "Systematic offset in recomputed magnitudes"
 
