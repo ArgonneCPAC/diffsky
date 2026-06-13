@@ -9,7 +9,7 @@ from ...merging import merging_model
 from . import dbk_specphot_kernels_in_situ as gd_dbkspk
 from . import mc_randoms
 from . import phot_kernels_merging as gd_pkm
-from . import specphot_kernels_merging as gd_spkm
+from . import specphot_kernels as gd_spkm
 
 
 @jjit

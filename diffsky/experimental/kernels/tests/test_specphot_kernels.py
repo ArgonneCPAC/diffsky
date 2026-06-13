@@ -9,7 +9,7 @@ from jax import random as jran
 from ....merging import merging_model
 from ....param_utils import diffsky_param_wrapper as dpw
 from ...tests import test_lightcone_generators as tlcg
-from .. import specphot_kernels_merging as sppkm
+from .. import specphot_kernels as sppkm
 from .helpers import check_phot_kern_merging_results, check_spec_kern_merging_results
 
 TOL = 1e-8
