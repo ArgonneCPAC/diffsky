@@ -381,7 +381,7 @@ def get_plotting_data(
         assert sky_area_degsq is not None
 
     ran_key, sed_key = jran.split(ran_key, 2)
-    param_collection = dpwm.DEFAULT_PARAM_COLLECTION._make(
+    param_collection = dpwm.DEFAULT_PARAM_COLLECTION._replace(
         diffstarpop_params=diffstarpop_params,
         mzr_params=mzr_params,
         spspop_params=spspop_params,
@@ -390,13 +390,14 @@ def get_plotting_data(
         merging_params=merging_params,
     )
     mc_merge = 0
-    diffsky_data = mc_lc_phot(
+    phot_kern_results, phot_randoms, merging_randoms = mc_lc_phot(
         sed_key,
         lc_data,
         mc_merge,
         param_collection=param_collection,
         fb=fb,
     )
+    diffsky_data = phot_kern_results._asdict()
     diffsky_data["filter_dict"] = filter_dict
     diffsky_data["sky_area_degsq"] = sky_area_degsq
 
