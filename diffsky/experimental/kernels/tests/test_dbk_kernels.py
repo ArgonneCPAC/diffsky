@@ -11,8 +11,8 @@ from ...disk_bulge_modeling import dbpop
 from ...tests import test_lightcone_generators as tlcg
 from ...tests import test_mc_phot
 from .. import dbk_kernels
-from .. import dbk_specphot_kernels as gd_dbkspk
-from .. import phot_kernels, mc_randoms
+from .. import dbk_specphot_kernels_in_situ as gd_dbkspk
+from .. import mc_randoms, phot_kernels
 
 
 def test_mc_dbk_kern(num_halos=50):
@@ -29,24 +29,22 @@ def test_mc_dbk_kern(num_halos=50):
     upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
     gyr_since_infall = lc_data.t_obs - lc_data.t_infall
     lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
-    phot_kern_results, phot_randoms, diffstarpop_results = (
-        phot_kernels._mc_phot_kern(
-            phot_key,
-            lc_data.z_obs,
-            lc_data.t_obs,
-            lc_data.mah_params,
-            upid,
-            lgmu_infall,
-            lc_data.logmhost_infall,
-            gyr_since_infall,
-            lc_data.ssp_data,
-            lc_data.precomputed_ssp_mag_table,
-            lc_data.z_phot_table,
-            lc_data.wave_eff_table,
-            *dpwm.DEFAULT_PARAM_COLLECTION,
-            DEFAULT_COSMOLOGY,
-            fb,
-        )
+    phot_kern_results, phot_randoms, diffstarpop_results = phot_kernels._mc_phot_kern(
+        phot_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        upid,
+        lgmu_infall,
+        lc_data.logmhost_infall,
+        gyr_since_infall,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
     )
 
     test_mc_phot.check_phot_kern_results(phot_kern_results)

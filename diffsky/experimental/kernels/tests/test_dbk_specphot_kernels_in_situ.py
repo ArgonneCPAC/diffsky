@@ -6,7 +6,7 @@ from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import dbk_specphot_kernels as gd_dbkspk
+from .. import dbk_specphot_kernels_in_situ as gd_dbkspk
 
 
 def test_mc_dbk_phot_kern(num_halos=19):
