@@ -6,7 +6,7 @@ from jax import jit as jjit
 from jax import numpy as jnp
 
 from ...merging import compute_x_tot_from_x_in_situ, merging_model
-from . import linelum_kernels, gd_phot_kernels_merging, mc_randoms
+from . import linelum_kernels, phot_kernels_merging, mc_randoms
 
 
 @jjit
@@ -137,7 +137,7 @@ def _specphot_kern_merging(
     )
     phot_kern_results, spec_kern_results = _res
 
-    _res = gd_phot_kernels_merging._get_phot_kern_merging_quantities(
+    _res = phot_kernels_merging._get_phot_kern_merging_quantities(
         phot_kern_results,
         merging_randoms,
         p_merge_smooth,
@@ -157,7 +157,7 @@ def _specphot_kern_merging(
         p_merge,
         merging_randoms.uran_pmerge,
     )
-    func = gd_phot_kernels_merging._update_phot_kern_results_with_merging
+    func = phot_kernels_merging._update_phot_kern_results_with_merging
     phot_kern_results = func(*args)
 
     args = phot_kern_results, spec_kern_results, sat_weights, halo_indx

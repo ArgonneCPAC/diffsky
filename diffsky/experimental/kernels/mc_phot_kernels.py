@@ -8,7 +8,7 @@ from . import dbk_specphot_kernels as dbk_specphot_kernels
 from . import (
     linelum_kernels,
     gd_phot_kernels,
-    gd_phot_kernels_merging,
+    phot_kernels_merging,
 )
 from . import gd_sed_kernels as sed_kernels
 from . import (
@@ -29,8 +29,8 @@ _specphot_kern = linelum_kernels._specphot_kern
 _get_dbk_phot_from_dbk_weights = dbk_kernels._get_dbk_phot_from_dbk_weights
 _sed_kern = sed_kernels._sed_kern
 _get_dbk_linelum_decomposition = dbk_kernels._get_dbk_linelum_decomposition
-_mc_phot_kern_merging = gd_phot_kernels_merging._mc_phot_kern_merging
-_phot_kern_merging = gd_phot_kernels_merging._phot_kern_merging
+_mc_phot_kern_merging = phot_kernels_merging._mc_phot_kern_merging
+_phot_kern_merging = phot_kernels_merging._phot_kern_merging
 _mc_specphot_kern_merging = gd_specphot_kernels_merging._mc_specphot_kern_merging
 _specphot_kern_merging = gd_specphot_kernels_merging._specphot_kern_merging
 
