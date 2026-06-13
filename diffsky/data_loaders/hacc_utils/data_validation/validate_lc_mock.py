@@ -10,9 +10,8 @@ from dsps.photometry import photometry_kernels as phk
 from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper as dpw
-from .. import gd_sed_from_mock as sed_from_mock
 from .. import lc_mock as lcmp
-from .. import load_flat_hdf5, load_lc_cf, load_lc_mock
+from .. import load_flat_hdf5, load_lc_cf, load_lc_mock, sed_from_mock
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
 REQUIRED_SOFTWARE_VERSION_INFO = (
