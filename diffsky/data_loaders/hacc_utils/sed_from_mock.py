@@ -15,7 +15,7 @@ from ...experimental.kernels import dbk_specphot_kernels_merging as dbkspkm
 from ...experimental.kernels import (
     mc_randoms,
     phot_kernels_merging,
-    sed_kernels_merging,
+    sed_kernels,
 )
 
 
@@ -223,7 +223,7 @@ def compute_sed_from_mock(mock_chunk, metadata):
         halo_indx,
         mc_merge,
     )
-    sed_info = sed_kernels_merging._sed_kern(*args)
+    sed_info = sed_kernels._sed_kern(*args)
     sed_info = sed_info._asdict()
     return sed_info
 

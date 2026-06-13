@@ -11,7 +11,7 @@ from jax import vmap
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
 from .. import phot_kernels_merging as gd_pkm
-from .. import sed_kernels_merging as gd_sedkm
+from .. import sed_kernels as gd_sedkm
 
 _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)

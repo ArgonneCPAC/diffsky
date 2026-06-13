@@ -14,7 +14,7 @@ from ...experimental.kernels import (
     dbk_specphot_kernels_merging,
     mc_randoms,
     phot_kernels_merging,
-    sed_kernels_merging,
+    sed_kernels,
 )
 from . import utils
 
@@ -476,7 +476,7 @@ def __compute_sed_managed(
         top_host_idx,
         mc_merge,
     )
-    sed_info = sed_kernels_merging._sed_kern(*args)
+    sed_info = sed_kernels._sed_kern(*args)
     return {"rest_sed": sed_info.rest_sed, "gal_id": gal_id}
 
 

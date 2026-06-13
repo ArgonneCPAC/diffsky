@@ -4,5 +4,5 @@
 from .dbk_sed_kernels import _dbk_sed_kern
 from .dbk_specphot_kernels_merging import _mc_dbk_specphot_kern_merging
 from .phot_kernels_merging import _mc_phot_kern_merging
-from .sed_kernels_merging import _sed_kern
+from .sed_kernels import _sed_kern
 from .specphot_kernels_merging import _mc_specphot_kern_merging
