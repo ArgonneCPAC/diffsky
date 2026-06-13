@@ -13,6 +13,7 @@ from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
 from jax import vmap
 
+from ...param_utils import diffsky_param_wrapper_merging as dpwm
 from .. import mc_phot
 from . import test_lightcone_generators as tlcg
 from . import test_mc_lightcone_halos as tmclh
@@ -23,22 +24,40 @@ calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 def test_mc_lc_phot_changes_with_diffstarpop(num_halos=50):
     ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    phot_kern_results = mc_phot.mc_lc_phot(
-        ran_key, lc_data, diffstarpop_params=sfh_models["tng"]
-    )
-    phot_kern_results2 = mc_phot.mc_lc_phot(
-        ran_key, lc_data, diffstarpop_params=sfh_models["smdpl_dr1"]
-    )
-    assert not np.allclose(
-        phot_kern_results["obs_mags"], phot_kern_results2["obs_mags"], atol=0.1
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
     )
 
-    keys = list(phot_kern_results.keys())
-    phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
-    phot_kern_results2 = namedtuple("Results", keys)(**phot_kern_results2)
+    pc1 = dpwm.DEFAULT_PARAM_COLLECTION._replace(diffstarpop_params=sfh_models["tng"])
+    pc2 = dpwm.DEFAULT_PARAM_COLLECTION._replace(
+        diffstarpop_params=sfh_models["smdpl_dr1"]
+    )
+    mc_merge = 0
+    phot_kern_results = mc_phot.mc_lc_phot(ran_key, lc_data, mc_merge, pc1)[0]
+    phot_kern_results2 = mc_phot.mc_lc_phot(ran_key, lc_data, mc_merge, pc2)[0]
+
+    assert not np.allclose(
+        phot_kern_results.obs_mags, phot_kern_results2.obs_mags, atol=0.1
+    )
+
     check_phot_kern_results(phot_kern_results)
     check_phot_kern_results(phot_kern_results2)
+
+    # Enforce merging has non-trivial effect on photometry
+    assert not np.allclose(
+        phot_kern_results.obs_mags, phot_kern_results.obs_mags_in_situ
+    )
+    assert not np.allclose(
+        phot_kern_results.logsm_obs, phot_kern_results.logsm_obs_in_situ
+    )
+
+    # Enforce weighted photometry is not the same as unweighted
+    assert not np.allclose(
+        phot_kern_results.obs_mags_weighted, phot_kern_results.obs_mags
+    )
+    assert not np.allclose(
+        phot_kern_results.obs_mags_weighted, phot_kern_results.obs_mags
+    )
 
 
 def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=50):
@@ -167,20 +186,3 @@ def test_mc_lc_phot_agrees_with_mc_lc_specphot(num_halos=50):
 
     for emline_name in lc_data.ssp_data.ssp_emline_wave._fields:
         assert np.all(np.isfinite(phot_kern_results2[emline_name]))
-
-
-def test_mc_lc_phot_merging(num_halos=100):
-    ran_key = jran.key(0)
-    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
-        num_halos=num_halos
-    )
-    phot_kern_results = mc_phot.mc_lc_phot_merging(ran_key, lc_data)
-    keys = list(phot_kern_results.keys())
-    phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
-    check_phot_kern_results(phot_kern_results)
-    assert not np.allclose(
-        phot_kern_results.obs_mags, phot_kern_results.obs_mags_in_situ
-    )
-    assert not np.allclose(
-        phot_kern_results.logsm_obs, phot_kern_results.logsm_obs_in_situ
-    )

@@ -10,25 +10,24 @@ from collections import namedtuple
 from diffstar import DEFAULT_DIFFSTAR_PARAMS
 from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
+from jax import jit as jjit
 
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
+from .kernels import _mc_phot_kern_merging
 from .kernels import gd_dbk_specphot_kernels as dbkspk
 from .kernels import gd_mc_phot_kernels as mcpk
 from .kernels import mc_randoms
 
 
+@jjit
 def mc_lc_phot(
     ran_key,
     lc_data,
-    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
-    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
-    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
-    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
-    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    mc_merge,
+    param_collection=dpwm.DEFAULT_PARAM_COLLECTION,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
-    skip_param_check=False,
 ):
     """Populate the input lightcone with galaxy photometry
 
@@ -39,19 +38,24 @@ def mc_lc_phot(
     lc_data : namedtuple
         Contains info about the halo lightcone, SED inputs, and diffsky parameters
 
+    mc_merge : int
+        Integer specifying whether merging is stochastic.
+        Use mc_merge=0 in gradient descent applications, and mc_merge=1 for mock-making
+
     Returns
     -------
-    results : dict
+    phot_kern_results : namedtuple
         Contains info about the galaxy SEDs
 
-    """
-    param_collection = dpw.ParamCollection(
-        diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
-    )
-    if not skip_param_check:
-        assert dpw.check_param_collection_is_ok(param_collection)
+    phot_randoms : namedtuple
+        Contains info about randoms used in photometry
 
-    phot_kern_results, phot_randoms = mcpk._mc_phot_kern(
+    merging_randoms : namedtuple
+        Contains info about randoms used in merging
+
+    """
+
+    args = (
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -60,18 +64,25 @@ def mc_lc_phot(
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        diffstarpop_params,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssperr_params,
+        param_collection.diffstarpop_params,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        param_collection.merging_params,
         cosmo_params,
         fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.sat_weight,
+        lc_data.halo_indx,
+        mc_merge,
     )
-    phot_kern_results = phot_kern_results._asdict()
-    for key, val in zip(lc_data.mah_params._fields, lc_data.mah_params):
-        phot_kern_results[key] = val
-    return phot_kern_results
+
+    phot_kern_results, phot_randoms, merging_randoms = _mc_phot_kern_merging(*args)
+    return phot_kern_results, phot_randoms, merging_randoms
 
 
 def mc_lc_phot_merging(
