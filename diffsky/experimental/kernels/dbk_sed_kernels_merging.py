@@ -8,7 +8,7 @@ from jax import numpy as jnp
 
 from .. import mc_diffstarpop_wrappers as mcdw
 from . import dbk_sed_kernels as gd_sedk
-from . import gd_sed_kernels_merging
+from . import sed_kernels_merging
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -85,7 +85,7 @@ def _get_dbk_sed_kern_merging_quantities(
     halo_indx,
     mc_merge,
 ):
-    _res = gd_sed_kernels_merging._get_sed_kern_merging_quantities(
+    _res = sed_kernels_merging._get_sed_kern_merging_quantities(
         dbk_sed_info_in_situ, merging_randoms, sat_weights, halo_indx, mc_merge
     )
     (

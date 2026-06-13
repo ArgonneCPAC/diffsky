@@ -12,7 +12,7 @@ from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
 from .. import dbk_sed_kernels_merging as gd_dbk_sedkm
 from .. import dbk_specphot_kernels_merging
-from .. import gd_sed_kernels_merging as gd_sedkm
+from .. import sed_kernels_merging as gd_sedkm
 from .. import mc_randoms
 
 _A = [None, 0, None, None, 0, *[None] * 4]
