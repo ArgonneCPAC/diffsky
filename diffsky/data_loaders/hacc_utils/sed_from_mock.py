@@ -11,7 +11,7 @@ from ...experimental import precompute_ssp_phot as psspp
 from ...experimental.kernels import (
     dbk_sed_kernels,
 )
-from ...experimental.kernels import dbk_specphot_kernels_merging as dbkspkm
+from ...experimental.kernels import dbk_specphot_kernels as dbkspkm
 from ...experimental.kernels import (
     mc_randoms,
     phot_kernels_merging,

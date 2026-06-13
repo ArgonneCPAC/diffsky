@@ -33,7 +33,7 @@ from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ...experimental.kernels import dbk_specphot_kernels_merging as gd_dbkspkm
+from ...experimental.kernels import dbk_specphot_kernels as gd_dbkspkm
 from ...experimental.kernels import phot_kernels as gd_phkern
 from ...experimental.size_modeling import smzr_bulge, smzr_disk
 from ...fake_sats import halo_boundary_functions as hbf
