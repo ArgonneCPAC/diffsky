@@ -155,13 +155,21 @@ def check_phot_kern_results(phot_kern_results):
     assert np.all(phot_kern_results.frac_ssp_errors < 5)
 
 
-def test_mc_lc_dbk_sed(num_halos=50):
+def test_mc_lc_dbk_sed(num_halos=10):
     ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    dbk_sed_info = mc_phot.mc_lc_dbk_sed(ran_key, lc_data)
-    assert np.all(np.isfinite(dbk_sed_info["rest_sed_bulge"]))
-    assert np.all(np.isfinite(dbk_sed_info["rest_sed_disk"]))
-    assert np.all(np.isfinite(dbk_sed_info["rest_sed_knots"]))
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    mc_merge = 0
+    dbk_sed_info = mc_phot.mc_lc_dbk_sed(ran_key, lc_data, mc_merge)
+    rest_sed_sum = (
+        dbk_sed_info.rest_sed_bulge
+        + dbk_sed_info.rest_sed_disk
+        + dbk_sed_info.rest_sed_knots
+    )
+    assert np.allclose(
+        np.log10(rest_sed_sum), np.log10(dbk_sed_info.rest_sed), atol=0.1
+    )
 
 
 def test_unweighted_mc_lc_dbk_sed():

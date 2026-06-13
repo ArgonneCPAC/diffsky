@@ -14,7 +14,7 @@ from jax import jit as jjit
 
 from ..param_utils import diffsky_param_wrapper as dpw
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
-from .kernels import _mc_phot_kern_merging, _sed_kern
+from .kernels import _dbk_sed_kern, _mc_phot_kern_merging, _sed_kern
 from .kernels import gd_dbk_specphot_kernels as dbkspk
 from .kernels import gd_dbk_specphot_kernels_merging as dbkspkm
 from .kernels import gd_mc_phot_kernels as mcpk
@@ -275,17 +275,15 @@ def mc_lc_dbk_specphot(
     return dbk_phot_info, dbk_weights
 
 
+@jjit
 def mc_lc_dbk_sed(
     ran_key,
     lc_data,
-    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
-    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
-    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
-    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
-    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    mc_merge,
+    *,
+    param_collection=dpwm.DEFAULT_PARAM_COLLECTION,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
-    skip_param_check=False,
 ):
     """Populate the input lightcone with disk/bulge/knot SEDs
 
@@ -302,37 +300,35 @@ def mc_lc_dbk_sed(
         Contains info about disk/bulge/knot SEDs
 
     """
-    param_collection = dpw.ParamCollection(
-        diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
-    )
-    if not skip_param_check:
-        assert dpw.check_param_collection_is_ok(param_collection)
 
-    phot_randoms, sfh_params, dbk_randoms = mc_randoms.get_mc_dbk_phot_randoms(
-        ran_key, diffstarpop_params, lc_data.mah_params, cosmo_params
+    _res = mc_randoms.get_mc_dbk_phot_merge_randoms(
+        ran_key, param_collection.diffstarpop_params, lc_data.mah_params, cosmo_params
     )
+    phot_randoms, sfh_params, dbk_randoms, merging_randoms = _res
 
-    dbk_sed_info, dbk_weights = dbkspk._dbk_sed_kern(
-        phot_randoms.mc_is_q,
-        phot_randoms.uran_av,
-        phot_randoms.uran_delta,
-        phot_randoms.uran_funo,
-        phot_randoms.uran_pburst,
-        phot_randoms.delta_mag_ssp_scatter,
-        dbk_randoms.uran_fbulge,
-        dbk_randoms.fknot,
+    args = (
+        phot_randoms,
+        dbk_randoms,
+        merging_randoms,
         sfh_params,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
         lc_data.ssp_data,
-        dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
-        dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
-        dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
-        dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
-        DEFAULT_COSMOLOGY,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        param_collection.merging_params,
+        cosmo_params,
         fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.sat_weight,
+        lc_data.halo_indx,
+        mc_merge,
     )
-
-    dbk_sed_info = dbk_sed_info._asdict()
+    dbk_sed_info = _dbk_sed_kern(*args)
     return dbk_sed_info
