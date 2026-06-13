@@ -6,7 +6,7 @@ from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import gd_dbk_specphot_kernels as gd_dbkspk
+from .. import dbk_photline_kernels_in_situ as gd_dbkspk
 
 
 def test_mc_dbk_phot_kern(num_halos=19):
@@ -44,7 +44,7 @@ def test_mc_dbk_phot_kern(num_halos=19):
     dbk_phot_info, dbk_weights = gd_dbkspk._mc_dbk_phot_kern(*args)
 
 
-def test_mc_dbk_specphot_kern(num_halos=13):
+def test_mc_dbk_photline_kern(num_halos=13):
     """Enforce that the sum of the component lines equals the composite line"""
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
@@ -79,15 +79,15 @@ def test_mc_dbk_specphot_kern(num_halos=13):
         DEFAULT_COSMOLOGY,
         fb,
     )
-    dbk_specphot_info, dbk_weights = gd_dbkspk._mc_dbk_specphot_kern(*args)
+    dbk_photline_info, dbk_weights = gd_dbkspk._mc_dbk_photline_kern(*args)
 
     for key in ("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots"):
-        assert np.all(np.isfinite(getattr(dbk_specphot_info, key)))
+        assert np.all(np.isfinite(getattr(dbk_photline_info, key)))
 
     component_lines_sum = (
-        dbk_specphot_info.linelum_bulge
-        + dbk_specphot_info.linelum_disk
-        + dbk_specphot_info.linelum_knots
+        dbk_photline_info.linelum_bulge
+        + dbk_photline_info.linelum_disk
+        + dbk_photline_info.linelum_knots
     )
-    logdiff = np.log10(component_lines_sum) - np.log10(dbk_specphot_info.linelum_gal)
+    logdiff = np.log10(component_lines_sum) - np.log10(dbk_photline_info.linelum_gal)
     assert np.allclose(logdiff, 0.0, atol=0.01)

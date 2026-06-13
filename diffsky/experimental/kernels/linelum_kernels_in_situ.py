@@ -5,12 +5,12 @@ from collections import namedtuple
 from jax import jit as jjit
 
 from ...merging import merging_model
-from . import gd_phot_kernels, mc_randoms
+from . import phot_kernels_in_situ, mc_randoms
 from . import ssp_weight_kernels as sspwk
 
 
 @jjit
-def _mc_specphot_kern(
+def _mc_photline_kern(
     ran_key,
     z_obs,
     t_obs,
@@ -49,7 +49,7 @@ def _mc_specphot_kern(
         merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upid
     )
 
-    phot_kern_results, spec_kern_results = _specphot_kern(
+    phot_kern_results, spec_kern_results = _photline_kern(
         phot_randoms,
         diffstarpop_results,
         z_obs,
@@ -73,7 +73,7 @@ def _mc_specphot_kern(
 
 
 @jjit
-def _specphot_kern(
+def _photline_kern(
     phot_randoms,
     diffstarpop_results,
     z_obs,
@@ -92,7 +92,7 @@ def _specphot_kern(
     cosmo_params,
     fb,
 ):
-    phot_kern_results = gd_phot_kernels._phot_kern(
+    phot_kern_results = phot_kernels_in_situ._phot_kern(
         phot_randoms,
         diffstarpop_results,
         z_obs,

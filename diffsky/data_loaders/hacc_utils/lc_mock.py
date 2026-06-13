@@ -33,8 +33,8 @@ from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ...experimental.kernels import gd_dbk_specphot_kernels_merging as gd_dbkspkm
-from ...experimental.kernels import gd_phot_kernels as gd_phkern
+from ...experimental.kernels import dbk_photline_kernels as gd_dbkspkm
+from ...experimental.kernels import phot_kernels_in_situ as gd_phkern
 from ...experimental.size_modeling import smzr_bulge, smzr_disk
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
@@ -338,21 +338,21 @@ def write_batched_lc_sed_mock_to_disk(
 ):
     write_batched_lc_sfh_mock_to_disk(fnout, lc_data, diffsky_data)
 
-    specphot_dict = dict()
+    photline_dict = dict()
     for iband, name in enumerate(filter_nicknames):
-        specphot_dict[name] = phot_info["obs_mags"][:, iband]
+        photline_dict[name] = phot_info["obs_mags"][:, iband]
         if incl_in_situ:
-            specphot_dict[name + "_in_situ"] = phot_info["obs_mags_in_situ"][:, iband]
+            photline_dict[name + "_in_situ"] = phot_info["obs_mags_in_situ"][:, iband]
 
     if incl_in_situ:
-        specphot_dict["logsm_obs_in_situ"] = phot_info["logsm_obs_in_situ"]
+        photline_dict["logsm_obs_in_situ"] = phot_info["logsm_obs_in_situ"]
         assert phot_info["logsm_obs_in_situ"].shape == phot_info["logsm_obs"].shape
 
     for linename in lineflux_nicknames:
-        specphot_dict[linename] = phot_info[linename]
+        photline_dict[linename] = phot_info[linename]
 
     write_batched_mock_data(
-        fnout, specphot_dict, list(specphot_dict.keys()), dataset="data"
+        fnout, photline_dict, list(photline_dict.keys()), dataset="data"
     )
 
     phot_info_colnames = [
@@ -507,7 +507,7 @@ def add_dbk_phot_quantities_to_mock(
     line_wave_table = np.array(ssp_data.ssp_emline_wave)
 
     mc_merge = 1
-    dbk_phot_info, dbk_weights = gd_dbkspkm._mc_dbk_specphot_kern_merging(
+    dbk_phot_info, dbk_weights = gd_dbkspkm._mc_dbk_photline_kern_merging(
         ran_key,
         lc_data["redshift_true"],
         diffsky_data["t_obs"],

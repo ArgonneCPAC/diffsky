@@ -6,14 +6,14 @@ from jax import jit as jjit
 from jax import numpy as jnp
 
 from ...merging import merging_model
-from . import gd_dbk_specphot_kernels as gd_dbkspk
-from . import gd_phot_kernels_merging as gd_pkm
-from . import gd_specphot_kernels_merging as gd_spkm
+from . import dbk_photline_kernels_in_situ as gd_dbkspk
 from . import mc_randoms
+from . import phot_kernels as gd_pkm
+from . import photline_kernels as gd_spkm
 
 
 @jjit
-def _mc_dbk_specphot_kern_merging(
+def _mc_dbk_photline_kern_merging(
     ran_key,
     z_obs,
     t_obs,
@@ -54,7 +54,7 @@ def _mc_dbk_specphot_kern_merging(
     )
     phot_randoms, diffstarpop_results, dbk_randoms, merging_randoms = _res
 
-    dbk_specphot_info, dbk_weights = _dbk_specphot_kern_merging(
+    dbk_photline_info, dbk_weights = _dbk_photline_kern_merging(
         phot_randoms,
         diffstarpop_results,
         dbk_randoms,
@@ -82,11 +82,11 @@ def _mc_dbk_specphot_kern_merging(
         halo_indx,
         mc_merge,
     )
-    return dbk_specphot_info, dbk_weights
+    return dbk_photline_info, dbk_weights
 
 
 @jjit
-def _dbk_specphot_kern_merging(
+def _dbk_photline_kern_merging(
     phot_randoms,
     diffstarpop_results,
     dbk_randoms,
@@ -119,7 +119,7 @@ def _dbk_specphot_kern_merging(
         merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upid
     )
 
-    dbk_specphot_info, dbk_weights = gd_dbkspk._dbk_specphot_kern(
+    dbk_photline_info, dbk_weights = gd_dbkspk._dbk_photline_kern(
         phot_randoms,
         diffstarpop_results,
         dbk_randoms,
@@ -141,7 +141,7 @@ def _dbk_specphot_kern_merging(
     )
 
     _res = gd_pkm._get_phot_kern_merging_quantities(
-        dbk_specphot_info,
+        dbk_photline_info,
         merging_randoms,
         p_merge_smooth,
         sat_weights,
@@ -151,7 +151,7 @@ def _dbk_specphot_kern_merging(
     mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, flux_obs_weighted, p_merge = _res
 
     args = (
-        dbk_specphot_info,
+        dbk_photline_info,
         mstar_in_situ,
         mstar_obs,
         flux_in_situ,
@@ -161,31 +161,31 @@ def _dbk_specphot_kern_merging(
         merging_randoms.uran_pmerge,
     )
     func = gd_pkm._update_phot_kern_results_with_merging
-    dbk_specphot_info = func(*args)
+    dbk_photline_info = func(*args)
 
-    args = dbk_specphot_info, dbk_specphot_info, sat_weights, halo_indx
+    args = dbk_photline_info, dbk_photline_info, sat_weights, halo_indx
     _res = gd_spkm._get_linelum_kern_merging_quantities(*args)
     linelums_obs, linelum_in_situ_mc, linelum_weighted, linelum_in_situ_weighted = _res
 
-    dbk_specphot_info = gd_spkm._update_linelum_results_with_merging(
-        dbk_specphot_info,
+    dbk_photline_info = gd_spkm._update_linelum_results_with_merging(
+        dbk_photline_info,
         linelums_obs,
         linelum_in_situ_mc,
         linelum_weighted,
         linelum_in_situ_weighted,
     )
 
-    dbk_specphot_info, dbk_weights = _update_dbk_specphot_info_with_merging(
-        dbk_specphot_info, dbk_weights, mstar_in_situ, mstar_obs, flux_in_situ, flux_obs
+    dbk_photline_info, dbk_weights = _update_dbk_photline_info_with_merging(
+        dbk_photline_info, dbk_weights, mstar_in_situ, mstar_obs, flux_in_situ, flux_obs
     )
-    return dbk_specphot_info, dbk_weights
+    return dbk_photline_info, dbk_weights
 
 
 @jjit
-def _update_dbk_specphot_info_with_merging(
-    dbk_specphot_info, dbk_weights, mstar_in_situ, mstar_obs, flux_in_situ, flux_obs
+def _update_dbk_photline_info_with_merging(
+    dbk_photline_info, dbk_weights, mstar_in_situ, mstar_obs, flux_in_situ, flux_obs
 ):
-    n_gals = dbk_specphot_info.logsm_obs.size
+    n_gals = dbk_photline_info.logsm_obs.size
 
     frac_dm = mstar_obs / mstar_in_situ
     dmag = -2.5 * jnp.log10(flux_obs / flux_in_situ)
@@ -201,24 +201,31 @@ def _update_dbk_specphot_info_with_merging(
 
     mag_colnames = ("obs_mags_bulge", "obs_mags_disk", "obs_mags_knots")
     for name in mag_colnames:
-        ex_situ_dict[name] = getattr(dbk_specphot_info, name) + dmag
-        in_situ_dict[name + "_in_situ"] = getattr(dbk_specphot_info, name)
+        ex_situ_dict[name] = getattr(dbk_photline_info, name) + dmag
+        in_situ_dict[name + "_in_situ"] = getattr(dbk_photline_info, name)
 
     line_colnames = ("linelum_bulge", "linelum_disk", "linelum_knots")
     for name in line_colnames:
         _f = frac_dm.reshape((n_gals, 1))
-        ex_situ_dict[name] = getattr(dbk_specphot_info, name) * _f
-        in_situ_dict[name + "_in_situ"] = getattr(dbk_specphot_info, name)
+        ex_situ_dict[name] = getattr(dbk_photline_info, name) * _f
+        in_situ_dict[name + "_in_situ"] = getattr(dbk_photline_info, name)
 
-    dbk_specphot_info = dbk_specphot_info._replace(**ex_situ_dict)
+    dbk_photline_info = dbk_photline_info._replace(**ex_situ_dict)
     dbk_weights = dbk_weights._replace(
         mstar_bulge=dbk_weights.mstar_bulge * frac_dm,
         mstar_disk=dbk_weights.mstar_disk * frac_dm,
         mstar_knots=dbk_weights.mstar_knots * frac_dm,
     )
 
-    new_keys = list(in_situ_dict.keys())
-    dbk_specphot_info_keys = list(dbk_specphot_info._fields) + new_keys
-    MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_specphot_info_keys)
-    dbk_specphot_info = MCDBKSpecPhotInfo(**dbk_specphot_info._asdict(), **in_situ_dict)
-    return dbk_specphot_info, dbk_weights
+    dbk_keys = ["mstar_bulge", "mstar_disk", "mstar_knots"]
+    new_keys = list(in_situ_dict.keys()) + dbk_keys
+    dbk_photline_info_keys = list(dbk_photline_info._fields) + new_keys
+    MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", dbk_photline_info_keys)
+    dbk_photline_info = MCDBKSpecPhotInfo(
+        **dbk_photline_info._asdict(),
+        **in_situ_dict,
+        mstar_bulge=dbk_weights.mstar_bulge,
+        mstar_disk=dbk_weights.mstar_disk,
+        mstar_knots=dbk_weights.mstar_knots,
+    )
+    return dbk_photline_info, dbk_weights

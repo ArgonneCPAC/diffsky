@@ -9,7 +9,7 @@ from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import gd_dbk_sed_kernels, gd_phot_kernels, gd_sed_kernels, mc_randoms
+from .. import dbk_sed_kernels_in_situ, mc_randoms, phot_kernels_in_situ, sed_kernels_in_situ
 
 _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
@@ -29,7 +29,7 @@ def test_dbk_sed_kern(num_halos=20):
     upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx).astype(int)
     lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
     gyr_since_infall = lc_data.t_obs - lc_data.t_infall
-    phot_kern_results, phot_randoms, merging_randoms = gd_phot_kernels._mc_phot_kern(
+    phot_kern_results, phot_randoms, merging_randoms = phot_kernels_in_situ._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -50,7 +50,7 @@ def test_dbk_sed_kern(num_halos=20):
     sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
         [getattr(phot_kern_results, key) for key in DEFAULT_DIFFSTAR_PARAMS._fields]
     )
-    sed_kern_results = gd_sed_kernels._sed_kern(
+    sed_kern_results = sed_kernels_in_situ._sed_kern(
         phot_randoms,
         sfh_params,
         lc_data.z_obs,
@@ -66,7 +66,7 @@ def test_dbk_sed_kern(num_halos=20):
         fb,
     )
 
-    dbk_sed_kern_results = gd_dbk_sed_kernels._dbk_sed_kern(
+    dbk_sed_kern_results = dbk_sed_kernels_in_situ._dbk_sed_kern(
         phot_randoms,
         dbk_randoms,
         sfh_params,

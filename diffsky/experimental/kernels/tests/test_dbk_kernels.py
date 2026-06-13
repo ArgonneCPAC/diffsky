@@ -5,33 +5,44 @@ from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import random as jran
 
-from ....param_utils import diffsky_param_wrapper as dpw
+from ....merging import merging_model
+from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...disk_bulge_modeling import dbpop
 from ...tests import test_lightcone_generators as tlcg
-from ...tests import test_mc_lightcone_halos as tmclh
 from ...tests import test_mc_phot
 from .. import dbk_kernels
-from .. import dbk_specphot_kernels as dbkspk
-from .. import mc_randoms, phot_kernels
+from .. import dbk_photline_kernels_in_situ as gd_dbkspk
+from .. import mc_randoms, phot_kernels_in_situ
 
 
 def test_mc_dbk_kern(num_halos=50):
     ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
 
     fb = 0.156
-    ran_key, phot_key = jran.split(ran_key, 2)
+    ran_key, phot_key, dbk_key = jran.split(ran_key, 3)
+    n_gals = lc_data.z_obs.size
+    dbk_randoms = mc_randoms.get_mc_dbk_randoms(dbk_key, n_gals)
 
-    phot_kern_results, phot_randoms = phot_kernels._mc_phot_kern(
+    upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
+    gyr_since_infall = lc_data.t_obs - lc_data.t_infall
+    lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
+    phot_kern_results, phot_randoms, diffstarpop_results = phot_kernels_in_situ._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
+        upid,
+        lgmu_infall,
+        lc_data.logmhost_infall,
+        gyr_since_infall,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
     )
@@ -44,6 +55,16 @@ def test_mc_dbk_kern(num_halos=50):
         lgyr_peak=phot_kern_results.lgyr_peak,
         lgyr_max=phot_kern_results.lgyr_max,
     )
+    age_weights = np.sum(phot_kern_results.ssp_weights, axis=1)
+    p_merge_smooth = merging_model.get_p_merge_from_merging_params(
+        dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_obs,
+        lc_data.t_infall,
+        upid,
+    )
+
     args = (
         lc_data.t_obs,
         lc_data.ssp_data,
@@ -51,9 +72,12 @@ def test_mc_dbk_kern(num_halos=50):
         phot_kern_results.sfh_table,
         burst_params,
         phot_kern_results.lgmet_weights,
-        dbk_key,
+        dbk_randoms,
+        phot_kern_results.logsm_obs,
+        age_weights,
+        p_merge_smooth,
     )
-    dbk_randoms, dbk_weights, disk_bulge_history = dbk_kernels._mc_dbk_kern(*args)
+    dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(*args)
     assert np.all(np.isfinite(dbk_weights.ssp_weights_bulge))
     assert np.all(np.isfinite(dbk_weights.ssp_weights_disk))
     assert np.all(np.isfinite(dbk_weights.ssp_weights_knots))
@@ -123,25 +147,36 @@ def test_mc_dbk_kern(num_halos=50):
     assert np.all(std_magdiff < 0.01)
 
 
-def test_get_dbk_weights():
+def test_get_dbk_weights(num_halos=25):
     """Enforce all dbk_weights sum to unity and dbk masses sum to total mass"""
     ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
 
     fb = 0.1
-    phot_kern_results, phot_randoms = phot_kernels._mc_phot_kern(
+    upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
+    gyr_since_infall = lc_data.t_obs - lc_data.t_infall
+    lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
+
+    _res = phot_kernels_in_situ._mc_phot_kern(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
+        upid,
+        lgmu_infall,
+        lc_data.logmhost_infall,
+        gyr_since_infall,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
     )
+    phot_kern_results, phot_randoms, diffstarpop_results = _res
     dbk_key = jran.key(1)
     n_gals = lc_data.z_obs.size
     dbk_randoms = mc_randoms.get_mc_dbk_randoms(dbk_key, n_gals)
@@ -158,15 +193,27 @@ def test_get_dbk_weights():
         lgyr_max=phot_kern_results.lgyr_max,
     )
 
-    dbk_weights = dbk_kernels.get_dbk_weights(
+    age_weights = np.sum(phot_kern_results.ssp_weights, axis=1)
+    p_merge_smooth = merging_model.get_p_merge_from_merging_params(
+        dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_obs,
+        lc_data.t_infall,
+        upid,
+    )
+
+    dbk_weights = dbk_kernels.get_dbk_weights_rq(
         lc_data.t_obs,
         lc_data.ssp_data,
         phot_kern_results.t_table,
-        phot_kern_results.sfh_table,
         burst_params,
         phot_kern_results.lgmet_weights,
         disk_bulge_history,
         dbk_randoms.fknot,
+        phot_kern_results.logsm_obs,
+        age_weights,
+        p_merge_smooth,
     )
 
     assert dbk_weights.mstar_bulge.shape == (n_gals,)
@@ -197,43 +244,51 @@ def test_get_dbk_linelum_decomposition(num_halos=55, n_lines=4):
     fb = 0.196
     n_gals = lc_data.z_obs.size
 
+    upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
+    gyr_since_infall = lc_data.t_obs - lc_data.t_infall
+    lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
+
     args = (
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
+        upid,
+        lgmu_infall,
+        lc_data.logmhost_infall,
+        gyr_since_infall,
         lc_data.ssp_data,
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
         lc_data.line_wave_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
     )
-    dbk_specphot_info, dbk_weights = dbkspk._mc_dbk_specphot_kern(*args)
+    dbk_photline_info, dbk_weights = gd_dbkspk._mc_dbk_photline_kern(*args)
 
     for key in ("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots"):
-        assert np.all(np.isfinite(getattr(dbk_specphot_info, key)))
+        assert np.all(np.isfinite(getattr(dbk_photline_info, key)))
 
-    assert dbk_specphot_info.linelum_gal.shape == (n_gals, n_lines)
-    assert dbk_specphot_info.linelum_bulge.shape == (n_gals, n_lines)
-    assert dbk_specphot_info.linelum_disk.shape == (n_gals, n_lines)
-    assert dbk_specphot_info.linelum_knots.shape == (n_gals, n_lines)
+    assert dbk_photline_info.linelum_gal.shape == (n_gals, n_lines)
+    assert dbk_photline_info.linelum_bulge.shape == (n_gals, n_lines)
+    assert dbk_photline_info.linelum_disk.shape == (n_gals, n_lines)
+    assert dbk_photline_info.linelum_knots.shape == (n_gals, n_lines)
 
     component_lines_sum = (
-        dbk_specphot_info.linelum_bulge
-        + dbk_specphot_info.linelum_disk
-        + dbk_specphot_info.linelum_knots
+        dbk_photline_info.linelum_bulge
+        + dbk_photline_info.linelum_disk
+        + dbk_photline_info.linelum_knots
     )
-    logdiff = np.log10(component_lines_sum) - np.log10(dbk_specphot_info.linelum_gal)
+    logdiff = np.log10(component_lines_sum) - np.log10(dbk_photline_info.linelum_gal)
     assert np.allclose(logdiff, 0.0, atol=0.01)
 
     _ret3 = dbk_kernels._get_dbk_phot_from_dbk_weights(
-        dbk_specphot_info.ssp_photflux_table,
+        dbk_photline_info.ssp_photflux_table,
         dbk_weights,
-        dbk_specphot_info.dust_frac_trans,
-        dbk_specphot_info.frac_ssp_errors,
+        dbk_photline_info.dust_frac_trans,
+        dbk_photline_info.frac_ssp_errors,
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
     obs_mags_sum = -2.5 * np.log10(
@@ -241,4 +296,4 @@ def test_get_dbk_linelum_decomposition(num_halos=55, n_lines=4):
         + 10 ** (-0.4 * obs_mags_disk)
         + 10 ** (-0.4 * obs_mags_knots)
     )
-    assert np.allclose(dbk_specphot_info.obs_mags, obs_mags_sum, atol=0.01)
+    assert np.allclose(dbk_photline_info.obs_mags, obs_mags_sum, atol=0.01)

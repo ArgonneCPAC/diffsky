@@ -1,25 +1,84 @@
 """"""
 
 import numpy as np
-from diffstar import DEFAULT_DIFFSTAR_PARAMS
+import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
-from ....param_utils import diffsky_param_wrapper as dpw
-from ...tests import test_mc_lightcone_halos as tmclh
-from ...tests import test_mc_phot
-from .. import phot_kernels
+from ....param_utils import diffsky_param_wrapper_merging as dpwm
+from ...tests import test_lightcone_generators as tlcg
+from .. import phot_kernels as gd_pkm
+
+TOL = 1e-8
 
 
-def test_mc_phot_kern():
+def check_phot_kern_merging_results(phot_kern_results, lc_data):
+    n_gals = lc_data.z_obs.size
+    n_z_table, n_bands, n_met, n_age = lc_data.precomputed_ssp_mag_table.shape
+
+    skip_keys = (
+        "burstiness_info_q",
+        "burstiness_info_ms",
+        "diffstar_info_ms",
+        "diffstar_info_q",
+    )
+    for key in phot_kern_results._fields:
+        if key not in skip_keys:
+            x = getattr(phot_kern_results, key)
+            assert np.all(np.isfinite(x))
+
+    for key in skip_keys:
+        data = getattr(phot_kern_results, key)
+        for x in data:
+            assert np.all(np.isfinite(x))
+
+    assert np.all(phot_kern_results.p_merge >= 0)
+    assert np.all(phot_kern_results.p_merge <= 1)
+    assert np.any(phot_kern_results.p_merge > 0)
+    assert np.any(phot_kern_results.p_merge < 1)
+
+    # Enforce consistent array shapes
+    assert phot_kern_results.p_merge.shape == (n_gals,)
+    assert phot_kern_results.logsm_obs.shape == (n_gals,)
+    assert phot_kern_results.logsm_obs_in_situ.shape == (n_gals,)
+    assert phot_kern_results.obs_mags.shape == (n_gals, n_bands)
+    assert phot_kern_results.obs_mags_in_situ.shape == (n_gals, n_bands)
+
+    msk_cen = lc_data.is_central == 1
+    msk_sat = ~msk_cen
+
+    # Enforce centrals can only get brighter and satellites can only get dimmer
+    name = "obs_mags"
+    x = getattr(phot_kern_results, name)
+    y = getattr(phot_kern_results, name + "_in_situ")
+    assert np.all(x[msk_cen] <= y[msk_cen] + TOL)
+    assert np.all(x[msk_sat] >= y[msk_sat] - TOL)
+
+    # Enforce merging is nontrivial
+    assert np.any(x[msk_cen] < y[msk_cen])
+    assert np.any(x[msk_sat] > y[msk_sat])
+
+    # Enforce centrals can only get more massive and satellites less massive
+    name = "logsm_obs"
+    x = getattr(phot_kern_results, name)
+    y = getattr(phot_kern_results, name + "_in_situ")
+    assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
+    assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
+    # Enforce merging is nontrivial
+    assert np.any(x[msk_cen] > y[msk_cen])
+    assert np.any(x[msk_sat] < y[msk_sat])
+
+
+@pytest.mark.parametrize("mc_merge", [0, 1])
+def test_mc_phot_kern_merging(mc_merge, num_halos=250):
     ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    fb = 0.176
 
-    fb = 0.156
-    ran_key, phot_key = jran.split(ran_key, 2)
-
-    phot_kern_results, phot_randoms = phot_kernels._mc_phot_kern(
-        phot_key,
+    phot_kern_results, phot_randoms, merging_randoms = gd_pkm._mc_phot_kern_merging(
+        ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
         lc_data.mah_params,
@@ -27,33 +86,16 @@ def test_mc_phot_kern():
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpw.DEFAULT_PARAM_COLLECTION,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
         DEFAULT_COSMOLOGY,
         fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.sat_weight,
+        lc_data.halo_indx,
+        mc_merge,
     )
 
-    test_mc_phot.check_phot_kern_results(phot_kern_results)
-
-    sfh_params = DEFAULT_DIFFSTAR_PARAMS._make(
-        [getattr(phot_kern_results, x) for x in DEFAULT_DIFFSTAR_PARAMS._fields]
-    )
-    phot_kern_results2 = phot_kernels._phot_kern(
-        phot_randoms,
-        sfh_params,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
-        dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
-        dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
-        dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
-        DEFAULT_COSMOLOGY,
-        fb,
-    )
-
-    for x, x2 in zip(phot_kern_results, phot_kern_results2):
-        assert np.allclose(x, x2)
+    check_phot_kern_merging_results(phot_kern_results, lc_data)

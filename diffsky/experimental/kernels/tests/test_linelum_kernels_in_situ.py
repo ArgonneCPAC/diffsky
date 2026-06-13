@@ -7,10 +7,10 @@ from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import gd_linelum_kernels, gd_phot_kernels
+from .. import linelum_kernels_in_situ, phot_kernels_in_situ
 
 
-def test_mc_specphot_kern(num_halos=150):
+def test_mc_photline_kern(num_halos=150):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
@@ -21,7 +21,7 @@ def test_mc_specphot_kern(num_halos=150):
     upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
     lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
     gyr_since_infall = lc_data.t_infall - lc_data.t_obs
-    _res = gd_phot_kernels._mc_phot_kern(
+    _res = phot_kernels_in_situ._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -69,8 +69,8 @@ def test_mc_specphot_kern(num_halos=150):
         DEFAULT_COSMOLOGY,
         fb,
     )
-    _specphot_res = gd_linelum_kernels._mc_specphot_kern(*args)
-    # _specphot_res = gd_linelum_kernels._mc_specphot_kern(
+    _photline_res = linelum_kernels_in_situ._mc_photline_kern(*args)
+    # _photline_res = linelum_kernels_in_situ._mc_photline_kern(
     #     phot_key,
     #     lc_data.z_obs,
     #     lc_data.t_obs,
@@ -89,7 +89,7 @@ def test_mc_specphot_kern(num_halos=150):
     #     fb,
     # )
 
-    phot_kern_results2, phot_randoms2, spec_kern_results = _specphot_res
+    phot_kern_results2, phot_randoms2, spec_kern_results = _photline_res
     assert np.allclose(
         phot_kern_results.obs_mags, phot_kern_results2.obs_mags, rtol=1e-4
     )
