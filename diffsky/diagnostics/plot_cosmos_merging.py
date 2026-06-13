@@ -269,7 +269,7 @@ def get_plotting_data_mock(
         filter_dict[cosmos_key] = i, COSMOS_FILTER_BNAMES[i]
 
     ran_key, sed_key = jran.split(ran_key, 2)
-    diffsky_data = mc_lc_phot_merging(
+    diffsky_data = mc_lc_phot(
         sed_key,
         lc_data,
         diffstarpop_params=diffstarpop_params,
