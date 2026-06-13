@@ -3,7 +3,7 @@
 from . import (
     constants,
 )
-from . import gd_dbk_kernels as dbk_kernels
+from . import dbk_kernels as dbk_kernels
 from . import gd_dbk_specphot_kernels as dbk_specphot_kernels
 from . import (
     gd_linelum_kernels,

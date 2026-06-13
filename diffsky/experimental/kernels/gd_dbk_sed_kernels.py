@@ -8,7 +8,7 @@ from jax import numpy as jnp
 
 from ...merging import merging_model
 from .. import mc_diffstarpop_wrappers as mcdw
-from . import gd_dbk_kernels, gd_sed_kernels
+from . import dbk_kernels, gd_sed_kernels
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -78,7 +78,7 @@ def _dbk_sed_kern(
         age_weights,
         p_merge_smooth,
     )
-    dbk_weights, disk_bulge_history = gd_dbk_kernels._dbk_kern(*args)
+    dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(*args)
 
     n_gals = z_obs.size
     n_met, n_age, n_wave = ssp_data.ssp_flux.shape

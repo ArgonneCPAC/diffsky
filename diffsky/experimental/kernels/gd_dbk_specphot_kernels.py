@@ -9,7 +9,7 @@ from jax import numpy as jnp
 from ...merging import merging_model
 from ...ssp_err_model import ssp_err_model
 from ..disk_bulge_modeling import disk_bulge_kernels as dbk
-from . import gd_dbk_kernels, gd_linelum_kernels, gd_phot_kernels, mc_randoms
+from . import dbk_kernels, gd_linelum_kernels, gd_phot_kernels, mc_randoms
 from . import ssp_weight_kernels as sspwk
 
 
@@ -121,7 +121,7 @@ def _dbk_phot_kern(
         lgyr_max=phot_kern_results.lgyr_max,
     )
     age_weights = jnp.sum(phot_kern_results.ssp_weights, axis=1)
-    dbk_weights, disk_bulge_history = gd_dbk_kernels._dbk_kern(
+    dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(
         t_obs,
         ssp_data,
         phot_kern_results.t_table,
@@ -134,7 +134,7 @@ def _dbk_phot_kern(
         p_merge_smooth,
     )
 
-    _ret3 = gd_dbk_kernels._get_dbk_phot_from_dbk_weights(
+    _ret3 = dbk_kernels._get_dbk_phot_from_dbk_weights(
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,
@@ -282,7 +282,7 @@ def _dbk_specphot_kern(
         fb,
     )
 
-    _ret3 = gd_dbk_kernels._get_dbk_phot_from_dbk_weights(
+    _ret3 = dbk_kernels._get_dbk_phot_from_dbk_weights(
         phot_kern_results.ssp_photflux_table,
         dbk_weights,
         phot_kern_results.dust_frac_trans,
@@ -290,7 +290,7 @@ def _dbk_specphot_kern(
     )
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _ret3
 
-    _dbk_line_res = gd_dbk_kernels._get_dbk_linelum_decomposition(
+    _dbk_line_res = dbk_kernels._get_dbk_linelum_decomposition(
         dbk_weights, spec_kern_results, ssp_data
     )
     linelum_bulge, linelum_disk, linelum_knots = _dbk_line_res

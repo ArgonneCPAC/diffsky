@@ -10,7 +10,7 @@ from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...disk_bulge_modeling import dbpop
 from ...tests import test_lightcone_generators as tlcg
 from ...tests import test_mc_phot
-from .. import gd_dbk_kernels
+from .. import dbk_kernels
 from .. import gd_dbk_specphot_kernels as gd_dbkspk
 from .. import gd_phot_kernels, mc_randoms
 
@@ -79,7 +79,7 @@ def test_mc_dbk_kern(num_halos=50):
         age_weights,
         p_merge_smooth,
     )
-    dbk_weights, disk_bulge_history = gd_dbk_kernels._dbk_kern(*args)
+    dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(*args)
     assert np.all(np.isfinite(dbk_weights.ssp_weights_bulge))
     assert np.all(np.isfinite(dbk_weights.ssp_weights_disk))
     assert np.all(np.isfinite(dbk_weights.ssp_weights_knots))
@@ -109,7 +109,7 @@ def test_mc_dbk_kern(num_halos=50):
         phot_kern_results.dust_frac_trans,
         phot_kern_results.frac_ssp_errors,
     )
-    _res = gd_dbk_kernels._get_dbk_phot_from_dbk_weights(*args)
+    _res = dbk_kernels._get_dbk_phot_from_dbk_weights(*args)
     obs_mags_bulge, obs_mags_disk, obs_mags_knots = _res
 
     correct_shape = phot_kern_results.obs_mags.shape
@@ -205,7 +205,7 @@ def test_get_dbk_weights(num_halos=25):
         upid,
     )
 
-    dbk_weights = gd_dbk_kernels.get_dbk_weights_rq(
+    dbk_weights = dbk_kernels.get_dbk_weights_rq(
         lc_data.t_obs,
         lc_data.ssp_data,
         phot_kern_results.t_table,
@@ -286,7 +286,7 @@ def test_get_dbk_linelum_decomposition(num_halos=55, n_lines=4):
     logdiff = np.log10(component_lines_sum) - np.log10(dbk_specphot_info.linelum_gal)
     assert np.allclose(logdiff, 0.0, atol=0.01)
 
-    _ret3 = gd_dbk_kernels._get_dbk_phot_from_dbk_weights(
+    _ret3 = dbk_kernels._get_dbk_phot_from_dbk_weights(
         dbk_specphot_info.ssp_photflux_table,
         dbk_weights,
         dbk_specphot_info.dust_frac_trans,
