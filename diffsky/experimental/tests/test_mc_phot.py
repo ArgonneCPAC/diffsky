@@ -100,14 +100,19 @@ def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=5):
         assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
 
 
-def test_mc_lc_dbk_phot(num_halos=50):
+def test_mc_lc_dbk_specphot(num_halos=20):
     ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    dbk_phot_info = mc_phot.mc_lc_dbk_phot(ran_key, lc_data)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    mc_merge = 0
+    dbk_phot_info, dbk_weights = mc_phot.mc_lc_dbk_specphot(ran_key, lc_data, mc_merge)
+    dbk_phot_info = dbk_phot_info._asdict()
+    dbk_weights = dbk_weights._asdict()
 
-    np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_phot_info["mstar_bulge"]))
-    np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_phot_info["mstar_disk"]))
-    np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_phot_info["mstar_knots"]))
+    np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_weights["mstar_bulge"]))
+    np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_weights["mstar_disk"]))
+    np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_weights["mstar_knots"]))
 
     assert not np.allclose(
         dbk_phot_info["obs_mags"], dbk_phot_info["obs_mags_bulge"], rtol=1e-4

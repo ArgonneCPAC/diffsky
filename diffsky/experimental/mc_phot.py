@@ -16,6 +16,7 @@ from ..param_utils import diffsky_param_wrapper as dpw
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
 from .kernels import _mc_phot_kern_merging, _sed_kern
 from .kernels import gd_dbk_specphot_kernels as dbkspk
+from .kernels import gd_dbk_specphot_kernels_merging as dbkspkm
 from .kernels import gd_mc_phot_kernels as mcpk
 from .kernels import mc_randoms
 
@@ -141,6 +142,7 @@ def mc_lc_specphot(
     return phot_kern_results
 
 
+@jjit
 def mc_lc_sed(
     ran_key,
     lc_data,
@@ -175,7 +177,7 @@ def mc_lc_sed(
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        *dpwm.DEFAULT_PARAM_COLLECTION,
+        *param_collection,
         DEFAULT_COSMOLOGY,
         fb,
         lc_data.logmp_infall,
@@ -217,18 +219,15 @@ def mc_lc_sed(
     return sed_kern_results
 
 
-def mc_lc_dbk_phot(
+@jjit
+def mc_lc_dbk_specphot(
     ran_key,
     lc_data,
-    diffstarpop_params=dpw.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
-    mzr_params=dpw.DEFAULT_PARAM_COLLECTION.mzr_params,
-    spspop_params=dpw.DEFAULT_PARAM_COLLECTION.spspop_params,
-    scatter_params=dpw.DEFAULT_PARAM_COLLECTION.scatter_params,
-    ssperr_params=dpw.DEFAULT_PARAM_COLLECTION.ssperr_params,
+    mc_merge,
+    *,
+    param_collection=dpwm.DEFAULT_PARAM_COLLECTION,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
-    return_dbk_weights=False,
-    skip_param_check=False,
 ):
     """Populate the input lightcone with disk/bulge/knot photometry
 
@@ -245,13 +244,8 @@ def mc_lc_dbk_phot(
         Contains info about disk/bulge/knot photometry
 
     """
-    param_collection = dpw.ParamCollection(
-        diffstarpop_params, mzr_params, spspop_params, scatter_params, ssperr_params
-    )
-    if not skip_param_check:
-        assert dpw.check_param_collection_is_ok(param_collection)
 
-    dbk_phot_info, dbk_weights = mcpk._mc_dbk_phot_kern(
+    args = (
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -260,23 +254,25 @@ def mc_lc_dbk_phot(
         lc_data.precomputed_ssp_mag_table,
         lc_data.z_phot_table,
         lc_data.wave_eff_table,
-        diffstarpop_params,
-        mzr_params,
-        spspop_params,
-        scatter_params,
-        ssperr_params,
+        lc_data.line_wave_table,
+        param_collection.diffstarpop_params,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        param_collection.merging_params,
         cosmo_params,
         fb,
+        lc_data.logmp_infall,
+        lc_data.logmhost_infall,
+        lc_data.t_infall,
+        lc_data.is_central,
+        lc_data.sat_weight,
+        lc_data.halo_indx,
+        mc_merge,
     )
-    dbk_phot_info = dbk_phot_info._asdict()
-    dbk_phot_info["mstar_bulge"] = dbk_weights.mstar_bulge.flatten()
-    dbk_phot_info["mstar_disk"] = dbk_weights.mstar_disk.flatten()
-    dbk_phot_info["mstar_knots"] = dbk_weights.mstar_knots.flatten()
-
-    if return_dbk_weights:
-        return dbk_phot_info, dbk_weights
-    else:
-        return dbk_phot_info
+    dbk_phot_info, dbk_weights = dbkspkm._mc_dbk_specphot_kern_merging(*args)
+    return dbk_phot_info, dbk_weights
 
 
 def mc_lc_dbk_sed(
