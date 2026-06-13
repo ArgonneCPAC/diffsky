@@ -6,7 +6,7 @@ from . import (
 from . import dbk_kernels as dbk_kernels
 from . import dbk_specphot_kernels as dbk_specphot_kernels
 from . import (
-    gd_linelum_kernels,
+    linelum_kernels,
     gd_phot_kernels,
     gd_phot_kernels_merging,
 )
@@ -24,8 +24,8 @@ LGMET_SCATTER = constants.LGMET_SCATTER
 _mc_phot_kern = gd_phot_kernels._mc_phot_kern
 _phot_kern = gd_phot_kernels._phot_kern
 _dbk_kern = dbk_kernels._dbk_kern  # noqa
-_mc_specphot_kern = gd_linelum_kernels._mc_specphot_kern
-_specphot_kern = gd_linelum_kernels._specphot_kern
+_mc_specphot_kern = linelum_kernels._mc_specphot_kern
+_specphot_kern = linelum_kernels._specphot_kern
 _get_dbk_phot_from_dbk_weights = dbk_kernels._get_dbk_phot_from_dbk_weights
 _sed_kern = sed_kernels._sed_kern
 _get_dbk_linelum_decomposition = dbk_kernels._get_dbk_linelum_decomposition
@@ -45,7 +45,7 @@ get_mc_dbk_randoms = mc_randoms.get_mc_dbk_randoms
 
 # namedtuple containers
 PhotRandoms = mc_randoms.PhotRandoms
-SpecKernResults = gd_linelum_kernels.SpecKernResults
+SpecKernResults = linelum_kernels.SpecKernResults
 PhotKernResults = gd_phot_kernels.PhotKernResults
 DBKRandoms = mc_randoms.DBKRandoms
 SEDKernResults = sed_kernels.SEDKernResults
