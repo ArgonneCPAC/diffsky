@@ -9,7 +9,7 @@ from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
 from .. import dbk_specphot_kernels_merging as gd_dbkspkm
 from .helpers import check_phot_kern_merging_results
-from .test_gd_specphot_kernels_merging import check_spec_kern_merging_results
+from .test_specphot_kernels_merging import check_spec_kern_merging_results
 
 TOL = 1e-8
 
