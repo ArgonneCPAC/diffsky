@@ -11,7 +11,7 @@ from ...disk_bulge_modeling import dbpop
 from ...tests import test_lightcone_generators as tlcg
 from ...tests import test_mc_phot
 from .. import dbk_kernels
-from .. import gd_dbk_specphot_kernels as gd_dbkspk
+from .. import dbk_specphot_kernels as gd_dbkspk
 from .. import gd_phot_kernels, mc_randoms
 
 

@@ -6,7 +6,7 @@ from jax import jit as jjit
 from jax import numpy as jnp
 
 from ...merging import merging_model
-from . import gd_dbk_specphot_kernels as gd_dbkspk
+from . import dbk_specphot_kernels as gd_dbkspk
 from . import gd_phot_kernels_merging as gd_pkm
 from . import gd_specphot_kernels_merging as gd_spkm
 from . import mc_randoms

@@ -4,7 +4,7 @@ from . import (
     constants,
 )
 from . import dbk_kernels as dbk_kernels
-from . import gd_dbk_specphot_kernels as dbk_specphot_kernels
+from . import dbk_specphot_kernels as dbk_specphot_kernels
 from . import (
     gd_linelum_kernels,
     gd_phot_kernels,
