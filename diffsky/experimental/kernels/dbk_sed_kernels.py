@@ -8,7 +8,7 @@ from jax import numpy as jnp
 
 from ...merging import merging_model
 from .. import mc_diffstarpop_wrappers as mcdw
-from . import dbk_kernels, sed_kernels
+from . import dbk_kernels, sed_kernels_in_situ
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -40,7 +40,7 @@ def _dbk_sed_kern(
     lgmu_infall = logmp_infall - logmhost_infall
     gyr_since_infall = t_obs - t_infall
 
-    sed_info = sed_kernels._sed_kern(
+    sed_info = sed_kernels_in_situ._sed_kern(
         phot_randoms,
         sfh_params,
         z_obs,
@@ -119,5 +119,7 @@ _DBK_SED_EXTRA_FIELDS = [
     "mstar_disk",
     "mstar_knots",
 ]
-_DBK_SED_FIELDS = list(sed_kernels.SEDKernResults._fields) + _DBK_SED_EXTRA_FIELDS
+_DBK_SED_FIELDS = (
+    list(sed_kernels_in_situ.SEDKernResults._fields) + _DBK_SED_EXTRA_FIELDS
+)
 DBKSEDInfo = namedtuple("DBKSEDInfo", _DBK_SED_FIELDS)

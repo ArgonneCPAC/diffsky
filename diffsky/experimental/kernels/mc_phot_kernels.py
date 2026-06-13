@@ -7,13 +7,13 @@ from . import dbk_kernels as dbk_kernels
 from . import dbk_specphot_kernels as dbk_specphot_kernels
 from . import (
     linelum_kernels,
+    mc_randoms,
     phot_kernels,
     phot_kernels_merging,
 )
-from . import sed_kernels as sed_kernels
+from . import sed_kernels_in_situ as sed_kernels
 from . import (
     specphot_kernels_merging,
-    mc_randoms,
 )
 
 # constants

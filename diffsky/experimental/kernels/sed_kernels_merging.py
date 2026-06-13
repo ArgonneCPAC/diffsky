@@ -8,7 +8,7 @@ from jax import numpy as jnp
 
 from ...merging import merging_kernels
 from .. import mc_diffstarpop_wrappers as mcdw
-from . import sed_kernels
+from . import sed_kernels_in_situ
 
 
 @partial(jjit, static_argnames=["n_t_table"])
@@ -42,7 +42,7 @@ def _sed_kern(
     lgmu_infall = logmp_infall - logmhost_infall
     gyr_since_infall = t_obs - t_infall
 
-    in_situ_sed_results = sed_kernels._sed_kern(
+    in_situ_sed_results = sed_kernels_in_situ._sed_kern(
         phot_randoms,
         sfh_params,
         z_obs,
