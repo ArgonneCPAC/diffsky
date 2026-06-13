@@ -5,7 +5,7 @@ from collections import namedtuple
 from jax import jit as jjit
 
 from ...merging import merging_model
-from . import phot_kernels, mc_randoms
+from . import phot_kernels_in_situ, mc_randoms
 from . import ssp_weight_kernels as sspwk
 
 
@@ -92,7 +92,7 @@ def _photline_kern(
     cosmo_params,
     fb,
 ):
-    phot_kern_results = phot_kernels._phot_kern(
+    phot_kern_results = phot_kernels_in_situ._phot_kern(
         phot_randoms,
         diffstarpop_results,
         z_obs,

@@ -13,7 +13,7 @@ from ...experimental.kernels import (
     dbk_sed_kernels,
     dbk_photline_kernels,
     mc_randoms,
-    shambalam,
+    phot_kernels,
     sed_kernels,
 )
 from . import utils
@@ -66,7 +66,7 @@ def compute_phot_from_diffsky_mock(
 
     """
     utils.validate_batch_size(batch_size)
-    func = shambalam._phot_kern_merging
+    func = phot_kernels._phot_kern_merging
     z_phot_tables = utils.get_z_phot_tables(catalog)
     suffix = ""
     if set(bands).intersection(catalog.columns):

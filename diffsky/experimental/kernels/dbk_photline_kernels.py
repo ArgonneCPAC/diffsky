@@ -8,7 +8,7 @@ from jax import numpy as jnp
 from ...merging import merging_model
 from . import dbk_photline_kernels_in_situ as gd_dbkspk
 from . import mc_randoms
-from . import shambalam as gd_pkm
+from . import phot_kernels as gd_pkm
 from . import photline_kernels as gd_spkm
 
 

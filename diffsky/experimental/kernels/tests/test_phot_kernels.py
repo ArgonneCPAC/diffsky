@@ -8,7 +8,7 @@ from ....merging import merging_model
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
 from ...tests import test_mc_phot
-from .. import phot_kernels
+from .. import phot_kernels_in_situ
 
 
 def test_mc_phot_kern(num_halos=75):
@@ -21,7 +21,7 @@ def test_mc_phot_kern(num_halos=75):
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)
 
-    # Assume all galaxies are centrals so we can test against phot_kernels.py,
+    # Assume all galaxies are centrals so we can test against phot_kernels_in_situ.py,
     # which does not implement satellite quenching
     n_gals = lc_data.z_obs.size
     upid = np.zeros(n_gals).astype(int) - 1
@@ -29,7 +29,7 @@ def test_mc_phot_kern(num_halos=75):
     logmhost_infall = np.zeros(n_gals).astype(int)
     gyr_since_infall = np.zeros(n_gals).astype(int)
 
-    _res = phot_kernels._mc_phot_kern(
+    _res = phot_kernels_in_situ._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -82,7 +82,7 @@ def test_mc_phot_kern(num_halos=75):
         upid,
     )
 
-    gd_phot_kern_results = phot_kernels._phot_kern(
+    gd_phot_kern_results = phot_kernels_in_situ._phot_kern(
         mc_gd_phot_randoms,
         diffstarpop_results,
         lc_data.z_obs,
@@ -123,7 +123,7 @@ def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
     fb = 0.156
     ran_key, phot_key = jran.split(ran_key, 2)
 
-    # Assume all galaxies are centrals so we can test against phot_kernels.py,
+    # Assume all galaxies are centrals so we can test against phot_kernels_in_situ.py,
     # which does not implement satellite quenching
     n_gals = lc_data.z_obs.size
     upid_cens = np.zeros(n_gals).astype(int) - 1
@@ -131,7 +131,7 @@ def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
     logmhost_infall_cens = np.zeros(n_gals).astype(int)
     gyr_since_infall_cens = np.zeros(n_gals).astype(int)
 
-    _res = phot_kernels._mc_phot_kern(
+    _res = phot_kernels_in_situ._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -156,7 +156,7 @@ def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
     gyr_since_infall = lc_data.t_obs - lc_data.t_infall
     lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
 
-    _res = phot_kernels._mc_phot_kern(
+    _res = phot_kernels_in_situ._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,

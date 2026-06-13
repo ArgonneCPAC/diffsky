@@ -12,7 +12,7 @@ from ...tests import test_lightcone_generators as tlcg
 from ...tests import test_mc_phot
 from .. import dbk_kernels
 from .. import dbk_photline_kernels_in_situ as gd_dbkspk
-from .. import mc_randoms, phot_kernels
+from .. import mc_randoms, phot_kernels_in_situ
 
 
 def test_mc_dbk_kern(num_halos=50):
@@ -29,7 +29,7 @@ def test_mc_dbk_kern(num_halos=50):
     upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
     gyr_since_infall = lc_data.t_obs - lc_data.t_infall
     lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
-    phot_kern_results, phot_randoms, diffstarpop_results = phot_kernels._mc_phot_kern(
+    phot_kern_results, phot_randoms, diffstarpop_results = phot_kernels_in_situ._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
@@ -159,7 +159,7 @@ def test_get_dbk_weights(num_halos=25):
     gyr_since_infall = lc_data.t_obs - lc_data.t_infall
     lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
 
-    _res = phot_kernels._mc_phot_kern(
+    _res = phot_kernels_in_situ._mc_phot_kern(
         ran_key,
         lc_data.z_obs,
         lc_data.t_obs,

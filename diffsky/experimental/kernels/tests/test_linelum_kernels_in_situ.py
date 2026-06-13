@@ -7,7 +7,7 @@ from jax import random as jran
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lightcone_generators as tlcg
-from .. import linelum_kernels_in_situ, phot_kernels
+from .. import linelum_kernels_in_situ, phot_kernels_in_situ
 
 
 def test_mc_photline_kern(num_halos=150):
@@ -21,7 +21,7 @@ def test_mc_photline_kern(num_halos=150):
     upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
     lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
     gyr_since_infall = lc_data.t_infall - lc_data.t_obs
-    _res = phot_kernels._mc_phot_kern(
+    _res = phot_kernels_in_situ._mc_phot_kern(
         phot_key,
         lc_data.z_obs,
         lc_data.t_obs,
