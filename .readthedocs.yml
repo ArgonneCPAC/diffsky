@@ -41,8 +41,9 @@ build:
 
       # Use the toolkit to create OpenCosmo-formatted data
       - mkdir -p docs/source/oc_download_dir
-      - cp docs/source/mock_download_dir/* docs/source/oc_download_dir/
       - diffpipe run docs/source/mock_download_dir docs/source/oc_download_dir -n 2
+      - cp docs/source/mock_download_dir/diffsky_*.hdf5 docs/source/oc_download_dir/
+      - cp docs/source/mock_download_dir/lc_cores-decomposition.txt docs/source/oc_download_dir/
 
 conda:
   environment: docs/source/rtd_environment.yaml
