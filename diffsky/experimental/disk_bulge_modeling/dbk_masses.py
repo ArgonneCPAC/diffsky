@@ -3,7 +3,7 @@
 DBKMassKeys = ("mstar_diffuse_disk", "mstar_bulge", "mstar_knots")
 
 
-def get_disk_bulge_knot_masses(mock):
+def get_disk_bulge_knot_masses_from_mock(mock):
     """Calculate the stellar mass of the disk/bulge/knot decomposition from a mock
 
     Parameters
@@ -15,7 +15,8 @@ def get_disk_bulge_knot_masses(mock):
     Returns
     --------
     dbk_masses : dict
-        Dictionary with mass decomposition in units of Msun
+        dict with mass decomposition in units of Msun
+        keys = ("mstar_diffuse_disk", "mstar_bulge", "mstar_knots")
 
     """
     dbk_masses = _get_disk_bulge_knot_masses(

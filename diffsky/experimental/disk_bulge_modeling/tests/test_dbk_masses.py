@@ -20,7 +20,7 @@ def test_get_disk_bulge_knot_masses():
     md_correct = mdtot_correct - mk_correct
 
     mock = dict(logsm_obs=logsm_obs, bulge_to_total=bt, fknot=fknot)
-    dbk_mass = dbkm.get_disk_bulge_knot_masses(mock)
+    dbk_mass = dbkm.get_disk_bulge_knot_masses_from_mock(mock)
 
     assert set(dbk_mass.keys()) == set(dbkm.DBKMassKeys)
     assert np.allclose(dbk_mass["mstar_bulge"], mb_correct, rtol=1e-7)
