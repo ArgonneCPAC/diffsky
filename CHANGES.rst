@@ -1,3 +1,8 @@
+0.3.7 (Unreleased)
+-------------------
+- Reinstate OpenCosmo docs (https://github.com/ArgonneCPAC/diffsky/pull/439)
+
+
 0.3.6 (2026-06-12)
 -------------------
 - Version of code used to produce cosmos_260316_06_05_2026
