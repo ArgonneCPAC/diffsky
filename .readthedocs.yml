@@ -19,6 +19,7 @@ build:
       - wget -q https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_i_transmission.h5 -P dsps_drn/filters
       - wget -q https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_z_transmission.h5 -P dsps_drn/filters
       - wget -q https://portal.nersc.gov/project/hacc/aphearin/DSPS_data/filters/lsst_y_transmission.h5 -P dsps_drn/filters
+      - export DSPS_DRN="dsps_drn"
 
       # Download a pre-computed example mock for use in demo notebooks
       - mkdir -p docs/source/mock_download_dir
@@ -37,14 +38,13 @@ build:
       # - export DSPS_DRN="${PWD}/dsps_drn" && python scripts/LJ_LC_MOCKS/create_dummy_mock_data.py ci_test_output/dummy_version_name
 
       # # Copy mock data to where the notebook expects it
-      # - mkdir -p docs/source/mock_download_dir
       # - cp ci_test_output/dummy_version_name/* docs/source/mock_download_dir/
 
       # Use the toolkit to create OpenCosmo-formatted data
-      # - mkdir -p docs/source/oc_download_dir
-      # - cp ci_test_output/dummy_version_name/* docs/source/oc_download_dir/
-      # - rm docs/source/oc_download_dir/lc_cores*.hdf5
-      # - diffpipe run ci_test_output/dummy_version_name docs/source/oc_download_dir -n 2
+      - mkdir -p docs/source/oc_download_dir
+      - diffpipe run docs/source/mock_download_dir docs/source/oc_download_dir -n 2
+      - cp docs/source/mock_download_dir/diffsky_*.hdf5 docs/source/oc_download_dir/
+      - cp docs/source/mock_download_dir/lc_cores-decomposition.txt docs/source/oc_download_dir/
 
 conda:
   environment: docs/source/rtd_environment.yaml

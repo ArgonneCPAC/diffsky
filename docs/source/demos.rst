@@ -11,7 +11,4 @@ Reading and analyzing Diffsky mocks
     :maxdepth: 1
 
     demo_diffsky_recompute_from_mock.ipynb
-
-Generating Diffsky galaxy samples
----------------------------------
-Docs coming soon!
+    demo_diffsky_recompute_from_mock_opencosmo.ipynb
