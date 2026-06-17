@@ -12,3 +12,11 @@ Reading and analyzing Diffsky mocks
 
     demo_diffsky_recompute_from_mock.ipynb
     demo_diffsky_recompute_from_mock_opencosmo.ipynb
+
+
+Generating synthetic lightcones
+------------------------------------
+.. toctree::
+    :maxdepth: 1
+
+    demo_diffsky_lightcone.ipynb
