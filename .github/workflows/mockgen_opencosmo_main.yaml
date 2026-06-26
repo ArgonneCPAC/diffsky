@@ -15,6 +15,10 @@ jobs:
     name: python make_lj_mock.py testing_lj_mock_config.yaml
     runs-on: "ubuntu-latest"
 
+    env:
+      # Force UCX to use standard TCP/shared memory
+      UCX_TLS: "tcp,self,sm"
+
     steps:
       - name: free disk space
         uses: endersonmenezes/free-disk-space@v3
@@ -101,6 +105,9 @@ jobs:
           cd ..
           cd ..
 
+          # download lc_cores-decomposition.txt
+          wget $WGET_OPTS https://portal.nersc.gov/project/hacc/aphearin/diffsky_data/LastJourney/lc_cores-decomposition.txt
+
           # Set environment variable
           export DSPS_DRN="${GITHUB_WORKSPACE}/dsps_drn"
           echo "DSPS_DRN=${DSPS_DRN}" >> $GITHUB_ENV
@@ -114,6 +121,8 @@ jobs:
           # Run mock production script
           mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
 
+          mv lc_cores-decomposition.txt ci_test_output/dummy_version_name/
+
       - name: verify script completed
         shell: bash -l {0}
         run: |
@@ -122,7 +131,7 @@ jobs:
       - name: validate mock
         shell: bash -l {0}
         run: |
-          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
 
       - name: Create dummy diffsky galaxies for OpenCosmo
         shell: bash -l {0}
