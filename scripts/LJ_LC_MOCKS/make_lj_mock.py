@@ -465,7 +465,7 @@ if __name__ == "__main__":
 
             bn_sky_decomp = "lc_cores-decomposition.txt"
             fn_sky_decomp = os.path.join(indir_lc_data, bn_sky_decomp)
-            if not os.path.isfile(fn_sky_decomp):
+            if synthetic_cores == 0:
                 shutil.copy2(fn_sky_decomp, drn_out)
 
             lcmp_repro.write_ancillary_data_merging(
