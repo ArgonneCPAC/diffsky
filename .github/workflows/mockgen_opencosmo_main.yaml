@@ -107,6 +107,9 @@ jobs:
 
       - name: create mock with cosmos_fit option
         shell: bash -l {0}
+        env:
+          # Force UCX to use standard TCP/shared memory
+          UCX_TLS: "tcp,self,sm"
         run: |
           # Create output directory
           mkdir -p ci_test_output
