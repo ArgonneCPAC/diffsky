@@ -51,7 +51,12 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     mock_nickname = config["mock_nickname"]
-    mock_version_name = get_mock_version_name(mock_nickname)
+    mock_version_name_in = config.get("mock_version_name", "")
+    if mock_version_name_in == "":
+        mock_version_name = get_mock_version_name(mock_nickname)
+    else:
+        mock_version_name = mock_version_name_in
+
     drn_mock = os.path.join(config["drn_out"], mock_version_name)
 
     fn_pat = os.path.join(drn_mock, bnpat)
