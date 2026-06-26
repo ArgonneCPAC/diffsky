@@ -15,6 +15,10 @@ jobs:
     name: python make_lj_mock.py testing_lj_mock_config.yaml
     runs-on: "ubuntu-latest"
 
+    env:
+      # Force UCX to use standard TCP/shared memory
+      UCX_TLS: "tcp,self,sm"
+
     steps:
       - name: free disk space
         uses: endersonmenezes/free-disk-space@v3
@@ -107,9 +111,6 @@ jobs:
 
       - name: create mock with cosmos_fit option
         shell: bash -l {0}
-        env:
-          # Force UCX to use standard TCP/shared memory
-          UCX_TLS: "tcp,self,sm"
         run: |
           # Create output directory
           mkdir -p ci_test_output
