@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     mock_nickname = config["mock_nickname"]
     mock_version_name = get_mock_version_name(mock_nickname)
-    drn_mock = os.path.join(config.drn_out, mock_version_name)
+    drn_mock = os.path.join(config["drn_out"], mock_version_name)
 
     fn_pat = os.path.join(drn_mock, bnpat)
     fn_list_all_mocks = glob(fn_pat)
