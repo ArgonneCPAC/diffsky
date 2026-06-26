@@ -98,7 +98,7 @@ def _get_lc_photdata_for_unit_testing(num_halos=75, n_lines=3):
     return lc_data, tcurves
 
 
-def test_weighted_lc_halos_photdata():
+def test_lc_halos_photdata():
     lc_data, tcurves = _get_lc_halos_photdata_for_unit_testing()
 
     for field in mc_lcg.LCHalosData._fields:
@@ -137,7 +137,7 @@ def test_weighted_lc_halos_photdata():
     tmcp.check_phot_kern_results(phot_kern_results)
 
 
-def test_weighted_lc_photdata():
+def test_lc_photdata():
     num_halos = 75
     lc_data, tcurves = _get_lc_photdata_for_unit_testing(num_halos=num_halos)
     n_tot = lc_data.z_obs.size
