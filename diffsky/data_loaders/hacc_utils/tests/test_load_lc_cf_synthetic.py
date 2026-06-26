@@ -29,7 +29,7 @@ def test_load_lc_diffsky_patch_data():
         for lc_patch in patches:
             fn_lc_cores = fn_lc_cores_bpat.format(step, lc_patch)
             args = fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max
-            lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(*args)
+            lc_data, diffsky_data = llcs.load_lc_diffsky_patch_data(*args, read_start=0)
 
             theta_lo, theta_hi, phi_lo, phi_hi = [
                 patch_decomposition[lc_patch, i] for i in range(1, 5)

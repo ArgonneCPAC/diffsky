@@ -292,6 +292,7 @@ if __name__ == "__main__":
         msg = f"Loading {nhalos_estimate} halos in {nchunks} chunks with batch_size={batch_size}"
         print(msg)
 
+        n_cuml_fn = 0
         for chunknum in range(0, nchunks):
             jax.clear_caches()
             gc.collect()
@@ -312,9 +313,11 @@ if __name__ == "__main__":
                     lgmp_min,
                     lgmp_max,
                     downsample_factor=downsample_factor,
+                    read_start=n_cuml_fn,
                 )
 
             n_gals_batch = len(lc_data_batch["core_tag"])
+            n_cuml_fn += n_gals_batch
             lc_data_batch["stepnum"] = np.zeros(n_gals_batch).astype(int) + stepnum
             lc_data_batch["lc_patch"] = np.zeros(n_gals_batch).astype(int) + lc_patch
 
