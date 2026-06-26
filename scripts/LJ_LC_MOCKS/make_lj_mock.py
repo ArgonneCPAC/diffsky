@@ -1,12 +1,12 @@
 """Script to make an SED mock to populate a Last Journey lightcone
 
 To run a unit test of this script:
-    python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
-    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
+    python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -machine poboy
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
 
 To run a local test on poboy:
     mpiexec -n 2 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml
-    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml
 
 """
 
@@ -90,13 +90,19 @@ if __name__ == "__main__":
         default=-1,
         type=int,
     )
+    parser.add_argument(
+        "-machine", help="Machine name. Overrides config_yaml", default=""
+    )
 
     cl_args = parser.parse_args()
     config_path = cl_args.config_yaml
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    machine = config["machine"]
+    machine = cl_args.machine
+    if machine == "":
+        machine = config.get("machine", "lcrc")
+
     z_min = float(config["z_min"])
     z_max = float(config["z_max"])
     istart = int(config["istart"])
@@ -465,7 +471,7 @@ if __name__ == "__main__":
 
             bn_sky_decomp = "lc_cores-decomposition.txt"
             fn_sky_decomp = os.path.join(indir_lc_data, bn_sky_decomp)
-            if synthetic_cores == 0:
+            if os.path.isfile(fn_sky_decomp):
                 shutil.copy2(fn_sky_decomp, drn_out)
 
             lcmp_repro.write_ancillary_data_merging(
