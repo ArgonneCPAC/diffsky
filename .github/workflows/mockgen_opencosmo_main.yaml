@@ -105,6 +105,9 @@ jobs:
           cd ..
           cd ..
 
+          # download lc_cores-decomposition.txt
+          wget $WGET_OPTS https://portal.nersc.gov/project/hacc/aphearin/diffsky_data/LastJourney/lc_cores-decomposition.txt
+
           # Set environment variable
           export DSPS_DRN="${GITHUB_WORKSPACE}/dsps_drn"
           echo "DSPS_DRN=${DSPS_DRN}" >> $GITHUB_ENV
@@ -117,6 +120,8 @@ jobs:
 
           # Run mock production script
           mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
+
+          mv lc_cores-decomposition.txt ci_test_output/dummy_version_name/
 
       - name: verify script completed
         shell: bash -l {0}
