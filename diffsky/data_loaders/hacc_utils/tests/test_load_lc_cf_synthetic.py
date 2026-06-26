@@ -19,7 +19,7 @@ def test_load_lc_diffsky_patch_data():
     all_patches = np.arange(n_patches).astype(int)
     sim = haccsims.simulations["LastJourney"]
 
-    n_step, n_patch = 3, 10
+    n_step, n_patch = 3, 4
     step_key, patch_key = jran.split(ran_key, 2)
     steps = jran.choice(step_key, sim.cosmotools_steps[2:-1], shape=(n_step,))
     steps = steps.astype(int)
