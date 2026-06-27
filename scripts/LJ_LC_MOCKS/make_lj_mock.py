@@ -10,13 +10,14 @@ To run a local test on poboy:
 
 """
 
-# noqa
-
 import argparse
 import gc
 import os
 import shutil
 import sys
+
+# noqa
+from glob import glob
 from time import sleep, time
 
 import h5py
@@ -93,6 +94,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "-machine", help="Machine name. Overrides config_yaml", default=""
     )
+    parser.add_argument(
+        "-infer_mockname",
+        help="Infer mock_version_name from directory",
+        action="store_true",
+    )
 
     cl_args = parser.parse_args()
     config_path = cl_args.config_yaml
@@ -131,10 +137,15 @@ if __name__ == "__main__":
         # override the yaml file (convenient for job submission scripts)
         synthetic_cores = cl_args.synthetic_cores
 
-    if mock_version_name_in == "":
-        mock_version_name = get_mock_version_name(mock_nickname)
+    if cl_args.infer_mockname:
+        fn_list = glob(os.path.join(drn_out, mock_nickname + "_*"))
+        drn_mock = fn_list[0]
+        mock_version_name = os.path.basename(drn_mock)
     else:
-        mock_version_name = mock_version_name_in
+        if mock_version_name_in == "":
+            mock_version_name = get_mock_version_name(mock_nickname)
+        else:
+            mock_version_name = mock_version_name_in
 
     if lsst_only:
         OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES,)
