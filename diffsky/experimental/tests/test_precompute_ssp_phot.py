@@ -4,7 +4,7 @@ import numpy as np
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from dsps.data_loaders.retrieve_fake_fsps_data import load_fake_ssp_data
 
-from ...phot_utils import load_fake_lsst_tcurves
+from ...utils.phot_utils import load_fake_lsst_tcurves
 from .. import precompute_ssp_phot as psp
 
 
