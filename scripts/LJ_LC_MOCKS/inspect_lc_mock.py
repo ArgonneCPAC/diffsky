@@ -38,6 +38,11 @@ if __name__ == "__main__":
         default=5,
         type=int,
     )
+    parser.add_argument(
+        "-infer_mockname",
+        help="Infer mock_version_name from directory",
+        action="store_true",
+    )
 
     cl_args = parser.parse_args()
     config_yaml = cl_args.config_yaml
