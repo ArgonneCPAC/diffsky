@@ -39,23 +39,30 @@ if __name__ == "__main__":
         type=int,
     )
 
-    args = parser.parse_args()
-    config_yaml = args.config_yaml
-    bnpat = args.bnpat
-    drn_report = args.drn_report
-    no_dbk = args.no_dbk
-    no_sed = args.no_sed
-    n_files_to_check = args.n_files_to_check
+    cl_args = parser.parse_args()
+    config_yaml = cl_args.config_yaml
+    bnpat = cl_args.bnpat
+    drn_report = cl_args.drn_report
+    no_dbk = cl_args.no_dbk
+    no_sed = cl_args.no_sed
+    n_files_to_check = cl_args.n_files_to_check
 
     with open(config_yaml, "r") as f:
         config = yaml.safe_load(f)
 
     mock_nickname = config["mock_nickname"]
+    drn_out = config["drn_out"]
+
     mock_version_name_in = config.get("mock_version_name", "")
-    if mock_version_name_in == "":
-        mock_version_name = get_mock_version_name(mock_nickname)
+    if cl_args.infer_mockname:
+        fn_list = glob(os.path.join(drn_out, mock_nickname + "_*"))
+        drn_mock = fn_list[0]
+        mock_version_name = os.path.basename(drn_mock)
     else:
-        mock_version_name = mock_version_name_in
+        if mock_version_name_in == "":
+            mock_version_name = get_mock_version_name(mock_nickname)
+        else:
+            mock_version_name = mock_version_name_in
 
     drn_mock = os.path.join(config["drn_out"], mock_version_name)
 
