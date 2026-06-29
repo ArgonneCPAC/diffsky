@@ -1,11 +1,13 @@
 """Demo code to fit a 1d Gaussian model with soft histograms and jax.grad"""
 
-from jax import numpy as jnp
+from collections import namedtuple
+
 from jax import jit as jjit
+from jax import numpy as jnp
 from jax import random as jran
 from jax import value_and_grad
-from collections import namedtuple
-from diffsky.signdhist_lomem import nnsig_ndhist
+
+from diffsky.soft_histograms.signdhist_lomem import nnsig_ndhist
 
 GParams = namedtuple("GParams", ("mu", "sig"))
 DEFAULT_PARAMS = GParams(mu=-1.0, sig=1.0)
