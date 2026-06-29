@@ -18,7 +18,7 @@ from ....experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
 from ....experimental.tests import test_mc_lightcone_halos as tmclh
 from ....param_utils import diffsky_param_wrapper as dpw
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
-from ....phot_utils import get_wave_eff_table
+from ....utils.phot_utils import get_wave_eff_table
 from ... import io_utils as iou
 from ...load_ssp_data import load_fake_ssp_data
 from .. import lc_mock as lcmp_repro

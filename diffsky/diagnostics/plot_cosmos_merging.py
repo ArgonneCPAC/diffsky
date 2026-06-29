@@ -24,7 +24,7 @@ from ..experimental import precompute_ssp_phot as psspp
 from ..experimental.lightcone_generators import weighted_lc_photdata
 from ..experimental.mc_phot import mc_lc_phot
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
-from ..phot_utils import get_wave_eff_table
+from ..utils.phot_utils import get_wave_eff_table
 
 MBLUE = "#1f77b4"
 MGREEN = "#2ca02c"

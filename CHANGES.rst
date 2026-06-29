@@ -2,8 +2,8 @@
 -------------------
 - Reinstate OpenCosmo docs (https://github.com/ArgonneCPAC/diffsky/pull/439)
 - Migrate top-level modules into subdirectories
-    - https://github.com/ArgonneCPAC/diffsky/pull/449
-    - https://github.com/ArgonneCPAC/diffsky/pull/450
+    - phot_utils.py: https://github.com/ArgonneCPAC/diffsky/pull/449
+    - soft_histograms: https://github.com/ArgonneCPAC/diffsky/pull/450
 
 
 0.3.6 (2026-06-12)
