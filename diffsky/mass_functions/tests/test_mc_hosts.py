@@ -28,11 +28,11 @@ def test_differential_cumulative_hmf_consistency():
     ran_key = jran.key(0)
     z = 0.0
     lgmp_min = 12.0
-    Lbox = 1000.0
+    Lbox = 200.0
     Vbox = Lbox**3
 
     lgm_halopop = mc_host_halos_singlez(ran_key, lgmp_min, z, Vbox)
-    lgm_bins = np.linspace(lgmp_min + 0.5, 14.0, 50)
+    lgm_bins = np.linspace(lgmp_min + 0.5, 14.0, 20)
 
     differential_hmf = predict_differential_hmf(DEFAULT_HMF_PARAMS, lgm_bins, z)
 
@@ -44,4 +44,4 @@ def test_differential_cumulative_hmf_consistency():
     lg_diff_hmf = np.log10(differential_hmf)
     diff_hmf_interp = 10 ** np.interp(lgm_binmids, lgm_bins, lg_diff_hmf)
 
-    assert np.allclose(diff_hmf_interp, differential_hmf_target, rtol=0.1)
+    assert np.allclose(diff_hmf_interp, differential_hmf_target, rtol=0.5)

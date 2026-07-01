@@ -1,13 +1,17 @@
 """Script to run sanity checks on HACC lightcone mocks"""
 
 import argparse
+import gc
 import os
 from glob import glob
 from time import time
+
 import jax
 import numpy as np
-import gc
+import yaml
+
 from diffsky.data_loaders.hacc_utils.data_validation import validate_lc_mock as vlcm
+from diffsky.data_loaders.mock_utils import get_mock_version_name
 
 BN_GLOBPAT_LC_MOCK = "lc_cores-*.*.diffsky_gals*.hdf5"
 
@@ -15,7 +19,7 @@ BN_GLOBPAT_LC_MOCK = "lc_cores-*.*.diffsky_gals*.hdf5"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("drn_mock", help="Directory storing lightcone mock")
+    parser.add_argument("config_yaml", help="YAML configuration file")
     parser.add_argument("-bnpat", help="Basename pattern", default=BN_GLOBPAT_LC_MOCK)
     parser.add_argument("-drn_report", help="Directory to write report", default="")
     parser.add_argument(
@@ -34,14 +38,38 @@ if __name__ == "__main__":
         default=5,
         type=int,
     )
+    parser.add_argument(
+        "-infer_mockname",
+        help="Infer mock_version_name from directory",
+        action="store_true",
+    )
 
-    args = parser.parse_args()
-    drn_mock = args.drn_mock
-    bnpat = args.bnpat
-    drn_report = args.drn_report
-    no_dbk = args.no_dbk
-    no_sed = args.no_sed
-    n_files_to_check = args.n_files_to_check
+    cl_args = parser.parse_args()
+    config_yaml = cl_args.config_yaml
+    bnpat = cl_args.bnpat
+    drn_report = cl_args.drn_report
+    no_dbk = cl_args.no_dbk
+    no_sed = cl_args.no_sed
+    n_files_to_check = cl_args.n_files_to_check
+
+    with open(config_yaml, "r") as f:
+        config = yaml.safe_load(f)
+
+    mock_nickname = config["mock_nickname"]
+    drn_out = config["drn_out"]
+
+    mock_version_name_in = config.get("mock_version_name", "")
+    if cl_args.infer_mockname:
+        fn_list = glob(os.path.join(drn_out, mock_nickname + "_*"))
+        drn_mock = fn_list[0]
+        mock_version_name = os.path.basename(drn_mock)
+    else:
+        if mock_version_name_in == "":
+            mock_version_name = get_mock_version_name(mock_nickname)
+        else:
+            mock_version_name = mock_version_name_in
+
+    drn_mock = os.path.join(config["drn_out"], mock_version_name)
 
     fn_pat = os.path.join(drn_mock, bnpat)
     fn_list_all_mocks = glob(fn_pat)

@@ -59,3 +59,19 @@ def compute_x_tot_from_x_in_situ(
 def get_mc_p_merge(uran, p_merge):
     mc_p_merge = jnp.where(uran < p_merge, MC_P_MERGE_MAX, 0.0)
     return mc_p_merge
+
+
+@jjit
+def get_in_plus_ex_situ_ssp_weights(
+    mstar_in_situ, ssp_weights_in_situ, p_merge, sat_weights, halo_indx
+):
+    x_in_situ = ssp_weights_in_situ * mstar_in_situ.reshape((-1, 1, 1))
+    x_tot = compute_x_tot_from_x_in_situ(
+        x_in_situ,
+        p_merge[:, jnp.newaxis, jnp.newaxis],
+        sat_weights[:, jnp.newaxis, jnp.newaxis],
+        halo_indx,
+    )
+    norm = jnp.sum(x_tot, axis=(1, 2))
+    ssp_weights = x_tot / norm.reshape((-1, 1, 1))
+    return ssp_weights

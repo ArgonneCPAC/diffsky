@@ -1,41 +1,27 @@
 from collections import namedtuple
 from typing import Callable, Optional
 
+import jax.numpy as jnp
 import numpy as np
 import opencosmo as oc
 from diffmah import DiffmahParams
 from diffstar import DiffstarParams
-from dsps.cosmology import age_at_z
 
 from ... import phot_utils
-from ...experimental import dbk_phot_from_mock
+from ...experimental import mc_diffstarpop_wrappers as mcdw
 from ...experimental import precompute_ssp_phot as psspp
-from ...experimental.kernels import dbk_specphot_kernels
+from ...experimental.kernels import (
+    dbk_photline_kernels,
+    dbk_sed_kernels,
+    mc_randoms,
+    phot_kernels,
+    sed_kernels,
+)
+from . import utils
 
-
-def __get_z_phot_tables(catalog: oc.Lightcone):
-    """
-    Retrieve z_phot_tables from the underlying catalogs, or construct
-    them if not found.
-    """
-    z_phot_tables = {}
-    for slice_name, dataset in catalog.items():
-        z_phot_tables[slice_name] = __get_z_phot_table_from_dataset(dataset)
-    return z_phot_tables
-
-
-def __get_z_phot_table_from_dataset(dataset: oc.Dataset):
-    z_phot_table = dataset.header.catalog_info.get("zphot_table")
-    if z_phot_table is None:
-        return __estimate_z_phot_table(dataset)
-    return np.array(z_phot_table)
-
-
-def __estimate_z_phot_table(dataset: oc.Dataset):
-    min_z, max_z = dataset.header.lightcone["z_range"]
-    min_z = 0.95 * min_z
-    max_z = 1.05 * max_z
-    return np.linspace(min_z, max_z, 15)
+DiffstarPopResultsMock = namedtuple(
+    "DiffstarPopResultsMock", mcdw.DiffstarPopResults._fields
+)
 
 
 def compute_phot_from_diffsky_mock(
@@ -43,7 +29,7 @@ def compute_phot_from_diffsky_mock(
     aux_data: dict,
     bands: list[str],
     insert: bool = True,
-    batch_size: int = -1,
+    batch_size: int = 50,
 ):
     """
     Compute photometry for all objects in the catalog for the given bands.
@@ -69,6 +55,12 @@ def compute_phot_from_diffsky_mock(
         returns a dataset with the photometry inserted as new columns. If false, return
         the data directly.
 
+    batch_size: int, default = 50
+        The number of systems to compute the photomtery for at once. Note this is NOT
+        the number of individual objects, but rather the number of central+satellite
+        groups that are computed per pass. If you find yourself running out of memory,
+        adjust this number down.
+
     Returns:
     --------
     data: opencosmo.Lightcone | dict[str, np.ndarray]
@@ -78,15 +70,16 @@ def compute_phot_from_diffsky_mock(
 
 
     """
-    func = dbk_phot_from_mock._reproduce_mock_phot_kern
-    z_phot_tables = __get_z_phot_tables(catalog)
+    utils.validate_batch_size(batch_size)
+    func = phot_kernels._phot_kern_merging
+    z_phot_tables = utils.get_z_phot_tables(catalog)
     suffix = ""
     if set(bands).intersection(catalog.columns):
         suffix = "_new"
 
     result = __run_photometry(
         func,
-        __unpack_photometry,
+        utils.unpack_photometry,
         catalog,
         aux_data,
         z_phot_tables,
@@ -108,7 +101,7 @@ def compute_dbk_phot_from_diffsky_mock(
     bands: list[str],
     include_extras: Optional[list] = None,
     insert: bool = True,
-    batch_size: int = -1,
+    batch_size: int = 50,
 ):
     """
     Compute photometry for all objects in the catalog for the given bands, including
@@ -134,6 +127,11 @@ def compute_dbk_phot_from_diffsky_mock(
         Whether or not to insert the computed photometry into the dataset. If true,
         returns a dataset with the photometry inserted as new columns. If false, return
         the data directly.
+    batch_size: int, default = 50
+        The number of systems to compute the photomtery for at once. Note this is NOT
+        the number of individual objects, but rather the number of central+satellite
+        groups that are computed per pass. If you find yourself running out of memory,
+        adjust this number down.
 
     Returns:
     --------
@@ -142,15 +140,16 @@ def compute_dbk_phot_from_diffsky_mock(
         insert = False, return the computed photometry directly.
 
     """
+    utils.validate_batch_size(batch_size)
 
     suffix = ""
     if set(bands).intersection(catalog.columns):
         suffix = "_new"
-    z_phot_tables = __get_z_phot_tables(catalog)
-    func = dbk_phot_from_mock._reproduce_mock_dbk_kern
+    z_phot_tables = utils.get_z_phot_tables(catalog)
+    func = dbk_photline_kernels._dbk_photline_kern_merging
     result = __run_photometry(
         func,
-        __unpack_dbk_photometry,
+        utils.unpack_dbk_photometry,
         catalog,
         aux_data,
         z_phot_tables,
@@ -171,7 +170,7 @@ def compute_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     insert: bool = True,
-    batch_size: int = -1,
+    batch_size: int = 25,
 ):
     """
     Compute SEDs for all objects in the catalog for the given bands.
@@ -190,6 +189,12 @@ def compute_seds_from_diffsky_mock(
         Whether or not to insert the computed photometry into the dataset. If true,
         returns a dataset with the photometry inserted as new columns. If false, return
         the data directly.
+    batch_size: int, default = 25
+        The number of systems to compute the SED for at once. Note this is NOT
+        the number of individual objects, but rather the number of central+satellite
+        groups that are computed per pass. If you find yourself running out of memory,
+        adjust this number down. Computing SEDs can take significantly more memory
+        than photometry.
 
     Returns:
     --------
@@ -198,22 +203,9 @@ def compute_seds_from_diffsky_mock(
         insert = False, return the computed photometry directly.
 
     """
+    utils.validate_batch_size(batch_size)
 
-    z_phot_tables = __get_z_phot_tables(catalog)
-    func = dbk_phot_from_mock._reproduce_mock_sed_kern
-    bands = ["lsst_u"]
-    result = __run_photometry(
-        func,
-        __unpack_seds,
-        catalog,
-        aux_data,
-        z_phot_tables,
-        bands,
-        None,
-        dbk=False,
-        insert=False,
-        batch_size=batch_size,
-    )
+    result = __run_sed_computation(catalog, aux_data, __compute_sed_managed, batch_size)
     if insert:
         return catalog.with_new_columns(**result)
     return result
@@ -223,7 +215,7 @@ def compute_dbk_seds_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     insert: bool = True,
-    batch_size: int = -1,
+    batch_size: int = 25,
 ):
     """
     Compute SEDs for all objects in the catalog for the given bands, including
@@ -243,6 +235,12 @@ def compute_dbk_seds_from_diffsky_mock(
         Whether or not to insert the computed photometry into the dataset. If true,
         returns a dataset with the photometry inserted as new columns. If false, return
         the data directly.
+    batch_size: int, default = 25
+        The number of systems to compute the SED for at once. Note this is NOT
+        the number of individual objects, but rather the number of central+satellite
+        groups that are computed per pass. If you find yourself running out of memory,
+        adjust this number down. Computing SEDs can take significanty more memory
+        than photometry.
 
     Returns:
     --------
@@ -253,74 +251,13 @@ def compute_dbk_seds_from_diffsky_mock(
 
 
     """
-    cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
-
-    bands = ["lsst_u"]
-    catalog = compute_dbk_phot_from_diffsky_mock(
-        catalog,
-        aux_data,
-        bands,
-        ["sfh_table", "lgmet_weights"],
-        insert=True,
-        batch_size=batch_size,
+    utils.validate_batch_size(batch_size)
+    result = __run_sed_computation(
+        catalog, aux_data, __compute_dbk_sed_managed, batch_size
     )
-
-    catalog = catalog.evaluate(
-        age_at_z_, vectorize=True, cosmology=cosmology_parameters, format="numpy"
-    )
-    components = ["disk", "bulge", "knots"]
-    bands = [f"{band}_{component}" for band in bands for component in components]
-
-    result = catalog.evaluate(
-        __compute_dbk_sed_managed,
-        ssp_data=aux_data["ssp_data"],
-        param_collection=aux_data["param_collection"],
-        cosmology=cosmology_parameters,
-        Ob0=catalog.cosmology.Ob0,
-        insert=False,
-        vectorize=True,
-        format="numpy",
-        batch_size=batch_size,
-    )
-    # drop new columns
-    if insert is True:
-        if "lsst_u_new" in catalog.columns:
-            catalog = catalog.drop("lsst_u_new")
-        else:
-            catalog = catalog.drop("lsst_u")
+    if insert:
         return catalog.with_new_columns(**result)
     return result
-
-
-def __unpack_photometry(data, band_names, suffix, *args):
-    return __unpack_photometry_array(data[0].obs_mags, band_names, suffix)
-
-
-def __unpack_dbk_photometry(data, band_names, suffix, include_extras):
-    (phot_info, _, _, obs_mag_bulge, obs_mag_disk, obs_mag_knots) = data
-    bulge_bands = [f"{bn}_bulge" for bn in band_names]
-    disk_bands = [f"{bn}_disk" for bn in band_names]
-    knot_bands = [f"{bn}_knots" for bn in band_names]
-
-    output = __unpack_photometry_array(obs_mag_bulge, bulge_bands, suffix)
-    output |= __unpack_photometry_array(obs_mag_disk, disk_bands, suffix)
-    output |= __unpack_photometry_array(obs_mag_knots, knot_bands, suffix)
-    if include_extras is not None:
-        phot_info = phot_info._asdict()
-        output |= {name: np.array(phot_info[name]) for name in include_extras}
-
-    return output
-
-
-def __unpack_photometry_array(data, band_names, suffix):
-    to_unpack = np.array(data).T
-    return {f"{name}{suffix}": to_unpack[i] for i, name in enumerate(band_names)}
-
-
-def __unpack_seds(data, band_names, *args):
-    phot_info, _, sed_kern_results = data
-    rest_sed = sed_kern_results[0]
-    return {"rest_sed": rest_sed}
 
 
 def __run_photometry(
@@ -334,7 +271,7 @@ def __run_photometry(
     dbk: bool,
     insert: bool = True,
     suffix: str = "",
-    batch_size: int = -1,
+    batch_size: int = 50,
 ):
     if "tcurves" not in aux_data:
         raise ValueError("Missing transmission curves in auxiliary data!")
@@ -350,7 +287,7 @@ def __run_photometry(
 
     wave_eff_tables = {}
     precomputed_ssp_mag_tables = {}
-    cosmology_parameters = __prep_cosmology_parameters(catalog.cosmology)
+    cosmology_parameters = utils.prep_cosmology_parameters(catalog.cosmology)
 
     for slice_name, z_phot_table in z_phot_tables.items():
         wave_eff_tables[slice_name] = phot_utils.get_wave_eff_table(
@@ -362,72 +299,123 @@ def __run_photometry(
             )
         )
     catalog = catalog.evaluate(
-        age_at_z_,
+        utils.age_at_z_,
         vectorize=True,
         cosmology=cosmology_parameters,
-        format="numpy",
+        format="jax",
     )
     if dbk:
         to_compute = __compute_dbk_photometry_managed
     else:
         to_compute = __compute_photometry_managed
 
-    return catalog.evaluate(
-        to_compute,
-        to_compute=function,
-        unpack_func=unpack_func,
-        band_names=band_names,
-        cosmology=cosmology_parameters,
-        ssp_data=aux_data["ssp_data"],
-        precomputed_ssp_mag_table=precomputed_ssp_mag_tables,
-        wave_eff_table=wave_eff_tables,
-        param_collection=aux_data["param_collection"],
-        z_phot_table=z_phot_tables,
-        Ob0=catalog.cosmology.Ob0,
-        include_extras=include_extras,
-        suffix=suffix,
-        insert=insert,
+    batches = utils.split_central_indices(catalog, batch_size)
+
+    chunked_output = []
+    for row_batch in batches:
+        batch_catalog = catalog.take_rows(row_batch)
+        batch_ssp_mag_table = {
+            k: v
+            for k, v in precomputed_ssp_mag_tables.items()
+            if k in batch_catalog.keys()
+        }
+        batch_wave_eff_table = {
+            k: v for k, v in wave_eff_tables.items() if k in batch_catalog.keys()
+        }
+        batch_z_phot_table = {
+            k: v for k, v in z_phot_tables.items() if k in batch_catalog.keys()
+        }
+        batch_output = catalog.take_rows(row_batch).evaluate(
+            to_compute,
+            to_compute=function,
+            unpack_func=unpack_func,
+            band_names=band_names,
+            cosmology=cosmology_parameters,
+            ssp_data=aux_data["ssp_data"],
+            precomputed_ssp_mag_table=batch_ssp_mag_table,
+            wave_eff_table=batch_wave_eff_table,
+            param_collection=aux_data["param_collection"],
+            z_phot_table=batch_z_phot_table,
+            Ob0=catalog.cosmology.Ob0,
+            include_extras=include_extras,
+            suffix=suffix,
+            insert=insert,
+            vectorize=True,
+            format="jax",
+            # batch_size=batch_size,
+        )
+        chunked_output.append(batch_output)
+    all_bands = chunked_output[0].keys()
+    output = {}
+
+    for band in all_bands:
+        output[band] = np.concatenate([o[band] for o in chunked_output])
+
+    input_gal_id = catalog.select("gal_id").get_data("numpy")
+    output_gal_id = output.pop("gal_id")
+    permutation = np.argsort(output_gal_id)[np.argsort(np.argsort(input_gal_id))]
+
+    return {name: band[permutation] for name, band in output.items()}
+
+
+def __run_sed_computation(
+    catalog: oc.Lightcone,
+    aux_data: dict,
+    to_compute: Callable,
+    batch_size: int = 50,
+):
+    cosmology_parameters = utils.prep_cosmology_parameters(catalog.cosmology)
+    catalog = catalog.evaluate(
+        utils.age_at_z_,
         vectorize=True,
-        format="numpy",
-        batch_size=batch_size,
+        cosmology=cosmology_parameters,
+        format="jax",
     )
 
+    batches = utils.split_central_indices(catalog, batch_size)
 
-def __prep_cosmology_parameters(cosmology):
-    try:
-        w0 = cosmology.wo
-        wa = cosmology.wa
-    except AttributeError:  # Why astropy... Why...
-        w0 = -1
-        wa = 0
-    Cosmology_t = namedtuple("Cosmology_t", ("Om0", "w0", "wa", "h"))
-    return Cosmology_t(cosmology.Om0, w0, wa, cosmology.h)
-
-
-def age_at_z_(redshift_true, cosmology):
-    result = {
-        "t_obs": np.array(
-            age_at_z(
-                redshift_true, cosmology.Om0, cosmology.w0, cosmology.wa, cosmology.h
-            )
+    chunked_output = []
+    for row_batch in batches:
+        batch_output = catalog.take_rows(row_batch).evaluate(
+            to_compute,
+            ssp_data=aux_data["ssp_data"],
+            param_collection=aux_data["param_collection"],
+            cosmology=cosmology_parameters,
+            Ob0=catalog.cosmology.Ob0,
+            insert=False,
+            vectorize=True,
+            format="jax",
         )
-    }
-    return result
+        chunked_output.append(batch_output)
+
+    all_keys = chunked_output[0].keys()
+    output = {}
+    for key in all_keys:
+        output[key] = np.concatenate([o[key] for o in chunked_output])
+
+    input_gal_id = catalog.select("gal_id").get_data("numpy")
+    output_gal_id = output.pop("gal_id")
+    permutation = np.argsort(output_gal_id)[np.argsort(np.argsort(input_gal_id))]
+
+    return {name: data[permutation] for name, data in output.items()}
 
 
-def __compute_dbk_sed_managed(
+def __compute_sed_managed(
     t_obs,
     mc_sfh_type,
-    fknot,
-    uran_fbulge,
     uran_av,
     uran_delta,
     uran_funo,
     uran_pburst,
+    uran_pmerge,
     logm0,
     logtc,
     early_index,
     late_index,
+    logmp_infall,
+    logmhost_infall,
+    central,
+    top_host_idx,
     t_peak,  # diffmah params
     lgmcrit,
     lgy_at_mcrit,
@@ -439,14 +427,12 @@ def __compute_dbk_sed_managed(
     lg_rejuv,  # Q params
     delta_mag_ssp_scatter,
     redshift_true,
+    gal_id,
     ssp_data,
     param_collection,
     cosmology,
     Ob0,
-    suffix="",
 ):
-
-    mc_is_q = mc_sfh_type == 0
     mah_params = DiffmahParams(
         logm0=logm0,
         logtc=logtc,
@@ -464,16 +450,18 @@ def __compute_dbk_sed_managed(
         lg_drop=lg_drop,
         lg_rejuv=lg_rejuv,
     )
+    mc_is_q = mc_sfh_type == 0
 
+    phot_randoms = mc_randoms.PhotRandoms(
+        mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
+    )
+    merging_randoms = mc_randoms.DiffMergeRandoms(uran_pmerge)
+
+    sat_weights = jnp.ones(len(redshift_true))
+    mc_merge = 1
     args = (
-        mc_is_q,
-        uran_av,
-        uran_delta,
-        uran_funo,
-        uran_pburst,
-        delta_mag_ssp_scatter,
-        uran_fbulge,
-        fknot,
+        phot_randoms,
+        merging_randoms,
         sfh_params,
         redshift_true,
         t_obs,
@@ -483,16 +471,114 @@ def __compute_dbk_sed_managed(
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
+        param_collection.merging_params,
         cosmology,
         Ob0 / cosmology.Om0,
+        logmp_infall,
+        logmhost_infall,
+        t_peak,
+        central,
+        sat_weights,
+        top_host_idx,
+        mc_merge,
     )
-    sed_info, dbk_weights = dbk_specphot_kernels._dbk_sed_kern(*args)
+    sed_info = sed_kernels._sed_kern(*args)
+    return {"rest_sed": sed_info.rest_sed, "gal_id": gal_id}
 
-    dbk_sed_info = {}
-    dbk_sed_info["rest_sed_bulge"] = sed_info.rest_sed_bulge
-    dbk_sed_info["rest_sed_disk"] = sed_info.rest_sed_disk
-    dbk_sed_info["rest_sed_knots"] = sed_info.rest_sed_knots
-    return dbk_sed_info
+
+def __compute_dbk_sed_managed(
+    t_obs,
+    mc_sfh_type,
+    fknot,
+    uran_fbulge,
+    uran_av,
+    uran_delta,
+    uran_funo,
+    uran_pburst,
+    uran_pmerge,
+    logm0,
+    logtc,
+    early_index,
+    late_index,
+    logmp_infall,
+    logmhost_infall,
+    central,
+    top_host_idx,
+    t_peak,  # diffmah params
+    lgmcrit,
+    lgy_at_mcrit,
+    indx_lo,
+    indx_hi,  # ms params
+    lg_qt,
+    qlglgdt,
+    lg_drop,
+    lg_rejuv,  # Q params
+    delta_mag_ssp_scatter,
+    redshift_true,
+    gal_id,
+    ssp_data,
+    param_collection,
+    cosmology,
+    Ob0,
+):
+    mah_params = DiffmahParams(
+        logm0=logm0,
+        logtc=logtc,
+        early_index=early_index,
+        late_index=late_index,
+        t_peak=t_peak,
+    )
+    sfh_params = DiffstarParams(
+        lgmcrit=lgmcrit,
+        lgy_at_mcrit=lgy_at_mcrit,
+        indx_lo=indx_lo,
+        indx_hi=indx_hi,
+        lg_qt=lg_qt,
+        qlglgdt=qlglgdt,
+        lg_drop=lg_drop,
+        lg_rejuv=lg_rejuv,
+    )
+    mc_is_q = mc_sfh_type == 0
+
+    phot_randoms = mc_randoms.PhotRandoms(
+        mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
+    )
+    dbk_randoms = mc_randoms.DBKRandoms(fknot, uran_fbulge)
+    merging_randoms = mc_randoms.DiffMergeRandoms(uran_pmerge)
+
+    sat_weights = jnp.ones(len(redshift_true))
+    mc_merge = 1
+    args = (
+        phot_randoms,
+        dbk_randoms,
+        merging_randoms,
+        sfh_params,
+        redshift_true,
+        t_obs,
+        mah_params,
+        ssp_data,
+        param_collection.mzr_params,
+        param_collection.spspop_params,
+        param_collection.scatter_params,
+        param_collection.ssperr_params,
+        param_collection.merging_params,
+        cosmology,
+        Ob0 / cosmology.Om0,
+        logmp_infall,
+        logmhost_infall,
+        t_peak,
+        central,
+        sat_weights,
+        top_host_idx,
+        mc_merge,
+    )
+    sed_info = dbk_sed_kernels._dbk_sed_kern(*args)
+    return {
+        "rest_sed_bulge": sed_info.rest_sed_bulge,
+        "rest_sed_disk": sed_info.rest_sed_disk,
+        "rest_sed_knots": sed_info.rest_sed_knots,
+        "gal_id": gal_id,
+    }
 
 
 def __compute_photometry_managed(
@@ -503,12 +589,17 @@ def __compute_photometry_managed(
     logtc,
     early_index,
     late_index,
+    logmp_infall,
+    logmhost_infall,
+    central,
     t_peak,  # diffmah params
+    t_obs,
     lgmcrit,
     lgy_at_mcrit,
     indx_lo,
     indx_hi,  # ms params
     lg_qt,
+    uran_pmerge,
     qlglgdt,
     lg_drop,
     lg_rejuv,  # Q params
@@ -518,9 +609,10 @@ def __compute_photometry_managed(
     uran_pburst,
     delta_mag_ssp_scatter,  # randoms
     redshift_true,
-    t_obs,
+    top_host_idx,
     mc_sfh_type,
     ssp_data,
+    gal_id,
     precomputed_ssp_mag_table,
     z_phot_table,
     wave_eff_table,
@@ -548,15 +640,22 @@ def __compute_photometry_managed(
         lg_drop=lg_drop,
         lg_rejuv=lg_rejuv,
     )
+    dummy_frac_q = jnp.ones(mc_is_q.size)
+    diffstarpop_results_mock = DiffstarPopResultsMock(
+        sfh_params, sfh_params, sfh_params, mc_is_q, dummy_frac_q
+    )
 
+    phot_randoms = mc_randoms.PhotRandoms(
+        mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
+    )
+    merging_randoms = mc_randoms.DiffMergeRandoms(uran_pmerge)
+
+    sat_weights = jnp.ones(len(redshift_true))
+    mc_merge = 1
     args = (
-        mc_is_q,
-        uran_av,
-        uran_delta,
-        uran_funo,
-        uran_pburst,
-        delta_mag_ssp_scatter,
-        sfh_params,
+        phot_randoms,
+        merging_randoms,
+        diffstarpop_results_mock,
         redshift_true,
         t_obs,
         mah_params,
@@ -568,11 +667,19 @@ def __compute_photometry_managed(
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
+        param_collection.merging_params,
         cosmology,
         Ob0 / cosmology.Om0,
+        logmp_infall,
+        logmhost_infall,
+        t_peak,
+        central,
+        sat_weights,
+        top_host_idx,
+        mc_merge,
     )
     result = to_compute(*args)
-    return unpack_func(result, band_names, suffix, include_extras)
+    return unpack_func(result, band_names, suffix, gal_id, include_extras)
 
 
 def __compute_dbk_photometry_managed(
@@ -583,6 +690,10 @@ def __compute_dbk_photometry_managed(
     logtc,
     early_index,
     late_index,
+    logmp_infall,
+    logmhost_infall,
+    central,
+    top_host_idx,
     t_peak,  # diffmah params
     lgmcrit,
     lgy_at_mcrit,
@@ -597,12 +708,14 @@ def __compute_dbk_photometry_managed(
     uran_funo,
     uran_pburst,
     uran_fbulge,
+    uran_pmerge,
     delta_mag_ssp_scatter,  # randoms
     redshift_true,
     t_obs,
     mc_sfh_type,
     fknot,
     ssp_data,
+    gal_id,
     precomputed_ssp_mag_table,
     z_phot_table,
     wave_eff_table,
@@ -630,30 +743,47 @@ def __compute_dbk_photometry_managed(
         lg_drop=lg_drop,
         lg_rejuv=lg_rejuv,
     )
+    dummy_frac_q = jnp.ones(mc_is_q.size)
+    diffstarpop_results_mock = DiffstarPopResultsMock(
+        sfh_params, sfh_params, sfh_params, mc_is_q, dummy_frac_q
+    )
+
+    phot_randoms = mc_randoms.PhotRandoms(
+        mc_is_q, uran_av, uran_delta, uran_funo, uran_pburst, delta_mag_ssp_scatter
+    )
+    dbk_randoms = mc_randoms.DBKRandoms(fknot, uran_fbulge)
+    merging_randoms = mc_randoms.DiffMergeRandoms(uran_pmerge)
+    line_wave_table = jnp.array(ssp_data.ssp_emline_wave)
+    sat_weights = jnp.ones(len(t_obs))
+    mc_merge = 1
 
     args = (
-        mc_is_q,
-        uran_av,
-        uran_delta,
-        uran_funo,
-        uran_pburst,
-        delta_mag_ssp_scatter,
-        sfh_params,
+        phot_randoms,
+        diffstarpop_results_mock,
+        dbk_randoms,
+        merging_randoms,
         redshift_true,
         t_obs,
         mah_params,
-        fknot,
-        uran_fbulge,
         ssp_data,
         precomputed_ssp_mag_table,
         z_phot_table,
         wave_eff_table,
+        line_wave_table,
         param_collection.mzr_params,
         param_collection.spspop_params,
         param_collection.scatter_params,
         param_collection.ssperr_params,
+        param_collection.merging_params,
         cosmology,
         Ob0 / cosmology.Om0,
+        logmp_infall,
+        logmhost_infall,
+        t_peak,
+        central,
+        sat_weights,
+        top_host_idx,
+        mc_merge,
     )
     result = to_compute(*args)
-    return unpack_func(result, band_names, suffix, include_extras)
+    return unpack_func(result, band_names, suffix, gal_id, include_extras)

@@ -11,7 +11,7 @@ from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
 from jax import numpy as jnp
 
-from ..phot_utils import get_wave_eff_table
+from ..utils.phot_utils import get_wave_eff_table
 from . import precompute_ssp_phot as psspp
 
 N_SFH_TABLE = 100

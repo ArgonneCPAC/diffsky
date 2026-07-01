@@ -1,3 +1,16 @@
+0.3.7 (Unreleased)
+-------------------
+- Reinstate OpenCosmo docs (https://github.com/ArgonneCPAC/diffsky/pull/439)
+- Migrate top-level modules into subdirectories
+    - phot_utils.py: https://github.com/ArgonneCPAC/diffsky/pull/449
+    - soft_histograms: https://github.com/ArgonneCPAC/diffsky/pull/450
+
+
+0.3.6 (2026-06-12)
+-------------------
+- Version of code used to produce cosmos_260316_06_05_2026
+
+
 0.3.5 (2026-05-29)
 -------------------
 - Update requirements for dsps>=0.4.8 and diffstar>=1.0.3 (https://github.com/ArgonneCPAC/diffsky/pull/428)

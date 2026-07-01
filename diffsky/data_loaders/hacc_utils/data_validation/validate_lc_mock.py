@@ -2,17 +2,16 @@
 
 import os
 from glob import glob
-from jax import vmap
+
 import h5py
 import numpy as np
 import yaml
 from dsps.photometry import photometry_kernels as phk
-
+from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper as dpw
 from .. import lc_mock as lcmp
-from .. import sed_from_mock
-from .. import load_flat_hdf5, load_lc_cf, load_lc_mock
+from .. import lightcone_utils, load_flat_hdf5, load_lc_cf, load_lc_mock, sed_from_mock
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
 REQUIRED_SOFTWARE_VERSION_INFO = (
@@ -29,7 +28,7 @@ BNPAT_LC_MOCK = "data-{0}.{1}.diffsky_gals.hdf5"
 YAML_REQ_LIST = ("drn_out", "z_min", "z_max")
 HLINE = "----------"
 
-
+BNAME_LC_PATCH_DECOMPOSITION = "lc_cores-decomposition.txt"
 BATCH_SIZE = 50
 
 
@@ -248,6 +247,9 @@ def check_metadata(fn_lc_mock):
         msg.append(s)
         return msg
 
+    _msg = check_lc_cores_decomposition(fn_lc_mock)
+    msg.extend(_msg)
+
     # Check for `index` in metadata
     try:
         assert "index" in all_metadata.keys()
@@ -298,20 +300,31 @@ def check_metadata(fn_lc_mock):
             # Check z_phot_table is reasonable
             z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
             assert z_phot_table.size >= 2
-            # assert np.all(z_phot_table > -1)
-            # assert np.all(z_phot_table < 100)
-
-            # Check has ssp_data
-            # drn_mock = os.path.dirname(fn_lc_mock)
-            # check_has_ssp_data(drn_mock, mock_version_name)
-            # check_has_transmission_curves(drn_mock, mock_version_name)
-
-            # # Check has param_collection
-            # check_has_param_collection(drn_mock, mock_version_name)
+            assert np.all(z_phot_table > -1)
+            assert np.all(z_phot_table < 100)
 
         except:  # noqa
             s = "metadata is incorrect"
             msg.append(s)
+
+    return msg
+
+
+def check_lc_cores_decomposition(fn_lc_mock, bn=BNAME_LC_PATCH_DECOMPOSITION):
+    msg = []
+    drn_mock = os.path.dirname(fn_lc_mock)
+    fn = os.path.join(drn_mock, bn)
+    try:
+        assert os.path.isfile(fn)
+    except AssertionError:
+        s = f"{fn} is missing"
+        msg.append(s)
+
+    try:
+        lightcone_utils.read_lc_ra_dec_patch_decomposition(fn)
+    except:  # noqa
+        s = f"Failure to read {fn} with read_lc_ra_dec_patch_decomposition"
+        msg.append(s)
 
     return msg
 

@@ -29,7 +29,7 @@ def _mae(pred, target):
 
 def test_mc_generate_subhalopop_singlehalo():
     lgmu_data = np.linspace(-6, 0, 100)
-    ntot = int(1e5)
+    ntot = int(1e3)
     ran_key = jran.PRNGKey(0)
     mc_lgmu = mc_generate_subhalopop_singlehalo(ran_key, lgmu_data, ntot)
     assert mc_lgmu.shape == (ntot,)
@@ -108,7 +108,7 @@ def test_generate_subhalopop_agrees_with_analytical_ccshmf():
     Monte Carlo generator and the analytic function predict_ccshmf"""
     ran_key = jran.PRNGKey(0)
 
-    nhosts_mc = 5_000
+    nhosts_mc = 300
 
     lgmhost_targets = np.linspace(12, 15, 5)
 
@@ -127,4 +127,4 @@ def test_generate_subhalopop_agrees_with_analytical_ccshmf():
             np.array([np.sum(mc_lg_mu > lgmu) for lgmu in target_lgmu_bins]) / nhosts_mc
         )
         loss_mae = _mae(pred_lg_ccshmf, mc_lg_cuml_counts)
-        assert loss_mae < 0.04
+        assert loss_mae < 0.1

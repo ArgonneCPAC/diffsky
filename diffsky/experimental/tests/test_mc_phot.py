@@ -1,56 +1,108 @@
 """"""
 
-from collections import namedtuple
-
 import numpy as np
 from diffstar.diffstarpop.kernels.params import (
     DiffstarPop_Params_Diffstarpopfits_mgash as sfh_models,
 )
 from dsps.cosmology import DEFAULT_COSMOLOGY
-from dsps.data_loaders import load_emline_info as lemi
-from dsps.data_loaders.load_ssp_data import load_fake_ssp_data
 from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
 from jax import vmap
 
+from ...param_utils import diffsky_param_wrapper_merging as dpwm
 from .. import mc_phot
 from . import test_lightcone_generators as tlcg
-from . import test_mc_lightcone_halos as tmclh
 
 _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-def test_mc_lc_phot_changes_with_diffstarpop(num_halos=50):
+def check_phot_kern_results(phot_kern_results):
+    assert np.all(np.isfinite(phot_kern_results.obs_mags))
+    assert np.all(phot_kern_results.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7)
+
+    assert np.allclose(
+        np.sum(phot_kern_results.ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4
+    )
+    assert np.all(phot_kern_results.frac_ssp_errors > 0)
+    assert np.all(phot_kern_results.frac_ssp_errors < 5)
+
+
+def test_mc_lc_phot_changes_with_diffstarpop(num_halos=20):
     ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    phot_kern_results = mc_phot.mc_lc_phot(
-        ran_key, lc_data, diffstarpop_params=sfh_models["tng"]
-    )
-    phot_kern_results2 = mc_phot.mc_lc_phot(
-        ran_key, lc_data, diffstarpop_params=sfh_models["smdpl_dr1"]
-    )
-    assert not np.allclose(
-        phot_kern_results["obs_mags"], phot_kern_results2["obs_mags"], atol=0.1
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
     )
 
-    keys = list(phot_kern_results.keys())
-    phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
-    phot_kern_results2 = namedtuple("Results", keys)(**phot_kern_results2)
+    pc1 = dpwm.DEFAULT_PARAM_COLLECTION._replace(diffstarpop_params=sfh_models["tng"])
+    pc2 = dpwm.DEFAULT_PARAM_COLLECTION._replace(
+        diffstarpop_params=sfh_models["smdpl_dr1"]
+    )
+    mc_merge = 0
+    phot_kern_results = mc_phot.mc_lc_phot(
+        ran_key, lc_data, mc_merge, param_collection=pc1
+    )[0]
+    phot_kern_results2 = mc_phot.mc_lc_phot(
+        ran_key, lc_data, mc_merge, param_collection=pc2
+    )[0]
+
+    assert not np.allclose(
+        phot_kern_results.obs_mags, phot_kern_results2.obs_mags, atol=0.1
+    )
+
     check_phot_kern_results(phot_kern_results)
     check_phot_kern_results(phot_kern_results2)
 
-
-def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=50):
-    ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    phot_kern_results = mc_phot.mc_lc_phot(ran_key, lc_data)
-    sed_kern_results = mc_phot.mc_lc_sed(ran_key, lc_data)
-
-    phot_kern_results = namedtuple("Results", list(phot_kern_results.keys()))(
-        **phot_kern_results
+    # Enforce merging has non-trivial effect on photometry
+    assert not np.allclose(
+        phot_kern_results.obs_mags, phot_kern_results.obs_mags_in_situ
     )
-    rest_sed_recomputed = sed_kern_results["rest_sed"]
+    assert not np.allclose(
+        phot_kern_results.logsm_obs, phot_kern_results.logsm_obs_in_situ
+    )
+
+    # Enforce weighted photometry is not the same as unweighted
+    assert not np.allclose(
+        phot_kern_results.obs_mags_weighted, phot_kern_results.obs_mags
+    )
+    assert not np.allclose(
+        phot_kern_results.obs_mags_weighted, phot_kern_results.obs_mags
+    )
+
+
+def test_mc_lc_phot_agrees_with_mc_lc_photline(num_halos=20):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+
+    pc1 = dpwm.DEFAULT_PARAM_COLLECTION._replace()
+    mc_merge = 0
+    phot_kern_results = mc_phot.mc_lc_phot(
+        ran_key, lc_data, mc_merge, param_collection=pc1
+    )[0]
+    spec_phot_results = mc_phot.mc_lc_photline(
+        ran_key, lc_data, mc_merge, param_collection=pc1
+    )
+    check_phot_kern_results(phot_kern_results)
+    check_phot_kern_results(spec_phot_results)
+    assert np.allclose(phot_kern_results.obs_mags, spec_phot_results.obs_mags)
+
+
+def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=5):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    mc_merge = 0
+    p = dpwm.DEFAULT_PARAM_COLLECTION._replace()
+    phot_kern_results = mc_phot.mc_lc_phot(
+        ran_key, lc_data, mc_merge, param_collection=p
+    )[0]
+
+    sed_kern_results = mc_phot.mc_lc_sed(ran_key, lc_data, mc_merge, param_collection=p)
+
+    rest_sed_recomputed = sed_kern_results.rest_sed
 
     # Enforce agreement between precomputed vs exact magnitudes
     n_bands = phot_kern_results.obs_mags.shape[1]
@@ -73,10 +125,14 @@ def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=50):
         assert np.allclose(mags, phot_kern_results.obs_mags[:, iband], rtol=0.01)
 
 
-def test_mc_lc_dbk_phot(num_halos=50):
+def test_mc_lc_dbk_photline(num_halos=20):
     ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    dbk_phot_info = mc_phot.mc_lc_dbk_phot(ran_key, lc_data)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    mc_merge = 0
+    dbk_phot_info = mc_phot.mc_lc_dbk_photline(ran_key, lc_data, mc_merge)
+    dbk_phot_info = dbk_phot_info._asdict()
 
     np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_phot_info["mstar_bulge"]))
     np.all(dbk_phot_info["logsm_obs"] > np.log10(dbk_phot_info["mstar_disk"]))
@@ -112,75 +168,18 @@ def test_mc_lc_dbk_phot(num_halos=50):
     assert np.all(std_magdiff < 0.01)
 
 
-def check_phot_kern_results(phot_kern_results):
-    assert np.all(np.isfinite(phot_kern_results.obs_mags))
-    assert np.all(phot_kern_results.lgfburst[phot_kern_results.mc_sfh_type < 2] < -7)
-
-    assert np.allclose(
-        np.sum(phot_kern_results.ssp_weights, axis=(1, 2)), 1.0, rtol=1e-4
-    )
-    assert np.all(phot_kern_results.frac_ssp_errors > 0)
-    assert np.all(phot_kern_results.frac_ssp_errors < 5)
-
-
-def test_mc_lc_dbk_sed(num_halos=50):
-    ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
-    dbk_sed_info = mc_phot.mc_lc_dbk_sed(ran_key, lc_data)
-    assert np.all(np.isfinite(dbk_sed_info["rest_sed_bulge"]))
-    assert np.all(np.isfinite(dbk_sed_info["rest_sed_disk"]))
-    assert np.all(np.isfinite(dbk_sed_info["rest_sed_knots"]))
-
-
-def test_unweighted_mc_lc_dbk_sed():
-    ran_key = jran.key(0)
-    lc_data, tcurves = tmclh._get_unweighted_lc_data_for_unit_testing()
-    dbk_sed_info = mc_phot.mc_lc_dbk_sed(ran_key, lc_data)
-    assert np.all(np.isfinite(dbk_sed_info["rest_sed_bulge"]))
-    assert np.all(np.isfinite(dbk_sed_info["rest_sed_disk"]))
-    assert np.all(np.isfinite(dbk_sed_info["rest_sed_knots"]))
-
-
-def test_mc_lc_phot_agrees_with_mc_lc_specphot(num_halos=50):
-    ran_key = jran.key(0)
-    ssp_data = load_fake_ssp_data()
-
-    lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(
-        num_halos=num_halos, ssp_data=ssp_data
-    )
-
-    n_lines = 3
-    emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
-    ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
-    lc_data = lc_data._replace(ssp_data=ssp_data)
-    line_wave_table = np.array([line_wave for line_wave in ssp_data.ssp_emline_wave])
-
-    phot_kern_results = mc_phot.mc_lc_phot(
-        ran_key, lc_data, diffstarpop_params=sfh_models["tng"]
-    )
-    phot_kern_results2 = mc_phot.mc_lc_specphot(
-        ran_key, lc_data, line_wave_table, diffstarpop_params=sfh_models["smdpl_dr1"]
-    )
-    assert not np.allclose(
-        phot_kern_results["obs_mags"], phot_kern_results2["obs_mags"], atol=0.1
-    )
-
-    for emline_name in lc_data.ssp_data.ssp_emline_wave._fields:
-        assert np.all(np.isfinite(phot_kern_results2[emline_name]))
-
-
-def test_mc_lc_phot_merging(num_halos=100):
+def test_mc_lc_dbk_sed(num_halos=10):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )
-    phot_kern_results = mc_phot.mc_lc_phot_merging(ran_key, lc_data)
-    keys = list(phot_kern_results.keys())
-    phot_kern_results = namedtuple("Results", keys)(**phot_kern_results)
-    check_phot_kern_results(phot_kern_results)
-    assert not np.allclose(
-        phot_kern_results.obs_mags, phot_kern_results.obs_mags_in_situ
+    mc_merge = 0
+    dbk_sed_info = mc_phot.mc_lc_dbk_sed(ran_key, lc_data, mc_merge)
+    rest_sed_sum = (
+        dbk_sed_info.rest_sed_bulge
+        + dbk_sed_info.rest_sed_disk
+        + dbk_sed_info.rest_sed_knots
     )
-    assert not np.allclose(
-        phot_kern_results.logsm_obs, phot_kern_results.logsm_obs_in_situ
+    assert np.allclose(
+        np.log10(rest_sed_sum), np.log10(dbk_sed_info.rest_sed), atol=0.1
     )

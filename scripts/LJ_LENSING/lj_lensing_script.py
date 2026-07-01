@@ -9,9 +9,10 @@ import numpy as np
 path_maps = "/lcrc/project/cosmo_ai/prlarsen/LJ_lensingmaps/"
 path_gals = sys.argv[1]
 synthetic = sys.argv[2]
-patch_list = sys.argv[3]
+fn_patch_list = sys.argv[3]
 
-patch_list = np.loadtxt(patch_list).astype(int)
+patch_list = np.atleast_1d(np.loadtxt(fn_patch_list)).astype(int)
+assert len(patch_list) > 0, f"Must have at least one patch in {fn_patch_list}"
 
 step_list_gals = [
     "121",
@@ -77,9 +78,11 @@ step_list_gals = [
 step_list_gals = np.array(step_list_gals)[::-1]
 
 if synthetic == "S":
+    print("Running lensing on *.diffsky_gals.synthetic_halos.hdf5")
     path_end = ".diffsky_gals.synthetic_halos.hdf5"
 else:
     path_end = ".diffsky_gals.hdf5"
+    print("Running lensing on *.diffsky_gals.hdf5")
 
 
 mag_cols = []
@@ -101,7 +104,7 @@ for band in [
 ]:
     for comp in ["", "_bulge", "_disk", "_knots"]:
         mag_cols.append("roman_" + band + comp)
-flux_cols = ["Halpha", "OII", "OIII"]
+flux_cols = ["Ba_alpha_6563", "Ba_beta_4861"]
 
 step_max = np.array(
     [
