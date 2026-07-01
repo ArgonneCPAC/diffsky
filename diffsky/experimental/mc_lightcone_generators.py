@@ -4,8 +4,6 @@ need to calculate photometry and run gradient descents.
 MC lightcone version.
 """
 
-from collections import namedtuple
-
 from diffhalos.lightcone_generators import mc_lightcone as mcl
 from diffhalos.lightcone_generators import mc_lightcone_halos as mclh
 from diffmah import logmh_at_t_obs
@@ -13,9 +11,9 @@ from dsps.constants import T_TABLE_MIN
 from dsps.cosmology import flat_wcdm
 from jax import numpy as jnp
 
-from ..phot_utils import get_wave_eff_table
+from ..utils.phot_utils import get_wave_eff_table
 from . import precompute_ssp_phot as psspp
-from .lightcone_generators import passively_add_emlines_to_lc_data
+from .lightcone_generators import passively_add_emlines_to_lc_data, LCData, LCHalosData
 
 N_SFH_TABLE = 100
 
@@ -238,14 +236,10 @@ def mc_lc_photdata(
                 Base-10 log of z=0 age of the Universe for the input cosmology
 
             cen_weight: ndarray of shape (n_halos_tot, )
-
-                For centrals, cen_weight is determined by the halo mass function (HMF)
-                For satellites, cen_weight is HMF weight of the associated central
+                Equal to one for all halos in the mc version
 
             sat_weight: ndarray of shape (n_halos_tot, )
-                Multiplicity factor of the subhalo richness
-                Equals 1 for central halos
-                For subhalos, halopop.sat_weight = <Nsat(Msub) | Mhost>
+                Equal to one for all halos in the mc version
 
             nsub_per_host: int
                 number of subhalos per host halo
@@ -325,30 +319,3 @@ def mc_lc_photdata(
 
     lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
     return lc_data
-
-
-_LCDHKEYS = (
-    "cen_weight",
-    "z_obs",
-    "t_obs",
-    "logmp_obs",
-    "mah_params",
-    "logmp0",
-    "t_table",
-    "ssp_data",
-    "precomputed_ssp_mag_table",
-    "z_phot_table",
-    "wave_eff_table",
-)
-LCHalosData = namedtuple("LCHalosData", _LCDHKEYS)
-
-_LCDKEYS = (
-    *_LCDHKEYS,
-    "sat_weight",
-    "t_infall",
-    "logmp_infall",
-    "logmhost_infall",
-    "is_central",
-    "halo_indx",
-)
-LCData = namedtuple("LCHalosData", _LCDKEYS)
