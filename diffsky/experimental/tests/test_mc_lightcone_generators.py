@@ -15,12 +15,13 @@ from . import test_mc_phot as tmcp
 
 
 def _get_lc_photdata_for_unit_testing(
-    num_halos=75, n_lines=3, z_min=0.1, z_max=3.0, n_z_phot_table=15, ssp_data=None
+    n_lines=3, z_min=0.1, z_max=0.3, n_z_phot_table=15, ssp_data=None
 ):
     ran_key = jran.key(0)
 
-    lgmp_min, lgmp_max = 10.0, 15.0
-    sky_area_degsq = 100.0
+    lgmp_min = 13.0
+    lgmsub_min = 13.0
+    sky_area_degsq = 1.0
 
     if ssp_data is None:
         ssp_data = load_ssp_data.load_fake_ssp_data()
@@ -37,11 +38,10 @@ def _get_lc_photdata_for_unit_testing(
 
     args = (
         ran_key,
-        num_halos,
         z_min,
         z_max,
         lgmp_min,
-        lgmp_max,
+        lgmsub_min,
         sky_area_degsq,
         ssp_data,
         tcurves,
@@ -63,8 +63,7 @@ def _get_lc_photdata_for_unit_testing(
 
 
 def test_lc_photdata():
-    num_halos = 75
-    lc_data, tcurves = _get_lc_photdata_for_unit_testing(num_halos=num_halos)
+    lc_data, tcurves = _get_lc_photdata_for_unit_testing()
     n_tot = lc_data.z_obs.size
     shape_ntot_keys = (
         "z_obs",

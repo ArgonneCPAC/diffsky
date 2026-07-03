@@ -1,7 +1,5 @@
-"""
-Wrappers around diffhalos.lightcone_generators that computes additional data
-need to calculate photometry and run gradient descents.
-MC lightcone version.
+"""Wrappers around diffhalos.lightcone_generators that computes additional data
+need to calculate photometry and run gradient descents
 """
 
 from diffhalos.lightcone_generators import mc_lightcone as mcl
@@ -20,11 +18,9 @@ N_SFH_TABLE = 100
 
 def mc_lc_halos_photdata(
     ran_key,
-    num_halos,
     z_min,
     z_max,
     lgmp_min,
-    lgmp_max,
     sky_area_degsq,
     ssp_data,
     tcurves,
@@ -33,7 +29,7 @@ def mc_lc_halos_photdata(
     cosmo_params=flat_wcdm.PLANCK15,
 ):
     """
-    Generate a lightcone of host halos,
+    Generate a monte carlo lightcone of host halos,
     and additional data needed for photometry calculations.
 
     This function is a wrapper around
@@ -44,14 +40,11 @@ def mc_lc_halos_photdata(
     ran_key: jran.key
         random key
 
-    num_halos : int
-        Number of host halos in the weighted lightcone
-
     z_min, z_max : float
         min/max redshift
 
-    lgmp_min,lgmp_max : float
-        log10 of min/max halo mass in units of Msun
+    lgmp_min : float
+        log10 of min halo mass in units of Msun
 
     sky_area_degsq: float
         sky area in deg^2
@@ -116,8 +109,8 @@ def mc_lc_halos_photdata(
                 evaluated at each redshift in z_phot_table
 
     """
-    args = (ran_key, num_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
-    halopop = mclh.weighted_lc_halos(*args, logmp_cutoff=logmp_cutoff)
+    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
+    halopop = mclh.mc_lc_halos(*args, logmp_cutoff=logmp_cutoff)
 
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
@@ -148,11 +141,10 @@ def mc_lc_halos_photdata(
 
 def mc_lc_photdata(
     ran_key,
-    n_host_halos,
     z_min,
     z_max,
     lgmp_min,
-    lgmp_max,
+    lgmsub_min,
     sky_area_degsq,
     ssp_data,
     tcurves,
@@ -162,7 +154,7 @@ def mc_lc_photdata(
     logmp_cutoff=11.0,
 ):
     """
-    Generate a lightcone of host halos and subhalos,
+    Generate a monte carlo lightcone of host halos and subhalos,
     and additional data needed for photometry calculations.
 
     This function is a wrapper around
@@ -173,14 +165,14 @@ def mc_lc_photdata(
     ran_key: jran.key
         random key
 
-    n_host_halos : int
-        Number of host halos in the weighted lightcone
-
     z_min, z_max : float
         min/max redshift
 
-    lgmp_min,lgmp_max : float
-        log10 of min/max halo mass in units of Msun
+    lgmp_min : float
+        log10 of min of host halo mass in units of Msun
+
+    lgmsub_min : float
+        log10 of min of subhalo mass in units of Msun
 
     sky_area_degsq: float
         sky area in deg^2
@@ -269,21 +261,22 @@ def mc_lc_photdata(
                 evaluated at each redshift in z_phot_table
 
     """
-    args = (ran_key, n_host_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
-    halopop = mcl.weighted_lc(
-        *args, cosmo_params=cosmo_params, logmp_cutoff=logmp_cutoff
-    )
+    args = (ran_key, lgmp_min, lgmsub_min, z_min, z_max, sky_area_degsq)
+    halopop = mcl.mc_lc(*args, logmp_cutoff=logmp_cutoff)
+
+    is_central = halopop.central
+
+    n_host = sum(is_central == 1)
+    n_subs = sum(is_central == 0)
 
     logmp_infall = halopop.logmp_obs
 
-    n_subhalos = halopop.z_obs.size - n_host_halos
-    is_central = jnp.concatenate((jnp.ones(n_host_halos), jnp.zeros(n_subhalos)))
     is_central = is_central.astype(int)
     mah_params_host = halopop.mah_params._make(
         [x[halopop.halo_indx] for x in halopop.mah_params]
     )
 
-    n_tot = n_host_halos + n_subhalos
+    n_tot = n_host + n_subs
     t0 = flat_wcdm.age_at_z0(*cosmo_params)
     t_infall = jnp.where(is_central, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak)
 
