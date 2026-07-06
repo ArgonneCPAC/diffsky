@@ -9,10 +9,10 @@ from jax import vmap
 
 from .. import ellipse_proj_kernels as eproj
 
-EllipsoidParams = namedtuple("EllipsoidParams", ("a", "b", "c", "mu", "phi"))
+EllipsoidParams = namedtuple("EllipsoidParams", ("a", "b", "c", "mu", "phi", "omega"))
 
 
-def generate_test_ellipse_params(ran_key, n, ba_ratio_max=100.0, cb_ratio_max=100.0):
+def generate_test_ellipse_params(ran_key, n, ba_ratio_max=50.0, cb_ratio_max=50.0):
 
     a = np.ones(n)
 
@@ -28,15 +28,18 @@ def generate_test_ellipse_params(ran_key, n, ba_ratio_max=100.0, cb_ratio_max=10
     ran_key, phi_key = jran.split(ran_key, 2)
     phi = jran.uniform(phi_key, minval=0, maxval=2 * np.pi, shape=(n,))
 
-    return EllipsoidParams(a, b, c, mu, phi)
+    ran_key, omega_key = jran.split(ran_key, 2)
+    omega = jran.uniform(omega_key, minval=0, maxval=2 * np.pi, shape=(n,))
+
+    return EllipsoidParams(a, b, c, mu, phi, omega)
 
 
 def test_3d_ellipse_params():
     """Reimplement _calculate_ellipse2d_axes and manually enforce agreement"""
     ran_key = jran.key(0)
     npts = 500_000
-    a, b, c, mu, phi = generate_test_ellipse_params(ran_key, npts)
-    _2d_params = eproj._compute_2d_ellipse_params(a, b, c, mu, phi)
+    a, b, c, mu, phi, omega = generate_test_ellipse_params(ran_key, npts)
+    _2d_params = eproj._compute_2d_ellipse_params(a, b, c, mu, phi, omega)
     for p in _2d_params:
         assert np.all(np.isfinite(p))
 
@@ -53,7 +56,7 @@ def test_3d_ellipse_params():
 
     # Enforce agreement with manually recomputed params above
     # Also enforces existence of fields for A, B, C
-    ellipse2d = eproj.compute_ellipse2d(a, b, c, mu, phi)
+    ellipse2d = eproj.compute_ellipse2d(a, b, c, mu, phi, omega)
     assert np.allclose(ellipse2d.A, A)
     assert np.allclose(ellipse2d.B, B)
     assert np.allclose(ellipse2d.C, C)
@@ -63,8 +66,8 @@ def test_projected_beta_alpha_respect_mathematical_bounds():
     """Enforce beta and alpha respect mathematical bounds"""
     ran_key = jran.key(0)
     npts = 500_000
-    a, b, c, mu, phi = generate_test_ellipse_params(ran_key, npts)
-    ellipse2d = eproj.compute_ellipse2d(a, b, c, mu, phi)
+    a, b, c, mu, phi, omega = generate_test_ellipse_params(ran_key, npts)
+    ellipse2d = eproj.compute_ellipse2d(a, b, c, mu, phi, omega)
     assert np.all(np.isfinite(ellipse2d.ellipticity))
 
     # Enforce alpha is finite
@@ -86,30 +89,26 @@ def test_projected_beta_alpha_respect_mathematical_bounds():
     assert np.any(ellipse2d.beta < ellipse2d.alpha)
 
 
-def test_calculate_ellipse2d_omega_respect_mathematical_bounds():
-    """Enforce angle omega in xy-plane respects mathematical bounds"""
+def test_calculate_ellipse2d_psi_respect_mathematical_bounds():
+    """Enforce angle psi in the uv-plane respects mathematical bounds"""
     ran_key = jran.key(0)
     npts = 500_000
-    a, b, c, mu, phi = generate_test_ellipse_params(ran_key, npts)
-    ellipse2d = eproj.compute_ellipse2d(a, b, c, mu, phi)
+    a, b, c, mu, phi, omega = generate_test_ellipse_params(ran_key, npts)
+    ellipse2d = eproj.compute_ellipse2d(a, b, c, mu, phi, omega)
     assert np.all(np.isfinite(ellipse2d.psi))
-    assert np.all(ellipse2d.psi >= -np.pi)
-    assert np.all(ellipse2d.psi <= np.pi)
+    assert np.all(ellipse2d.psi >= -np.pi / 2)
+    assert np.all(ellipse2d.psi < np.pi / 2)
 
-    omega = eproj._calculate_ellipse2d_omega(ellipse2d.A, ellipse2d.B, ellipse2d.C)
-    assert np.all(np.isfinite(omega))
-    assert np.all(omega >= -np.pi / 2)
-    assert np.all(omega <= np.pi / 2)
-
-    assert np.allclose(2 * omega, ellipse2d.psi)
+    psi = eproj._calculate_ellipse2d_psi(ellipse2d.A, ellipse2d.B, ellipse2d.C)
+    assert np.allclose(psi, ellipse2d.psi)
 
 
 def test_projected_ellipse_axis_vectors_respect_mathematical_bounds():
     """Enforce ellipse axis vectors respect mathematical bounds"""
     ran_key = jran.key(0)
     npts = 50_000
-    a, b, c, mu, phi = generate_test_ellipse_params(ran_key, npts)
-    ellipse2d = eproj.compute_ellipse2d(a, b, c, mu, phi)
+    a, b, c, mu, phi, omega = generate_test_ellipse_params(ran_key, npts)
+    ellipse2d = eproj.compute_ellipse2d(a, b, c, mu, phi, omega)
 
     assert np.allclose(np.sum(ellipse2d.e_alpha**2, axis=1), 1.0)
     assert np.allclose(np.sum(ellipse2d.e_beta**2, axis=1), 1.0)
