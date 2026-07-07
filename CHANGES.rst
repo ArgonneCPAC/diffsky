@@ -4,6 +4,7 @@
 - Migrate top-level modules into subdirectories
     - phot_utils.py: https://github.com/ArgonneCPAC/diffsky/pull/449
     - soft_histograms: https://github.com/ArgonneCPAC/diffsky/pull/450
+- Fix bug in `ra, dec`. This bug created a 180 degree offset in RA/phi co-ordinates, which rotated the galaxies away from the dark matter, leading to zero gg-lensing signal (https://github.com/ArgonneCPAC/diffsky/pull/456)
 
 
 0.3.6 (2026-06-12)

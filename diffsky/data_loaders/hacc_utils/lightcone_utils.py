@@ -114,7 +114,7 @@ def get_theta_phi(x, y, z):
     rsq = x * x + y * y + z * z
     r = jnp.sqrt(rsq)
     theta = jnp.arccos(z / r)
-    phi = jnp.arctan2(y, x) + jnp.pi
+    phi = jnp.mod(jnp.arctan2(y, x), 2 * jnp.pi)
     return theta, phi
 
 
@@ -149,8 +149,8 @@ def get_xyz_mpc(ra, dec, redshift, cosmo_params):
     )
     theta, phi = get_theta_phi_from_ra_dec(ra, dec)
 
-    x_mpc = r_mpc * jnp.sin(theta) * jnp.cos(phi - jnp.pi)
-    y_mpc = r_mpc * jnp.sin(theta) * jnp.sin(phi - jnp.pi)
+    x_mpc = r_mpc * jnp.sin(theta) * jnp.cos(phi)
+    y_mpc = r_mpc * jnp.sin(theta) * jnp.sin(phi)
     z_mpc = r_mpc * jnp.cos(theta)
 
     return x_mpc, y_mpc, z_mpc
