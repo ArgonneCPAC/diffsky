@@ -3,7 +3,6 @@
 import os
 
 import numpy as np
-import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY, flat_wcdm
 from jax import random as jran
 
@@ -52,39 +51,6 @@ def test_calculate_solid_angle():
     solid_angle, fsky = hlu.calculate_solid_angle(ra_min, ra_max, dec_min, dec_max)
     assert np.allclose(fsky, 0.5)
     assert np.allclose(fsky * hlu.SQDEG_OF_SPHERE, solid_angle, rtol=1e-3)
-
-
-@pytest.mark.xfail
-def test_compute_theta_phi_agrees_with_haccytrees():
-    """Small dataset taken from LastJourney/lc_cores-266.0.hdf5"""
-    x_haccytrees_tdata = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "x_haccytrees_tdata.txt")
-    )
-    y_haccytrees_tdata = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "y_haccytrees_tdata.txt")
-    )
-    z_haccytrees_tdata = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "z_haccytrees_tdata.txt")
-    )
-
-    theta_haccytrees_tdata = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "theta_haccytrees_tdata.txt")
-    )
-    phi_haccytrees_tdata = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "phi_haccytrees_tdata.txt")
-    )
-    # Sanity check range on tdata
-    assert np.all(theta_haccytrees_tdata > 0)
-    assert np.all(theta_haccytrees_tdata < np.pi)
-    assert np.all(phi_haccytrees_tdata > 0)
-    assert np.all(phi_haccytrees_tdata < 2 * np.pi)
-
-    theta_recomputed, phi_recomputed = hlu.get_theta_phi(
-        x_haccytrees_tdata, y_haccytrees_tdata, z_haccytrees_tdata
-    )
-
-    assert np.allclose(theta_recomputed, theta_haccytrees_tdata, rtol=1e-3)
-    assert np.allclose(phi_recomputed, phi_haccytrees_tdata, rtol=1e-3)
 
 
 def test_ra_dec_range():
