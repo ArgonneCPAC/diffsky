@@ -114,7 +114,7 @@ def get_theta_phi(x, y, z):
     rsq = x * x + y * y + z * z
     r = jnp.sqrt(rsq)
     theta = jnp.arccos(z / r)
-    phi = jnp.arctan2(y, x) + jnp.pi
+    phi = jnp.mod(jnp.arctan2(y, x), 2 * jnp.pi)
     return theta, phi
 
 
