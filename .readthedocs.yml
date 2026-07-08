@@ -44,8 +44,8 @@ build:
       - cp docs/source/mock_download_dir/diffsky_*.hdf5 docs/source/oc_download_dir/
       - cp docs/source/mock_download_dir/lc_cores-decomposition.txt docs/source/oc_download_dir/
 
-environment:
-    DSPS_DRN: "dsps_drn"
+  environment:
+      DSPS_DRN: "dsps_drn"
 
 conda:
   environment: docs/source/rtd_environment.yaml
