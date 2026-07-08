@@ -45,3 +45,4 @@ There is a tutorials for each form of generator below.
     :maxdepth: 1
 
     demo_diffsky_lightcone.ipynb
+    demo_mc_lightcone.ipynb
