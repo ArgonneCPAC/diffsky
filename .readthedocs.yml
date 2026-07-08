@@ -10,14 +10,14 @@ build:
   jobs:
     pre_build:
       # Download DSPS SSP data and LSST filter curves
-      - mkdir -p dsps_drn/filters
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/ssp-data-v1/fsps_v0.4.7_mist_c3k_a_kroupa_wNE_logGasU-2.0_logGasZ0.0.sparse.h5 -P dsps_drn
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_u_transmission.h5 -P dsps_drn/filters
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_g_transmission.h5 -P dsps_drn/filters
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_r_transmission.h5 -P dsps_drn/filters
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_i_transmission.h5 -P dsps_drn/filters
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_z_transmission.h5 -P dsps_drn/filters
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_y_transmission.h5 -P dsps_drn/filters
+      - mkdir -p docs/source/dsps_drn/filters
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/ssp-data-v1/fsps_v0.4.7_mist_c3k_a_kroupa_wNE_logGasU-2.0_logGasZ0.0.sparse.h5 -P docs/source/dsps_drn
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_u_transmission.h5 -P docs/source/dsps_drn/filters
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_g_transmission.h5 -P docs/source/dsps_drn/filters
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_r_transmission.h5 -P docs/source/dsps_drn/filters
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_i_transmission.h5 -P docs/source/dsps_drn/filters
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_z_transmission.h5 -P docs/source/dsps_drn/filters
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_y_transmission.h5 -P docs/source/dsps_drn/filters
       - export DSPS_DRN="dsps_drn"
 
       # Download a pre-computed example mock for use in demo notebooks
@@ -43,9 +43,6 @@ build:
       - diffpipe run docs/source/mock_download_dir docs/source/oc_download_dir -n 2
       - cp docs/source/mock_download_dir/diffsky_*.hdf5 docs/source/oc_download_dir/
       - cp docs/source/mock_download_dir/lc_cores-decomposition.txt docs/source/oc_download_dir/
-
-  environment:
-      DSPS_DRN: "dsps_drn"
 
 conda:
   environment: docs/source/rtd_environment.yaml
