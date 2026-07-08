@@ -11,7 +11,7 @@ from jax import numpy as jnp
 
 from ..utils.phot_utils import get_wave_eff_table
 from . import precompute_ssp_phot as psspp
-from .lightcone_generators import passively_add_emlines_to_lc_data, LCData, LCHalosData
+from .lightcone_generators import LCData, LCHalosData, passively_add_emlines_to_lc_data
 
 N_SFH_TABLE = 100
 
@@ -308,6 +308,7 @@ def mc_lc_photdata(
         logmhost_infall,
         is_central,
         halopop.halo_indx,
+        halopop.halo_weight,
     )
 
     lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)

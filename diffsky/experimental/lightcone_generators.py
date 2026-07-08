@@ -318,6 +318,7 @@ def weighted_lc_photdata(
         logmhost_infall,
         is_central,
         halopop.halo_indx,
+        halopop.halo_weight,
     )
 
     lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
@@ -374,5 +375,6 @@ _LCDKEYS = (
     "logmhost_infall",
     "is_central",
     "halo_indx",
+    "halo_weight",
 )
 LCData = namedtuple("LCHalosData", _LCDKEYS)
