@@ -24,7 +24,7 @@ import h5py
 import jax
 import numpy as np
 import yaml
-from dsps.data_loaders.load_emline_info import get_subset_emline_data
+from dsps.data_loaders import load_emline_info
 from jax import random as jran
 from mpi4py import MPI
 
@@ -74,6 +74,8 @@ ROMAN_FILTER_NICKNAMES = (
 )
 OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES, *ROMAN_FILTER_NICKNAMES)
 OUTPUT_LINE_NICKNAMES = ("Ba_alpha_6563", "Ba_beta_4861")
+_THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
+FN_GRS_PIT_EMLINE_INFO = os.path.join(_THIS_DRNAME, "emlines_info_grs_pit.dat")
 
 SSP_SED_BNAME = "fsps_v0.4.7_mist_c3k_a_kroupa_wNE_logGasU-2.0_logGasZ0.0.h5"
 
@@ -132,6 +134,7 @@ if __name__ == "__main__":
     no_sed = config.get("no_sed", False)
     incl_in_situ = config.get("incl_in_situ", False)
     bn_ssp_data = config.get("bn_ssp_data", SSP_SED_BNAME)
+    emline_names = config.get("emline_names", OUTPUT_LINE_NICKNAMES)
 
     if cl_args.synthetic_cores != -1:
         # override the yaml file (convenient for job submission scripts)
@@ -173,6 +176,10 @@ if __name__ == "__main__":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
 
+    if emline_names == "roman_grs_pit":
+        emline_dict = load_emline_info.read_emlines_info_fsps(FN_GRS_PIT_EMLINE_INFO)
+        emline_names = list(emline_dict.keys())
+
     ran_key = jran.key(rank)
 
     sim_info = load_lc_cf.get_diffsky_info_from_hacc_sim(sim_name)
@@ -205,10 +212,10 @@ if __name__ == "__main__":
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
     ssp_data = load_ssp_templates(bn=bn_ssp_data)
-    ssp_data = get_subset_emline_data(ssp_data, OUTPUT_LINE_NICKNAMES)
+    ssp_data = load_emline_info.get_subset_emline_data(ssp_data, emline_names)
 
     # Check that the SSP data includes all necessary lines
-    for line_name in OUTPUT_LINE_NICKNAMES:
+    for line_name in emline_names:
         assert line_name in ssp_data.ssp_emline_wave._fields
 
     param_collection = COSMOS_PARAM_FITS_MERGING[cosmos_fit]
@@ -392,7 +399,7 @@ if __name__ == "__main__":
                         lc_data_batch,
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
-                        OUTPUT_LINE_NICKNAMES,
+                        emline_names,
                         incl_in_situ=incl_in_situ,
                     )
                 else:
@@ -402,7 +409,7 @@ if __name__ == "__main__":
                         lc_data_batch,
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
-                        OUTPUT_LINE_NICKNAMES,
+                        emline_names,
                         incl_in_situ=incl_in_situ,
                     )
 
@@ -471,7 +478,7 @@ if __name__ == "__main__":
             mock_version_name,
             z_phot_table,
             OUTPUT_FILTER_NICKNAMES,
-            OUTPUT_LINE_NICKNAMES,
+            emline_names,
             exclude_colnames=exclude_colnames,
             no_dbk=no_dbk,
             incl_in_situ=incl_in_situ,
