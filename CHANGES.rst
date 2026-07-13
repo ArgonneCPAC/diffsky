@@ -6,6 +6,8 @@
     - soft_histograms: https://github.com/ArgonneCPAC/diffsky/pull/450
 - Fix bug in `ra, dec`. This bug created a 180 degree offset in RA/phi co-ordinates, which rotated the galaxies away from the dark matter, leading to zero gg-lensing signal (https://github.com/ArgonneCPAC/diffsky/pull/456)
 - Add documentation of Monte Carlo lightcone generators based on diffhalos (https://github.com/ArgonneCPAC/diffsky/pull/458)
+- Ship physical km/s peculiar velocity instead of comoving km/s (https://github.com/ArgonneCPAC/diffsky/pull/464)
+- Remove obsolete prototype calibrations and bring in new models (https://github.com/ArgonneCPAC/diffsky/pull/466)
 
 0.3.6 (2026-06-12)
 -------------------
