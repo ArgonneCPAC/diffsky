@@ -260,20 +260,11 @@ def add_metadata_posvel_columns(metadata):
 
     metadata["vpec"] = (
         str(u.km / u.s),
-        "Comoving peculiar velocity along line-of-sight to galaxy",
+        "Peculiar line-of-sight velocity in physical km/s",
     )
-    metadata["vx"] = (
-        str(u.km / u.s),
-        "Comoving peculiar velocity in Cartesian x-direction",
-    )
-    metadata["vy"] = (
-        str(u.km / u.s),
-        "Comoving peculiar velocity in Cartesian y-direction",
-    )
-    metadata["vz"] = (
-        str(u.km / u.s),
-        "Comoving peculiar velocity in Cartesian z-direction",
-    )
+    metadata["vx"] = (str(u.km / u.s), "Peculiar velocity in physical km/s")
+    metadata["vy"] = (str(u.km / u.s), "Peculiar velocity in physical km/s")
+    metadata["vz"] = (str(u.km / u.s), "Peculiar velocity in physical km/s")
     metadata["msk_v0"] = (
         str(u.dimensionless_unscaled),
         "Boolean mask is True when the original core velocity on the lightcone was exactly zero and was overwritten",

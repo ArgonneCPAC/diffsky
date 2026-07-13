@@ -154,7 +154,15 @@ def generate_fake_mah_params(ran_key, t_obs, lgmp_obs, is_central, lgt0):
     return fake_mah_params
 
 
-def load_lc_cf_chunk(fn_lc_cf, drn_lc_cores, *, nchunks, chunknum, lc_cores_keys=None):
+def load_lc_cf_chunk(
+    fn_lc_cf,
+    drn_lc_cores,
+    *,
+    nchunks,
+    chunknum,
+    lc_cores_keys=None,
+    convert_vcom_to_vphys=True,
+):
     bn_lc_cf = os.path.basename(fn_lc_cf)
     bn_lc_cores = os.path.basename(bn_lc_cf).replace(".diffsky_data.hdf5", ".hdf5")
     fn_lc_cores = os.path.join(drn_lc_cores, bn_lc_cores)
@@ -168,6 +176,11 @@ def load_lc_cf_chunk(fn_lc_cf, drn_lc_cores, *, nchunks, chunknum, lc_cores_keys
         )
 
     diffsky_data = load_flat_hdf5(fn_lc_cf, istart=istart, iend=iend)
+
+    if convert_vcom_to_vphys:
+        diffsky_data["vx"] = lc_data["scale_factor"] * diffsky_data["vx"]
+        diffsky_data["vy"] = lc_data["scale_factor"] * diffsky_data["vy"]
+        diffsky_data["vz"] = lc_data["scale_factor"] * diffsky_data["vz"]
 
     lc_data["redshift_true"] = 1.0 / lc_data["scale_factor"] - 1.0
 
