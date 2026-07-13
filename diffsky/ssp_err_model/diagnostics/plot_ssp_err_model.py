@@ -56,12 +56,12 @@ def plot_ssp_err_model_delta_mag_vs_wavelength(
 
     colors = cm.coolwarm(np.linspace(0, 1, ngals))  # blue first
     logsmarr = np.linspace(8, 12, ngals)
-    wave_obs = np.linspace(1_000, 10_000, nwave)
+    wave_obs = np.linspace(1_000, 9_000, nwave)
 
     fig, ax = plt.subplots(1, 1)
     ax.set_ylim(-0.99, 0.99)
     xlim = ax.set_xlim(wave_obs.min(), wave_obs.max())
-    ax.plot(np.linspace(*xlim, 100), np.zeros(100), ":", color="k")
+
     ax.fill_between(
         np.linspace(*xlim, 100),
         np.zeros(100) - 0.3,
@@ -71,7 +71,7 @@ def plot_ssp_err_model_delta_mag_vs_wavelength(
     )
 
     xlabel = ax.set_xlabel(r"$\lambda\ {\rm [\AA]}$")
-    ylabel = ax.set_ylabel(r"$\delta{\rm L\ [mag]}$")
+    ylabel = ax.set_ylabel(r"$\Delta_{\rm SSP}\ [{\rm mag}]$")
 
     for i in range(ngals):
         logsm = logsmarr[i]
@@ -81,6 +81,8 @@ def plot_ssp_err_model_delta_mag_vs_wavelength(
         )
 
         ax.plot(wave_obs, -2.5 * np.log10(fracerr), color=colors[i])
+
+    ax.plot(np.linspace(*xlim, 100), np.zeros(100), ":", color="k")
 
     red_line = mlines.Line2D(
         [], [], ls="-", c=MRED, label=r"$M_{\star}=10^{12}M_{\odot}$"
