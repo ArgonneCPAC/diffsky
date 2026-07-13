@@ -325,7 +325,11 @@ if __name__ == "__main__":
 
             if synthetic_cores == 0:
                 lc_data_batch, diffsky_data_batch = load_lc_cf.load_lc_cf_chunk(
-                    fn_lc_diffsky, indir_lc_data, nchunks=nchunks, chunknum=chunknum
+                    fn_lc_diffsky,
+                    indir_lc_data,
+                    nchunks=nchunks,
+                    chunknum=chunknum,
+                    convert_vcom_to_vphys=True,
                 )
             else:
                 downsample_factor = nhalos_estimate / batch_size
