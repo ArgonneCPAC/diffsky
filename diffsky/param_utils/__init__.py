@@ -10,3 +10,7 @@ COSMOS_FIT_PARAMS["c260710"] = get_calib_params(
     calibration_dir=os.path.join("cosmos_calibrations", "data"),
     calibration_name="c260710",
 )
+
+
+DIFFSKY_FIT_PARAMS = dict()
+DIFFSKY_FIT_PARAMS.update(COSMOS_FIT_PARAMS)
