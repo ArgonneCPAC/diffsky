@@ -2,7 +2,6 @@
 
 import os
 
-from .cosmos_calibrations import COSMOS_PARAM_FITS, COSMOS_PARAM_FITS_MERGING  # noqa
 from .load_calib_params import get_calib_params
 
 COSMOS_FIT_PARAMS = dict()
