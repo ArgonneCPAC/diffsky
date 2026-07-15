@@ -9,18 +9,73 @@ from dsps.data_loaders.defaults import TransmissionCurve
 from jax import random as jran
 
 from ....data_loaders import load_ssp_data
-from .. import lc_phot_data
+from .. import lc_data_phot
 from .. import lc_phot
 from . import test_lc_phot as tlcp
 
 
-def _get_weighted_lc_photdata_for_unit_testing(
-    num_halos=75, n_lines=3, z_min=0.1, z_max=3.0, n_z_phot_table=15, ssp_data=None
+def _get_mc_lc_data_phot_for_unit_testing(
+    z_min=0.1,
+    z_max=0.3,
+    lgmp_min=13.0,
+    lgmsub_min=13.0,
+    sky_area_degsq=1.0,
+    n_z_phot_table=15,
+    ssp_data=None,
 ):
     ran_key = jran.key(0)
+    n_lines = 3
 
-    lgmp_min, lgmp_max = 10.0, 15.0
-    sky_area_degsq = 100.0
+    if ssp_data is None:
+        ssp_data = load_ssp_data.load_fake_ssp_data()
+
+    _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
+    wave, u, g, r, i, z, y = _res
+
+    tcurve_list = [TransmissionCurve(wave, x) for x in (u, i, y)]
+    names = [f"lsst_{x}" for x in ("u", "i", "y")]
+    TransmissionCurves = namedtuple("TransmissionCurves", names)
+    tcurves = TransmissionCurves(*tcurve_list)
+
+    z_phot_table = 10 ** np.linspace(np.log10(z_min), np.log10(z_max), n_z_phot_table)
+
+    lc_data = lc_data_phot.mc_lc_data_phot(
+        ran_key=ran_key,
+        z_min=z_min,
+        z_max=z_max,
+        lgmp_min=lgmp_min,
+        lgmsub_min=lgmsub_min,
+        sky_area_degsq=sky_area_degsq,
+        ssp_data=ssp_data,
+        tcurves=tcurves,
+        z_phot_table=z_phot_table,
+    )
+
+    emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
+    ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
+    lc_data = lc_data._replace(
+        ssp_data=ssp_data,
+        line_wave_table=lc_data.line_wave_table[0:n_lines],
+        precomputed_ssp_linelum_cgs_table=lc_data.precomputed_ssp_linelum_cgs_table[
+            :n_lines, :, :
+        ],
+    )
+
+    return lc_data, tcurves
+
+
+def _get_weighted_lc_data_phot_for_unit_testing(
+    num_halos=75,
+    z_min=0.1,
+    z_max=3.0,
+    lgmp_min=10.0,
+    lgmp_max=15.0,
+    sky_area_degsq=100.0,
+    n_z_phot_table=15,
+    ssp_data=None,
+):
+    ran_key = jran.key(0)
+    n_lines = 3
 
     if ssp_data is None:
         ssp_data = load_ssp_data.load_fake_ssp_data()
@@ -47,7 +102,7 @@ def _get_weighted_lc_photdata_for_unit_testing(
         tcurves,
         z_phot_table,
     )
-    lc_data = lc_phot_data.weighted_lc_photdata(*args)
+    lc_data = lc_data_phot.weighted_lc_data_phot(*args)
 
     emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
     ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
@@ -62,9 +117,8 @@ def _get_weighted_lc_photdata_for_unit_testing(
     return lc_data, tcurves
 
 
-def test_weighted_lc_photdata():
-    num_halos = 75
-    lc_data, tcurves = _get_weighted_lc_photdata_for_unit_testing(num_halos=num_halos)
+def test_mc_lc_data_phot():
+    lc_data, tcurves = _get_mc_lc_data_phot_for_unit_testing()
     n_tot = lc_data.z_obs.size
     shape_ntot_keys = (
         "z_obs",
@@ -82,7 +136,7 @@ def test_weighted_lc_photdata():
         assert arr.shape == (n_tot,), f"lc_data.{lc_key} has the wrong shape"
         assert np.all(np.isfinite(arr)), f"lc_data.{lc_key} has NaNs"
 
-    for field in lc_phot_data.LCPhotData._fields:
+    for field in lc_data_phot.LCDataPhot._fields:
         assert hasattr(lc_data, field)
 
     for arr in lc_data.mah_params:
@@ -94,56 +148,9 @@ def test_weighted_lc_photdata():
     tlcp.check_phot_kern_results(phot_kern_results)
 
 
-def _get_lc_photdata_for_unit_testing(
-    n_lines=3, z_min=0.1, z_max=0.3, n_z_phot_table=15, ssp_data=None
-):
-    ran_key = jran.key(0)
-
-    lgmp_min = 13.0
-    lgmsub_min = 13.0
-    sky_area_degsq = 1.0
-
-    if ssp_data is None:
-        ssp_data = load_ssp_data.load_fake_ssp_data()
-
-    _res = retrieve_fake_fsps_data.load_fake_filter_transmission_curves()
-    wave, u, g, r, i, z, y = _res
-
-    tcurve_list = [TransmissionCurve(wave, x) for x in (u, i, y)]
-    names = [f"lsst_{x}" for x in ("u", "i", "y")]
-    TransmissionCurves = namedtuple("TransmissionCurves", names)
-    tcurves = TransmissionCurves(*tcurve_list)
-
-    z_phot_table = 10 ** np.linspace(np.log10(z_min), np.log10(z_max), n_z_phot_table)
-
-    args = (
-        ran_key,
-        z_min,
-        z_max,
-        lgmp_min,
-        lgmsub_min,
-        sky_area_degsq,
-        ssp_data,
-        tcurves,
-        z_phot_table,
-    )
-    lc_data = lc_phot_data.mc_lc_photdata(*args)
-
-    emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
-    ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
-    lc_data = lc_data._replace(
-        ssp_data=ssp_data,
-        line_wave_table=lc_data.line_wave_table[0:n_lines],
-        precomputed_ssp_linelum_cgs_table=lc_data.precomputed_ssp_linelum_cgs_table[
-            :n_lines, :, :
-        ],
-    )
-
-    return lc_data, tcurves
-
-
-def test_lc_photdata():
-    lc_data, tcurves = _get_lc_photdata_for_unit_testing()
+def test_weighted_lc_data_phot():
+    num_halos = 75
+    lc_data, tcurves = _get_weighted_lc_data_phot_for_unit_testing(num_halos=num_halos)
     n_tot = lc_data.z_obs.size
     shape_ntot_keys = (
         "z_obs",
@@ -161,7 +168,7 @@ def test_lc_photdata():
         assert arr.shape == (n_tot,), f"lc_data.{lc_key} has the wrong shape"
         assert np.all(np.isfinite(arr)), f"lc_data.{lc_key} has NaNs"
 
-    for field in lc_phot_data.LCPhotData._fields:
+    for field in lc_data_phot.LCDataPhot._fields:
         assert hasattr(lc_data, field)
 
     for arr in lc_data.mah_params:

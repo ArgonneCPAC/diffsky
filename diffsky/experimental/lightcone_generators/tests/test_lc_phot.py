@@ -11,7 +11,7 @@ from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from .. import lc_phot
-from . import test_lc_phot_data as tlcg
+from . import test_lc_data_phot
 
 _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
@@ -30,7 +30,7 @@ def check_phot_kern_results(phot_kern_results):
 
 def test_mc_lc_phot_changes_with_diffstarpop(num_halos=20):
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+    lc_data, tcurves = test_lc_data_phot._get_weighted_lc_data_phot_for_unit_testing(
         num_halos=num_halos
     )
 
@@ -72,7 +72,7 @@ def test_mc_lc_phot_changes_with_diffstarpop(num_halos=20):
 
 def test_mc_lc_phot_agrees_with_mc_lc_photline(num_halos=20):
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+    lc_data, tcurves = test_lc_data_phot._get_weighted_lc_data_phot_for_unit_testing(
         num_halos=num_halos
     )
 
@@ -91,7 +91,7 @@ def test_mc_lc_phot_agrees_with_mc_lc_photline(num_halos=20):
 
 def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=5):
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+    lc_data, tcurves = test_lc_data_phot._get_weighted_lc_data_phot_for_unit_testing(
         num_halos=num_halos
     )
     mc_merge = 0
@@ -127,7 +127,7 @@ def test_mc_lc_sed_is_consistent_with_mc_lc_phot(num_halos=5):
 
 def test_mc_lc_dbk_photline(num_halos=20):
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+    lc_data, tcurves = test_lc_data_phot._get_weighted_lc_data_phot_for_unit_testing(
         num_halos=num_halos
     )
     mc_merge = 0
@@ -170,7 +170,7 @@ def test_mc_lc_dbk_photline(num_halos=20):
 
 def test_mc_lc_dbk_sed(num_halos=10):
     ran_key = jran.key(0)
-    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+    lc_data, tcurves = test_lc_data_phot._get_weighted_lc_data_phot_for_unit_testing(
         num_halos=num_halos
     )
     mc_merge = 0

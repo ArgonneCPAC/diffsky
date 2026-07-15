@@ -1,6 +1,6 @@
 """
 Wrappers around diffhalos.lightcone_generators that computes additional data
-to generate lightcones with photometry: LCPhotData and LCHalosPhotData.
+to generate lightcones with photometry: LCDataPhot and LCDataPhotCentrals.
 
 The functions get as input:
 - halo lightcone settings: redshift range, mass range, etc.
@@ -21,7 +21,7 @@ from .. import precompute_ssp_phot as psspp
 
 N_SFH_TABLE = 100
 
-_lchalos_photdata_keys = (
+_lc_data_phot_centrals_keys = (
     "cen_weight",
     "z_obs",
     "t_obs",
@@ -35,10 +35,10 @@ _lchalos_photdata_keys = (
     "z_phot_table",
     "wave_eff_table",
 )
-LCHalosPhotData = namedtuple("LCHalosPhotData", _lchalos_photdata_keys)
+LCDataPhotCentrals = namedtuple("LCDataPhotCentrals", _lc_data_phot_centrals_keys)
 
-lc_photdata_keys = (
-    *_lchalos_photdata_keys,
+lc_data_phot_keys = (
+    *_lc_data_phot_centrals_keys,
     "sat_weight",
     "t_infall",
     "logmp_infall",
@@ -47,7 +47,7 @@ lc_photdata_keys = (
     "halo_indx",
     "halo_weight",
 )
-LCPhotData = namedtuple("LCPhotData", lc_photdata_keys)
+LCDataPhot = namedtuple("LCPhotData", lc_data_phot_keys)
 
 
 def passively_add_emlines_to_lc_data(ssp_data, lc_data):
@@ -77,7 +77,7 @@ def passively_add_emlines_to_lc_data(ssp_data, lc_data):
     return lc_data
 
 
-def mc_lc_photdata(
+def mc_lc_data_phot(
     ran_key,
     z_min,
     z_max,
@@ -92,7 +92,7 @@ def mc_lc_photdata(
     logmp_cutoff=11.0,
 ):
     """
-    Generate a monte carlo lightcone of host halos and subhalos,
+    Generate a Monte Carlo lightcone of host halos and subhalos,
     and additional data needed for photometry calculations.
 
     This function is a wrapper around
@@ -196,8 +196,16 @@ def mc_lc_photdata(
                 Equals one for all galaxies in a Monte Carlo lightcone
 
     """
-    args = (ran_key, lgmp_min, lgmsub_min, z_min, z_max, sky_area_degsq)
-    halopop = mcl.mc_lc(*args, cosmo_params=cosmo_params, logmp_cutoff=logmp_cutoff)
+    halopop = mcl.mc_lc(
+        ran_key=ran_key,
+        lgmp_min=lgmp_min,
+        lgmsub_min=lgmsub_min,
+        z_min=z_min,
+        z_max=z_max,
+        sky_area_degsq=sky_area_degsq,
+        cosmo_params=cosmo_params,
+        logmp_cutoff=logmp_cutoff,
+    )
 
     logt0 = halopop.logt0
     t0 = 10**logt0
@@ -220,34 +228,35 @@ def mc_lc_photdata(
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
-    lc_data = LCPhotData(
-        halopop.cen_weight,
-        halopop.z_obs,
-        halopop.t_obs,
-        halopop.logmp_obs,
-        halopop.mah_params,
-        halopop.logmp0,
+    lc_data = LCDataPhot(
+        cen_weight=halopop.cen_weight,
+        z_obs=halopop.z_obs,
+        t_obs=halopop.t_obs,
+        logmp_obs=halopop.logmp_obs,
+        mah_params=halopop.mah_params,
+        logmp0=halopop.logmp0,
         #
-        t_table,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
+        t_table=t_table,
         #
-        halopop.sat_weight,
-        t_infall,
-        logmp_infall,
-        logmhost_infall,
-        is_central,
-        halopop.halo_indx,
-        halopop.halo_weight,
+        ssp_data=ssp_data,
+        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
+        z_phot_table=z_phot_table,
+        wave_eff_table=wave_eff_table,
+        #
+        sat_weight=halopop.sat_weight,
+        t_infall=t_infall,
+        logmp_infall=logmp_infall,
+        logmhost_infall=logmhost_infall,
+        is_central=is_central,
+        halo_indx=halopop.halo_indx,
+        halo_weight=halopop.halo_weight,
     )
 
     lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
     return lc_data
 
 
-def weighted_lc_photdata(
+def weighted_lc_data_phot(
     ran_key,
     n_host_halos,
     z_min,
@@ -370,9 +379,16 @@ def weighted_lc_photdata(
 
 
     """
-    args = (ran_key, n_host_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
     halopop = mcl.weighted_lc(
-        *args, cosmo_params=cosmo_params, logmp_cutoff=logmp_cutoff
+        ran_key=ran_key,
+        n_host_halos=n_host_halos,
+        z_min=z_min,
+        z_max=z_max,
+        lgmp_min=lgmp_min,
+        lgmp_max=lgmp_max,
+        sky_area_degsq=sky_area_degsq,
+        cosmo_params=cosmo_params,
+        logmp_cutoff=logmp_cutoff,
     )
 
     logt0 = halopop.logt0
@@ -396,25 +412,27 @@ def weighted_lc_photdata(
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
-    lc_data = LCPhotData(
-        halopop.cen_weight,
-        halopop.z_obs,
-        halopop.t_obs,
-        halopop.logmp_obs,
-        halopop.mah_params,
-        halopop.logmp0,
-        t_table,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
-        halopop.sat_weight,
-        t_infall,
-        logmp_infall,
-        logmhost_infall,
-        is_central,
-        halopop.halo_indx,
-        halopop.halo_weight,
+    lc_data = LCDataPhot(
+        cen_weight=halopop.cen_weight,
+        z_obs=halopop.z_obs,
+        t_obs=halopop.t_obs,
+        logmp_obs=halopop.logmp_obs,
+        mah_params=halopop.mah_params,
+        logmp0=halopop.logmp0,
+        #
+        t_table=t_table,
+        ssp_data=ssp_data,
+        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
+        z_phot_table=z_phot_table,
+        wave_eff_table=wave_eff_table,
+        #
+        sat_weight=halopop.sat_weight,
+        t_infall=t_infall,
+        logmp_infall=logmp_infall,
+        logmhost_infall=logmhost_infall,
+        is_central=is_central,
+        halo_indx=halopop.halo_indx,
+        halo_weight=halopop.halo_weight,
     )
 
     lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
@@ -424,7 +442,7 @@ def weighted_lc_photdata(
 # --- Host halo lightcones functions ---
 
 
-def mc_lc_halos_photdata(
+def mc_lc_data_phot_centrals(
     ran_key,
     z_min,
     z_max,
@@ -437,7 +455,7 @@ def mc_lc_halos_photdata(
     cosmo_params=flat_wcdm.PLANCK15,
 ):
     """
-    Generate a monte carlo lightcone of host halos,
+    Generate a Monte Carlo lightcone of host halos,
     and additional data needed for photometry calculations.
 
     This function is a wrapper around
@@ -518,9 +536,14 @@ def mc_lc_halos_photdata(
                 evaluated at each redshift in z_phot_table
 
     """
-    args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
     cenpop = mclh.mc_lc_halos(
-        *args, cosmo_params=cosmo_params, logmp_cutoff=logmp_cutoff
+        ran_key=ran_key,
+        lgmp_min=lgmp_min,
+        z_min=z_min,
+        z_max=z_max,
+        sky_area_degsq=sky_area_degsq,
+        cosmo_params=cosmo_params,
+        logmp_cutoff=logmp_cutoff,
     )
 
     logt0 = cenpop.logt0
@@ -532,18 +555,20 @@ def mc_lc_halos_photdata(
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
-    lc_data = LCHalosPhotData(
-        cenpop.cen_weight,
-        cenpop.z_obs,
-        cenpop.t_obs,
-        cenpop.logmp_obs,
-        cenpop.mah_params,
-        cenpop.logmp0,
-        t_table,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
+    lc_data = LCDataPhotCentrals(
+        cen_weight=cenpop.cen_weight,
+        z_obs=cenpop.z_obs,
+        t_obs=cenpop.t_obs,
+        logmp_obs=cenpop.logmp_obs,
+        mah_params=cenpop.mah_params,
+        logmp0=cenpop.logmp0,
+        #
+        t_table=t_table,
+        #
+        ssp_data=ssp_data,
+        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
+        z_phot_table=z_phot_table,
+        wave_eff_table=wave_eff_table,
     )
 
     lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
@@ -551,7 +576,7 @@ def mc_lc_halos_photdata(
     return lc_data
 
 
-def weighted_lc_halos_photdata(
+def weighted_lc_data_phot_centrals(
     ran_key,
     num_halos,
     z_min,
@@ -650,9 +675,16 @@ def weighted_lc_halos_photdata(
                 evaluated at each redshift in z_phot_table
 
     """
-    args = (ran_key, num_halos, z_min, z_max, lgmp_min, lgmp_max, sky_area_degsq)
     cenpop = mclh.weighted_lc_halos(
-        *args, cosmo_params=cosmo_params, logmp_cutoff=logmp_cutoff
+        ran_key=ran_key,
+        num_halos=num_halos,
+        z_min=z_min,
+        z_max=z_max,
+        lgmp_min=lgmp_min,
+        lgmp_max=lgmp_max,
+        sky_area_degsq=sky_area_degsq,
+        cosmo_params=cosmo_params,
+        logmp_cutoff=logmp_cutoff,
     )
 
     logt0 = cenpop.logt0
@@ -664,18 +696,20 @@ def weighted_lc_halos_photdata(
     )
     wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
 
-    lc_data = LCHalosPhotData(
-        cenpop.cen_weight,
-        cenpop.z_obs,
-        cenpop.t_obs,
-        cenpop.logmp_obs,
-        cenpop.mah_params,
-        cenpop.logmp0,
-        t_table,
-        ssp_data,
-        precomputed_ssp_mag_table,
-        z_phot_table,
-        wave_eff_table,
+    lc_data = LCDataPhotCentrals(
+        cen_weight=cenpop.cen_weight,
+        z_obs=cenpop.z_obs,
+        t_obs=cenpop.t_obs,
+        logmp_obs=cenpop.logmp_obs,
+        mah_params=cenpop.mah_params,
+        logmp0=cenpop.logmp0,
+        #
+        t_table=t_table,
+        #
+        ssp_data=ssp_data,
+        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
+        z_phot_table=z_phot_table,
+        wave_eff_table=wave_eff_table,
     )
 
     lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
