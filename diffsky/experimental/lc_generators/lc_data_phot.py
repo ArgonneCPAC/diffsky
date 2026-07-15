@@ -1,0 +1,717 @@
+"""
+Wrappers around diffhalos.lightcone_generators that computes additional data
+to generate lightcones with photometry: LCDataPhot and LCDataPhotCentrals.
+
+The functions get as input:
+- halo lightcone settings: redshift range, mass range, etc.
+- ssp_data, tcurves, z_phot_table.
+"""
+
+from collections import namedtuple
+
+from diffhalos.lightcone_generators import mc_lightcone as mcl
+from diffhalos.lightcone_generators import mc_lightcone_halos as mclh
+from diffmah import logmh_at_t_obs
+from dsps.constants import T_TABLE_MIN
+from dsps.cosmology import flat_wcdm
+from jax import numpy as jnp
+
+from ...utils.phot_utils import get_wave_eff_table
+from .. import precompute_ssp_phot as psspp
+
+N_SFH_TABLE = 100
+
+_lc_data_phot_centrals_keys = (
+    "cen_weight",
+    "z_obs",
+    "t_obs",
+    "logmp_obs",
+    "mah_params",
+    "logmp0",
+    "t_table",
+    #
+    "ssp_data",
+    "precomputed_ssp_mag_table",
+    "z_phot_table",
+    "wave_eff_table",
+)
+LCDataPhotCentrals = namedtuple("LCDataPhotCentrals", _lc_data_phot_centrals_keys)
+
+lc_data_phot_keys = (
+    *_lc_data_phot_centrals_keys,
+    "sat_weight",
+    "t_infall",
+    "logmp_infall",
+    "logmhost_infall",
+    "is_central",
+    "halo_indx",
+    "halo_weight",
+)
+LCDataPhot = namedtuple("LCPhotData", lc_data_phot_keys)
+
+
+def passively_add_emlines_to_lc_data(ssp_data, lc_data):
+    """Include precomputed emission line fluxes, if they are present in the ssp_data
+
+    If ssp_data.ssp_emline_wave exists, the returned lc_data will have two additional fields:
+
+        precomputed_ssp_lineflux_cgs_table : array, shape (n_lines, n_met, n_age)
+
+        line_wave_table : array, shape (n_lines, )
+
+    """
+    _ssp_emline_wave = getattr(ssp_data, "ssp_emline_wave", None)
+    if _ssp_emline_wave is not None:
+        # Need shape # n_lines, n_met, n_age
+        precomputed_ssp_linelum_cgs_table = jnp.swapaxes(
+            jnp.swapaxes(ssp_data.ssp_emline_luminosity, 0, 2), 1, 2
+        )
+        line_wave_table = jnp.array(ssp_data.ssp_emline_wave)
+
+        new_fields = ("precomputed_ssp_linelum_cgs_table", "line_wave_table")
+        new_vals = (precomputed_ssp_linelum_cgs_table, line_wave_table)
+        fields = (*lc_data._fields, *new_fields)
+        values = (*lc_data, *new_vals)
+        lc_data = namedtuple(lc_data.__class__.__name__, fields)(*values)
+
+    return lc_data
+
+
+def mc_lc_data_phot(
+    ran_key,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmsub_min,
+    sky_area_degsq,
+    ssp_data,
+    tcurves,
+    z_phot_table,
+    *,
+    cosmo_params=flat_wcdm.PLANCK15,
+    logmp_cutoff=11.0,
+):
+    """
+    Generate a Monte Carlo lightcone of host halos and subhalos,
+    and additional data needed for photometry calculations.
+
+    This function is a wrapper around
+    diffhalos.lightcone_generators.mc_lightcone.mc_lc
+
+    Parameters
+    ----------
+    ran_key: jran.key
+        random key
+
+    z_min, z_max : float
+        min/max redshift
+
+    lgmp_min : float
+        log10 of min of host halo mass in units of Msun
+
+    lgmsub_min : float
+        log10 of min of subhalo mass in units of Msun
+
+    sky_area_degsq: float
+        sky area in deg^2
+
+    ssp_data : namedtuple
+        SSP SED templates from DSPS
+
+    tcurves : namedtuple, length (n_bands, )
+        each field stores the name of a transmission curve
+        each value stores a namedtuple dsps.data_loaders.defaults.TransmissionCurve
+
+    z_phot_table : array, shape (n_z_phot_table, )
+        Redshift grid used to tabulate precomputed SSP magnitudes
+
+    hmf_params: namedtuple, optional kwarg
+        halo mass function parameters
+
+    logmp_cutoff: float, optional kwarg
+        base-10 log of minimum halo mass for which
+        DiffmahPop is used to generate MAHs, in Msun;
+        for logmp < logmp_cutoff, P(θ_MAH | logmp) = P(θ_MAH | logmp_cutoff)
+
+    cosmo_params: namedtuple, optional kwarg
+        cosmological parameters
+
+    Returns
+    -------
+    lc_data: namedtuple
+        Population of n_halos_tot halos along with data needed to compute photometry
+
+        lc_data fields:
+            cen_weights: ndarray of shape (n_halos_tot, )
+                Equals one for all galaxies in a Monte Carlo lightcone
+
+            z_obs: ndarray of shape (n_halos_tot, )
+                redshift values
+
+            t_obs: ndarray of shape (n_halos_tot, )
+                cosmic time at observation, in Gyr
+
+            logmp_obs: ndarray of shape (n_halos_tot, )
+                base-10 log of halo mass at observation, in Msun
+
+            mah_params: namedtuple of ndarrays of shape (n_halos_tot, )
+                mah parameters
+
+            logmp0: ndarray of shape (n_halos_tot, )
+                base-10 log of halo mass at z=0, in Msun
+
+            t_table : array
+                Age of the universe in Gyr at which SFH is tabulated
+
+            ssp_data : namedtuple
+                same as input
+
+            precomputed_ssp_mag_table : array, shape (n_z_phot_table, n_bands, n_met, n_age)
+
+            z_phot_table : array
+                same as input
+
+            wave_eff_table : array, shape (n_z_phot_table, n_bands)
+                Effective wavelength of each transmission curve
+                evaluated at each redshift in z_phot_table
+
+            sat_weight: ndarray of shape (n_halos_tot, )
+                Equals one for all galaxies in a Monte Carlo lightcone
+
+            t_infall:
+
+            logmp_infall:
+
+            logmhost_infall:
+
+            is_central: ndarray of shape (n_halos_tot, )
+                Equals one for centrals and zero for satellites
+
+            halo_indx: ndarray of shape (n_halos_tot, )
+                index of the associated host halo
+                for central halos: halo_indx = range(n_halos_tot)
+
+            halo_weight: ndarray of shape (n_halos_tot, )
+                Defined as cen_weight * sat_weight
+                Equals one for all galaxies in a Monte Carlo lightcone
+
+    """
+    halopop = mcl.mc_lc(
+        ran_key=ran_key,
+        lgmp_min=lgmp_min,
+        lgmsub_min=lgmsub_min,
+        z_min=z_min,
+        z_max=z_max,
+        sky_area_degsq=sky_area_degsq,
+        cosmo_params=cosmo_params,
+        logmp_cutoff=logmp_cutoff,
+    )
+
+    logt0 = halopop.logt0
+    t0 = 10**logt0
+    t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+
+    is_central = halopop.central.astype(int)
+    n_tot = len(is_central)
+
+    t_infall = jnp.where(is_central, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak)
+
+    logmp_infall = halopop.logmp_obs
+
+    mah_params_host = halopop.mah_params._make(
+        [x[halopop.halo_indx] for x in halopop.mah_params]
+    )
+    logmhost_infall = logmh_at_t_obs(mah_params_host, halopop.t_obs, logt0)
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    lc_data = LCDataPhot(
+        cen_weight=halopop.cen_weight,
+        z_obs=halopop.z_obs,
+        t_obs=halopop.t_obs,
+        logmp_obs=halopop.logmp_obs,
+        mah_params=halopop.mah_params,
+        logmp0=halopop.logmp0,
+        #
+        t_table=t_table,
+        #
+        ssp_data=ssp_data,
+        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
+        z_phot_table=z_phot_table,
+        wave_eff_table=wave_eff_table,
+        #
+        sat_weight=halopop.sat_weight,
+        t_infall=t_infall,
+        logmp_infall=logmp_infall,
+        logmhost_infall=logmhost_infall,
+        is_central=is_central,
+        halo_indx=halopop.halo_indx,
+        halo_weight=halopop.halo_weight,
+    )
+
+    lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
+    return lc_data
+
+
+def weighted_lc_data_phot(
+    ran_key,
+    n_host_halos,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmp_max,
+    sky_area_degsq,
+    ssp_data,
+    tcurves,
+    z_phot_table,
+    *,
+    cosmo_params=flat_wcdm.PLANCK15,
+    logmp_cutoff=11.0,
+):
+    """
+    Generate a weighted lightcone of host halos and subhalos,
+    and additional data needed for photometry calculations.
+
+    This function is a wrapper around
+    diffhalos.lightcone_generators.mc_lightcone.weighted_lc
+
+    Parameters
+    ----------
+    ran_key: jran.key
+        random key
+
+    n_host_halos : int
+        Number of host halos in the weighted lightcone
+
+    z_min, z_max : float
+        min/max redshift
+
+    lgmp_min,lgmp_max : float
+        log10 of min/max halo mass in units of Msun
+
+    sky_area_degsq: float
+        sky area in deg^2
+
+    ssp_data : namedtuple
+        SSP SED templates from DSPS
+
+    tcurves : namedtuple, length (n_bands, )
+        each field stores the name of a transmission curve
+        each value stores a namedtuple dsps.data_loaders.defaults.TransmissionCurve
+
+    z_phot_table : array, shape (n_z_phot_table, )
+        Redshift grid used to tabulate precomputed SSP magnitudes
+
+    hmf_params: namedtuple, optional kwarg
+        halo mass function parameters
+
+    logmp_cutoff: float, optional kwarg
+        base-10 log of minimum halo mass for which
+        DiffmahPop is used to generate MAHs, in Msun;
+        for logmp < logmp_cutoff, P(θ_MAH | logmp) = P(θ_MAH | logmp_cutoff)
+
+    cosmo_params: namedtuple, optional kwarg
+        cosmological parameters
+
+    Returns
+    -------
+    lc_data: namedtuple
+        Population of n_halos_tot halos along with data needed to compute photometry
+
+        lc_data fields:
+            cen_weights: ndarray of shape (n_halos_tot, )
+                For centrals, cen_weight is determined by the halo mass function (HMF)
+                For satellites, cen_weight is HMF weight of the associated central
+
+            z_obs: ndarray of shape (n_halos_tot, )
+                redshift values
+
+            t_obs: ndarray of shape (n_halos_tot, )
+                cosmic time at observation, in Gyr
+
+            logmp_obs: ndarray of shape (n_halos_tot, )
+                base-10 log of halo mass at observation, in Msun
+
+            mah_params: namedtuple of ndarrays of shape (n_halos_tot, )
+                mah parameters
+
+            logmp0: ndarray of shape (n_halos_tot, )
+                base-10 log of halo mass at z=0, in Msun
+
+            t_table : array
+                Age of the universe in Gyr at which SFH is tabulated
+
+            ssp_data : namedtuple
+                same as input
+
+            precomputed_ssp_mag_table : array, shape (n_z_phot_table, n_bands, n_met, n_age)
+
+            z_phot_table : array
+                same as input
+
+            wave_eff_table : array, shape (n_z_phot_table, n_bands)
+                Effective wavelength of each transmission curve
+                evaluated at each redshift in z_phot_table
+
+            sat_weight: ndarray of shape (n_halos_tot, )
+                Multiplicity factor of the subhalo richness
+                Equals 1 for central halos
+                For subhalos, halopop.sat_weight = <Nsat(Msub) | Mhost>
+
+            t_infall:
+
+            logmp_infall:
+
+            logmhost_infall:
+
+            is_central: ndarray of shape (n_halos_tot, )
+                equal to one for centrals and zero for satellites
+
+            halo_indx: ndarray of shape (n_halos_tot, )
+                index of the associated host halo
+                for central halos: halo_indx = range(n_halos_tot)
+
+            halo_weight: ndarray of shape (n_halos_tot, )
+                Defined as cen_weight * sat_weight
+
+
+    """
+    halopop = mcl.weighted_lc(
+        ran_key=ran_key,
+        n_host_halos=n_host_halos,
+        z_min=z_min,
+        z_max=z_max,
+        lgmp_min=lgmp_min,
+        lgmp_max=lgmp_max,
+        sky_area_degsq=sky_area_degsq,
+        cosmo_params=cosmo_params,
+        logmp_cutoff=logmp_cutoff,
+    )
+
+    logt0 = halopop.logt0
+    t0 = 10**logt0
+    t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+
+    is_central = halopop.central.astype(int)
+    n_tot = len(is_central)
+
+    t_infall = jnp.where(is_central, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak)
+
+    logmp_infall = halopop.logmp_obs
+
+    mah_params_host = halopop.mah_params._make(
+        [x[halopop.halo_indx] for x in halopop.mah_params]
+    )
+    logmhost_infall = logmh_at_t_obs(mah_params_host, halopop.t_obs, logt0)
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    lc_data = LCDataPhot(
+        cen_weight=halopop.cen_weight,
+        z_obs=halopop.z_obs,
+        t_obs=halopop.t_obs,
+        logmp_obs=halopop.logmp_obs,
+        mah_params=halopop.mah_params,
+        logmp0=halopop.logmp0,
+        #
+        t_table=t_table,
+        ssp_data=ssp_data,
+        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
+        z_phot_table=z_phot_table,
+        wave_eff_table=wave_eff_table,
+        #
+        sat_weight=halopop.sat_weight,
+        t_infall=t_infall,
+        logmp_infall=logmp_infall,
+        logmhost_infall=logmhost_infall,
+        is_central=is_central,
+        halo_indx=halopop.halo_indx,
+        halo_weight=halopop.halo_weight,
+    )
+
+    lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
+    return lc_data
+
+
+# --- Host halo lightcones functions ---
+
+
+def mc_lc_data_phot_centrals(
+    ran_key,
+    z_min,
+    z_max,
+    lgmp_min,
+    sky_area_degsq,
+    ssp_data,
+    tcurves,
+    z_phot_table,
+    logmp_cutoff=11.0,
+    cosmo_params=flat_wcdm.PLANCK15,
+):
+    """
+    Generate a Monte Carlo lightcone of host halos,
+    and additional data needed for photometry calculations.
+
+    This function is a wrapper around
+    diffhalos.lightcone_generators.mc_lightcone_halos.mc_lc_halos
+
+    Parameters
+    ----------
+    ran_key: jran.key
+        random key
+
+    z_min, z_max : float
+        min/max redshift
+
+    lgmp_min : float
+        log10 of min halo mass in units of Msun
+
+    sky_area_degsq: float
+        sky area in deg^2
+
+    ssp_data : namedtuple
+        SSP SED templates from DSPS
+
+    tcurves : namedtuple, length (n_bands, )
+        each field stores the name of a transmission curve
+        each value stores a namedtuple dsps.data_loaders.defaults.TransmissionCurve
+
+    z_phot_table : array, shape (n_z_phot_table, )
+        Redshift grid used to tabulate precomputed SSP magnitudes
+
+    hmf_params: namedtuple, optional kwarg
+        halo mass function parameters
+
+    logmp_cutoff: float, optional kwarg
+        base-10 log of minimum halo mass for which
+        DiffmahPop is used to generate MAHs, in Msun;
+        for logmp < logmp_cutoff, P(θ_MAH | logmp) = P(θ_MAH | logmp_cutoff)
+
+    cosmo_params: namedtuple, optional kwarg
+        cosmological parameters
+
+    Returns
+    -------
+    lc_data: namedtuple
+        Population of n_halos host halos along with data needed to compute photometry
+
+        lc_data fields:
+            cen_weights: ndarray of shape (n_halos, )
+                Equals one for all galaxies in a Monte Carlo lightcone
+
+            z_obs: ndarray of shape (n_halos, )
+                redshift values
+
+            t_obs: ndarray of shape (n_halos, )
+                cosmic time at observation, in Gyr
+
+            logmp_obs: ndarray of shape (n_halos, )
+                base-10 log of halo mass at observation, in Msun
+
+            mah_params: namedtuple of ndarrays of shape (n_halos, )
+                mah parameters
+
+            logmp0: ndarray of shape (n_halos, )
+                base-10 log of halo mass at z=0, in Msun
+
+            t_table : array
+                Age of the universe in Gyr at which SFH is tabulated
+
+            ssp_data : namedtuple
+                same as input
+
+            precomputed_ssp_mag_table : array, shape (n_z_phot_table, n_bands, n_met, n_age)
+
+            z_phot_table : array
+                same as input
+
+            wave_eff_table : array, shape (n_z_phot_table, n_bands)
+                Effective wavelength of each transmission curve
+                evaluated at each redshift in z_phot_table
+
+    """
+    cenpop = mclh.mc_lc_halos(
+        ran_key=ran_key,
+        lgmp_min=lgmp_min,
+        z_min=z_min,
+        z_max=z_max,
+        sky_area_degsq=sky_area_degsq,
+        cosmo_params=cosmo_params,
+        logmp_cutoff=logmp_cutoff,
+    )
+
+    logt0 = cenpop.logt0
+    t0 = 10**logt0
+    t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    lc_data = LCDataPhotCentrals(
+        cen_weight=cenpop.cen_weight,
+        z_obs=cenpop.z_obs,
+        t_obs=cenpop.t_obs,
+        logmp_obs=cenpop.logmp_obs,
+        mah_params=cenpop.mah_params,
+        logmp0=cenpop.logmp0,
+        #
+        t_table=t_table,
+        #
+        ssp_data=ssp_data,
+        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
+        z_phot_table=z_phot_table,
+        wave_eff_table=wave_eff_table,
+    )
+
+    lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
+
+    return lc_data
+
+
+def weighted_lc_data_phot_centrals(
+    ran_key,
+    num_halos,
+    z_min,
+    z_max,
+    lgmp_min,
+    lgmp_max,
+    sky_area_degsq,
+    ssp_data,
+    tcurves,
+    z_phot_table,
+    logmp_cutoff=11.0,
+    cosmo_params=flat_wcdm.PLANCK15,
+):
+    """
+    Generate a weighted lightcone of host halos,
+    and additional data needed for photometry calculations.
+
+    This function is a wrapper around
+    diffhalos.lightcone_generators.mc_lightcone_halos.weighted_lc_halos
+
+    Parameters
+    ----------
+    ran_key: jran.key
+        random key
+
+    num_halos : int
+        Number of host halos in the weighted lightcone
+
+    z_min, z_max : float
+        min/max redshift
+
+    lgmp_min,lgmp_max : float
+        log10 of min/max halo mass in units of Msun
+
+    sky_area_degsq: float
+        sky area in deg^2
+
+    ssp_data : namedtuple
+        SSP SED templates from DSPS
+
+    tcurves : namedtuple, length (n_bands, )
+        each field stores the name of a transmission curve
+        each value stores a namedtuple dsps.data_loaders.defaults.TransmissionCurve
+
+    z_phot_table : array, shape (n_z_phot_table, )
+        Redshift grid used to tabulate precomputed SSP magnitudes
+
+    hmf_params: namedtuple, optional kwarg
+        halo mass function parameters
+
+    logmp_cutoff: float, optional kwarg
+        base-10 log of minimum halo mass for which
+        DiffmahPop is used to generate MAHs, in Msun;
+        for logmp < logmp_cutoff, P(θ_MAH | logmp) = P(θ_MAH | logmp_cutoff)
+
+    cosmo_params: namedtuple, optional kwarg
+        cosmological parameters
+
+        Returns
+    -------
+    lc_data: namedtuple
+        Population of n_halos host halos along with data needed to compute photometry
+
+        lc_data fields:
+            cen_weights: ndarray of shape (n_halos, )
+                For centrals, cen_weight is determined by the halo mass function (HMF)
+
+            z_obs: ndarray of shape (n_halos, )
+                redshift values
+
+            t_obs: ndarray of shape (n_halos, )
+                cosmic time at observation, in Gyr
+
+            logmp_obs: ndarray of shape (n_halos, )
+                base-10 log of halo mass at observation, in Msun
+
+            mah_params: namedtuple of ndarrays of shape (n_halos, )
+                mah parameters
+
+            logmp0: ndarray of shape (n_halos, )
+                base-10 log of halo mass at z=0, in Msun
+
+            t_table : array
+                Age of the universe in Gyr at which SFH is tabulated
+
+            ssp_data : namedtuple
+                same as input
+
+            precomputed_ssp_mag_table : array, shape (n_z_phot_table, n_bands, n_met, n_age)
+
+            z_phot_table : array
+                same as input
+
+            wave_eff_table : array, shape (n_z_phot_table, n_bands)
+                Effective wavelength of each transmission curve
+                evaluated at each redshift in z_phot_table
+
+    """
+    cenpop = mclh.weighted_lc_halos(
+        ran_key=ran_key,
+        num_halos=num_halos,
+        z_min=z_min,
+        z_max=z_max,
+        lgmp_min=lgmp_min,
+        lgmp_max=lgmp_max,
+        sky_area_degsq=sky_area_degsq,
+        cosmo_params=cosmo_params,
+        logmp_cutoff=logmp_cutoff,
+    )
+
+    logt0 = cenpop.logt0
+    t0 = 10**logt0
+    t_table = jnp.linspace(T_TABLE_MIN, t0, N_SFH_TABLE)
+
+    precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
+        tcurves, ssp_data, z_phot_table, cosmo_params
+    )
+    wave_eff_table = get_wave_eff_table(z_phot_table, tcurves)
+
+    lc_data = LCDataPhotCentrals(
+        cen_weight=cenpop.cen_weight,
+        z_obs=cenpop.z_obs,
+        t_obs=cenpop.t_obs,
+        logmp_obs=cenpop.logmp_obs,
+        mah_params=cenpop.mah_params,
+        logmp0=cenpop.logmp0,
+        #
+        t_table=t_table,
+        #
+        ssp_data=ssp_data,
+        precomputed_ssp_mag_table=precomputed_ssp_mag_table,
+        z_phot_table=z_phot_table,
+        wave_eff_table=wave_eff_table,
+    )
+
+    lc_data = passively_add_emlines_to_lc_data(ssp_data, lc_data)
+
+    return lc_data
