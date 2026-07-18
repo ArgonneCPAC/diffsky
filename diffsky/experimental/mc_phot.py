@@ -1,5 +1,4 @@
 # flake8: noqa: E402
-""""""
 
 from jax import config
 
@@ -12,7 +11,6 @@ from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import jit as jjit
 
-from ..param_utils import diffsky_param_wrapper as dpw
 from ..param_utils import diffsky_param_wrapper_merging as dpwm
 from .kernels import (
     _dbk_sed_kern,
@@ -162,7 +160,7 @@ def mc_lc_sed(
     lc_data,
     mc_merge,
     *,
-    param_collection=dpw.DEFAULT_PARAM_COLLECTION,
+    param_collection=dpwm.DEFAULT_PARAM_COLLECTION,
     cosmo_params=DEFAULT_COSMOLOGY,
     fb=FB,
 ):
