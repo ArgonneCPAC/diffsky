@@ -654,7 +654,7 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["c_over_a_bulge"] = bulge_axis_ratios.c_over_a
 
     ellipse2d_disk, ellipse2d_bulge = mcdbs.mc_disk_bulge_ellipsoids(
-        orientation_key, r50_disk, r50_bulge
+        orientation_key, r50_disk, r50_bulge, envelop=True, ellipticity_type=0,
     )
 
     diffsky_data["beta_disk"] = ellipse2d_disk.beta
