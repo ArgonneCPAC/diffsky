@@ -54,36 +54,36 @@ def mc_disk_bulge_ellipsoids(
     bulge_axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_shape_key, n)
 
     """
-    The projection works in the following way: 
-    We first define the direction of the 3D galaxy ellipsoid eigenaxes A, B, C in the simulation frame. This 
+    The projection works in the following way:
+    We first define the direction of the 3D galaxy ellipsoid eigenaxes A, B, C in the simulation frame. This
     could be a uniform random orientation when no intrinsic alignment is modeled, or non-uniform random
     orientation with a preferential direction when intrinsic alignment is modeled.
     Then, based on the coordinates of the galaxy, we define the west-north-LoS coordinate system in the simulation
     frame. The west-north-LoS axes are then transformed into the ellipsoid body frame, and projected onto the
-    west-north plane. The new omega degree-of-freedom is introduced here, in addition to the other two dofs, 
-    to define a ZXZ Euler rotation such that the body frame is rotated to the west-north-LoS frame. Then, 
-    the 3D ellipsoid projection can be done with the three angles. 
+    west-north plane. The new omega degree-of-freedom is introduced here, in addition to the other two dofs,
+    to define a ZXZ Euler rotation such that the body frame is rotated to the west-north-LoS frame. Then,
+    the 3D ellipsoid projection can be done with the three angles.
 
     Whitout intrinsic alignment, the (mu, phi, omega) expressed in the body frame are uniformly random. In
     this special case, the rigorous projection can be skipped by just drawing random (mu, phi, omega) and
     project onto the simulation x-y frame. However, when intrinsic alignment is modeled, the (mu, phi, omega)
     expressed in the body frame are no longer uniformly random, and the rigorous projection is required.
     """
-    ### (mu_ran, phi_ran, omega_ran) defines the 3D galaxy ellipsoid eigenaxes A, B, C in the simulation frame.
-    ### The ellipsoid body frame x'-y'-z' is defined such that A=x', B=y', C=z'
-    ### mu = cos(theta) where theta is the polar angle of C
-    ### phi is the azimuthal angle of C
-    ### omega is the angle between A and the pivot axis (z x z')
-    ### Without intrinsic alignment, the (mu, phi, omega) are drawn from uniform random distribution.
+    # (mu_ran, phi_ran, omega_ran) defines the 3D galaxy ellipsoid eigenaxes A, B, C in the simulation frame.
+    # The ellipsoid body frame x'-y'-z' is defined such that A=x', B=y', C=z'
+    # mu = cos(theta) where theta is the polar angle of C
+    # phi is the azimuthal angle of C
+    # omega is the angle between A and the pivot axis (z x z')
+    # Without intrinsic alignment, the (mu, phi, omega) are drawn from uniform random distribution.
     mu_ran, phi_ran, omega_ran = epk.mc_mu_phi_omega(n, los_key)
 
-    ### Build the 3D vectors of A, B, and C in the simulation frame
+    # Build the 3D vectors of A, B, and C in the simulation frame
     R = epk._get_eulerxzx_matrix_from_angles(
         phi_ran + jnp.pi / 2.0, jnp.arccos(mu_ran), omega_ran
     )
     A, B, C = R[:, :, 0], R[:, :, 1], R[:, :, 2]
 
-    ### Build the West-North-LoS coordinate system in the simulation frame
+    # Build the West-North-LoS coordinate system in the simulation frame
     NCP = jnp.array([0, 0, 1])
     obs_z = jnp.stack([pos_x, pos_y, pos_z], axis=-1)
     obs_z = (
@@ -104,13 +104,13 @@ def mc_disk_bulge_ellipsoids(
 
     obs_y = jnp.cross(obs_z, obs_x)
 
-    ### Transform the West-North-LoS coordinate system into the ellipsoid body frame
+    # Transform the West-North-LoS coordinate system into the ellipsoid body frame
     u = epk._transform_axes_to_frame(obs_x, A, B, C)
     v = epk._transform_axes_to_frame(obs_y, A, B, C)
 
-    ### Get the projection angles in the ellipsoid body frame,
-    ### which are the Euler angles of the ZXZ rotation from the body frame
-    ### to the west-north-los frame
+    # Get the projection angles in the ellipsoid body frame,
+    # which are the Euler angles of the ZXZ rotation from the body frame
+    # to the west-north-los frame
     z1, x2, z3 = epk._get_eulerzxz_angle_from_basis(u, v)
     mu_proj = jnp.cos(x2)
     phi_proj = z1 - jnp.pi / 2.0
