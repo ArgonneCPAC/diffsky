@@ -62,7 +62,12 @@ def make_bulge_rp13_comparison_plot(
 
     axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_key, ngals, bulge_params)
     bulge_ellipse2d = eproj.compute_ellipse2d(
-        a, a * axis_ratios.b_over_a, a * axis_ratios.c_over_a, mu_ran, phi_ran, omega_ran
+        a,
+        a * axis_ratios.b_over_a,
+        a * axis_ratios.c_over_a,
+        mu_ran,
+        phi_ran,
+        omega_ran,
     )
     ba_pdf_model, __ = np.histogram(
         bulge_ellipse2d.beta / bulge_ellipse2d.alpha, ba_bins, density=True
@@ -72,7 +77,12 @@ def make_bulge_rp13_comparison_plot(
         bulge_key2, ngals, bulge_params2
     )
     bulge2_ellipse2d = eproj.compute_ellipse2d(
-        a, a * axis_ratios2.b_over_a, a * axis_ratios2.c_over_a, mu_ran, phi_ran, omega_ran
+        a,
+        a * axis_ratios2.b_over_a,
+        a * axis_ratios2.c_over_a,
+        mu_ran,
+        phi_ran,
+        omega_ran,
     )
     ba_pdf_model2, __ = np.histogram(
         bulge2_ellipse2d.beta / bulge2_ellipse2d.alpha, ba_bins, density=True
@@ -137,7 +147,12 @@ def make_disk_rp13_comparison_plot(
 
     axis_ratios = disk_shapes.sample_disk_axis_ratios(disk_key, ngals, disk_params)
     gal_ellipse2d = eproj.compute_ellipse2d(
-        a, a * axis_ratios.b_over_a, a * axis_ratios.c_over_a, mu_ran, phi_ran, omega_ran
+        a,
+        a * axis_ratios.b_over_a,
+        a * axis_ratios.c_over_a,
+        mu_ran,
+        phi_ran,
+        omega_ran,
     )
     ba_pdf_model, __ = np.histogram(
         gal_ellipse2d.beta / gal_ellipse2d.alpha, ba_bins, density=True
@@ -145,7 +160,12 @@ def make_disk_rp13_comparison_plot(
 
     axis_ratios2 = disk_shapes.sample_disk_axis_ratios(disk_key2, ngals, disk_params2)
     gal_ellipse2d2 = eproj.compute_ellipse2d(
-        a, a * axis_ratios2.b_over_a, a * axis_ratios2.c_over_a, mu_ran, phi_ran, omega_ran
+        a,
+        a * axis_ratios2.b_over_a,
+        a * axis_ratios2.c_over_a,
+        mu_ran,
+        phi_ran,
+        omega_ran,
     )
     ba_pdf_model2, __ = np.histogram(
         gal_ellipse2d2.beta / gal_ellipse2d2.alpha, ba_bins, density=True
