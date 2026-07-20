@@ -374,6 +374,11 @@ if __name__ == "__main__":
                 _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
                 phot_info_batch, lc_data_batch, diffsky_data_batch = _res
 
+                ### Jiachuan Xu: the ellipsoid projection should be based on the
+                ### NFW repositioned satellite positions, lensing and RSD do not
+                ### change the projection.
+                ### Maybe this function should be break into two parts,
+                ### one for adding morphology quantities, one for projection.
                 batch_key, morph_key = jran.split(batch_key, 2)
                 diffsky_data_batch = (
                     lcmp_repro.add_morphology_quantities_to_diffsky_data(
