@@ -63,7 +63,7 @@ def mc_ellipsoid_params(r50, b_over_a, c_over_a, ran_key, sample_omega=True):
     return compute_ellipse2d(a, b, c, mu_ran, phi_ran, omega_ran)
 
 
-@partial(jjit, static_argnums=(6,7))
+@partial(jjit, static_argnums=(6, 7))
 def compute_ellipse2d(a, b, c, mu, phi, omega, envelop=True, ellipticity_type=0):
     """Compute 2d ellipse parameters defined line-of-sight projection of 3d ellipsoid
 
@@ -91,10 +91,10 @@ def compute_ellipse2d(a, b, c, mu, phi, omega, envelop=True, ellipticity_type=0)
         False — z=0 cross-section: S_2d = S_rotated[:2, :2] (approximate).
 
     ellipticity_type: int, optional
-        Definition of the ellipticity returned in the Ellipse2DParams. See 
+        Definition of the ellipticity returned in the Ellipse2DParams. See
             https://arxiv.org/abs/astro-ph/0107431
         Define the axis ratio q = beta/alpha of the projected 2D ellipse, then
-        - 0 (Default): ellipticity = e = 1-q 
+        - 0 (Default): ellipticity = e = 1-q
         - 1: ellipticity = g = (1-q)/(1+q) (reduced shear)
         - 2: ellipticity = delta = (1-q^2)/(1+q^2) (distortion)
         - 3: ellipticity = eta = -ln(q) (conformal shear)
@@ -144,13 +144,13 @@ def compute_ellipse2d(a, b, c, mu, phi, omega, envelop=True, ellipticity_type=0)
 
     psi is the angle between the semi-major axis α and the u-axis in the 2D projected plane
         -π/2 < psi < π/2
-        psi = 0 ==> semi-major axis α is aligned with u-axis, 
+        psi = 0 ==> semi-major axis α is aligned with u-axis,
             i.e., e_alpha = (1, 0), e_2=0
-        psi = π/2 ==> semi-major axis α is aligned with v-axis, 
+        psi = π/2 ==> semi-major axis α is aligned with v-axis,
             i.e., e_alpha = (0, 1), e_2=0
-        psi = π/4 ==> semi-major axis α is aligned with (+u)-(+v) diagonal, 
+        psi = π/4 ==> semi-major axis α is aligned with (+u)-(+v) diagonal,
             i.e., e_alpha = (sqrt(2), sqrt(2)), e_1=0
-        psi = -π/4 ==> semi-major axis α is aligned with (+u)-(-v) diagonal, 
+        psi = -π/4 ==> semi-major axis α is aligned with (+u)-(-v) diagonal,
             i.e., e_alpha = (sqrt(2), -sqrt(2)), e_1=0
         psi > 0 ==> Counter-clockwise rotation of u-axis needed to align with α
         psi < 0 ==> Clockwise rotation of u-axis needed to align with α
@@ -169,13 +169,16 @@ def compute_ellipse2d(a, b, c, mu, phi, omega, envelop=True, ellipticity_type=0)
     elif ellipticity_type == 3:
         ellipticity = -jnp.log(q)
     else:
-        raise ValueError(f"Invalid ellipticity_type: {ellipticity_type}. Must be 0, 1, 2, or 3.")
+        raise ValueError(
+            f"Invalid ellipticity_type: {ellipticity_type}. Must be 0, 1, 2, or 3."
+        )
     # get angle psi between semi-major axis and u-axis
     psi = _calculate_ellipse2d_psi(A, B, C)
     # get the coordinates of the semi-major and semi-minor unit-axes in the uv-plane
     e_alpha, e_beta = _get_xy_coords_of_projected_semi_axes(psi)
     ellipse2d = Ellipse2DParams(alpha, beta, psi, ellipticity, e_alpha, e_beta, A, B, C)
     return ellipse2d
+
 
 @partial(jjit, static_argnums=(6,))
 def _compute_2d_ellipse_params(a, b, c, mu, phi, omega, envelop=True):
@@ -186,17 +189,19 @@ def _compute_2d_ellipse_params(a, b, c, mu, phi, omega, envelop=True):
     The third angle omega is the spin around the LoS after aligning it with z. Therefore, the combination
     of (mu, phi, omega) forms an Euler angle triplet in the ZXZ convention that rotates the x-y-z into
     the u-v-LoS. The Euler rotations are applied as follows:
-    1. Rotate around the z-axis by phi + pi/2 
+    1. Rotate around the z-axis by phi + pi/2
     2. Rotate around the new x-axis by theta = arccos(mu)
     3. Rotate around the new z-axis (LoS) by omega.
     """
     # ── Shape matrix diagonal ───────────────────────────────────────────────
-    d = jnp.stack([1.0/a**2, 1.0/b**2, 1.0/c**2], axis=-1)  # (..., 3)
+    d = jnp.stack([1.0 / a**2, 1.0 / b**2, 1.0 / c**2], axis=-1)  # (..., 3)
 
     # -- Rotation matrix that maps x-y-z to u-v-LoS (Euler ZXZ convention) ---
     theta = jnp.arccos(mu)  # polar angle from z-axis to LoS
     # passive rotation: R @ [x,y,z] = [u,v,LoS]
-    R = _Euler_ZXZ_(phi+jnp.pi/2., theta, omega)  # (..., 3, 3)
+    R = _get_eulerxzx_matrix_from_angles(
+        phi + jnp.pi / 2.0, theta, omega
+    )  # (..., 3, 3)
 
     # -- Quadratic form in the u-v-LoS frame: S_rotated = R^T @ S @ R --------
     S_rotated = jnp.swapaxes(R, -1, -2) @ (d[..., :, None] * R)
@@ -205,11 +210,12 @@ def _compute_2d_ellipse_params(a, b, c, mu, phi, omega, envelop=True):
     if envelop:
         # Schur complement of S33: envelope of the full 3D projection
         # Derived from discriminant = 0 of the quadratic in z
-        s_col = S_rotated[..., :2, 2]                        # [S13, S23]
-        S33   = S_rotated[..., 2, 2]
-        S_2d  = S_rotated[..., :2, :2] - (
-            s_col[..., :, None] * s_col[..., None, :]
-        ) / S33[..., None, None]
+        s_col = S_rotated[..., :2, 2]  # [S13, S23]
+        S33 = S_rotated[..., 2, 2]
+        S_2d = (
+            S_rotated[..., :2, :2]
+            - (s_col[..., :, None] * s_col[..., None, :]) / S33[..., None, None]
+        )
     else:
         # z=0 cross-section (sub-matrix method)
         S_2d = S_rotated[..., :2, :2]
@@ -221,8 +227,9 @@ def _compute_2d_ellipse_params(a, b, c, mu, phi, omega, envelop=True):
 
     return A, B, C
 
+
 @jjit
-def _Euler_ZXZ_(a, b, c):
+def _get_eulerxzx_matrix_from_angles(a, b, c):
     """Intrinsic ZXZ rotation: rotate by a about z, then by b about the
     new x, then by c about the newest z. First-applied rotation is
     leftmost: R = Rz(a) @ Rx(b) @ Rz(c). All angles are in radians.
@@ -258,6 +265,54 @@ def _Euler_ZXZ_(a, b, c):
         axis=-2,
     )
     return Rz_a @ Rx_b @ Rz_c
+
+
+@jjit
+def _get_eulerzxz_angle_from_basis(x_prime, y_prime):
+    """
+    Recover ZXZ intrinsic Euler angles (alpha, beta, gamma) from the rotated
+    x'-y'-z' basis axes. (z' is calculated as x' cross y')
+
+    Parameters
+    ----------
+    x_prime, y_prime : array_like, shape (..., 3)
+        Vectors of the new x' and y' axes. The function will normalize them to unit
+        vectors.
+
+    Returns
+    -------
+    alpha, beta, gamma : ndarray
+        Euler angles in radians.
+    """
+    x_ = jnp.asarray(x_prime, dtype=float)
+    y_ = jnp.asarray(y_prime, dtype=float)
+
+    # Normalize inputs to unit vectors
+    x_ = x_ / jnp.linalg.norm(x_, axis=-1, keepdims=True)
+    y_ = y_ / jnp.linalg.norm(y_, axis=-1, keepdims=True)
+    z_ = jnp.cross(x_, y_)  # Ensure z' is orthogonal to x' and y'
+
+    cos_beta = jnp.clip(z_[..., 2], -1.0, 1.0)
+    beta = jnp.arccos(cos_beta)
+    sin_beta = jnp.sin(beta)
+
+    no_lock = jnp.abs(sin_beta) > 1e-10
+
+    # General case: invert the analytic expressions above.
+    # Gimbal lock fallback: alpha absorbs the free angle, gamma = 0.
+    alpha = jnp.where(
+        no_lock,
+        jnp.arctan2(z_[..., 0], -z_[..., 1]),
+        jnp.arctan2(x_[..., 1], x_[..., 0]),
+    )
+    gamma = jnp.where(no_lock, jnp.arctan2(x_[..., 2], y_[..., 2]), 0.0)
+
+    # Wrap to required ranges: alpha, gamma in [0, 2pi]; beta already in [0, pi]
+    alpha = alpha % (2.0 * jnp.pi)
+    gamma = gamma % (2.0 * jnp.pi)
+
+    return alpha, beta, gamma
+
 
 @jjit
 def _calculate_ellipse2d_axes(A, B, C):
@@ -309,6 +364,25 @@ def _get_xy_coords_of_projected_semi_axes(psi):
 
     return e_alpha, e_beta
 
+
+@jjit
+def _transform_axes_to_frame(A, x_prime, y_prime, z_prime):
+    """
+    Re-express vector A in the frame (x', y', z').
+    All inputs shape (N, 3). Returns A', shape (N, 3).
+    """
+
+    def _dot(V, frame_ax):
+        return jnp.sum(V * frame_ax, axis=-1)
+
+    def _to_frame(V):
+        return jnp.stack(
+            [_dot(V, x_prime), _dot(V, y_prime), _dot(V, z_prime)], axis=-1
+        )
+
+    return _to_frame(A)
+
+
 # ── Unit test ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     """Spinning-top GIF: independent-construction visual unit test.
@@ -316,7 +390,7 @@ if __name__ == "__main__":
     Goal: confirm that compute_ellipse2d's analytic (alpha, beta, psi)
     prediction matches the true silhouette of an explicitly-rotated 3D
     ellipsoid wireframe -- where the wireframe's rotation is built WITHOUT
-    using any of this module's own rotation/projection code (_Euler_ZXZ_,
+    using any of this module's own rotation/projection code (_get_eulerxzx_matrix_from_angles,
     _project_ellipsoid_scalar, compute_ellipse2d), only elementary vector
     geometry (cross products). This is the function under test being checked
     against an independently-derived reference, not against itself.
@@ -335,7 +409,7 @@ if __name__ == "__main__":
         aux   = w x pivot                     (already unit: w, pivot, aux orthonormal)
         u     =  cos(omega) pivot + sin(omega) aux
         v     = -sin(omega) pivot + cos(omega) aux
-    A self-check below confirms this equals _Euler_ZXZ_(phi+pi/2, arccos(mu),
+    A self-check below confirms this equals _get_eulerxzx_matrix_from_angles(phi+pi/2, arccos(mu),
     omega)'s columns exactly (verified analytically too -- see the function
     docstring) -- but the wireframe itself only ever uses (u, v, w) via plain
     dot products, never that matrix.
@@ -350,25 +424,27 @@ if __name__ == "__main__":
     import numpy as np
     import matplotlib.pyplot as plt
     import matplotlib.animation as animation
-    from mpl_toolkits.mplot3d import Axes3D   # noqa: F401
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
     # ── Configuration ─────────────────────────────────────────────────────
-    SEMI_A, SEMI_B, SEMI_C = 2.0, 1.5, 0.5   # ellipsoid semi-axes (a >= b >= c)
-    N_FRAMES      = 96                        # total animation frames
-    N_PHI_TURNS   = 2.0                       # precession turns over the animation
-    N_OMEGA_TURNS = 7.0                       # spin turns over the animation
-    FPS           = 12
-    DPI           = 90
-    SAVE_PATH     = "ellipsoid_projection.gif"
+    SEMI_A, SEMI_B, SEMI_C = 2.0, 1.5, 0.5  # ellipsoid semi-axes (a >= b >= c)
+    N_FRAMES = 96  # total animation frames
+    N_PHI_TURNS = 2.0  # precession turns over the animation
+    N_OMEGA_TURNS = 7.0  # spin turns over the animation
+    FPS = 12
+    DPI = 90
+    SAVE_PATH = "ellipsoid_projection.gif"
 
     # ── Trajectory of (mu, phi, omega) ──────────────────────────────────────
     # mu kept strictly inside (-1, 1): pivot = z x w is undefined exactly at
     # mu = +/-1 (a feature of this elementary cross-product construction --
-    # _Euler_ZXZ_ itself has no such singularity, but the whole point here is
+    # _get_eulerxzx_matrix_from_angles itself has no such singularity, but the whole point here is
     # to avoid depending on it).
-    _t         = np.linspace(0.0, 1.0, N_FRAMES)
-    mu_traj    = 0.995 * np.cos(_t * np.pi)          # +0.995 -> -0.995 (face-on -> edge-on -> face-on)
-    phi_traj   = _t * N_PHI_TURNS * 2 * np.pi
+    _t = np.linspace(0.0, 1.0, N_FRAMES)
+    mu_traj = 0.995 * np.cos(
+        _t * np.pi
+    )  # +0.995 -> -0.995 (face-on -> edge-on -> face-on)
+    phi_traj = _t * N_PHI_TURNS * 2 * np.pi
     omega_traj = _t * N_OMEGA_TURNS * 2 * np.pi
 
     # ── Independent (u, v, w) construction -- no diffsky rotation code used ──
@@ -383,18 +459,27 @@ if __name__ == "__main__":
         return u, v, w
 
     # Self-check (not part of the wireframe pipeline below): confirm the
-    # elementary construction above agrees with _Euler_ZXZ_, as derived
+    # elementary construction above agrees with _get_eulerxzx_matrix_from_angles, as derived
     # analytically in the docstring.
     _rng = np.random.default_rng(0)
     _max_err = 0.0
     for _ in range(200):
-        _mu, _phi, _om = (_rng.uniform(-0.999, 0.999), _rng.uniform(-np.pi, np.pi),
-                          _rng.uniform(-np.pi, np.pi))
+        _mu, _phi, _om = (
+            _rng.uniform(-0.999, 0.999),
+            _rng.uniform(-np.pi, np.pi),
+            _rng.uniform(-np.pi, np.pi),
+        )
         _u, _v, _w = _uvw_from_mu_phi_omega(_mu, _phi, _om)
-        _R = np.array(_Euler_ZXZ_(_phi + np.pi / 2.0, np.arccos(_mu), _om))
+        _R = np.array(
+            _get_eulerxzx_matrix_from_angles(_phi + np.pi / 2.0, np.arccos(_mu), _om)
+        )
         _max_err = max(_max_err, np.max(np.abs(np.stack([_u, _v, _w], axis=1) - _R)))
-    print(f"[self-check] (u,v,w) construction vs _Euler_ZXZ_: max error = {_max_err:.2e}")
-    assert _max_err < 1e-6, "independent (u,v,w) construction disagrees with _Euler_ZXZ_"
+    print(
+        f"[self-check] (u,v,w) construction vs _get_eulerxzx_matrix_from_angles: max error = {_max_err:.2e}"
+    )
+    assert (
+        _max_err < 1e-6
+    ), "independent (u,v,w) construction disagrees with _get_eulerxzx_matrix_from_angles"
 
     # ── Static ellipsoid wireframe & surface, in BODY coordinates ────────────
     def _wireframe_lines_body(n_lat=7, n_lon=10):
@@ -402,31 +487,47 @@ if __name__ == "__main__":
         segs = []
         for alpha0 in np.linspace(0.1 * np.pi, 0.9 * np.pi, n_lat):
             beta = np.linspace(0.0, 2 * np.pi, 150)
-            segs.append(np.stack([
-                SEMI_A * np.sin(alpha0) * np.cos(beta),
-                SEMI_B * np.sin(alpha0) * np.sin(beta),
-                SEMI_C * np.full_like(beta, np.cos(alpha0)),
-            ], axis=-1))
+            segs.append(
+                np.stack(
+                    [
+                        SEMI_A * np.sin(alpha0) * np.cos(beta),
+                        SEMI_B * np.sin(alpha0) * np.sin(beta),
+                        SEMI_C * np.full_like(beta, np.cos(alpha0)),
+                    ],
+                    axis=-1,
+                )
+            )
         for beta0 in np.linspace(0.0, 2 * np.pi, n_lon + 1)[:-1]:
             alpha = np.linspace(0.0, np.pi, 80)
-            segs.append(np.stack([
-                SEMI_A * np.sin(alpha) * np.cos(beta0),
-                SEMI_B * np.sin(alpha) * np.sin(beta0),
-                SEMI_C * np.cos(alpha),
-            ], axis=-1))
+            segs.append(
+                np.stack(
+                    [
+                        SEMI_A * np.sin(alpha) * np.cos(beta0),
+                        SEMI_B * np.sin(alpha) * np.sin(beta0),
+                        SEMI_C * np.cos(alpha),
+                    ],
+                    axis=-1,
+                )
+            )
         return segs
 
     _wire_body = _wireframe_lines_body()
 
-    _beta_grid, _alpha_grid = np.meshgrid(np.linspace(0, 2 * np.pi, 48),
-                                           np.linspace(0, np.pi, 24))
-    _surf_body = np.stack([
-        SEMI_A * np.sin(_alpha_grid) * np.cos(_beta_grid),
-        SEMI_B * np.sin(_alpha_grid) * np.sin(_beta_grid),
-        SEMI_C * np.cos(_alpha_grid),
-    ], axis=-1)                                    # (n_lat, n_lon, 3)
+    _beta_grid, _alpha_grid = np.meshgrid(
+        np.linspace(0, 2 * np.pi, 48), np.linspace(0, np.pi, 24)
+    )
+    _surf_body = np.stack(
+        [
+            SEMI_A * np.sin(_alpha_grid) * np.cos(_beta_grid),
+            SEMI_B * np.sin(_alpha_grid) * np.sin(_beta_grid),
+            SEMI_C * np.cos(_alpha_grid),
+        ],
+        axis=-1,
+    )  # (n_lat, n_lon, 3)
 
-    _body_zaxis = np.array([0.0, 0.0, SEMI_C])     # apex of the alpha=0 line: the body's own symmetry axis
+    _body_zaxis = np.array(
+        [0.0, 0.0, SEMI_C]
+    )  # apex of the alpha=0 line: the body's own symmetry axis
 
     def _to_uvw(points_body, u, v, w):
         """points_body: (..., 3) body coords -> (..., 3) coords along (u, v, w)."""
@@ -436,12 +537,18 @@ if __name__ == "__main__":
     # This is the function under test -- called once, vectorised over frames.
     _ones = jnp.ones(N_FRAMES)
     res = compute_ellipse2d(
-        _ones * SEMI_A, _ones * SEMI_B, _ones * SEMI_C,
-        jnp.array(mu_traj), jnp.array(phi_traj), jnp.array(omega_traj),
+        _ones * SEMI_A,
+        _ones * SEMI_B,
+        _ones * SEMI_C,
+        jnp.array(mu_traj),
+        jnp.array(phi_traj),
+        jnp.array(omega_traj),
         envelop=True,
     )
-    pred = {k: np.array(getattr(res, k))
-            for k in ("alpha", "beta", "psi", "e_alpha", "e_beta")}
+    pred = {
+        k: np.array(getattr(res, k))
+        for k in ("alpha", "beta", "psi", "e_alpha", "e_beta")
+    }
 
     _COORD_CLR = {"u": "#d62728", "v": "#2ca02c", "w": "#1f77b4"}
     LIM = max(SEMI_A, SEMI_B, SEMI_C) * 1.5
@@ -461,60 +568,112 @@ if __name__ == "__main__":
         ax.cla()
 
         surf_uvw = _to_uvw(_surf_body, u, v, w)
-        ax.plot_surface(surf_uvw[..., 0], surf_uvw[..., 1], surf_uvw[..., 2],
-                         alpha=0.22, color="steelblue", rstride=1, cstride=1,
-                         linewidth=0.3, edgecolor="steelblue")
+        ax.plot_surface(
+            surf_uvw[..., 0],
+            surf_uvw[..., 1],
+            surf_uvw[..., 2],
+            alpha=0.22,
+            color="steelblue",
+            rstride=1,
+            cstride=1,
+            linewidth=0.3,
+            edgecolor="steelblue",
+        )
         for seg in _wire_body:
             seg_uvw = _to_uvw(seg, u, v, w)
-            ax.plot(seg_uvw[:, 0], seg_uvw[:, 1], seg_uvw[:, 2],
-                    color="steelblue", alpha=0.35, lw=0.6)
+            ax.plot(
+                seg_uvw[:, 0],
+                seg_uvw[:, 1],
+                seg_uvw[:, 2],
+                color="steelblue",
+                alpha=0.35,
+                lw=0.6,
+            )
 
         # Fixed (u, v, w) axes of the observation frame
         for lbl, vec in zip(["u", "v", "w"], np.eye(3)):
-            ax.quiver(0, 0, 0, *(vec * LIM * 0.60),
-                      color=_COORD_CLR[lbl], lw=1.0,
-                      arrow_length_ratio=0.14, alpha=0.6)
+            ax.quiver(
+                0,
+                0,
+                0,
+                *(vec * LIM * 0.60),
+                color=_COORD_CLR[lbl],
+                lw=1.0,
+                arrow_length_ratio=0.14,
+                alpha=0.6,
+            )
 
         # Ellipsoid's own symmetry (body z) axis, expressed in (u, v, w)
         z_uvw = _to_uvw(_body_zaxis, u, v, w)
-        ax.quiver(0, 0, 0, *z_uvw, color="k", lw=2.5,
-                  arrow_length_ratio=0.15, label="body z-axis")
+        ax.quiver(
+            0,
+            0,
+            0,
+            *z_uvw,
+            color="k",
+            lw=2.5,
+            arrow_length_ratio=0.15,
+            label="body z-axis",
+        )
 
         # ── Floor (w = -LIM): independently-built wireframe shadow versus
         #    compute_ellipse2d's analytic ellipse -- the actual check ──────
         floor = -LIM
         surf_uv = surf_uvw[..., :2]
-        ax.scatter(surf_uv[..., 0].ravel(), surf_uv[..., 1].ravel(),
-                   np.full(surf_uv[..., 0].size, floor),
-                   s=1, color="steelblue", alpha=0.15)
+        ax.scatter(
+            surf_uv[..., 0].ravel(),
+            surf_uv[..., 1].ravel(),
+            np.full(surf_uv[..., 0].size, floor),
+            s=1,
+            color="steelblue",
+            alpha=0.15,
+        )
         for seg in _wire_body:
             seg_uv = _to_uvw(seg, u, v, w)[:, :2]
-            ax.plot(seg_uv[:, 0], seg_uv[:, 1], np.full(len(seg_uv), floor),
-                    color="steelblue", alpha=0.35, lw=0.7)
+            ax.plot(
+                seg_uv[:, 0],
+                seg_uv[:, 1],
+                np.full(len(seg_uv), floor),
+                color="steelblue",
+                alpha=0.35,
+                lw=0.7,
+            )
         _px, _py = np.meshgrid([-LIM, LIM], [-LIM, LIM])
-        ax.plot_surface(_px, _py, np.full_like(_px, floor),
-                        alpha=0.06, color="gray", linewidth=0)
+        ax.plot_surface(
+            _px, _py, np.full_like(_px, floor), alpha=0.06, color="gray", linewidth=0
+        )
 
         # compute_ellipse2d's analytic prediction (function under test)
         pa, pb = pred["alpha"][i], pred["beta"][i]
         ea, eb = pred["e_alpha"][i], pred["e_beta"][i]
         curve = _ellipse_curve_uv(pa, pb, ea, eb)
-        ax.plot(curve[:, 0], curve[:, 1], np.full(len(curve), floor),
-                color="darkred", lw=2.2,
-                label=rf"compute_ellipse2d  $\alpha$={pa:.2f}  $\beta$={pb:.2f}")
-        ax.quiver(0, 0, floor, *(pa * ea), 0, color="darkred", lw=1.8,
-                  arrow_length_ratio=0.15)
-        ax.quiver(0, 0, floor, *(pb * eb), 0, color="green", lw=1.8,
-                  arrow_length_ratio=0.15)
+        ax.plot(
+            curve[:, 0],
+            curve[:, 1],
+            np.full(len(curve), floor),
+            color="darkred",
+            lw=2.2,
+            label=rf"compute_ellipse2d  $\alpha$={pa:.2f}  $\beta$={pb:.2f}",
+        )
+        ax.quiver(
+            0, 0, floor, *(pa * ea), 0, color="darkred", lw=1.8, arrow_length_ratio=0.15
+        )
+        ax.quiver(
+            0, 0, floor, *(pb * eb), 0, color="green", lw=1.8, arrow_length_ratio=0.15
+        )
 
-        ax.set_xlim(-LIM, LIM); ax.set_ylim(-LIM, LIM); ax.set_zlim(-LIM, LIM)
-        ax.set_xlabel("u", labelpad=1); ax.set_ylabel("v", labelpad=1)
+        ax.set_xlim(-LIM, LIM)
+        ax.set_ylim(-LIM, LIM)
+        ax.set_zlim(-LIM, LIM)
+        ax.set_xlabel("u", labelpad=1)
+        ax.set_ylabel("v", labelpad=1)
         ax.set_zlabel("w", labelpad=1)
         ax.set_title(
             rf"$\mu$={mu_traj[i]:+.2f}  $\phi$={np.degrees(phi_traj[i]) % 360:.0f}°"
             rf"  $\omega$={np.degrees(omega_traj[i]) % 360:.0f}°"
             rf"  |  frame {i + 1}/{N_FRAMES}",
-            fontsize=9, pad=4,
+            fontsize=9,
+            pad=4,
         )
         ax.legend(fontsize=8, loc="upper left")
 
@@ -522,19 +681,23 @@ if __name__ == "__main__":
         """FuncAnimation callback: redraw the combined panel for frame i."""
         u, v, w = _uvw_from_mu_phi_omega(mu_traj[i], phi_traj[i], omega_traj[i])
         _draw(ax3d, i, u, v, w)
-        fig.suptitle(rf"Ellipsoid  $a$={SEMI_A}  $b$={SEMI_B}  $c$={SEMI_C}",
-                     fontsize=10, y=0.98)
+        fig.suptitle(
+            rf"Ellipsoid  $a$={SEMI_A}  $b$={SEMI_B}  $c$={SEMI_C}", fontsize=10, y=0.98
+        )
 
     # ── Render and save ───────────────────────────────────────────────────
-    SLOWDOWN   = 5.0                 # play the saved GIF 5x slower
-    SAVE_FPS   = FPS / SLOWDOWN
+    SLOWDOWN = 5.0  # play the saved GIF 5x slower
+    SAVE_FPS = FPS / SLOWDOWN
 
-    fig  = plt.figure(figsize=(8, 7))
+    fig = plt.figure(figsize=(8, 7))
     ax3d = fig.add_subplot(1, 1, 1, projection="3d")
 
     ani = animation.FuncAnimation(
-        fig, _update, frames=N_FRAMES,
-        interval=SLOWDOWN * 1000 // FPS, blit=False,
+        fig,
+        _update,
+        frames=N_FRAMES,
+        interval=SLOWDOWN * 1000 // FPS,
+        blit=False,
     )
     ani.save(SAVE_PATH, writer="pillow", dpi=DPI, fps=SAVE_FPS)
     plt.close(fig)
