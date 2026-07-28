@@ -379,11 +379,6 @@ if __name__ == "__main__":
                     sim_info, lc_data_batch, diffsky_data_batch, nfw_key
                 )
 
-                # Jiachuan Xu: the ellipsoid projection should be based on the
-                # NFW repositioned satellite positions, lensing and RSD do not
-                # change the projection.
-                # Maybe this function should be break into two parts,
-                # one for adding morphology quantities, one for projection.
                 batch_key, morph_key = jran.split(batch_key, 2)
                 diffsky_data_batch = (
                     lcmp_repro.add_morphology_quantities_to_diffsky_data(
