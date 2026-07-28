@@ -653,7 +653,6 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["b_over_a_bulge"] = bulge_axis_ratios.b_over_a
     diffsky_data["c_over_a_bulge"] = bulge_axis_ratios.c_over_a
 
-    ### Should use x/y/z_nfw techniqually
     ellipse2d_disk, ellipse2d_bulge = mcdbs.mc_disk_bulge_ellipsoids(
         orientation_key,
         r50_disk,
