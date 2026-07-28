@@ -658,9 +658,9 @@ def add_morphology_quantities_to_diffsky_data(
         orientation_key,
         r50_disk,
         r50_bulge,
-        lc_data["x"],
-        lc_data["y"],
-        lc_data["z"],
+        lc_data["x_nfw"],
+        lc_data["y_nfw"],
+        lc_data["z_nfw"],
         envelop=True,
         ellipticity_type=0,
     )
@@ -693,9 +693,9 @@ def add_black_hole_quantities_to_diffsky_data(lc_data, diffsky_data, phot_info):
 
 def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5.0):
     pos = np.array((lc_data["x"], lc_data["y"], lc_data["z"])).T
-    host_pos = [lc_data[key][lc_data["top_host_idx"]] for key in ("x", "y", "z")]
+    host_pos = [lc_data[key][lc_data["top_host_idx_chunk"]] for key in ("x", "y", "z")]
     host_pos = np.array(host_pos).T
-    host_logmp_obs = diffsky_data["logmp_obs"][lc_data["top_host_idx"]]
+    host_logmp_obs = diffsky_data["logmp_obs"][lc_data["top_host_idx_chunk"]]
 
     diffsky_data["logmp_obs_host"] = host_logmp_obs
     diffsky_data["x_host"] = host_pos[:, 0]
