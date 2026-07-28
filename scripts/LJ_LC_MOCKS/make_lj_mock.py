@@ -29,7 +29,7 @@ from jax import random as jran
 from mpi4py import MPI
 
 from diffsky import phot_utils
-from diffsky.data_loaders import load_flat_hdf5, load_ssp_templates, mpi_utils
+from diffsky.data_loaders import load_ssp_templates, mpi_utils
 from diffsky.data_loaders.hacc_utils import lc_mock as lcmp_repro
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
@@ -379,11 +379,11 @@ if __name__ == "__main__":
                     sim_info, lc_data_batch, diffsky_data_batch, nfw_key
                 )
 
-                ### Jiachuan Xu: the ellipsoid projection should be based on the
-                ### NFW repositioned satellite positions, lensing and RSD do not
-                ### change the projection.
-                ### Maybe this function should be break into two parts,
-                ### one for adding morphology quantities, one for projection.
+                # Jiachuan Xu: the ellipsoid projection should be based on the
+                # NFW repositioned satellite positions, lensing and RSD do not
+                # change the projection.
+                # Maybe this function should be break into two parts,
+                # one for adding morphology quantities, one for projection.
                 batch_key, morph_key = jran.split(batch_key, 2)
                 diffsky_data_batch = (
                     lcmp_repro.add_morphology_quantities_to_diffsky_data(
