@@ -24,6 +24,8 @@ def mc_disk_bulge_ellipsoids(
     psi_noise_deg=20.0,
     envelop=True,
     ellipticity_type=0,
+    disk_params=disk_shapes.DEFAULT_DISK_PARAMS,
+    bulge_params=bulge_shapes.DEFAULT_BULGE_PARAMS,
 ):
     """Monte Carlo realization of disk/bulge axis ratios and orientations
 
@@ -50,8 +52,12 @@ def mc_disk_bulge_ellipsoids(
 
     ran_key, disk_shape_key, bulge_shape_key, los_key = jran.split(ran_key, 4)
 
-    disk_axis_ratios = disk_shapes.sample_disk_axis_ratios(disk_shape_key, n)
-    bulge_axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_shape_key, n)
+    disk_axis_ratios = disk_shapes.sample_disk_axis_ratios(
+        disk_shape_key, n, disk_params=disk_params
+    )
+    bulge_axis_ratios = bulge_shapes.sample_bulge_axis_ratios(
+        bulge_shape_key, n, bulge_params=bulge_params
+    )
 
     """
     The projection works in the following way:
