@@ -9,6 +9,7 @@
 - Ship physical km/s peculiar velocity instead of comoving km/s (https://github.com/ArgonneCPAC/diffsky/pull/464)
 - Remove obsolete prototype calibrations and bring in new models (https://github.com/ArgonneCPAC/diffsky/pull/466)
 - Fix bug in `ra, dec` for synthetic halos (https://github.com/ArgonneCPAC/diffsky/pull/469)
+- Fix bug in ellipsoidal shapes (https://github.com/ArgonneCPAC/diffsky/pull/468)
 
 
 0.3.6 (2026-06-12)
