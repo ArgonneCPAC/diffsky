@@ -78,7 +78,10 @@ def _pred_ellipse_samples_kern(disk_params, disk_key, mu_ran, phi_ran):
     a = jnp.ones_like(mu_ran)
     b = a * axis_ratios.b_over_a
     c = a * axis_ratios.c_over_a
-    ellipse2d = eproj.compute_ellipse2d(a, b, c, mu_ran, phi_ran)
+    omega_ran = jnp.zeros_like(mu_ran)  # Not used in ellipticity calibration
+    ellipse2d = eproj.compute_ellipse2d(
+        a, b, c, mu_ran, phi_ran, omega_ran, envelop=True, ellipticity_type=0
+    )
     return ellipse2d
 
 

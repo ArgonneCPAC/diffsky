@@ -10,6 +10,7 @@ Untitled*.ipynb
 
 scripts/*.cfg
 scripts/*.cfg~
+docs/source/mock_download_dir
 
 .DS_Store
 **/.DS_Store
