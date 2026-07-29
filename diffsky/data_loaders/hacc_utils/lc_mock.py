@@ -76,7 +76,14 @@ LC_DATA_KEYS_OUT = (
     "lc_patch",
 )
 
-SIZE_KEYS = ("r50_disk", "r50_bulge", "zscore_r50_disk", "zscore_r50_bulge")
+SIZE_KEYS = (
+    "r50_disk_3d",
+    "r50_bulge_3d",
+    "zscore_r50_disk",
+    "zscore_r50_bulge",
+    "r50_disk_2d",
+    "r50_bulge_2d",
+)
 _ORIEN_PATS = (
     "b_over_a_{}",
     "c_over_a_{}",
@@ -637,13 +644,13 @@ def add_morphology_quantities_to_diffsky_data(
         phot_info["logsm_obs"], lc_data["redshift_true"], bulge_size_key
     )
 
-    diffsky_data["r50_disk"] = r50_disk
-    diffsky_data["r50_bulge"] = r50_bulge
+    diffsky_data["r50_disk_3d"] = r50_disk
+    diffsky_data["r50_bulge_3d"] = r50_bulge
     diffsky_data["zscore_r50_disk"] = zscore_disk
     diffsky_data["zscore_r50_bulge"] = zscore_bulge
 
     orientation_key, disk_shape_key, bulge_shape_key = jran.split(morph_key, 3)
-    n = diffsky_data["r50_disk"].size
+    n = diffsky_data["r50_disk_3d"].size
     disk_axis_ratios = disk_shapes.sample_disk_axis_ratios(disk_shape_key, n)
     bulge_axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_shape_key, n)
 
@@ -655,8 +662,8 @@ def add_morphology_quantities_to_diffsky_data(
 
     ellipse2d_disk, ellipse2d_bulge = mcdbs.mc_disk_bulge_ellipsoids(
         orientation_key,
-        r50_disk,
-        r50_bulge,
+        diffsky_data["r50_disk_3d"],
+        diffsky_data["r50_bulge_3d"],
         lc_data["x_nfw"],
         lc_data["y_nfw"],
         lc_data["z_nfw"],
@@ -673,6 +680,13 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["alpha_bulge"] = ellipse2d_bulge.alpha
     diffsky_data["ellipticity_bulge"] = ellipse2d_bulge.ellipticity
     diffsky_data["psi_bulge"] = ellipse2d_bulge.psi
+
+    # Jiachuan Xu:
+    # Assuming a Gaussian profile, the 2D half-light radius would be 0.765*alpha
+    # the 0.765 factor comes from the dimension decrease from 3D to 2D,
+    # where a constant radius encloses more mass in 2D.
+    diffsky_data["r50_disk_2d"] = 0.765 * diffsky_data["alpha_disk"]
+    diffsky_data["r50_bulge_2d"] = 0.765 * diffsky_data["alpha_bulge"]
 
     return diffsky_data
 
