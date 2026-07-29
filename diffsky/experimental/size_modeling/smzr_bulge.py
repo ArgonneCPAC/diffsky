@@ -21,7 +21,7 @@ DEFAULT_BULGE_SIZE_PDICT = dict(
     z_x0_x0=1.0,
     z_x0_lo=10.2,
     z_x0_hi=11.6,
-    lgm_ytp=0.3,
+    lgm_ytp=0.461,
     lgm_slope_lo=0.14,
     lgm_slope_hi=0.25,
 )
