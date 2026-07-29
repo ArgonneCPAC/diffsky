@@ -10,6 +10,7 @@
 - Remove obsolete prototype calibrations and bring in new models (https://github.com/ArgonneCPAC/diffsky/pull/466)
 - Fix bug in `ra, dec` for synthetic halos (https://github.com/ArgonneCPAC/diffsky/pull/469)
 - Fix bug in ellipsoidal shapes (https://github.com/ArgonneCPAC/diffsky/pull/468)
+- Retune disk axis ratio distribution and size--mass relation (https://github.com/ArgonneCPAC/diffsky/pull/470)
 
 
 0.3.6 (2026-06-12)
