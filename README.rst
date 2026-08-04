@@ -36,6 +36,8 @@ Latest version of diffsky mocks
 
 See `this OpenCosmo tutorial <https://github.com/ArgonneCPAC/opencosmo-examples/blob/main/03-Diffsky/demo_diffmah_diffstar.ipynb/>`_
 for information about how to access the latest mock with OpenCosmo.
-The latest release of the mocks can be downloaded at this URL:
+The latest release of the mocks is publicly available on NERSC:
 
-    https://portal.nersc.gov/project/hacc/aphearin/diffsky_data/cosmos_260316_06_13_2026
+    /global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/c260710_08_02_2026
+
+See  `this PR <https://github.com/ArgonneCPAC/diffsky/pull/472/>`_ for further information about the latest mock.
