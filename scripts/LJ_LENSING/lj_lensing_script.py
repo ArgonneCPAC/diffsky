@@ -1,88 +1,73 @@
 #!/bin/bash/python
 
+import os
 import sys
+from glob import glob
 
 import h5py
 import healpy as hp
 import numpy as np
+from dsps.data_loaders import load_emline_info
 
 path_maps = "/lcrc/project/cosmo_ai/prlarsen/LJ_lensingmaps/"
 path_gals = sys.argv[1]
 synthetic = sys.argv[2]
-fn_patch_list = sys.argv[3]
+fn_emline_info = sys.argv[3]
 
-patch_list = np.atleast_1d(np.loadtxt(fn_patch_list)).astype(int)
-assert len(patch_list) > 0, f"Must have at least one patch in {fn_patch_list}"
 
-step_list_gals = [
-    "121",
-    "124",
-    "127",
-    "131",
-    "134",
-    "137",
-    "141",
-    "144",
-    "148",
-    "151",
-    "155",
-    "159",
-    "163",
-    "167",
-    "171",
-    "176",
-    "180",
-    "184",
-    "189",
-    "194",
-    "198",
-    "203",
-    "208",
-    "213",
-    "219",
-    "224",
-    "230",
-    "235",
-    "241",
-    "247",
-    "253",
-    "259",
-    "266",
-    "272",
-    "279",
-    "286",
-    "293",
-    "300",
-    "307",
-    "315",
-    "323",
-    "331",
-    "338",
-    "347",
-    "355",
-    "365",
-    "373",
-    "382",
-    "392",
-    "401",
-    "411",
-    "421",
-    "432",
-    "442",
-    "453",
-    "464",
-    "475",
-    "487",
-]
+emline_dict = load_emline_info.read_emlines_info_fsps(fn_emline_info)
+emline_names = list(emline_dict.keys())
 
-step_list_gals = np.array(step_list_gals)[::-1]
+
+def infer_patch_list(drn, bnpat_prefix="lc_cores-", bnpat_suffix=".diffsky_gals.hdf5"):
+    fnpat = os.path.join(drn, bnpat_prefix + "*.*" + bnpat_suffix)
+    fn_list = glob(fnpat)
+    bn_list = [os.path.basename(fn) for fn in fn_list]
+
+    patch_collector = []
+    for bn in bn_list:
+        seq = bn.split(bnpat_prefix)[1].split(bnpat_suffix)[0].split(".")
+        lc_patch = int(seq[1])
+        patch_collector.append(lc_patch)
+
+    patch_collector = np.unique(patch_collector)
+
+    return patch_collector
+
+
+def infer_step_list_gals(
+    drn, bnpat_prefix="lc_cores-", bnpat_suffix=".diffsky_gals.hdf5"
+):
+    fnpat = os.path.join(drn, bnpat_prefix + "*.*" + bnpat_suffix)
+    fn_list = glob(fnpat)
+    bn_list = [os.path.basename(fn) for fn in fn_list]
+
+    step_collector = []
+    for bn in bn_list:
+        seq = bn.split(bnpat_prefix)[1].split(bnpat_suffix)[0].split(".")
+        stepnum = int(seq[0])
+        step_collector.append(stepnum)
+
+    step_collector = np.unique(step_collector)
+    step_list_gals = [str(step) for step in step_collector][::-1]
+
+    return step_list_gals
+
+
+patch_list = infer_patch_list(path_gals)
+assert len(patch_list) > 0, f"Must have at least one patch in patch_list={patch_list}"
+
 
 if synthetic == "S":
-    print("Running lensing on *.diffsky_gals.synthetic_halos.hdf5")
+    bnpat_suffix = ".diffsky_gals.synthetic_halos.hdf5"
+    step_list_gals = infer_step_list_gals(path_gals, bnpat_suffix=bnpat_suffix)
+    print("Running lensing on *" + bnpat_suffix)
     path_end = ".diffsky_gals.synthetic_halos.hdf5"
 else:
+    bnpat_suffix = ".diffsky_gals.hdf5"
+    step_list_gals = infer_step_list_gals(path_gals, bnpat_suffix=bnpat_suffix)
     path_end = ".diffsky_gals.hdf5"
-    print("Running lensing on *.diffsky_gals.hdf5")
+    print("Running lensing on *" + bnpat_suffix)
 
 
 mag_cols = []
@@ -104,7 +89,8 @@ for band in [
 ]:
     for comp in ["", "_bulge", "_disk", "_knots"]:
         mag_cols.append("roman_" + band + comp)
-flux_cols = ["Ba_alpha_6563", "Ba_beta_4861"]
+
+flux_cols = emline_names
 
 step_max = np.array(
     [
@@ -325,9 +311,10 @@ for step in step_list_gals:
         )
 
         for i in patch_list:
-            gal_file = h5py.File(
-                path_gals + "lc_cores-" + step + "." + str(i) + path_end, "r+"
-            )
+            bn = "lc_cores-" + step + "." + str(i) + path_end
+            fn = os.path.join(path_gals, bn)
+            gal_file = h5py.File(fn, "r+")
+
             ra_in = gal_file["data"]["ra_nfw"][:]
             dec_in = gal_file["data"]["dec_nfw"][:]
             z_in = gal_file["data"]["redshift_true"][:]
@@ -449,9 +436,10 @@ for step in step_list_gals:
         )
 
         for i in patch_list:
-            gal_file = h5py.File(
-                path_gals + "lc_cores-" + step + "." + str(i) + path_end, "r+"
-            )
+            bn = "lc_cores-" + step + "." + str(i) + path_end
+            fn = os.path.join(path_gals, bn)
+            gal_file = h5py.File(fn, "r+")
+
             ra_in = gal_file["data"]["ra_nfw"][:]
             dec_in = gal_file["data"]["dec_nfw"][:]
             z_in = gal_file["data"]["redshift_true"][:]
@@ -630,9 +618,10 @@ for step in step_list_gals:
         )
 
         for i in patch_list:
-            gal_file = h5py.File(
-                path_gals + "lc_cores-" + step + "." + str(i) + path_end, "r+"
-            )
+            bn = "lc_cores-" + step + "." + str(i) + path_end
+            fn = os.path.join(path_gals, bn)
+            gal_file = h5py.File(fn, "r+")
+
             ra_in = gal_file["data"]["ra_nfw"][:]
             dec_in = gal_file["data"]["dec_nfw"][:]
             z_in = gal_file["data"]["redshift_true"][:]
