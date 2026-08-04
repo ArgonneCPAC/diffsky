@@ -16,6 +16,10 @@ BN_JOB = "run_lc_cf_crossx_{0}.sh"
 BN_CFG = "lc_patch_list_{0}.cfg"
 BN_SCRIPT = "lc_cf_crossmatch_script.py"
 
+IMPROV_MODULES = "ml gcc/13.2.0 openmpi/5.0.6-gcc-13.2.0"
+BEBOP_MODULES = "ml gcc openmpi/5.0.5-ohr7u5x"
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -39,7 +43,9 @@ if __name__ == "__main__":
     parser.add_argument("-drn_script", help="Directory to write scripts", default="")
 
     parser.add_argument(
-        "-conda_env", help="conda environment to activate", default="diffhacc_py312"
+        "-conda_env",
+        help="conda environment to activate",
+        default="diffsky_bebop_haccytrees",
     )
 
     args = parser.parse_args()
@@ -55,6 +61,11 @@ if __name__ == "__main__":
     drn_out = args.drn_out
     drn_script = args.drn_script
     submit_job = args.submit_job
+
+    if account == "halotools":
+        modules = IMPROV_MODULES
+    elif account == "galsampler":
+        modules = BEBOP_MODULES
 
     if drn_script == "":
         drn_script = os.path.dirname(os.path.abspath(__file__))
@@ -91,15 +102,17 @@ if __name__ == "__main__":
         "",
         "# Load software",
         "source ~/.bash_profile",
+        modules,
         f"conda activate {conda_env}",
         "",
         f"cd {drn_script}",
         "",
-        f"rsync /home/ahearin/work/repositories/python/diffsky/scripts/LJ_CROSSX/{BN_SCRIPT} ./",
         "",
     )
 
-    line_pat = "python {0} {1:.3f} {2:.3f} -lc_patch_list_cfg {3} -drn_out {4} "
+    line_pat = (
+        "mpirun -n 1 python {0} {1:.3f} {2:.3f} -lc_patch_list_cfg {3} -drn_out {4} "
+    )
 
     if submit_job:
         print("\nSubmitting jobs to queue\n")
