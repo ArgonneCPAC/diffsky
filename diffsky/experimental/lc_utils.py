@@ -44,21 +44,57 @@ def mc_lightcone_random_ra_dec(ran_key, npts, ra_min, ra_max, dec_min, dec_max):
         Random coords on the sphere within the input range
 
     """
-    ra_key, dec_key = jran.split(ran_key, 2)
+    phi_min = jnp.deg2rad(ra_min)
+    phi_max = jnp.deg2rad(ra_max)
 
-    # Sample uniformly in ra
-    ra = jran.uniform(ra_key, minval=ra_min, maxval=ra_max, shape=(npts,))
+    theta_min = jnp.deg2rad(90.0 - dec_max)
+    theta_max = jnp.deg2rad(90.0 - dec_min)
 
-    # Dec spans (-π/2, +π/2) so we sample uniformly in sin(dec)
-    dec_min_rad = jnp.deg2rad(dec_min)
-    dec_max_rad = jnp.deg2rad(dec_max)
-    sin_dec_min = jnp.sin(dec_min_rad)
-    sin_dec_max = jnp.sin(dec_max_rad)
-    sin_dec = jran.uniform(dec_key, (npts,), minval=sin_dec_min, maxval=sin_dec_max)
-    dec_rad = jnp.arcsin(sin_dec)
-    dec = jnp.rad2deg(dec_rad)
+    theta, phi = mc_lightcone_random_theta_phi(
+        ran_key, npts, theta_min, theta_max, phi_min, phi_max
+    )
+    ra, dec = _get_ra_dec_from_theta_phi(theta, phi)
 
     return ra, dec
+
+
+@partial(jjit, static_argnames=["npts"])
+def mc_lightcone_random_theta_phi(
+    ran_key, npts, theta_min, theta_max, phi_min, phi_max
+):
+    """Generate random theta, phi in the input patch of sky"""
+    theta_key, phi_key = jran.split(ran_key, 2)
+    # Sample uniformly in phi
+    phi = jran.uniform(phi_key, (npts,), minval=phi_min, maxval=phi_max)
+    # Sample uniformly in cos(theta)
+    cos_lo = jnp.cos(theta_max)
+    cos_hi = jnp.cos(theta_min)
+    cos_theta = jran.uniform(theta_key, (npts,), minval=cos_lo, maxval=cos_hi)
+    theta = jnp.arccos(cos_theta)
+
+    return theta, phi
+
+
+@jjit
+def _get_ra_dec_from_theta_phi(theta, phi):
+    """Change sky coordinates from {theta, phi} (radians) to {ra, dec} (degrees)
+
+    Copied from diffsky.data_loaders.hacc_utils.lightcone_utils.py
+    to avoid circular imports. This function should be deleted once lc_utils.py
+    is migrated out of diffsky.experimental
+    """
+    return _get_lon_lat_from_theta_phi(theta, phi)
+
+
+@jjit
+def _get_lon_lat_from_theta_phi(theta, phi):
+    """Copied from diffsky.data_loaders.hacc_utils.lightcone_utils.py
+    to avoid circular imports. This function should be deleted once lc_utils.py
+    is migrated out of diffsky.experimental
+    """
+    lon = jnp.degrees(phi)
+    lat = 90.0 - jnp.degrees(theta)
+    return lon, lat
 
 
 @partial(jjit, static_argnames=["npts"])

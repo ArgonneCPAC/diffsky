@@ -11,9 +11,7 @@ AxisRatios = namedtuple("AxisRatios", ("b_over_a", "c_over_a"))
 DiskAxisRatioParams = namedtuple(
     "DiskAxisRatioParams", ("ba_min", "ba_max", "c_min", "c_max")
 )
-DEFAULT_DISK_PARAMS = DiskAxisRatioParams(
-    ba_min=0.5, ba_max=0.8, c_min=0.17, c_max=0.85
-)
+DEFAULT_DISK_PARAMS = DiskAxisRatioParams(ba_min=0.4, ba_max=0.8, c_min=0.15, c_max=0.7)
 
 
 @partial(jjit, static_argnames=["n_samples"])
