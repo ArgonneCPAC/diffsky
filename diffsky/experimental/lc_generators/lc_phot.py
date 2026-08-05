@@ -6,7 +6,7 @@ The functions in this module receive as input LCDataPhot and
 diffsky parameters (ParamCollection), and populate the halo lightcone with
 galaxy photometry.
 
-LCPhotData is computed in ./lc_data_phot.py.
+LCDataPhot is computed in ./lc_data_phot.py.
 """
 
 from jax import config
