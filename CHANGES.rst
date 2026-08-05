@@ -1,4 +1,4 @@
-0.3.7 (Unreleased)
+0.3.7 (2026-08-05)
 -------------------
 - Reinstate OpenCosmo docs (https://github.com/ArgonneCPAC/diffsky/pull/439)
 - Migrate top-level modules into subdirectories
@@ -11,6 +11,7 @@
 - Fix bug in `ra, dec` for synthetic halos (https://github.com/ArgonneCPAC/diffsky/pull/469)
 - Fix bug in ellipsoidal shapes (https://github.com/ArgonneCPAC/diffsky/pull/468)
 - Retune disk axis ratio distribution and size--mass relation (https://github.com/ArgonneCPAC/diffsky/pull/470)
+- Version of code used to produce `c260710_08_02_2026`
 
 
 0.3.6 (2026-06-12)
