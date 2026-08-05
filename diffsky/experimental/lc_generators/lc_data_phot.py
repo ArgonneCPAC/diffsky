@@ -90,6 +90,7 @@ def mc_lc_data_phot(
     *,
     cosmo_params=flat_wcdm.PLANCK15,
     logmp_cutoff=11.0,
+    **kwargs,
 ):
     """
     Generate a Monte Carlo lightcone of host halos and subhalos,
@@ -125,16 +126,13 @@ def mc_lc_data_phot(
     z_phot_table : array, shape (n_z_phot_table, )
         Redshift grid used to tabulate precomputed SSP magnitudes
 
-    hmf_params: namedtuple, optional kwarg
-        halo mass function parameters
+    cosmo_params: namedtuple, optional kwarg
+            cosmological parameters
 
     logmp_cutoff: float, optional kwarg
         base-10 log of minimum halo mass for which
         DiffmahPop is used to generate MAHs, in Msun;
         for logmp < logmp_cutoff, P(θ_MAH | logmp) = P(θ_MAH | logmp_cutoff)
-
-    cosmo_params: namedtuple, optional kwarg
-        cosmological parameters
 
     Returns
     -------
@@ -179,10 +177,13 @@ def mc_lc_data_phot(
                 Equals one for all galaxies in a Monte Carlo lightcone
 
             t_infall:
+                time of subhalo infall
 
             logmp_infall:
+                subhalo peak mass at time of infall
 
             logmhost_infall:
+                host halo peak mass at time of infall
 
             is_central: ndarray of shape (n_halos_tot, )
                 Equals one for centrals and zero for satellites
@@ -205,6 +206,7 @@ def mc_lc_data_phot(
         sky_area_degsq=sky_area_degsq,
         cosmo_params=cosmo_params,
         logmp_cutoff=logmp_cutoff,
+        **kwargs,
     )
 
     logt0 = halopop.logt0
@@ -215,9 +217,7 @@ def mc_lc_data_phot(
     n_tot = len(is_central)
 
     t_infall = jnp.where(is_central, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak)
-
     logmp_infall = halopop.logmp_obs
-
     mah_params_host = halopop.mah_params._make(
         [x[halopop.halo_indx] for x in halopop.mah_params]
     )
@@ -270,6 +270,7 @@ def weighted_lc_data_phot(
     *,
     cosmo_params=flat_wcdm.PLANCK15,
     logmp_cutoff=11.0,
+    **kwargs,
 ):
     """
     Generate a weighted lightcone of host halos and subhalos,
@@ -284,7 +285,7 @@ def weighted_lc_data_phot(
         random key
 
     n_host_halos : int
-        Number of host halos in the weighted lightcone
+        number of host halos in the weighted lightcone
 
     z_min, z_max : float
         min/max redshift
@@ -304,9 +305,6 @@ def weighted_lc_data_phot(
 
     z_phot_table : array, shape (n_z_phot_table, )
         Redshift grid used to tabulate precomputed SSP magnitudes
-
-    hmf_params: namedtuple, optional kwarg
-        halo mass function parameters
 
     logmp_cutoff: float, optional kwarg
         base-10 log of minimum halo mass for which
@@ -362,10 +360,13 @@ def weighted_lc_data_phot(
                 For subhalos, halopop.sat_weight = <Nsat(Msub) | Mhost>
 
             t_infall:
+                time of subhalo infall
 
             logmp_infall:
+                subhalo peak mass at time of infall
 
             logmhost_infall:
+                host halo peak mass at time of infall
 
             is_central: ndarray of shape (n_halos_tot, )
                 equal to one for centrals and zero for satellites
@@ -389,6 +390,7 @@ def weighted_lc_data_phot(
         sky_area_degsq=sky_area_degsq,
         cosmo_params=cosmo_params,
         logmp_cutoff=logmp_cutoff,
+        **kwargs,
     )
 
     logt0 = halopop.logt0
@@ -399,9 +401,7 @@ def weighted_lc_data_phot(
     n_tot = len(is_central)
 
     t_infall = jnp.where(is_central, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak)
-
     logmp_infall = halopop.logmp_obs
-
     mah_params_host = halopop.mah_params._make(
         [x[halopop.halo_indx] for x in halopop.mah_params]
     )
@@ -453,6 +453,7 @@ def mc_lc_data_phot_centrals(
     z_phot_table,
     logmp_cutoff=11.0,
     cosmo_params=flat_wcdm.PLANCK15,
+    **kwargs,
 ):
     """
     Generate a Monte Carlo lightcone of host halos,
@@ -484,9 +485,6 @@ def mc_lc_data_phot_centrals(
 
     z_phot_table : array, shape (n_z_phot_table, )
         Redshift grid used to tabulate precomputed SSP magnitudes
-
-    hmf_params: namedtuple, optional kwarg
-        halo mass function parameters
 
     logmp_cutoff: float, optional kwarg
         base-10 log of minimum halo mass for which
@@ -544,6 +542,7 @@ def mc_lc_data_phot_centrals(
         sky_area_degsq=sky_area_degsq,
         cosmo_params=cosmo_params,
         logmp_cutoff=logmp_cutoff,
+        **kwargs,
     )
 
     logt0 = cenpop.logt0
@@ -589,6 +588,7 @@ def weighted_lc_data_phot_centrals(
     z_phot_table,
     logmp_cutoff=11.0,
     cosmo_params=flat_wcdm.PLANCK15,
+    **kwargs,
 ):
     """
     Generate a weighted lightcone of host halos,
@@ -624,9 +624,6 @@ def weighted_lc_data_phot_centrals(
     z_phot_table : array, shape (n_z_phot_table, )
         Redshift grid used to tabulate precomputed SSP magnitudes
 
-    hmf_params: namedtuple, optional kwarg
-        halo mass function parameters
-
     logmp_cutoff: float, optional kwarg
         base-10 log of minimum halo mass for which
         DiffmahPop is used to generate MAHs, in Msun;
@@ -635,7 +632,7 @@ def weighted_lc_data_phot_centrals(
     cosmo_params: namedtuple, optional kwarg
         cosmological parameters
 
-        Returns
+    Returns
     -------
     lc_data: namedtuple
         Population of n_halos host halos along with data needed to compute photometry
@@ -685,6 +682,7 @@ def weighted_lc_data_phot_centrals(
         sky_area_degsq=sky_area_degsq,
         cosmo_params=cosmo_params,
         logmp_cutoff=logmp_cutoff,
+        **kwargs,
     )
 
     logt0 = cenpop.logt0
