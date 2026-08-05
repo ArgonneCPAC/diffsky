@@ -1,3 +1,8 @@
+0.3.8 (unreleased)
+-------------------
+- Add HLTDS fields for image simulation: ELIAS-N1, EDFS_a, EDFS_b
+
+
 0.3.7 (2026-08-05)
 -------------------
 - Reinstate OpenCosmo docs (https://github.com/ArgonneCPAC/diffsky/pull/439)

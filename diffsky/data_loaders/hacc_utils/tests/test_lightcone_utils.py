@@ -124,10 +124,16 @@ def test_get_matching_lc_patches():
 
 def test_get_lsst_ddf_patches():
     fn = os.path.join(DRN_TESTING_DATA, "lc_cores-decomposition.txt")
+
+    _res = hlu.read_lc_ra_dec_patch_decomposition(fn)
+    patch_decomposition, sky_frac, solid_angles = _res
+    n_subvols_tot = len(solid_angles)
+
     ddf_patches = hlu.get_lsst_ddf_patches(fn)
     assert len(ddf_patches) == len(hlu.LSST_DDF_FIELDS)
     for field_name, lc_patches in ddf_patches.items():
-        assert len(lc_patches) > 0
+        assert len(lc_patches) > 0, field_name
+        assert len(lc_patches) < n_subvols_tot, field_name
 
 
 def test_estimate_nhalos_sky_patch():
@@ -219,3 +225,31 @@ def test_compute_theta_phi_agrees_with_healpix():
 
     assert np.allclose(theta_recomputed, theta_healpix_tdata, rtol=1e-3)
     assert np.allclose(phi_recomputed, phi_healpix_tdata, rtol=1e-3)
+
+
+def test_get_galplane_patches():
+    fn = os.path.join(DRN_TESTING_DATA, "lc_cores-decomposition.txt")
+
+    _res = hlu.read_lc_ra_dec_patch_decomposition(fn)
+    patch_decomposition, sky_frac, solid_angles = _res
+    n_subvols_tot = len(solid_angles)
+
+    galplane_patches = hlu._get_galplane_patches(fn)
+
+    for patch, subvols in galplane_patches.items():
+        assert len(subvols) > 0, patch
+        assert len(subvols) < n_subvols_tot, patch
+
+
+def test_get_hltds_patches():
+    fn = os.path.join(DRN_TESTING_DATA, "lc_cores-decomposition.txt")
+
+    _res = hlu.read_lc_ra_dec_patch_decomposition(fn)
+    patch_decomposition, sky_frac, solid_angles = _res
+    n_subvols_tot = len(solid_angles)
+
+    hltds_patches = hlu._get_hltds_patches(fn)
+
+    for patch, subvols in hltds_patches.items():
+        assert len(subvols) > 0, patch
+        assert len(subvols) < n_subvols_tot, patch
