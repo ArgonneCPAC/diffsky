@@ -1,6 +1,7 @@
 0.3.8 (unreleased)
 -------------------
 - Add HLTDS fields for image simulation: ELIAS-N1, EDFS_a, EDFS_b
+- Add OpenUniverse2026 fields
 
 
 0.3.7 (2026-08-05)

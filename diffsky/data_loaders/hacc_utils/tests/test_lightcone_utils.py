@@ -253,3 +253,17 @@ def test_get_hltds_patches():
     for patch, subvols in hltds_patches.items():
         assert len(subvols) > 0, patch
         assert len(subvols) < n_subvols_tot, patch
+
+
+def test_get_ou26_lc_patches_are_frozen():
+    """Data stored in testing_data/ou26_lc_patches.txt were calculated with the
+    _get_ou26_lc_patches function when it was first committed to the repo.
+    """
+    fn = os.path.join(DRN_TESTING_DATA, "lc_cores-decomposition.txt")
+    ou26_lc_patches = hlu._get_ou26_lc_patches(fn)
+
+    ou26_lc_patches_frozen = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "ou26_lc_patches.txt")
+    )
+
+    assert np.allclose(ou26_lc_patches, ou26_lc_patches_frozen)
