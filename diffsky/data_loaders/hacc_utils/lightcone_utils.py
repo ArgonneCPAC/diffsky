@@ -725,3 +725,18 @@ def _estimate_nhalos_sky_patch(sim_name, stepnum):
 
     vol_at_z = np.interp(z_obs, z_grid, vol_shell_grid_mpc)
     return vol_at_z
+
+
+def _get_ou26_lc_patches(fn):
+
+    lsst_ddf_patches = get_lsst_ddf_patches(fn)
+    galplane_patches = _get_galplane_patches(fn)
+    hltds_patches = _get_hltds_patches(fn)
+
+    ddf_arr = np.array(lsst_ddf_patches["XMM_LSS"] + lsst_ddf_patches["COSMOS"])
+    hltds_arr = np.concatenate([x for x in hltds_patches.values()])
+    galplane_arr = np.concatenate([x for x in galplane_patches.values()])
+
+    ou26_lc_patches = np.unique(np.concatenate((ddf_arr, hltds_arr, galplane_arr)))
+
+    return ou26_lc_patches
