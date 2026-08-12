@@ -329,6 +329,8 @@ if __name__ == "__main__":
                     indir_lc_data,
                     nchunks=nchunks,
                     chunknum=chunknum,
+                    sim_name=sim_name,
+                    convert_mpch_to_mpc=True,
                     convert_vcom_to_vphys=True,
                 )
             else:
