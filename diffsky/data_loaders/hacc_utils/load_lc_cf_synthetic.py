@@ -29,6 +29,13 @@ def load_lc_diffsky_patch_data(
     read_start,
     downsample_factor=1.0,
 ):
+    """
+
+    Notes
+    -----
+    xyz and xyz_host are returned in units of Mpc
+
+    """
 
     sim_info = llcf.get_diffsky_info_from_hacc_sim(sim_name)
 
@@ -110,15 +117,12 @@ def load_lc_diffsky_patch_data(
         diffsky_data["redshift_true"],
         sim_info.cosmo_params,
     )
-    x_mpch = x_mpc * sim_info.cosmo_params.h
-    y_mpch = y_mpc * sim_info.cosmo_params.h
-    z_mpch = z_mpc * sim_info.cosmo_params.h
-    diffsky_data["x"] = x_mpch
-    diffsky_data["y"] = y_mpch
-    diffsky_data["z"] = z_mpch
-    diffsky_data["x_host"] = x_mpch
-    diffsky_data["y_host"] = y_mpch
-    diffsky_data["z_host"] = z_mpch
+    diffsky_data["x"] = x_mpc
+    diffsky_data["y"] = y_mpc
+    diffsky_data["z"] = z_mpc
+    diffsky_data["x_host"] = x_mpc
+    diffsky_data["y_host"] = y_mpc
+    diffsky_data["z_host"] = z_mpc
 
     ZZ = np.zeros(n_gals)
 

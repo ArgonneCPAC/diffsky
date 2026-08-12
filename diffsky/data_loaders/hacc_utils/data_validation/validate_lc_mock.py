@@ -6,6 +6,7 @@ from glob import glob
 import h5py
 import numpy as np
 import yaml
+from dsps.cosmology import flat_wcdm
 from dsps.photometry import photometry_kernels as phk
 from jax import vmap
 
@@ -51,6 +52,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     msg = check_all_columns_have_expected_shapes(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["column_sizes"] = msg
+
+    msg = check_xyz_littleh(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["xyz_littleh"] = msg
 
     msg = check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=data)
     if len(msg) > 0:
@@ -704,3 +709,24 @@ def check_recomputed_dbk_sed(fn_lc_mock, *, nchunks, chunknum, return_results=Fa
         return mock_chunk, metadata, sed_info, phot_info, msg
     else:
         return msg
+
+
+def check_xyz_littleh(fn_lc_mock, data=None):
+    """Columns storing xyz should be in units of Mpc, not Mpc/h"""
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock)
+
+    metadata = load_lc_mock.load_mock_metadata(fn_lc_mock)
+
+    rcom_from_xyz = np.sqrt(data["x"] ** 2 + data["y"] ** 2 + data["z"] ** 2)
+    rcom_from_redshift = flat_wcdm.comoving_distance(
+        data["redshift_true"], *metadata["sim_info"].cosmo_params
+    )
+    msg = []
+    try:
+        s = "Discrepancy between xyz and redshift_true - likely due to littleh"
+        assert np.allclose(rcom_from_xyz, rcom_from_redshift, rtol=0.02)
+    except AssertionError:
+        msg.append(s)
+
+    return msg
