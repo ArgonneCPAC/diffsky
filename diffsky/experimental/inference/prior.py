@@ -91,14 +91,12 @@ def hard_uniform_prior(
     )
 
 
-def sample_from_hard_prior(n_samples, param_coll, var_params_list):
+def sample_from_hard_prior(ran_key, n_samples, param_coll, var_params_list):
     """
     Returns a set of copies of param_coll replaced with the prior samples only for the parameters in var_params_list.
 
     Remember: var_param_flat is handled with ravel_pytree + var_flat_idx.
     """
-
-    ran_key = jax.random.key(0)
 
     param_flat = dpwm.unroll_param_collection_into_flat_array(*param_coll)
     var_param_flat = utils.get_var_param_flat_from_param_flat(

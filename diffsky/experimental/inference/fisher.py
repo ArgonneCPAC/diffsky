@@ -15,6 +15,7 @@ def compute_fisher_matrix(
     flat_logprior=None,
     include_prior=True,
     verbose=True,
+    **kwargs_likelihood,
 ):
     """
     Compute the posterior Fisher matrix at ``eval_point``.
@@ -47,7 +48,9 @@ def compute_fisher_matrix(
 
     @jax.jit
     def hessian_column(p, e_i):
-        return jax.grad(lambda x: jnp.vdot(jnp.asarray(flat_grad(x)), e_i))(p)
+        return jax.grad(
+            lambda x, **kwargs: jnp.vdot(jnp.asarray(flat_grad(x, **kwargs)), e_i)
+        )(p, **kwargs_likelihood)
 
     eye = jnp.eye(num_var_params)
 
