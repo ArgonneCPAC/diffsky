@@ -216,7 +216,9 @@ def mc_lc_data_phot(
     is_central = halopop.central.astype(int)
     n_tot = len(is_central)
 
-    t_infall = jnp.where(is_central, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak)
+    t_infall = jnp.where(
+        is_central == 1, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak
+    )
     logmp_infall = halopop.logmp_obs
     mah_params_host = halopop.mah_params._make(
         [x[halopop.halo_indx] for x in halopop.mah_params]
@@ -400,7 +402,9 @@ def weighted_lc_data_phot(
     is_central = halopop.central.astype(int)
     n_tot = len(is_central)
 
-    t_infall = jnp.where(is_central, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak)
+    t_infall = jnp.where(
+        is_central == 1, t0 + jnp.zeros(n_tot), halopop.mah_params.t_peak
+    )
     logmp_infall = halopop.logmp_obs
     mah_params_host = halopop.mah_params._make(
         [x[halopop.halo_indx] for x in halopop.mah_params]
