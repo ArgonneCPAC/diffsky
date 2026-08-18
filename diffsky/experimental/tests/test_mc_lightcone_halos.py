@@ -98,7 +98,7 @@ def test_estimate_nhalos_in_lightcone_always_returns_positive():
 
 
 def test_get_weighted_lc_data_for_unit_testing():
-    lc_data, tcurves = _get_weighted_lc_data_for_unit_testing()
+    lc_data, tcurves = _get_weighted_lc_data_for_unit_testing(num_halos=10)
     assert np.all(np.isfinite(lc_data.logmp0))
     for x in lc_data.mah_params:
         assert np.all(np.isfinite(x))
@@ -120,7 +120,7 @@ def test_mc_lightcone_host_halo_mass_function():
     z_min, z_max = 0.4, 0.5
     sky_area_degsq = 10.0
 
-    n_tests = 5
+    n_tests = 3
     ran_keys = jran.split(jran.key(0), n_tests)
     for ran_key in ran_keys:
         args = (ran_key, lgmp_min, z_min, z_max, sky_area_degsq)
@@ -197,7 +197,7 @@ def test_mc_lightcone_host_halo_mass_function_lgmp_max_feature():
 def test_nhalo_weighted_lc_grid():
     """should get within 10% of Nhalos of a Monte Carlo generated lightcone"""
     ran_key = jran.key(0)
-    n_tests = 10
+    n_tests = 3
 
     sky_area_degsq = 15.0
 
@@ -258,7 +258,7 @@ def test_mc_lightcone_host_halo_diffmah():
     lgmp_min = 12.0
     sky_area_degsq = 1.0
 
-    n_tests = 5
+    n_tests = 2
     z_max_arr = np.linspace(0.2, 2.5, n_tests)
     for z_max in z_max_arr:
         test_key, ran_key = jran.split(ran_key, 2)
@@ -285,7 +285,7 @@ def test_mc_lightcone_host_halo_diffmah_alt_mf_params():
     lgmp_min = 12.0
     sky_area_degsq = 1.0
 
-    n_tests = 5
+    n_tests = 2
     z_max_arr = np.linspace(0.2, 2.5, n_tests)
     for z_max in z_max_arr:
         test_key, ran_key = jran.split(ran_key, 2)

@@ -20,8 +20,22 @@ STDVEL_COSMIC = 500.0
 
 
 def load_lc_diffsky_patch_data(
-    fn_lc_cores, sim_name, ran_key, lgmp_min, lgmp_max, *, downsample_factor=1.0
+    fn_lc_cores,
+    sim_name,
+    ran_key,
+    lgmp_min,
+    lgmp_max,
+    *,
+    read_start,
+    downsample_factor=1.0,
 ):
+    """
+
+    Notes
+    -----
+    xyz and xyz_host are returned in units of Mpc
+
+    """
 
     sim_info = llcf.get_diffsky_info_from_hacc_sim(sim_name)
 
@@ -69,11 +83,13 @@ def load_lc_diffsky_patch_data(
     diffsky_data["theta"] = theta
     diffsky_data["phi"] = phi
 
-    diffsky_data["top_host_idx"] = np.arange(n_gals).astype(int)
-    diffsky_data["secondary_top_host_idx"] = np.arange(n_gals).astype(int)
-
     diffsky_data["top_host_idx_chunk"] = np.arange(n_gals).astype(int)
     diffsky_data["secondary_top_host_idx_chunk"] = np.arange(n_gals).astype(int)
+
+    diffsky_data["top_host_idx"] = diffsky_data["top_host_idx_chunk"] + read_start
+    diffsky_data["secondary_top_host_idx"] = (
+        diffsky_data["secondary_top_host_idx_chunk"] + read_start
+    )
 
     for key in diffsky_data["mah_params"]._fields:
         diffsky_data[key] = getattr(diffsky_data["mah_params"], key)
@@ -82,7 +98,7 @@ def load_lc_diffsky_patch_data(
         diffsky_data["mah_params"], diffsky_data["t_obs"], sim_info.lgt0
     )
     diffsky_data["logmp_obs_host"] = diffsky_data["logmp_obs"][
-        diffsky_data["top_host_idx"]
+        diffsky_data["top_host_idx_chunk"]
     ]
 
     diffsky_data.pop("mah_params")
@@ -101,15 +117,12 @@ def load_lc_diffsky_patch_data(
         diffsky_data["redshift_true"],
         sim_info.cosmo_params,
     )
-    x_mpch = x_mpc * sim_info.cosmo_params.h
-    y_mpch = y_mpc * sim_info.cosmo_params.h
-    z_mpch = z_mpc * sim_info.cosmo_params.h
-    diffsky_data["x"] = x_mpch
-    diffsky_data["y"] = y_mpch
-    diffsky_data["z"] = z_mpch
-    diffsky_data["x_host"] = x_mpch
-    diffsky_data["y_host"] = y_mpch
-    diffsky_data["z_host"] = z_mpch
+    diffsky_data["x"] = x_mpc
+    diffsky_data["y"] = y_mpc
+    diffsky_data["z"] = z_mpc
+    diffsky_data["x_host"] = x_mpc
+    diffsky_data["y_host"] = y_mpc
+    diffsky_data["z_host"] = z_mpc
 
     ZZ = np.zeros(n_gals)
 

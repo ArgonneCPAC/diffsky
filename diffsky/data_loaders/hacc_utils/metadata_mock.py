@@ -199,19 +199,18 @@ def add_metadata_diffstar_columns(metadata, incl_in_situ=False):
 
 
 def add_metadata_nfw_columns(metadata):
-    unit_mpch = u.Mpc / cu.littleh
 
     metadata["x_nfw"] = (
-        str(unit_mpch),
-        "Comoving coord with NFW-repositioned satellites",
+        str(u.Mpc),
+        "Comoving coord with NFW-repositioned satellites in units of Mpc",
     )
     metadata["y_nfw"] = (
-        str(unit_mpch),
-        "Comoving coord with NFW-repositioned satellites",
+        str(u.Mpc),
+        "Comoving coord with NFW-repositioned satellites in units of Mpc",
     )
     metadata["z_nfw"] = (
-        str(unit_mpch),
-        "Comoving coord with NFW-repositioned satellites",
+        str(u.Mpc),
+        "Comoving coord with NFW-repositioned satellites in units of Mpc",
     )
 
     metadata["ra_nfw"] = (
@@ -227,53 +226,43 @@ def add_metadata_nfw_columns(metadata):
 
 
 def add_metadata_posvel_columns(metadata):
-    unit_mpch = u.Mpc / cu.littleh
 
     metadata["ra"] = (str(u.deg), "right ascension")
     metadata["dec"] = (str(u.deg), "declination")
 
     metadata["x"] = (
-        str(unit_mpch),
-        "Comoving coordinate of lightcone position",
+        str(u.Mpc),
+        "Comoving coordinate of lightcone position in units of Mpc",
     )
     metadata["y"] = (
-        str(unit_mpch),
-        "Comoving coordinate of lightcone position",
+        str(u.Mpc),
+        "Comoving coordinate of lightcone position in units of Mpc",
     )
     metadata["z"] = (
-        str(unit_mpch),
-        "Comoving coordinate of lightcone position",
+        str(u.Mpc),
+        "Comoving coordinate of lightcone position in units of Mpc",
     )
 
     metadata["x_host"] = (
-        str(unit_mpch),
-        "Comoving coord of host halo lightcone position",
+        str(u.Mpc),
+        "Comoving coord of host halo lightcone position in units of Mpc",
     )
     metadata["y_host"] = (
-        str(unit_mpch),
-        "Comoving coord of host halo lightcone position",
+        str(u.Mpc),
+        "Comoving coord of host halo lightcone position in units of Mpc",
     )
     metadata["z_host"] = (
-        str(unit_mpch),
-        "Comoving coord of host halo lightcone position",
+        str(u.Mpc),
+        "Comoving coord of host halo lightcone position in units of Mpc",
     )
 
     metadata["vpec"] = (
         str(u.km / u.s),
-        "Comoving peculiar velocity along line-of-sight to galaxy",
+        "Peculiar line-of-sight velocity in physical km/s",
     )
-    metadata["vx"] = (
-        str(u.km / u.s),
-        "Comoving peculiar velocity in Cartesian x-direction",
-    )
-    metadata["vy"] = (
-        str(u.km / u.s),
-        "Comoving peculiar velocity in Cartesian y-direction",
-    )
-    metadata["vz"] = (
-        str(u.km / u.s),
-        "Comoving peculiar velocity in Cartesian z-direction",
-    )
+    metadata["vx"] = (str(u.km / u.s), "Peculiar velocity in physical km/s")
+    metadata["vy"] = (str(u.km / u.s), "Peculiar velocity in physical km/s")
+    metadata["vz"] = (str(u.km / u.s), "Peculiar velocity in physical km/s")
     metadata["msk_v0"] = (
         str(u.dimensionless_unscaled),
         "Boolean mask is True when the original core velocity on the lightcone was exactly zero and was overwritten",
@@ -285,44 +274,42 @@ def add_metadata_inertia_tensor_columns(metadata):
     if not HAS_ASTROPY:
         raise ImportError("Must have astropy installed to attach units to metadata")
 
-    unit_mpch = u.Mpc / cu.littleh
-
     metadata["top_host_infall_fof_halo_eigS1X"] = (
-        str(unit_mpch),
+        str(u.Mpc),
         "x-component of first eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS1Y"] = (
-        str(unit_mpch),
+        str(u.Mpc),
         "y-component of first eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS1Z"] = (
-        str(unit_mpch),
+        str(u.Mpc),
         "z-component of first eigendirection of halo shape (unreduced inertia tensor)",
     )
 
     metadata["top_host_infall_fof_halo_eigS2X"] = (
-        str(unit_mpch),
+        str(u.Mpc),
         "x-component of second eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS2Y"] = (
-        str(unit_mpch),
+        str(u.Mpc),
         "y-component of second eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS2Z"] = (
-        str(unit_mpch),
+        str(u.Mpc),
         "z-component of second eigendirection of halo shape (unreduced inertia tensor)",
     )
 
     metadata["top_host_infall_fof_halo_eigS3X"] = (
-        str(unit_mpch),
+        str(u.Mpc),
         "x-component of third eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS3Y"] = (
-        str(unit_mpch),
+        str(u.Mpc),
         "y-component of third eigendirection of halo shape (unreduced inertia tensor)",
     )
     metadata["top_host_infall_fof_halo_eigS3Z"] = (
-        str(unit_mpch),
+        str(u.Mpc),
         "z-component of third eigendirection of halo shape (unreduced inertia tensor)",
     )
     return metadata
@@ -380,8 +367,11 @@ def add_metadata_dbk_sed_columns(metadata):
 
 
 def add_metadata_dbk_morphology_columns(metadata):
-    metadata["r50_disk"] = (str(u.kpc), "2d Half-mass radius of disk")
-    metadata["r50_bulge"] = (str(u.kpc), "2d Half-mass radius of bulge")
+    metadata["r50_disk_3d"] = (str(u.kpc), "3d Half-mass radius of disk")
+    metadata["r50_bulge_3d"] = (str(u.kpc), "3d Half-mass radius of bulge")
+    metadata["r50_disk_2d"] = (str(u.kpc), "2d Half-mass radius of disk")
+    metadata["r50_bulge_2d"] = (str(u.kpc), "2d Half-mass radius of bulge")
+
     metadata["zscore_r50_disk"] = (
         str(u.dimensionless_unscaled),
         "Gaussian random used to add scatter to disk radius",

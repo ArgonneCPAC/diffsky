@@ -18,6 +18,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("config_yaml", help="YAML configuration file")
+    parser.add_argument(
+        "-infer_mockname",
+        help="Infer mock_version_name from directory",
+        action="store_true",
+    )
+
     args = parser.parse_args()
 
     cl_args = parser.parse_args()
@@ -27,7 +33,14 @@ if __name__ == "__main__":
 
     drn_out = config["drn_out"]
     mock_nickname = config["mock_nickname"]
-    mock_version_name = get_mock_version_name(mock_nickname)
+
+    if cl_args.infer_mockname:
+        fn_list = glob(os.path.join(drn_out, mock_nickname + "_*"))
+        drn_mock = fn_list[0]
+        mock_version_name = os.path.basename(drn_mock)
+    else:
+        mock_version_name = get_mock_version_name(mock_nickname)
+
     drn = os.path.join(drn_out, mock_version_name)
 
     fn_list = glob(os.path.join(drn, "lc_cores-*.hdf5"))

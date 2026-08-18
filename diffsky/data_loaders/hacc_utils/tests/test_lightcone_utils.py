@@ -53,38 +53,6 @@ def test_calculate_solid_angle():
     assert np.allclose(fsky * hlu.SQDEG_OF_SPHERE, solid_angle, rtol=1e-3)
 
 
-def test_compute_theta_phi_agrees_with_haccytrees():
-    """Small dataset taken from LastJourney/lc_cores-266.0.hdf5"""
-    x_haccytrees_tdata = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "x_haccytrees_tdata.txt")
-    )
-    y_haccytrees_tdata = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "y_haccytrees_tdata.txt")
-    )
-    z_haccytrees_tdata = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "z_haccytrees_tdata.txt")
-    )
-
-    theta_haccytrees_tdata = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "theta_haccytrees_tdata.txt")
-    )
-    phi_haccytrees_tdata = np.loadtxt(
-        os.path.join(DRN_TESTING_DATA, "phi_haccytrees_tdata.txt")
-    )
-    # Sanity check range on tdata
-    assert np.all(theta_haccytrees_tdata > 0)
-    assert np.all(theta_haccytrees_tdata < np.pi)
-    assert np.all(phi_haccytrees_tdata > 0)
-    assert np.all(phi_haccytrees_tdata < 2 * np.pi)
-
-    theta_recomputed, phi_recomputed = hlu.get_theta_phi(
-        x_haccytrees_tdata, y_haccytrees_tdata, z_haccytrees_tdata
-    )
-
-    assert np.allclose(theta_recomputed, theta_haccytrees_tdata, rtol=1e-3)
-    assert np.allclose(phi_recomputed, phi_haccytrees_tdata, rtol=1e-3)
-
-
 def test_ra_dec_range():
     ran_key = jran.key(0)
     n_tests = 10
@@ -156,10 +124,16 @@ def test_get_matching_lc_patches():
 
 def test_get_lsst_ddf_patches():
     fn = os.path.join(DRN_TESTING_DATA, "lc_cores-decomposition.txt")
+
+    _res = hlu.read_lc_ra_dec_patch_decomposition(fn)
+    patch_decomposition, sky_frac, solid_angles = _res
+    n_subvols_tot = len(solid_angles)
+
     ddf_patches = hlu.get_lsst_ddf_patches(fn)
     assert len(ddf_patches) == len(hlu.LSST_DDF_FIELDS)
     for field_name, lc_patches in ddf_patches.items():
-        assert len(lc_patches) > 0
+        assert len(lc_patches) > 0, field_name
+        assert len(lc_patches) < n_subvols_tot, field_name
 
 
 def test_estimate_nhalos_sky_patch():
@@ -219,3 +193,77 @@ def test_get_theta_phi_from_ra_dec_inverts_get_ra_dec_from_theta_phi():
     theta2, phi2 = hlu.get_theta_phi_from_ra_dec(ra, dec)
     assert np.allclose(theta, theta2, rtol=1e-4)
     assert np.allclose(phi, phi2, rtol=1e-4)
+
+
+def test_compute_theta_phi_agrees_with_healpix():
+    """Small dataset taken from LastJourney/lc_cores-266.0.hdf5"""
+    x_haccytrees_tdata = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "x_haccytrees_tdata.txt")
+    )
+    y_haccytrees_tdata = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "y_haccytrees_tdata.txt")
+    )
+    z_haccytrees_tdata = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "z_haccytrees_tdata.txt")
+    )
+
+    theta_healpix_tdata = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "theta_healpix_tdata.txt")
+    )
+    phi_healpix_tdata = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "phi_healpix_tdata.txt")
+    )
+    # Sanity check range on tdata
+    assert np.all(theta_healpix_tdata > 0)
+    assert np.all(theta_healpix_tdata < np.pi)
+    assert np.all(phi_healpix_tdata > 0)
+    assert np.all(phi_healpix_tdata < 2 * np.pi)
+
+    theta_recomputed, phi_recomputed = hlu.get_theta_phi(
+        x_haccytrees_tdata, y_haccytrees_tdata, z_haccytrees_tdata
+    )
+
+    assert np.allclose(theta_recomputed, theta_healpix_tdata, rtol=1e-3)
+    assert np.allclose(phi_recomputed, phi_healpix_tdata, rtol=1e-3)
+
+
+def test_get_galplane_patches():
+    fn = os.path.join(DRN_TESTING_DATA, "lc_cores-decomposition.txt")
+
+    _res = hlu.read_lc_ra_dec_patch_decomposition(fn)
+    patch_decomposition, sky_frac, solid_angles = _res
+    n_subvols_tot = len(solid_angles)
+
+    galplane_patches = hlu._get_galplane_patches(fn)
+
+    for patch, subvols in galplane_patches.items():
+        assert len(subvols) > 0, patch
+        assert len(subvols) < n_subvols_tot, patch
+
+
+def test_get_hltds_patches():
+    fn = os.path.join(DRN_TESTING_DATA, "lc_cores-decomposition.txt")
+
+    _res = hlu.read_lc_ra_dec_patch_decomposition(fn)
+    patch_decomposition, sky_frac, solid_angles = _res
+    n_subvols_tot = len(solid_angles)
+
+    hltds_patches = hlu._get_hltds_patches(fn)
+
+    for patch, subvols in hltds_patches.items():
+        assert len(subvols) > 0, patch
+        assert len(subvols) < n_subvols_tot, patch
+
+
+def test_get_ou26_lc_patches_are_frozen():
+    """Data stored in testing_data/ou26_lc_patches.txt were calculated with the
+    _get_ou26_lc_patches function when it was first committed to the repo.
+    """
+    fn = os.path.join(DRN_TESTING_DATA, "lc_cores-decomposition.txt")
+    ou26_lc_patches = hlu._get_ou26_lc_patches(fn)
+
+    ou26_lc_patches_frozen = np.loadtxt(
+        os.path.join(DRN_TESTING_DATA, "ou26_lc_patches.txt")
+    )
+
+    assert np.allclose(ou26_lc_patches, ou26_lc_patches_frozen)

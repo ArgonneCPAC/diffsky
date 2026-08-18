@@ -5,11 +5,12 @@ from glob import glob
 
 import h5py
 import numpy as np
+
+from .. import load_flat_hdf5
 from . import hacc_core_utils as hcu
 from . import lc_mock as lcmp
-from . import load_lc_cores as llcc
 from . import lightcone_utils
-from .. import load_flat_hdf5
+from . import load_lc_cores as llcc
 
 
 def load_diffsky_lightcone(drn, sim_name, z_min, z_max, patch_list, keys=None):
@@ -129,6 +130,11 @@ def load_lc_mock_chunk(fn_lc_mock, *, nchunks, chunknum, lc_mock_keys=None):
     with h5py.File(fn_lc_mock, "r") as hdf:
         if lc_mock_keys is None:
             lc_mock_keys = list(hdf["data"].keys())
+
+        keys_to_throw_out = ["unlensed_magnitudes", "unlensed_fluxes"]
+        for key in keys_to_throw_out:
+            if key in lc_mock_keys:
+                lc_mock_keys.pop(lc_mock_keys.index(key))
 
         lc_mock, (istart, iend) = llcc._read_lc_cores_chunk(
             hdf, nchunks, chunknum, lc_mock_keys, index_dataset="metadata"

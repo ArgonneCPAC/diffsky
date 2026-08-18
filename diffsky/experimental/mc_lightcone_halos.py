@@ -30,7 +30,7 @@ from scipy.stats import qmc
 
 from ..burstpop import diffqburstpop_mono
 from ..mass_functions import hmf_model, mc_hosts
-from ..phot_utils import get_wave_eff_table
+from ..utils.phot_utils import get_wave_eff_table
 from . import precompute_ssp_phot as psspp
 from .lc_utils import spherical_shell_comoving_volume
 

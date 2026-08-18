@@ -1,34 +1,35 @@
 """Script to make an SED mock to populate a Last Journey lightcone
 
 To run a unit test of this script:
-    python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
-    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
+    python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -machine poboy
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
 
 To run a local test on poboy:
     mpiexec -n 2 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml
-    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py ci_test_output/dummy_version_name
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml
 
 """
-
-# noqa
 
 import argparse
 import gc
 import os
 import shutil
 import sys
+
+# noqa
+from glob import glob
 from time import sleep, time
 
 import h5py
 import jax
 import numpy as np
 import yaml
-from dsps.data_loaders.load_emline_info import get_subset_emline_data
+from dsps.data_loaders import load_emline_info
 from jax import random as jran
 from mpi4py import MPI
 
 from diffsky import phot_utils
-from diffsky.data_loaders import load_flat_hdf5, load_ssp_templates, mpi_utils
+from diffsky.data_loaders import load_ssp_templates, mpi_utils
 from diffsky.data_loaders.hacc_utils import lc_mock as lcmp_repro
 from diffsky.data_loaders.hacc_utils import lightcone_utils as hlu
 from diffsky.data_loaders.hacc_utils import load_lc_cf
@@ -37,7 +38,7 @@ from diffsky.data_loaders.hacc_utils import metadata_mock
 from diffsky.data_loaders.mock_utils import get_mock_version_name
 from diffsky.experimental import mc_lightcone_halos as mclh
 from diffsky.experimental import precompute_ssp_phot as psspp
-from diffsky.param_utils import COSMOS_PARAM_FITS_MERGING
+from diffsky.param_utils import DIFFSKY_FIT_PARAMS
 from diffsky.param_utils import diffsky_param_wrapper_merging as dpwm
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
@@ -73,6 +74,8 @@ ROMAN_FILTER_NICKNAMES = (
 )
 OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES, *ROMAN_FILTER_NICKNAMES)
 OUTPUT_LINE_NICKNAMES = ("Ba_alpha_6563", "Ba_beta_4861")
+_THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
+FN_GRS_PIT_EMLINE_INFO = os.path.join(_THIS_DRNAME, "emlines_info_grs_pit.dat")
 
 SSP_SED_BNAME = "fsps_v0.4.7_mist_c3k_a_kroupa_wNE_logGasU-2.0_logGasZ0.0.h5"
 
@@ -90,13 +93,24 @@ if __name__ == "__main__":
         default=-1,
         type=int,
     )
+    parser.add_argument(
+        "-machine", help="Machine name. Overrides config_yaml", default=""
+    )
+    parser.add_argument(
+        "-infer_mockname",
+        help="Infer mock_version_name from directory",
+        action="store_true",
+    )
 
     cl_args = parser.parse_args()
     config_path = cl_args.config_yaml
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    machine = config["machine"]
+    machine = cl_args.machine
+    if machine == "":
+        machine = config.get("machine", "lcrc")
+
     z_min = float(config["z_min"])
     z_max = float(config["z_max"])
     istart = int(config["istart"])
@@ -120,15 +134,21 @@ if __name__ == "__main__":
     no_sed = config.get("no_sed", False)
     incl_in_situ = config.get("incl_in_situ", False)
     bn_ssp_data = config.get("bn_ssp_data", SSP_SED_BNAME)
+    emline_names = config.get("emline_names", OUTPUT_LINE_NICKNAMES)
 
     if cl_args.synthetic_cores != -1:
         # override the yaml file (convenient for job submission scripts)
         synthetic_cores = cl_args.synthetic_cores
 
-    if mock_version_name_in == "":
-        mock_version_name = get_mock_version_name(mock_nickname)
+    if cl_args.infer_mockname:
+        fn_list = glob(os.path.join(drn_out, mock_nickname + "_*"))
+        drn_mock = fn_list[0]
+        mock_version_name = os.path.basename(drn_mock)
     else:
-        mock_version_name = mock_version_name_in
+        if mock_version_name_in == "":
+            mock_version_name = get_mock_version_name(mock_nickname)
+        else:
+            mock_version_name = mock_version_name_in
 
     if lsst_only:
         OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES,)
@@ -155,6 +175,10 @@ if __name__ == "__main__":
     elif machine == "lcrc":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
+
+    if emline_names == "roman_grs_pit":
+        emline_dict = load_emline_info.read_emlines_info_fsps(FN_GRS_PIT_EMLINE_INFO)
+        emline_names = list(emline_dict.keys())
 
     ran_key = jran.key(rank)
 
@@ -188,13 +212,13 @@ if __name__ == "__main__":
     output_timesteps = hlu.get_timesteps_in_zrange(sim_name, z_min, z_max)
 
     ssp_data = load_ssp_templates(bn=bn_ssp_data)
-    ssp_data = get_subset_emline_data(ssp_data, OUTPUT_LINE_NICKNAMES)
+    ssp_data = load_emline_info.get_subset_emline_data(ssp_data, emline_names)
 
     # Check that the SSP data includes all necessary lines
-    for line_name in OUTPUT_LINE_NICKNAMES:
+    for line_name in emline_names:
         assert line_name in ssp_data.ssp_emline_wave._fields
 
-    param_collection = COSMOS_PARAM_FITS_MERGING[cosmos_fit]
+    param_collection = DIFFSKY_FIT_PARAMS[cosmos_fit]
     dpwm.check_param_collection_is_ok(param_collection)
 
     n_z_phot_table = 15
@@ -292,6 +316,7 @@ if __name__ == "__main__":
         msg = f"Loading {nhalos_estimate} halos in {nchunks} chunks with batch_size={batch_size}"
         print(msg)
 
+        n_cuml_fn = 0
         for chunknum in range(0, nchunks):
             jax.clear_caches()
             gc.collect()
@@ -300,7 +325,13 @@ if __name__ == "__main__":
 
             if synthetic_cores == 0:
                 lc_data_batch, diffsky_data_batch = load_lc_cf.load_lc_cf_chunk(
-                    fn_lc_diffsky, indir_lc_data, nchunks=nchunks, chunknum=chunknum
+                    fn_lc_diffsky,
+                    indir_lc_data,
+                    nchunks=nchunks,
+                    chunknum=chunknum,
+                    sim_name=sim_name,
+                    convert_mpch_to_mpc=True,
+                    convert_vcom_to_vphys=True,
                 )
             else:
                 downsample_factor = nhalos_estimate / batch_size
@@ -312,9 +343,11 @@ if __name__ == "__main__":
                     lgmp_min,
                     lgmp_max,
                     downsample_factor=downsample_factor,
+                    read_start=n_cuml_fn,
                 )
 
             n_gals_batch = len(lc_data_batch["core_tag"])
+            n_cuml_fn += n_gals_batch
             lc_data_batch["stepnum"] = np.zeros(n_gals_batch).astype(int) + stepnum
             lc_data_batch["lc_patch"] = np.zeros(n_gals_batch).astype(int) + lc_patch
 
@@ -342,6 +375,11 @@ if __name__ == "__main__":
                 )
                 _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
                 phot_info_batch, lc_data_batch, diffsky_data_batch = _res
+
+                batch_key, nfw_key = jran.split(batch_key, 2)
+                lc_data_batch, diffsky_data_batch = lcmp_repro.reposition_satellites(
+                    sim_info, lc_data_batch, diffsky_data_batch, nfw_key
+                )
 
                 batch_key, morph_key = jran.split(batch_key, 2)
                 diffsky_data_batch = (
@@ -372,7 +410,7 @@ if __name__ == "__main__":
                         lc_data_batch,
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
-                        OUTPUT_LINE_NICKNAMES,
+                        emline_names,
                         incl_in_situ=incl_in_situ,
                     )
                 else:
@@ -382,60 +420,24 @@ if __name__ == "__main__":
                         lc_data_batch,
                         diffsky_data_batch,
                         OUTPUT_FILTER_NICKNAMES,
-                        OUTPUT_LINE_NICKNAMES,
+                        emline_names,
                         incl_in_situ=incl_in_situ,
                     )
 
-            if synthetic_cores == 1:
-                batch_key, nfw_key = jran.split(batch_key, 2)
-                lc_data_batch, diffsky_data_batch = lcmp_repro.reposition_satellites(
-                    sim_info, lc_data_batch, diffsky_data_batch, nfw_key
-                )
-                lcmp_repro.write_batched_mock_data(
-                    fn_out,
-                    lc_data_batch,
-                    lcmp_repro.LC_DATA_NFW_KEYS_OUT,
-                    dataset="data",
-                )
-                lcmp_repro.write_batched_mock_data(
-                    fn_out,
-                    diffsky_data_batch,
-                    lcmp_repro.DIFFSKY_DATA_NFW_HOST_KEYS_OUT,
-                    dataset="data",
-                )
-
-        metadata_mock.append_index_metadata(fn_out, indir_lc_data, synthetic_cores)
-
-        if synthetic_cores == 0:
-
-            lc_cores_poskeys = (
-                "x",
-                "y",
-                "z",
-                "top_host_idx",
-                "redshift_true",
-                "central",
-                "logmp_obs",
-            )
-            lc_data_posinfo = load_flat_hdf5(
-                fn_out, keys=lc_cores_poskeys, dataset="data"
-            )
-            diffsky_gals_posinfo = lc_data_posinfo
-
-            patch_key, nfw_key = jran.split(patch_key, 2)
-            lc_data_posinfo, diffsky_data_posinfo = lcmp_repro.reposition_satellites(
-                sim_info, lc_data_posinfo, diffsky_gals_posinfo, nfw_key
-            )
-
             lcmp_repro.write_batched_mock_data(
-                fn_out, lc_data_posinfo, lcmp_repro.LC_DATA_NFW_KEYS_OUT, dataset="data"
+                fn_out,
+                lc_data_batch,
+                lcmp_repro.LC_DATA_NFW_KEYS_OUT,
+                dataset="data",
             )
             lcmp_repro.write_batched_mock_data(
                 fn_out,
-                diffsky_data_posinfo,
+                diffsky_data_batch,
                 lcmp_repro.DIFFSKY_DATA_NFW_HOST_KEYS_OUT,
                 dataset="data",
             )
+
+        metadata_mock.append_index_metadata(fn_out, indir_lc_data, synthetic_cores)
 
         gc.collect()
         jax.clear_caches()
@@ -451,7 +453,7 @@ if __name__ == "__main__":
             mock_version_name,
             z_phot_table,
             OUTPUT_FILTER_NICKNAMES,
-            OUTPUT_LINE_NICKNAMES,
+            emline_names,
             exclude_colnames=exclude_colnames,
             no_dbk=no_dbk,
             incl_in_situ=incl_in_situ,
@@ -460,9 +462,9 @@ if __name__ == "__main__":
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
 
-            if synthetic_cores == 0:
-                bn_sky_decomp = "lc_cores-decomposition.txt"
-                fn_sky_decomp = os.path.join(indir_lc_data, bn_sky_decomp)
+            bn_sky_decomp = "lc_cores-decomposition.txt"
+            fn_sky_decomp = os.path.join(indir_lc_data, bn_sky_decomp)
+            if os.path.isfile(fn_sky_decomp):
                 shutil.copy2(fn_sky_decomp, drn_out)
 
             lcmp_repro.write_ancillary_data_merging(

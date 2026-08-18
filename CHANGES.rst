@@ -1,6 +1,23 @@
-0.3.7 (Unreleased)
+0.3.8 (unreleased)
+-------------------
+- Add HLTDS fields for image simulation: ELIAS-N1, EDFS_a, EDFS_b
+- Change littleh convention so that all spatial positions of mocks are now in Mpc (not Mpc/h) (https://github.com/ArgonneCPAC/diffsky/pull/478)
+
+
+0.3.7 (2026-08-05)
 -------------------
 - Reinstate OpenCosmo docs (https://github.com/ArgonneCPAC/diffsky/pull/439)
+- Migrate top-level modules into subdirectories
+    - phot_utils.py: https://github.com/ArgonneCPAC/diffsky/pull/449
+    - soft_histograms: https://github.com/ArgonneCPAC/diffsky/pull/450
+- Fix bug in `ra, dec`. This bug created a 180 degree offset in RA/phi co-ordinates, which rotated the galaxies away from the dark matter, leading to zero gg-lensing signal (https://github.com/ArgonneCPAC/diffsky/pull/456)
+- Add documentation of Monte Carlo lightcone generators based on diffhalos (https://github.com/ArgonneCPAC/diffsky/pull/458)
+- Ship physical km/s peculiar velocity instead of comoving km/s (https://github.com/ArgonneCPAC/diffsky/pull/464)
+- Remove obsolete prototype calibrations and bring in new models (https://github.com/ArgonneCPAC/diffsky/pull/466)
+- Fix bug in `ra, dec` for synthetic halos (https://github.com/ArgonneCPAC/diffsky/pull/469)
+- Fix bug in ellipsoidal shapes (https://github.com/ArgonneCPAC/diffsky/pull/468)
+- Retune disk axis ratio distribution and size--mass relation (https://github.com/ArgonneCPAC/diffsky/pull/470)
+- Version of code used to produce `c260710_08_02_2026`
 
 
 0.3.6 (2026-06-12)

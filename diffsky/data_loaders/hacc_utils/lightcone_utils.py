@@ -36,6 +36,18 @@ LSST_DDF_FIELDS = dict(
 )
 LSST_DDF_RADIUS = 5.0  # deg^2
 
+GALPLANE_FIELDS = dict(GC=(266.405, -28.9362), GP0=(251.7436, -45.2462))
+GALPLANE_FIELD_RADIUS = LSST_DDF_RADIUS
+
+# ELAIS_N1 info taken from:
+#  https://roman-docs.stsci.edu/roman-community-defined-surveys/high-latitude-time-domain-survey
+HLTDS_FIELDS = dict(
+    ELAIS_N1=(242.504, 54.51),
+    EDFS_a=(58.9, -49.32),
+    EDFS_b=(63.6, -47.6),
+)
+HLTDS_RADIUS = LSST_DDF_RADIUS  # deg^2
+
 MAX_LJ_LC_TIMESTEP = 487
 
 TOP_HOST_MAH_KEYS = ["top_host_" + key for key in DEFAULT_MAH_PARAMS._fields]
@@ -114,7 +126,7 @@ def get_theta_phi(x, y, z):
     rsq = x * x + y * y + z * z
     r = jnp.sqrt(rsq)
     theta = jnp.arccos(z / r)
-    phi = jnp.arctan2(y, x) + jnp.pi
+    phi = jnp.mod(jnp.arctan2(y, x), 2 * jnp.pi)
     return theta, phi
 
 
@@ -149,8 +161,8 @@ def get_xyz_mpc(ra, dec, redshift, cosmo_params):
     )
     theta, phi = get_theta_phi_from_ra_dec(ra, dec)
 
-    x_mpc = r_mpc * jnp.sin(theta) * jnp.cos(phi - jnp.pi)
-    y_mpc = r_mpc * jnp.sin(theta) * jnp.sin(phi - jnp.pi)
+    x_mpc = r_mpc * jnp.sin(theta) * jnp.cos(phi)
+    y_mpc = r_mpc * jnp.sin(theta) * jnp.sin(phi)
     z_mpc = r_mpc * jnp.cos(theta)
 
     return x_mpc, y_mpc, z_mpc
@@ -688,6 +700,20 @@ def get_lsst_ddf_patches(fn, lsst_ddf_fields=LSST_DDF_FIELDS, rad_deg=LSST_DDF_R
     return lsst_ddf_patches
 
 
+def _get_galplane_patches(
+    fn, galplane_fields=GALPLANE_FIELDS, rad_deg=GALPLANE_FIELD_RADIUS
+):
+    """Get overlapping lightcone patches for fields in the plane of the Galaxy"""
+    galplane_patches = get_lsst_ddf_patches(fn, galplane_fields, rad_deg)
+    return galplane_patches
+
+
+def _get_hltds_patches(fn, hltds_fields=HLTDS_FIELDS, rad_deg=GALPLANE_FIELD_RADIUS):
+    """Get overlapping lightcone patches for fields in the plane of the Galaxy"""
+    hltds_patches = get_lsst_ddf_patches(fn, hltds_fields, rad_deg)
+    return hltds_patches
+
+
 def _estimate_nhalos_sky_patch(sim_name, stepnum):
     diffsky_info = get_diffsky_info_from_hacc_sim(sim_name)
     dstep = np.abs(diffsky_info.sim.cosmotools_steps - stepnum)
@@ -699,3 +725,18 @@ def _estimate_nhalos_sky_patch(sim_name, stepnum):
 
     vol_at_z = np.interp(z_obs, z_grid, vol_shell_grid_mpc)
     return vol_at_z
+
+
+def _get_ou26_lc_patches(fn):
+
+    lsst_ddf_patches = get_lsst_ddf_patches(fn)
+    galplane_patches = _get_galplane_patches(fn)
+    hltds_patches = _get_hltds_patches(fn)
+
+    ddf_arr = np.array(lsst_ddf_patches["XMM_LSS"] + lsst_ddf_patches["COSMOS"])
+    hltds_arr = np.concatenate([x for x in hltds_patches.values()])
+    galplane_arr = np.concatenate([x for x in galplane_patches.values()])
+
+    ou26_lc_patches = np.unique(np.concatenate((ddf_arr, hltds_arr, galplane_arr)))
+
+    return ou26_lc_patches

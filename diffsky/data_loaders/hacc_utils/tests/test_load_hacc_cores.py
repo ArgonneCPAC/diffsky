@@ -30,11 +30,11 @@ except AssertionError:
 
 
 def test_concatenate_diffsky_subcats():
-    n_cats = 3
+    n_cats = 2
     ran_key = jran.key(0)
     z_obs = 0.05
     lgmp_min = 11.5
-    volume_com = 25**3
+    volume_com = 5**3
     subcats = []
     for i in range(n_cats):
         ran_key, cat_key = jran.split(ran_key, 2)

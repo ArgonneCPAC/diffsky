@@ -6,12 +6,13 @@ from glob import glob
 import h5py
 import numpy as np
 import yaml
+from dsps.cosmology import flat_wcdm
 from dsps.photometry import photometry_kernels as phk
 from jax import vmap
 
 from ....param_utils import diffsky_param_wrapper as dpw
 from .. import lc_mock as lcmp
-from .. import load_flat_hdf5, load_lc_cf, load_lc_mock, sed_from_mock
+from .. import lightcone_utils, load_flat_hdf5, load_lc_cf, load_lc_mock, sed_from_mock
 
 REQUIRED_METADATA_ATTRS = ("creation_date", "README", "mock_version_name")
 REQUIRED_SOFTWARE_VERSION_INFO = (
@@ -28,7 +29,7 @@ BNPAT_LC_MOCK = "data-{0}.{1}.diffsky_gals.hdf5"
 YAML_REQ_LIST = ("drn_out", "z_min", "z_max")
 HLINE = "----------"
 
-
+BNAME_LC_PATCH_DECOMPOSITION = "lc_cores-decomposition.txt"
 BATCH_SIZE = 50
 
 
@@ -51,6 +52,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     msg = check_all_columns_have_expected_shapes(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["column_sizes"] = msg
+
+    msg = check_xyz_littleh(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["xyz_littleh"] = msg
 
     msg = check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=data)
     if len(msg) > 0:
@@ -247,6 +252,9 @@ def check_metadata(fn_lc_mock):
         msg.append(s)
         return msg
 
+    _msg = check_lc_cores_decomposition(fn_lc_mock)
+    msg.extend(_msg)
+
     # Check for `index` in metadata
     try:
         assert "index" in all_metadata.keys()
@@ -297,20 +305,31 @@ def check_metadata(fn_lc_mock):
             # Check z_phot_table is reasonable
             z_phot_table = lcmp.load_diffsky_z_phot_table(fn_lc_mock)
             assert z_phot_table.size >= 2
-            # assert np.all(z_phot_table > -1)
-            # assert np.all(z_phot_table < 100)
-
-            # Check has ssp_data
-            # drn_mock = os.path.dirname(fn_lc_mock)
-            # check_has_ssp_data(drn_mock, mock_version_name)
-            # check_has_transmission_curves(drn_mock, mock_version_name)
-
-            # # Check has param_collection
-            # check_has_param_collection(drn_mock, mock_version_name)
+            assert np.all(z_phot_table > -1)
+            assert np.all(z_phot_table < 100)
 
         except:  # noqa
             s = "metadata is incorrect"
             msg.append(s)
+
+    return msg
+
+
+def check_lc_cores_decomposition(fn_lc_mock, bn=BNAME_LC_PATCH_DECOMPOSITION):
+    msg = []
+    drn_mock = os.path.dirname(fn_lc_mock)
+    fn = os.path.join(drn_mock, bn)
+    try:
+        assert os.path.isfile(fn)
+    except AssertionError:
+        s = f"{fn} is missing"
+        msg.append(s)
+
+    try:
+        lightcone_utils.read_lc_ra_dec_patch_decomposition(fn)
+    except:  # noqa
+        s = f"Failure to read {fn} with read_lc_ra_dec_patch_decomposition"
+        msg.append(s)
 
     return msg
 
@@ -690,3 +709,24 @@ def check_recomputed_dbk_sed(fn_lc_mock, *, nchunks, chunknum, return_results=Fa
         return mock_chunk, metadata, sed_info, phot_info, msg
     else:
         return msg
+
+
+def check_xyz_littleh(fn_lc_mock, data=None):
+    """Columns storing xyz should be in units of Mpc, not Mpc/h"""
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock)
+
+    metadata = load_lc_mock.load_mock_metadata(fn_lc_mock)
+
+    rcom_from_xyz = np.sqrt(data["x"] ** 2 + data["y"] ** 2 + data["z"] ** 2)
+    rcom_from_redshift = flat_wcdm.comoving_distance(
+        data["redshift_true"], *metadata["sim_info"].cosmo_params
+    )
+    msg = []
+    try:
+        s = "Discrepancy between xyz and redshift_true - likely due to littleh"
+        assert np.allclose(rcom_from_xyz, rcom_from_redshift, rtol=0.02)
+    except AssertionError:
+        msg.append(s)
+
+    return msg
