@@ -55,8 +55,6 @@ DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-7-cf-diffsky
 
 SIM_NAME = "LastJourney"
 
-ROMAN_HLTDS_PATCHES = [157, 158, 118, 119]
-
 LSST_FILTER_NICKNAMES = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
 
 ROMAN_FILTER_NICKNAMES = (
@@ -115,12 +113,11 @@ if __name__ == "__main__":
     z_max = float(config["z_max"])
     istart = int(config["istart"])
     iend = int(config["iend"])
+    fn_patch_list = config.get("fn_patch_list", None)
     drn_out = config["drn_out"]
     mock_nickname = config["mock_nickname"]
 
     mock_version_name_in = config.get("mock_version_name", "")
-    roman_hltds = config.get("roman_hltds", False)
-    lsst_ddf = config.get("lsst_ddf", False)
     lsst_only = config.get("lsst_only", False)
     cosmos_fit = config.get("cosmos_fit", "")
     sfh_model = config.get("sfh_model", "tng")
@@ -187,25 +184,12 @@ if __name__ == "__main__":
     if itest == 1:
         lc_patch_list = [0, 1]
     else:
-        lc_patch_list = []
-        ignore_istart_iend = roman_hltds | lsst_ddf
-        if ignore_istart_iend:
-            if roman_hltds:
-                lc_patch_list.extend(ROMAN_HLTDS_PATCHES)
-                if rank == 0:
-                    print("Making all lightcone patches for Roman HLTDS")
-            if lsst_ddf:
-                fn_lc_decomp = os.path.join(indir_lc_data, "lc_cores-decomposition.txt")
-                lc_patch_dict = hlu.get_lsst_ddf_patches(fn_lc_decomp)
-                lc_patch_list_lsst = np.unique(
-                    np.concatenate([arr for arr in lc_patch_dict.values()])
-                )
-                lc_patch_list.extend(list(lc_patch_list_lsst))
-                if rank == 0:
-                    print("Making all lightcone patches for LSST DDF")
+        if fn_patch_list is not None:
+            lc_patch_list = np.loadtxt(fn_patch_list)
+            msg = f"{fn_patch_list} contains repeated entries"
+            assert len(lc_patch_list) == len(np.unique(lc_patch_list)), msg
         else:
             lc_patch_list = np.arange(istart, iend).astype(int)
-    lc_patch_list = np.array(lc_patch_list)
     if rank == 0:
         print(f"Making mock with lc_patch_list={lc_patch_list}")
 
