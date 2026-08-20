@@ -44,11 +44,9 @@ def mc_lightcone_random_ra_dec(ran_key, npts, ra_min, ra_max, dec_min, dec_max):
         Random coords on the sphere within the input range
 
     """
-    phi_min = jnp.deg2rad(ra_min)
-    phi_max = jnp.deg2rad(ra_max)
-
-    theta_min = jnp.deg2rad(90.0 - dec_max)
-    theta_max = jnp.deg2rad(90.0 - dec_min)
+    theta_min, theta_max, phi_min, phi_max = _get_theta_phi_minmax_from_ra_dec_minmax(
+        ra_min, ra_max, dec_min, dec_max
+    )
 
     theta, phi = mc_lightcone_random_theta_phi(
         ran_key, npts, theta_min, theta_max, phi_min, phi_max
@@ -56,6 +54,28 @@ def mc_lightcone_random_ra_dec(ran_key, npts, ra_min, ra_max, dec_min, dec_max):
     ra, dec = _get_ra_dec_from_theta_phi(theta, phi)
 
     return ra, dec
+
+
+@jjit
+def _get_ra_dec_minmax_from_theta_phi_minmax(theta_min, theta_max, phi_min, phi_max):
+    ra_min = jnp.rad2deg(phi_min)
+    ra_max = jnp.rad2deg(phi_max)
+
+    dec_min = 90.0 - jnp.rad2deg(theta_max)
+    dec_max = 90.0 - jnp.rad2deg(theta_min)
+
+    return ra_min, ra_max, dec_min, dec_max
+
+
+@jjit
+def _get_theta_phi_minmax_from_ra_dec_minmax(ra_min, ra_max, dec_min, dec_max):
+    phi_min = jnp.deg2rad(ra_min)
+    phi_max = jnp.deg2rad(ra_max)
+
+    theta_min = jnp.deg2rad(90.0 - dec_max)
+    theta_max = jnp.deg2rad(90.0 - dec_min)
+
+    return theta_min, theta_max, phi_min, phi_max
 
 
 @partial(jjit, static_argnames=["npts"])
