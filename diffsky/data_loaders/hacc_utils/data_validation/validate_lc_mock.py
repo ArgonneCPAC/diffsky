@@ -326,10 +326,26 @@ def check_lc_cores_decomposition(fn_lc_mock, bn=BNAME_LC_PATCH_DECOMPOSITION):
         msg.append(s)
 
     try:
-        lightcone_utils.read_lc_ra_dec_patch_decomposition(fn)
+        _res = lightcone_utils.read_lc_ra_dec_patch_decomposition(fn)
+        patch_decomposition_from_mock, sky_frac_from_mock, solid_angles_from_mock = _res
     except:  # noqa
         s = f"Failure to read {fn} with read_lc_ra_dec_patch_decomposition"
         msg.append(s)
+
+    metadata = load_lc_mock.load_mock_metadata(fn_lc_mock)
+    sim_name = metadata["nbody_info"]["sim_name"]
+    _res = lightcone_utils.read_hacc_lc_patch_decomposition(sim_name)
+    patch_decomposition_from_src, sky_frac_from_src, solid_angles_from_src = _res
+
+    assert len(patch_decomposition_from_mock) == len(patch_decomposition_from_src)
+    assert len(sky_frac_from_mock) == len(sky_frac_from_src)
+    assert len(solid_angles_from_mock) == len(solid_angles_from_src)
+
+    assert np.allclose(
+        patch_decomposition_from_mock, patch_decomposition_from_src, rtol=1e-4
+    )
+    assert np.allclose(sky_frac_from_mock, sky_frac_from_src, rtol=1e-4)
+    assert np.allclose(solid_angles_from_mock, solid_angles_from_src, rtol=1e-4)
 
     return msg
 
