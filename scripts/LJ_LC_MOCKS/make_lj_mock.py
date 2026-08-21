@@ -286,6 +286,7 @@ if __name__ == "__main__":
                 lc_patch_info.z_lo,
                 lc_patch_info.z_hi,
                 lc_patch_info.sky_area_degsq,
+                lgmp_max=lgmp_max,
             )
             nhalos_estimate = int(np.round(mean_nhalos))
             z_min_shell = lc_patch_info.z_lo
