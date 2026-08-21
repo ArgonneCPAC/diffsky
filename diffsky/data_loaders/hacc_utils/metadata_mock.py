@@ -486,6 +486,10 @@ def add_metadata_lc_core_data_columns(metadata):
         str(u.dimensionless_unscaled),
         "True redshift",
     )
+    metadata["redshift_obs"] = (
+        str(u.dimensionless_unscaled),
+        "Observed redshift, accounting for line-of-sight peculiar velocity",
+    )
 
     metadata["stepnum"] = (
         str(u.dimensionless_unscaled),
