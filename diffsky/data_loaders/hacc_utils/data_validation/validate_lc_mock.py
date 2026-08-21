@@ -62,6 +62,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if len(msg) > 0:
         report["ngal_expected"] = msg
 
+    msg = check_mock_has_observed_redshift(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["z_obs_column_exists"] = msg
+
     msg = check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["nfw_host_distance"] = msg
@@ -160,6 +164,20 @@ def check_yaml_config(fn_lc_mock, yaml_req_list=YAML_REQ_LIST):
         if len(missing_lines) > 0:
             s = f"{fn_config} is missing the following entries: {missing_lines}"
             msg.append(s)
+
+    return msg
+
+
+def check_mock_has_observed_redshift(fn_lc_mock, data=None):
+
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    msg = []
+    try:
+        assert "redshift_obs" in list(data.keys())
+    except AssertionError:
+        msg.append("Mock is missing `redshift_obs` column")
 
     return msg
 

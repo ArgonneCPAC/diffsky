@@ -41,6 +41,7 @@ from ...fake_sats import nfw_config_space as nfwcs
 from ...fake_sats import vector_utilities as vecu
 from ...param_utils import diffsky_param_wrapper as dpw
 from ...param_utils import diffsky_param_wrapper_merging as dpwm
+from ...utils import cosmo_utils
 from .. import io_utils as iou
 from . import lightcone_utils as hlu
 from . import load_lc_cf
@@ -106,6 +107,7 @@ DIFFSKY_DATA_KEYS_OUT = (
     "vy",
     "vz",
     "vpec",
+    "redshift_obs",
     "msk_v0",
     "has_diffmah_fit",
     "logmp0",
@@ -452,6 +454,9 @@ def add_peculiar_velocity_to_mock(
     V = np.array((diffsky_data["vx"], diffsky_data["vy"], diffsky_data["vz"])).T
     Xnorm = vecu.normalized_vectors(X)
     diffsky_data["vpec"] = vecu.elementwise_dot(V, Xnorm)
+    diffsky_data["redshift_obs"] = cosmo_utils.get_redshift_obs_from_redshift_true(
+        lc_data["redshift_true"], diffsky_data["vpec"]
+    )
 
     return diffsky_data
 
