@@ -10,6 +10,7 @@ from dsps.cosmology import flat_wcdm
 from dsps.photometry import photometry_kernels as phk
 from jax import vmap
 
+from ....experimental import mc_lightcone_halos as mclh
 from ....param_utils import diffsky_param_wrapper as dpw
 from .. import lc_mock as lcmp
 from .. import lightcone_utils, load_flat_hdf5, load_lc_cf, load_lc_mock, sed_from_mock
@@ -56,6 +57,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     msg = check_xyz_littleh(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["xyz_littleh"] = msg
+
+    msg = check_expected_number_of_synthetic_galaxies(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["ngal_expected"] = msg
 
     msg = check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=data)
     if len(msg) > 0:
@@ -311,6 +316,51 @@ def check_metadata(fn_lc_mock):
         except:  # noqa
             s = "metadata is incorrect"
             msg.append(s)
+
+    return msg
+
+
+def check_expected_number_of_synthetic_galaxies(fn_lc_mock, data=None):
+    msg = []
+    bn_mock = os.path.basename(fn_lc_mock)
+    if "synthetic" not in bn_mock:
+        return msg
+
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    sizes = [x.shape[0] for x in data.values()]
+    ngals = int(sizes[0])
+
+    z_min = np.percentile(data["redshift_true"], 1)
+    z_max = np.percentile(data["redshift_true"], 99)
+
+    drn_mock = os.path.dirname(fn_lc_mock)
+    fn_list_yamls = glob(os.path.join(drn_mock, "*.yaml"))
+    fn_yaml = fn_list_yamls[0]
+    with open(fn_yaml, "r") as fobj:
+        config = yaml.safe_load(fobj)
+
+    lgmp_min = config["lgmp_min"]
+    lgmp_max = config["lgmp_max"]
+
+    metadata = load_lc_mock.load_mock_metadata(fn_lc_mock)
+    sim_name = metadata["nbody_info"]["sim_name"]
+    _res = lightcone_utils.read_hacc_lc_patch_decomposition(sim_name)
+    patch_decomposition, sky_frac, solid_angles = _res
+    stepnum, lc_patch = lcmp.infer_lc_patch_stepnum_from_bname(bn_mock)
+    sky_area_degsq = solid_angles[lc_patch]
+
+    nhalos_estimate = mclh.estimate_nhalos_in_lightcone(
+        lgmp_min, z_min, z_max, sky_area_degsq, lgmp_max=lgmp_max
+    )
+
+    ngal_ratio = ngals / nhalos_estimate
+    try:
+        assert np.all((ngal_ratio >= 0.5) & (ngal_ratio <= 2.0))
+    except AssertionError:
+        s = f"ngals={ngals:_} but nhalos_estimate={nhalos_estimate:_}"
+        msg.append(s)
 
     return msg
 
