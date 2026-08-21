@@ -220,3 +220,15 @@ def test_add_dbk_phot_quantities_to_mock():
             getattr(fbulge_params, pname),
             rtol=0.01,
         )
+
+
+def test_infer_lc_patch_stepnum_from_bname():
+    bn = "lc_cores-453.0.diffsky_gals.synthetic_halos.hdf5"
+    stepnum, lc_patch = lcmp_repro.infer_lc_patch_stepnum_from_bname(bn)
+    assert stepnum == 453
+    assert lc_patch == 0
+
+    bn = "lc_cores-453.0.diffsky_gals.hdf5"
+    stepnum, lc_patch = lcmp_repro.infer_lc_patch_stepnum_from_bname(bn)
+    assert stepnum == 453
+    assert lc_patch == 0

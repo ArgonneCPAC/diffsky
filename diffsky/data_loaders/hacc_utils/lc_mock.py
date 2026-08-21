@@ -227,6 +227,11 @@ def load_diffsky_param_collection_merging(drn_mock, mock_version_name):
     return param_collection
 
 
+def infer_lc_patch_stepnum_from_bname(bn_mock):
+    stepnum, lc_patch = bn_mock.split("-")[1].split(".")[:2]
+    return int(stepnum), int(lc_patch)
+
+
 def write_diffsky_param_collection(drn_mock, mock_version_name, param_collection):
     """"""
     bn = BNPAT_PARAM_COLLECTION.format(mock_version_name)
