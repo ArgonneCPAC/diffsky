@@ -2,7 +2,8 @@
 -------------------
 - Add HLTDS fields for image simulation: ELIAS-N1, EDFS_a, EDFS_b
 - Change littleh convention so that all spatial positions of mocks are now in Mpc (not Mpc/h) (https://github.com/ArgonneCPAC/diffsky/pull/478)
-
+- Fix bug in ra, dec of synthetic halos due to outdated LastJourney file (https://github.com/ArgonneCPAC/diffsky/pull/481)
+- Fix bug in abundance of low-redshift synthetic halos due to incorrect downsampling factor (https://github.com/ArgonneCPAC/diffsky/pull/482)
 
 0.3.7 (2026-08-05)
 -------------------

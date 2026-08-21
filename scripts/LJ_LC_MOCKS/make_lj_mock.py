@@ -286,6 +286,7 @@ if __name__ == "__main__":
                 lc_patch_info.z_lo,
                 lc_patch_info.z_hi,
                 lc_patch_info.sky_area_degsq,
+                lgmp_max=lgmp_max,
             )
             nhalos_estimate = int(np.round(mean_nhalos))
             z_min_shell = lc_patch_info.z_lo
@@ -314,7 +315,8 @@ if __name__ == "__main__":
         else:
             nchunks = nhalos_estimate // batch_size
         msg = f"Loading {nhalos_estimate} halos in {nchunks} chunks with batch_size={batch_size}"
-        print(msg)
+        if rank == 0:
+            print(msg)
 
         n_cuml_fn = 0
         for chunknum in range(0, nchunks):
@@ -335,6 +337,7 @@ if __name__ == "__main__":
                 )
             else:
                 downsample_factor = nhalos_estimate / batch_size
+                downsample_factor = max(downsample_factor, 1)
                 batch_key, synthetic_lc_key = jran.split(batch_key, 2)
                 lc_data_batch, diffsky_data_batch = llcs.load_lc_diffsky_patch_data(
                     fn_lc_cores,
