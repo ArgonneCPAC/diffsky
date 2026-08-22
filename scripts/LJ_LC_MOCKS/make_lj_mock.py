@@ -185,7 +185,7 @@ if __name__ == "__main__":
         lc_patch_list = [0, 1]
     else:
         if fn_patch_list is not None:
-            lc_patch_list = np.loadtxt(fn_patch_list)
+            lc_patch_list = np.loadtxt(fn_patch_list).astype(int)
             msg = f"{fn_patch_list} contains repeated entries"
             assert len(lc_patch_list) == len(np.unique(lc_patch_list)), msg
         else:
