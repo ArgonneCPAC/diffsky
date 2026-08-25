@@ -670,7 +670,16 @@ def _generate_matching_patches(
             yield int(ipatch)
 
 
-def get_lsst_ddf_patches(fn, lsst_ddf_fields=LSST_DDF_FIELDS, rad_deg=LSST_DDF_RADIUS):
+def _get_field_info_from_pointing(pointing, radius_deg):
+    ra_min, ra_max = pointing[0] - radius_deg / 2, pointing[0] + radius_deg / 2
+    dec_min, dec_max = pointing[1] - radius_deg / 2, pointing[1] + radius_deg / 2
+    field_info = (ra_min, ra_max, dec_min, dec_max)
+    return field_info
+
+
+def get_lsst_ddf_patches(
+    fn, lsst_ddf_fields=LSST_DDF_FIELDS, radius_deg=LSST_DDF_RADIUS
+):
     """Get overlapping lightcone patches for each LSST DDF field
 
     Parameters
@@ -690,27 +699,24 @@ def get_lsst_ddf_patches(fn, lsst_ddf_fields=LSST_DDF_FIELDS, rad_deg=LSST_DDF_R
 
     """
     lsst_ddf_patches = dict()
-    for field_name, field_info in lsst_ddf_fields.items():
-        ra_mid, dec_mid = lsst_ddf_fields[field_name]
-        ra_min, ra_max = ra_mid - rad_deg, ra_mid + rad_deg
-        dec_min, dec_max = dec_mid - rad_deg, dec_mid + rad_deg
-        field_info = ra_min, ra_max, dec_min, dec_max
+    for field_name, pointing in lsst_ddf_fields.items():
+        field_info = _get_field_info_from_pointing(pointing, radius_deg)
         lc_patches = get_matching_lc_patches(fn, field_info)
         lsst_ddf_patches[field_name] = lc_patches
     return lsst_ddf_patches
 
 
 def _get_galplane_patches(
-    fn, galplane_fields=GALPLANE_FIELDS, rad_deg=GALPLANE_FIELD_RADIUS
+    fn, galplane_fields=GALPLANE_FIELDS, radius_deg=GALPLANE_FIELD_RADIUS
 ):
     """Get overlapping lightcone patches for fields in the plane of the Galaxy"""
-    galplane_patches = get_lsst_ddf_patches(fn, galplane_fields, rad_deg)
+    galplane_patches = get_lsst_ddf_patches(fn, galplane_fields, radius_deg)
     return galplane_patches
 
 
-def _get_hltds_patches(fn, hltds_fields=HLTDS_FIELDS, rad_deg=GALPLANE_FIELD_RADIUS):
+def _get_hltds_patches(fn, hltds_fields=HLTDS_FIELDS, radius_deg=GALPLANE_FIELD_RADIUS):
     """Get overlapping lightcone patches for fields in the plane of the Galaxy"""
-    hltds_patches = get_lsst_ddf_patches(fn, hltds_fields, rad_deg)
+    hltds_patches = get_lsst_ddf_patches(fn, hltds_fields, radius_deg)
     return hltds_patches
 
 
