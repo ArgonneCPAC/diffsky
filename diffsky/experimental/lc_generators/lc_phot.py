@@ -1,5 +1,14 @@
 # flake8: noqa: E402
 
+# diffsky/lightcone_generators/lc_phot.py
+"""
+The functions in this module receive as input LCDataPhot and
+diffsky parameters (ParamCollection), and populate the halo lightcone with
+galaxy photometry.
+
+LCDataPhot is computed in ./lc_data_phot.py.
+"""
+
 from jax import config
 
 config.update("jax_enable_x64", True)
@@ -11,8 +20,8 @@ from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import jit as jjit
 
-from ..param_utils import diffsky_param_wrapper_merging as dpwm
-from .kernels import (
+from ...param_utils import diffsky_param_wrapper_merging as dpwm
+from ..kernels import (
     _dbk_sed_kern,
     _mc_dbk_photline_kern_merging,
     _mc_phot_kern_merging,
