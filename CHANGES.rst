@@ -1,4 +1,4 @@
-0.3.8 (unreleased)
+0.3.8 (2026-08-25)
 -------------------
 - Add HLTDS fields for image simulation: ELIAS-N1, EDFS_a, EDFS_b
 - Change littleh convention so that all spatial positions of mocks are now in Mpc (not Mpc/h) (https://github.com/ArgonneCPAC/diffsky/pull/478)
