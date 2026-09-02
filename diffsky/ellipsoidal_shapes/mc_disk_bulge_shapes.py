@@ -4,6 +4,7 @@ from collections import namedtuple
 
 from jax import numpy as jnp
 from jax import random as jran
+from jax import jit as jjit
 
 from . import bulge_shapes, disk_shapes
 from . import ellipse_proj_kernels as epk
@@ -12,7 +13,6 @@ Ellipse2DParams = namedtuple(
     "Ellipse2DParams",
     ("alpha", "beta", "psi", "ellipticity", "e_alpha", "e_beta", "A", "B", "C"),
 )
-
 
 def mc_disk_bulge_ellipsoids(
     ran_key,
@@ -75,102 +75,90 @@ def mc_disk_bulge_ellipsoids(
     project onto the simulation x-y frame. However, when intrinsic alignment is modeled, the (mu, phi, omega)
     expressed in the body frame are no longer uniformly random, and the rigorous projection is required.
     """
+    ### Old method: draw random (mu, phi, omega)
     # (mu_ran, phi_ran, omega_ran) defines the 3D galaxy ellipsoid eigenaxes A, B, C in the simulation frame.
     # The ellipsoid body frame x'-y'-z' is defined such that A=x', B=y', C=z'
     # mu = cos(theta) where theta is the polar angle of C
     # phi is the azimuthal angle of C
     # omega is the angle between A and the pivot axis (z x z')
     # Without intrinsic alignment, the (mu, phi, omega) are drawn from uniform random distribution.
-    mu_ran, phi_ran, omega_ran = epk.mc_mu_phi_omega(n, los_key)
+    #mu_ran, phi_ran, omega_ran = epk.mc_mu_phi_omega(n, los_key)
 
     # Build the 3D vectors of A, B, and C in the simulation frame
-    R = epk._get_eulerxzx_matrix_from_angles(
-        phi_ran + jnp.pi / 2.0, jnp.arccos(mu_ran), omega_ran
-    )
-    A, B, C = R[:, :, 0], R[:, :, 1], R[:, :, 2]
+    #R = epk._get_eulerxzx_matrix_from_angles(
+    #    phi_ran + jnp.pi / 2.0, jnp.arccos(mu_ran), omega_ran
+    #)
+    #A, B, C = R[:, :, 0], R[:, :, 1], R[:, :, 2]
+
+    ### New method: draw random 3D orthonormal vectors A, B, C in the simulation frame
+    ### to be replaced by A, B, C = central_alignment/satellite_alignment in future
+    A, B, C = epk.mc_orthonormal_vectors(ran_key, n)
 
     # Build the West-North-LoS coordinate system in the simulation frame
-    NCP = jnp.array([0, 0, 1])
-    obs_z = jnp.stack([pos_x, pos_y, pos_z], axis=-1)
-    obs_z = (
-        -1 * obs_z / jnp.linalg.norm(obs_z, axis=-1, keepdims=True)
-    )  # LoS points to the observer
+    obs_x, obs_y, obs_z = epk.observer_frame_axes_from_xyz(pos_x, pos_y, pos_z)
 
-    # obs_x = NCP x obs_z vanishes exactly at the celestial poles (obs_z || NCP), where
-    # west/east is undefined anyway; fall back to a fixed default there. The vector fed
-    # to jnp.linalg.norm is swapped in *before* the norm is taken (not the norm's output
-    # afterward), so norm() is never evaluated at the zero vector -- its gradient (v/|v|)
-    # would be a 0/0 NaN there, and jnp.where can't rescue a NaN already computed on the
-    # discarded branch. This keeps the whole thing jit-safe with well-defined gradients.
-    obs_x_raw = jnp.cross(NCP, obs_z)
-    at_pole = jnp.linalg.norm(obs_x_raw, axis=-1, keepdims=True) < 1e-10
-    obs_x_default = jnp.array([1.0, 0.0, 0.0])
-    obs_x_safe = jnp.where(at_pole, obs_x_default, obs_x_raw)
-    obs_x = obs_x_safe / jnp.linalg.norm(obs_x_safe, axis=-1, keepdims=True)
-
-    obs_y = jnp.cross(obs_z, obs_x)
-
+    ### Old method
     # Transform the West-North-LoS coordinate system into the ellipsoid body frame
-    u = epk._transform_axes_to_frame(obs_x, A, B, C)
-    v = epk._transform_axes_to_frame(obs_y, A, B, C)
+    #u = epk._transform_axes_to_frame(obs_x, A, B, C)
+    #v = epk._transform_axes_to_frame(obs_y, A, B, C)
 
     # Get the projection angles in the ellipsoid body frame,
     # which are the Euler angles of the ZXZ rotation from the body frame
     # to the west-north-los frame
-    z1, x2, z3 = epk._get_eulerzxz_angle_from_basis(u, v)
-    mu_proj = jnp.cos(x2)
-    phi_proj = z1 - jnp.pi / 2.0
-    omega_proj = z3
+    #z1, x2, z3 = epk._get_eulerzxz_angle_from_basis(u, v)
+    #mu_proj = jnp.cos(x2)
+    #phi_proj = z1 - jnp.pi / 2.0
+    #omega_proj = z3
 
-    a_disk = r50_disk
-    b_disk = disk_axis_ratios.b_over_a * a_disk
-    c_disk = disk_axis_ratios.c_over_a * a_disk
+    # a_disk = r50_disk
+    # b_disk = disk_axis_ratios.b_over_a * a_disk
+    # c_disk = disk_axis_ratios.c_over_a * a_disk
 
-    A_disk, B_disk, C_disk = epk._compute_2d_ellipse_params(
-        a_disk,
-        b_disk,
-        c_disk,
-        mu_proj,
-        phi_proj,
-        omega_proj,
-        envelop=envelop,
-    )
-    alpha_disk, beta_disk = epk._calculate_ellipse2d_axes(A_disk, B_disk, C_disk)
-    q_disk = beta_disk / alpha_disk
-    if ellipticity_type == 0:
-        ellipticity_disk = 1.0 - q_disk
-    elif ellipticity_type == 1:
-        ellipticity_disk = (1.0 - q_disk) / (1.0 + q_disk)
-    elif ellipticity_type == 2:
-        ellipticity_disk = (1.0 - q_disk**2) / (1.0 + q_disk**2)
-    elif ellipticity_type == 3:
-        ellipticity_disk = -jnp.log(q_disk)
-    else:
-        raise ValueError(
-            f"Invalid ellipticity_type: {ellipticity_type}. Must be 0, 1, 2, or 3."
-        )
+    #A_disk, B_disk, C_disk = epk._compute_2d_ellipse_params(
+    #    a_disk,
+    #    b_disk,
+    #    c_disk,
+    #    mu_proj,
+    #    phi_proj,
+    #    omega_proj,
+    #    envelop=envelop,
+    #)
+    #alpha_disk, beta_disk = epk._calculate_ellipse2d_axes(A_disk, B_disk, C_disk)
+    #q_disk = beta_disk / alpha_disk
+    #if ellipticity_type == 0:
+    #    ellipticity_disk = 1.0 - q_disk
+    #elif ellipticity_type == 1:
+    #    ellipticity_disk = (1.0 - q_disk) / (1.0 + q_disk)
+    #elif ellipticity_type == 2:
+    #    ellipticity_disk = (1.0 - q_disk**2) / (1.0 + q_disk**2)
+    #elif ellipticity_type == 3:
+    #    ellipticity_disk = -jnp.log(q_disk)
+    #else:
+    #    raise ValueError(
+    #        f"Invalid ellipticity_type: {ellipticity_type}. Must be 0, 1, 2, or 3."
+    #    )
 
-    a_bulge = r50_bulge
-    b_bulge = bulge_axis_ratios.b_over_a * a_bulge
-    c_bulge = bulge_axis_ratios.c_over_a * a_bulge
+    # a_bulge = r50_bulge
+    # b_bulge = bulge_axis_ratios.b_over_a * a_bulge
+    # c_bulge = bulge_axis_ratios.c_over_a * a_bulge
 
-    A_bulge, B_bulge, C_bulge = epk._compute_2d_ellipse_params(
-        a_bulge, b_bulge, c_bulge, mu_proj, phi_proj, omega_proj, envelop=envelop
-    )
-    alpha_bulge, beta_bulge = epk._calculate_ellipse2d_axes(A_bulge, B_bulge, C_bulge)
-    q_bulge = beta_bulge / alpha_bulge
-    if ellipticity_type == 0:
-        ellipticity_bulge = 1.0 - q_bulge
-    elif ellipticity_type == 1:
-        ellipticity_bulge = (1.0 - q_bulge) / (1.0 + q_bulge)
-    elif ellipticity_type == 2:
-        ellipticity_bulge = (1.0 - q_bulge**2) / (1.0 + q_bulge**2)
-    elif ellipticity_type == 3:
-        ellipticity_bulge = -jnp.log(q_bulge)
-    else:
-        raise ValueError(
-            f"Invalid ellipticity_type: {ellipticity_type}. Must be 0, 1, 2, or 3."
-        )
+    #A_bulge, B_bulge, C_bulge = epk._compute_2d_ellipse_params(
+    #    a_bulge, b_bulge, c_bulge, mu_proj, phi_proj, omega_proj, envelop=envelop
+    #)
+    #alpha_bulge, beta_bulge = epk._calculate_ellipse2d_axes(A_bulge, B_bulge, C_bulge)
+    #q_bulge = beta_bulge / alpha_bulge
+    #if ellipticity_type == 0:
+    #    ellipticity_bulge = 1.0 - q_bulge
+    #elif ellipticity_type == 1:
+    #    ellipticity_bulge = (1.0 - q_bulge) / (1.0 + q_bulge)
+    #elif ellipticity_type == 2:
+    #    ellipticity_bulge = (1.0 - q_bulge**2) / (1.0 + q_bulge**2)
+    #elif ellipticity_type == 3:
+    #    ellipticity_bulge = -jnp.log(q_bulge)
+    #else:
+    #    raise ValueError(
+    #        f"Invalid ellipticity_type: {ellipticity_type}. Must be 0, 1, 2, or 3."
+    #    )
 
     # How to deal with bulge-disk misalignment?
     # psi_disk_key, psi_bulge_key = jran.split(ran_key, 2)
@@ -178,36 +166,66 @@ def mc_disk_bulge_ellipsoids(
     # psi_noise_rad = jnp.deg2rad(psi_noise_deg)
     # delta_psi_rad = jran.normal(psi_bulge_key, shape=n) * psi_noise_rad
     # psi_bulge = psi_disk + delta_psi_rad
-    psi_noise_rad = jnp.deg2rad(psi_noise_deg)
-    delta_psi_rad = jran.normal(ran_key, shape=n) * psi_noise_rad
-    psi_disk = epk._calculate_ellipse2d_psi(A_disk, B_disk, C_disk)
-    psi_bulge = epk._calculate_ellipse2d_psi(A_bulge, B_bulge, C_bulge) + delta_psi_rad
+    # psi_noise_rad = jnp.deg2rad(psi_noise_deg)
+    # delta_psi_rad = jran.normal(ran_key, shape=n) * psi_noise_rad
+    #psi_disk = epk._calculate_ellipse2d_psi(A_disk, B_disk, C_disk)
+    #psi_bulge = epk._calculate_ellipse2d_psi(A_bulge, B_bulge, C_bulge) + delta_psi_rad
 
-    e_alpha_disk, e_beta_disk = epk._get_xy_coords_of_projected_semi_axes(psi_disk)
-    e_alpha_bulge, e_beta_bulge = epk._get_xy_coords_of_projected_semi_axes(psi_bulge)
+    #e_alpha_disk, e_beta_disk = epk._get_xy_coords_of_projected_semi_axes(psi_disk)
+    #e_alpha_bulge, e_beta_bulge = epk._get_xy_coords_of_projected_semi_axes(psi_bulge)
 
-    disk_ellipse = Ellipse2DParams(
-        alpha_disk,
-        beta_disk,
-        psi_disk,
-        ellipticity_disk,
-        e_alpha_disk,
-        e_beta_disk,
-        A_disk,
-        B_disk,
-        C_disk,
+    # disk_ellipse = Ellipse2DParams(
+    #     alpha_disk,
+    #     beta_disk,
+    #     psi_disk,
+    #     ellipticity_disk,
+    #     e_alpha_disk,
+    #     e_beta_disk,
+    #     A_disk,
+    #     B_disk,
+    #     C_disk,
+    # )
+
+    # bulge_ellipse = Ellipse2DParams(
+    #     alpha_bulge,
+    #     beta_bulge,
+    #     psi_bulge,
+    #     ellipticity_bulge,
+    #     e_alpha_bulge,
+    #     e_beta_bulge,
+    #     A_bulge,
+    #     B_bulge,
+    #     C_bulge,
+    # )
+
+    ### New method: use encapsulated function to compute the Ellipse2DParams
+    a_disk = r50_disk
+    b_disk = disk_axis_ratios.b_over_a * a_disk
+    c_disk = disk_axis_ratios.c_over_a * a_disk
+
+    a_bulge = r50_bulge
+    b_bulge = bulge_axis_ratios.b_over_a * a_bulge
+    c_bulge = bulge_axis_ratios.c_over_a * a_bulge
+
+    disk_ellipse = epk.compute_ellipse2d_in_sim_frame(
+        A, B, C, a_disk, b_disk, c_disk,
+        obs_x, obs_y, obs_z,
+        envelop=envelop,
+        ellipticity_type=ellipticity_type,
     )
 
-    bulge_ellipse = Ellipse2DParams(
-        alpha_bulge,
-        beta_bulge,
-        psi_bulge,
-        ellipticity_bulge,
-        e_alpha_bulge,
-        e_beta_bulge,
-        A_bulge,
-        B_bulge,
-        C_bulge,
+    bulge_ellipse = epk.compute_ellipse2d_in_sim_frame(
+        A, B, C, a_bulge, b_bulge, c_bulge,
+        obs_x, obs_y, obs_z,
+        envelop=envelop,
+        ellipticity_type=ellipticity_type,
+    )
+
+    # inject a random misalignment between the disk and bulge position angles
+    psi_noise_rad = jnp.deg2rad(psi_noise_deg)
+    delta_psi_rad = jran.normal(ran_key, shape=n) * psi_noise_rad
+    bulge_ellipse = bulge_ellipse._replace(
+        psi=bulge_ellipse.psi + delta_psi_rad
     )
 
     return disk_ellipse, bulge_ellipse
