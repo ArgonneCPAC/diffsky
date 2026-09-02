@@ -99,3 +99,27 @@ def test_consistent_ra_dec_theta_phi_minmax():
         assert np.allclose(theta_max, theta_max2, rtol=1e-4)
         assert np.allclose(phi_min, phi_min2, rtol=1e-4)
         assert np.allclose(phi_max, phi_max2, rtol=1e-4)
+
+
+def test_mc_lightcone_random_theta_phi():
+    n_tests = 100
+    npts = 2_000
+    ran_key = jran.key(0)
+    for __ in range(n_tests):
+        ran_key, theta_key, phi_key = jran.split(ran_key, 3)
+        theta_min, theta_max = np.sort(
+            jran.uniform(theta_key, minval=0, maxval=np.pi, shape=(2,))
+        )
+        phi_min, phi_max = np.sort(
+            jran.uniform(phi_key, minval=0, maxval=2 * np.pi, shape=(2,))
+        )
+
+        mc_theta, mc_phi = lcu.mc_lightcone_random_theta_phi(
+            ran_key, npts, theta_min, theta_max, phi_min, phi_max
+        )
+
+        assert np.all(mc_theta > theta_min)
+        assert np.all(mc_theta < theta_max)
+
+        assert np.all(mc_phi > phi_min)
+        assert np.all(mc_phi < phi_max)
