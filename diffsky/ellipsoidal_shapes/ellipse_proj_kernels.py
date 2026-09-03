@@ -23,7 +23,9 @@ Credits:
 from collections import namedtuple
 from functools import partial
 
+import jax
 from jax import jit as jjit
+from jax import lax
 from jax import numpy as jnp
 from jax import random as jran
 
@@ -75,7 +77,7 @@ def mc_orthonormal_vectors(ran_key, n):
 
     return A, B, C
 
-@partial(jjit, static_argnums=(7, 8))
+@partial(jjit, static_argnums=(8, 9))
 def compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop=True, ellipticity_type=0):
     """
     Calculate the observed 2D ellipse parameters of a 3D triaxial ellipsoid in the simulation frame,
@@ -619,7 +621,12 @@ def observer_frame_axes_from_pos_3D(pos_x, pos_y, pos_z):
 @jjit
 def assert_orthonormality(x_prime, y_prime, z_prime, atol=1e-6):
     """
-    Assert that the provided axes are orthonormal.
+    Warn if the provided axes are not orthonormal.
+
+    This is called from jitted functions, so the check can't be a Python-level
+    `assert` (the outcome is data-dependent, and a traced bool can't go through
+    Python's `assert`/`bool()`); instead it prints a runtime warning via a
+    `lax.cond`-gated `jax.debug.print`, without interrupting the computation.
 
     Parameters
     ----------
@@ -628,14 +635,24 @@ def assert_orthonormality(x_prime, y_prime, z_prime, atol=1e-6):
     atol : float
         Absolute tolerance for the checks.
     """
-    assert jnp.allclose(jnp.sum(x_prime * y_prime, axis=-1), 0.0, atol=atol)
-    assert jnp.allclose(jnp.sum(x_prime * z_prime, axis=-1), 0.0, atol=atol)
-    assert jnp.allclose(jnp.sum(y_prime * z_prime, axis=-1), 0.0, atol=atol)
-    assert jnp.allclose(jnp.linalg.norm(x_prime, axis=-1), 1.0, atol=atol)
-    assert jnp.allclose(jnp.linalg.norm(y_prime, axis=-1), 1.0, atol=atol)
-    assert jnp.allclose(jnp.linalg.norm(z_prime, axis=-1), 1.0, atol=atol)
-    assert jnp.allclose(
-        jnp.linalg.norm(jnp.cross(x_prime, y_prime) - z_prime, axis=-1), 0.0, atol=atol
+    ok = (
+        jnp.allclose(jnp.sum(x_prime * y_prime, axis=-1), 0.0, atol=atol)
+        & jnp.allclose(jnp.sum(x_prime * z_prime, axis=-1), 0.0, atol=atol)
+        & jnp.allclose(jnp.sum(y_prime * z_prime, axis=-1), 0.0, atol=atol)
+        & jnp.allclose(jnp.linalg.norm(x_prime, axis=-1), 1.0, atol=atol)
+        & jnp.allclose(jnp.linalg.norm(y_prime, axis=-1), 1.0, atol=atol)
+        & jnp.allclose(jnp.linalg.norm(z_prime, axis=-1), 1.0, atol=atol)
+        & jnp.allclose(
+            jnp.linalg.norm(jnp.cross(x_prime, y_prime) - z_prime, axis=-1), 0.0, atol=atol
+        )
+    )
+    lax.cond(
+        ok,
+        lambda _: None,
+        lambda _: jax.debug.print(
+            'assert_orthonormality: axes failed an orthonormality check (atol={atol})',
+            atol=atol),
+        operand=None,
     )
 
 @jjit
