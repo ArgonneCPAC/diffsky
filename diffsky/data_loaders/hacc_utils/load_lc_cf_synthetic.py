@@ -27,6 +27,7 @@ def load_lc_diffsky_patch_data(
     lgmp_max,
     *,
     read_start,
+    core_lc_7_correction,
     downsample_factor=1.0,
 ):
     """
@@ -70,18 +71,20 @@ def load_lc_diffsky_patch_data(
     theta_lo, theta_hi, phi_lo, phi_hi = [
         patch_decomposition[lc_patch, i] for i in range(1, 5)
     ]
-    ra_lo, ra_hi, dec_lo, dec_hi = hlu._get_ra_dec_bounds(
-        theta_lo, theta_hi, phi_lo, phi_hi
-    )
+    if core_lc_7_correction:
+        phi_lo, phi_hi = lc_utils._get_corrected_phi_bounds_for_last_journey_core_lc_7(
+            phi_lo, phi_hi
+        )
     ran_key, ra_dec_key = jran.split(ran_key, 2)
-    ra, dec = lc_utils.mc_lightcone_random_ra_dec(
-        ra_dec_key, n_gals, ra_lo, ra_hi, dec_lo, dec_hi
+    mc_theta, mc_phi = lc_utils.mc_lightcone_random_theta_phi(
+        ra_dec_key, n_gals, theta_lo, theta_hi, phi_lo, phi_hi
     )
+    diffsky_data["theta"] = mc_theta
+    diffsky_data["phi"] = mc_phi
+
+    ra, dec = hlu.get_ra_dec_from_theta_phi(mc_theta, mc_phi)
     diffsky_data["ra"] = ra
     diffsky_data["dec"] = dec
-    theta, phi = hlu.get_theta_phi_from_ra_dec(ra, dec)
-    diffsky_data["theta"] = theta
-    diffsky_data["phi"] = phi
 
     diffsky_data["top_host_idx_chunk"] = np.arange(n_gals).astype(int)
     diffsky_data["secondary_top_host_idx_chunk"] = np.arange(n_gals).astype(int)
