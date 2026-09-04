@@ -40,4 +40,4 @@ The latest release of the mocks can be downloaded at these URLs:
 
     /global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/c260710_09_02_2026
 
-See  `this PR <https://github.com/ArgonneCPAC/diffsky/pull/491/>`_ for further information about the latest mock.
+See  `this PR <https://github.com/ArgonneCPAC/diffsky/pull/493/>`_ for further information about the latest mock.
