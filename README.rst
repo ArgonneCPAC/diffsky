@@ -38,7 +38,6 @@ See `this OpenCosmo tutorial <https://argonnecpac.github.io/opencosmo-examples/d
 for information about how to access and query the latest mock with OpenCosmo, and `this tutorial <https://argonnecpac.github.io/opencosmo-examples/demo-diffmah-diffstar/>`_ about how to compute mass accretion and star formation histories.
 The latest release of the mocks can be downloaded at these URLs:
 
-    /global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/c260710_08_24_2026
-    /global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/sdss_feniks_hizels_260710_08_24_2026
+    /global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/c260710_09_02_2026
 
-See  `this PR <https://github.com/ArgonneCPAC/diffsky/pull/486/>`_ for further information about the latest mock.
+See  `this PR <https://github.com/ArgonneCPAC/diffsky/pull/493/>`_ for further information about the latest mock.
