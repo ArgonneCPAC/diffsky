@@ -328,6 +328,7 @@ if __name__ == "__main__":
         precomputed_ssp_mag_table = psspp.get_precompute_ssp_mag_redshift_table(
             tcurves, ssp_data, z_phot_table, sim_info.cosmo_params
         )
+        log_mem(f"rank{rank} p{lc_patch}.{stepnum} post_ssp_mag_table")
 
         if batch_size >= nhalos_estimate:
             nchunks = 1
