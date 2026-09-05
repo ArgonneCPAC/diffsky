@@ -257,6 +257,7 @@ if __name__ == "__main__":
 
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
+        jax.clear_caches()
         gc.collect()
 
         bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
