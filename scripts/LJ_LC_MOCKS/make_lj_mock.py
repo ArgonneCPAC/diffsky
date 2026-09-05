@@ -13,6 +13,7 @@ To run a local test on poboy:
 import argparse
 import gc
 import os
+import resource
 import shutil
 import sys
 
@@ -138,6 +139,16 @@ if __name__ == "__main__":
     bn_ssp_data = config.get("bn_ssp_data", SSP_SED_BNAME)
     emline_names = config.get("emline_names", OUTPUT_LINE_NICKNAMES)
 
+    _seen_shapes = set()
+
+    def log_mem(tag, n_halos=None):
+        rss_gb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6
+        novel = ""
+        if n_halos is not None:
+            novel = " NEW_SHAPE" if n_halos not in _seen_shapes else ""
+            _seen_shapes.add(n_halos)
+        print(f"[{tag}] n={n_halos} rss={rss_gb:.2f}GB{novel}", flush=True)
+
     if cl_args.synthetic_cores != -1:
         # override the yaml file (convenient for job submission scripts)
         synthetic_cores = cl_args.synthetic_cores
@@ -257,8 +268,10 @@ if __name__ == "__main__":
 
     start_script = time()
     for fn_lc_diffsky in fn_lc_list_for_rank:
+        log_mem(f"rank{rank} pre_patch_clear")
         jax.clear_caches()
         gc.collect()
+        log_mem(f"rank{rank} post_patch_clear")
 
         bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
         stepnum, lc_patch = [int(x) for x in bn_lc_diffsky.split("-")[1].split(".")[:2]]
@@ -326,8 +339,10 @@ if __name__ == "__main__":
 
         n_cuml_fn = 0
         for chunknum in range(0, nchunks):
+            log_mem(f"rank{rank} p{lc_patch}.{stepnum} c{chunknum} pre_chunk_clear")
             jax.clear_caches()
             gc.collect()
+            log_mem(f"rank{rank} p{lc_patch}.{stepnum} c{chunknum} post_chunk_clear")
 
             patch_key, batch_key = jran.split(patch_key)
 
@@ -363,6 +378,9 @@ if __name__ == "__main__":
                 )
 
             n_gals_batch = len(lc_data_batch["core_tag"])
+            log_mem(
+                f"rank{rank} p{lc_patch}.{stepnum} c{chunknum} loaded", n_gals_batch
+            )
             n_cuml_fn += n_gals_batch
             lc_data_batch["stepnum"] = np.zeros(n_gals_batch).astype(int) + stepnum
             lc_data_batch["lc_patch"] = np.zeros(n_gals_batch).astype(int) + lc_patch
@@ -412,6 +430,10 @@ if __name__ == "__main__":
                     lcmp_repro.add_black_hole_quantities_to_diffsky_data(
                         lc_data_batch, diffsky_data_batch, phot_info_batch
                     )
+                )
+                log_mem(
+                    f"rank{rank} p{lc_patch}.{stepnum} c{chunknum} post_compute",
+                    n_gals_batch,
                 )
 
             if no_sed:
