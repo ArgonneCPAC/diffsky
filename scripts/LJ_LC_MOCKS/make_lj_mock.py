@@ -19,7 +19,7 @@ import sys
 
 # noqa
 from glob import glob
-from time import sleep, time
+from time import perf_counter, sleep, time
 
 import h5py
 import jax
@@ -267,6 +267,7 @@ if __name__ == "__main__":
     print("\n")
 
     start_script = time()
+    did_compile_tax_test = False
     for fn_lc_diffsky in fn_lc_list_for_rank:
         log_mem(f"rank{rank} pre_patch_clear")
         jax.clear_caches()
@@ -408,7 +409,29 @@ if __name__ == "__main__":
                     wave_eff_table,
                     phot_key,
                 )
-                _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
+                # _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
+                # phot_info_batch, lc_data_batch, diffsky_data_batch = _res
+                if rank == 0 and not did_compile_tax_test:
+                    t0 = perf_counter()
+                    _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
+                    jax.block_until_ready(_res)
+                    t_cold = perf_counter() - t0
+
+                    t0 = perf_counter()
+                    _res_warm = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
+                    jax.block_until_ready(_res_warm)
+                    t_warm = perf_counter() - t0
+                    del _res_warm
+
+                    print(
+                        f"[compile_tax] n={n_gals_batch} cold={t_cold:.2f}s warm={t_warm:.2f}s "
+                        f"compile_tax≈{t_cold - t_warm:.2f}s",
+                        flush=True,
+                    )
+                    did_compile_tax_test = True
+                else:
+                    _res = lcmp_repro.add_dbk_phot_quantities_to_mock(*args)
+
                 phot_info_batch, lc_data_batch, diffsky_data_batch = _res
 
                 batch_key, nfw_key = jran.split(batch_key, 2)
