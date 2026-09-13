@@ -80,6 +80,131 @@ def _dbk_sed_kern(
     )
     dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(*args)
 
+    sed_bulge = _sed_kern_helper(
+        ssp_data.ssp_flux,
+        dbk_weights.ssp_weights_bulge,
+        sed_info.dust_frac_trans,
+        sed_info.frac_ssp_errors,
+        dbk_weights.mstar_bulge,
+    )
+    sed_disk = _sed_kern_helper(
+        ssp_data.ssp_flux,
+        dbk_weights.ssp_weights_disk,
+        sed_info.dust_frac_trans,
+        sed_info.frac_ssp_errors,
+        dbk_weights.mstar_disk,
+    )
+    sed_knots = _sed_kern_helper(
+        ssp_data.ssp_flux,
+        dbk_weights.ssp_weights_knots,
+        sed_info.dust_frac_trans,
+        sed_info.frac_ssp_errors,
+        dbk_weights.mstar_knots,
+    )
+
+    sed_info = DBKSEDInfo(
+        **sed_info._asdict(),
+        rest_sed_bulge=sed_bulge,
+        rest_sed_disk=sed_disk,
+        rest_sed_knots=sed_knots,
+        mstar_bulge=dbk_weights.mstar_bulge,
+        mstar_disk=dbk_weights.mstar_disk,
+        mstar_knots=dbk_weights.mstar_knots,
+    )
+    return sed_info
+
+
+@jjit
+def _sed_kern_helper(ssp_flux, ssp_weights, dust_ftrans, frac_ssp_err, mstar):
+    """
+    # ssp_flux: (n_met, n_age, n_wave)
+    # ssp_weights: (n_gals, n_met, n_age)
+    # dust_ftrans: (n_gals, n_age, n_wave)
+    # frac_ssp_errors: (n_gals, n_wave)
+    # mstar: (n_gals, )
+    """
+    sed = (
+        jnp.einsum(
+            "gal,gl,gma,mal->gl",
+            dust_ftrans,
+            frac_ssp_err,
+            ssp_weights,
+            ssp_flux,
+        )
+        * mstar[:, None]
+    )
+    return sed
+
+
+@partial(jjit, static_argnames=["n_t_table"])
+def _dbk_sed_kern_no_einsum(
+    phot_randoms,
+    dbk_randoms,
+    sfh_params,
+    z_obs,
+    t_obs,
+    mah_params,
+    ssp_data,
+    mzr_params,
+    spspop_params,
+    scatter_params,
+    ssperr_params,
+    merging_params,
+    cosmo_params,
+    fb,
+    logmp_infall,
+    logmhost_infall,
+    t_infall,
+    is_central,
+    halo_indx,
+    *,
+    n_t_table=mcdw.N_T_TABLE,
+):
+    """"""
+    upid = jnp.where(is_central == 1, -1, halo_indx).astype(int)
+    lgmu_infall = logmp_infall - logmhost_infall
+    gyr_since_infall = t_obs - t_infall
+
+    sed_info = sed_kernels_in_situ._sed_kern(
+        phot_randoms,
+        sfh_params,
+        z_obs,
+        t_obs,
+        mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        ssp_data,
+        mzr_params,
+        spspop_params,
+        scatter_params,
+        ssperr_params,
+        merging_params,
+        cosmo_params,
+        fb,
+        n_t_table=n_t_table,
+    )
+
+    p_merge_smooth = merging_model.get_p_merge_from_merging_params(
+        merging_params, logmp_infall, logmhost_infall, t_obs, t_infall, upid
+    )
+
+    age_weights = jnp.sum(sed_info.ssp_weights, axis=1)
+    args = (
+        t_obs,
+        ssp_data,
+        sed_info.t_table,
+        sed_info.sfh_table,
+        sed_info.burst_params,
+        sed_info.lgmet_weights,
+        dbk_randoms,
+        sed_info.logsm_obs,
+        age_weights,
+        p_merge_smooth,
+    )
+    dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(*args)
+
     n_gals = z_obs.size
     n_met, n_age, n_wave = ssp_data.ssp_flux.shape
 
