@@ -333,25 +333,6 @@ def _compute_obs_flux_from_weights(
 
 
 @jjit
-def _compute_lineflux_from_weights(
-    logsm_obs, frac_trans, ssp_photflux_table, ssp_weights
-):
-    n_gals = logsm_obs.size
-    n_bands, n_met, n_age = ssp_photflux_table.shape[1:]
-
-    # Reshape arrays before calculating galaxy magnitudes
-    _ftrans = frac_trans.reshape((n_gals, n_bands, 1, n_age))
-    _weights = ssp_weights.reshape((n_gals, 1, n_met, n_age))
-    _mstar = 10 ** logsm_obs.reshape((n_gals, 1))
-
-    # Calculate galaxy magnitudes as PDF-weighted sums
-    integrand = ssp_photflux_table * _weights * _ftrans
-    lineflux_galpop = jnp.sum(integrand, axis=(2, 3)) * _mstar
-
-    return lineflux_galpop
-
-
-@jjit
 def _compute_linelum_from_weights(
     logsm_obs,
     frac_trans,
