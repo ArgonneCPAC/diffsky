@@ -15,7 +15,7 @@ from .constants import LGMET_SCATTER
 
 
 @partial(jjit, static_argnames=["n_t_table"])
-def _sed_kern(
+def _sed_kern_no_einsum(
     phot_randoms,
     sfh_params,
     z_obs,
@@ -130,7 +130,7 @@ def _sed_kern(
 
 
 @partial(jjit, static_argnames=["n_t_table"])
-def _sed_kern_einsum(
+def _sed_kern(
     phot_randoms,
     sfh_params,
     z_obs,

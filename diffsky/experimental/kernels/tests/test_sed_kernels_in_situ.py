@@ -140,7 +140,7 @@ def test_sed_kern_einsum(num_halos=15):
             fb,
         )
 
-        sed_kern_results2 = sed_kernels_in_situ._sed_kern_einsum(
+        sed_kern_results2 = sed_kernels_in_situ._sed_kern_no_einsum(
             phot_randoms,
             diffstarpop_results.sfh_params,
             lc_data.z_obs,
