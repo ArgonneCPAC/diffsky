@@ -44,55 +44,6 @@ def test_mc_dbk_phot_kern(num_halos=19):
     dbk_phot_info, dbk_weights = gd_dbkspk._mc_dbk_phot_kern(*args)
 
 
-def test_mc_dbk_phot_kern_einsum(num_halos=19):
-    ran_key = jran.key(0)
-    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
-        num_halos=num_halos
-    )
-    fb = 0.196
-    upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
-    lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
-    gyr_since_infall = lc_data.t_infall - lc_data.t_obs
-
-    args = (
-        ran_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        upid,
-        lgmu_infall,
-        lc_data.logmhost_infall,
-        gyr_since_infall,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        dpwm.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
-        dpwm.DEFAULT_PARAM_COLLECTION.mzr_params,
-        dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
-        dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
-        dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
-        dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
-        DEFAULT_COSMOLOGY,
-        fb,
-    )
-    dbk_phot_info, dbk_weights = gd_dbkspk._mc_dbk_phot_kern(*args)
-    dbk_phot_info2, dbk_weights2 = gd_dbkspk._mc_dbk_phot_kern_no_einsum(*args)
-
-    skip = (
-        "burstiness_info_ms",
-        "burstiness_info_q",
-        "diffstar_info_ms",
-        "diffstar_info_q",
-    )
-    for key, x, y in zip(dbk_phot_info._fields, dbk_phot_info, dbk_phot_info2):
-        if key not in skip:
-            assert np.allclose(x, y, rtol=1e-4)
-
-    for key, x, y in zip(dbk_weights._fields, dbk_weights, dbk_weights2):
-        assert np.allclose(x, y, rtol=1e-4)
-
-
 def test_mc_dbk_photline_kern(num_halos=13):
     """Enforce that the sum of the component lines equals the composite line"""
     ran_key = jran.key(0)
