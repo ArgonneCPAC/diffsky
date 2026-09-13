@@ -150,8 +150,8 @@ def _weighted_mags(ssp_photflux_table, ssp_weights, dust_ftrans, frac_ssp_err, m
     # ssp_photflux_table: (n_gals, n_bands, n_met, n_age)
     # ssp_weights: (n_gals, n_met, n_age)
     # dust_ftrans: (n_gals, n_bands, n_age)
-    # ssp_flux: (n_met, n_age, n_bands)
     # frac_ssp_errors: (n_gals, n_bands)
+    # mstar: (n_gals, )
     """
     flux = (
         jnp.einsum(
