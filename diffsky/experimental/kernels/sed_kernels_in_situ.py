@@ -217,16 +217,19 @@ def _sed_kern(
         wave_eff_galpop, frac_ssp_errors, phot_randoms.delta_mag_ssp_scatter
     )
 
-    dust_frac_trans = dust_frac_trans.swapaxes(1, 2)  # (n_gals, n_age, n_wave)
-
-    mstar = 10 ** logsm_obs.reshape((n_gals, 1))
+    # dust_frac_trans: (n_gals, n_wave, n_age)
+    # ssp_weights_mc: (n_gals, n_met, n_age)
+    # ssp_flux: (n_met, n_age, n_wave)
+    # frac_ssp_errors: (n_gals, n_wave)
     rest_sed = jnp.einsum(
-        "gal,gma,mal,gl->gl",
+        "gla,gma,mal,gl->gl",
         dust_frac_trans,
         burstiness_info.ssp_weights_mc,
         ssp_data.ssp_flux,
         frac_ssp_errors,
     )
+
+    mstar = 10 ** logsm_obs.reshape((n_gals, 1))
     rest_sed = rest_sed * mstar
 
     lgmet_weights = jnp.sum(burstiness_info.ssp_weights_mc, axis=2)
