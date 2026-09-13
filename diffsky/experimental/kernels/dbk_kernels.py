@@ -167,7 +167,7 @@ def _weighted_mags(ssp_photflux_table, ssp_weights, dust_ftrans, frac_ssp_err, m
 
 
 @jjit
-def _get_dbk_phot_from_dbk_weights(
+def _get_dbk_phot_from_dbk_weights_no_einsum(
     ssp_photflux_table, dbk_weights, dust_frac_trans, frac_ssp_err
 ):
     n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
@@ -201,7 +201,7 @@ def _get_dbk_phot_from_dbk_weights(
 
 
 @jjit
-def _get_dbk_phot_from_dbk_weights_einsum(
+def _get_dbk_phot_from_dbk_weights(
     ssp_photflux_table, dbk_weights, dust_frac_trans, frac_ssp_err
 ):
     obs_mags_bulge = _weighted_mags(

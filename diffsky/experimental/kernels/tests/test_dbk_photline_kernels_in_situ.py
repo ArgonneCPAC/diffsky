@@ -77,7 +77,7 @@ def test_mc_dbk_phot_kern_einsum(num_halos=19):
         fb,
     )
     dbk_phot_info, dbk_weights = gd_dbkspk._mc_dbk_phot_kern(*args)
-    dbk_phot_info2, dbk_weights2 = gd_dbkspk._mc_dbk_phot_kern_einsum(*args)
+    dbk_phot_info2, dbk_weights2 = gd_dbkspk._mc_dbk_phot_kern_no_einsum(*args)
 
     skip = (
         "burstiness_info_ms",
