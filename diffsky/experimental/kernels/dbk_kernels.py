@@ -201,6 +201,36 @@ def _get_dbk_phot_from_dbk_weights(
 
 
 @jjit
+def _get_dbk_phot_from_dbk_weights_einsum(
+    ssp_photflux_table, dbk_weights, dust_frac_trans, frac_ssp_err
+):
+    obs_mags_bulge = _weighted_mags(
+        ssp_photflux_table,
+        dbk_weights.ssp_weights_bulge,
+        dust_frac_trans,
+        frac_ssp_err,
+        dbk_weights.mstar_bulge,
+    )
+    obs_mags_disk = _weighted_mags(
+        ssp_photflux_table,
+        dbk_weights.ssp_weights_disk,
+        dust_frac_trans,
+        frac_ssp_err,
+        dbk_weights.mstar_disk,
+    )
+
+    obs_mags_knots = _weighted_mags(
+        ssp_photflux_table,
+        dbk_weights.ssp_weights_knots,
+        dust_frac_trans,
+        frac_ssp_err,
+        dbk_weights.mstar_knots,
+    )
+
+    return DBKPhotInfo(obs_mags_bulge, obs_mags_disk, obs_mags_knots)
+
+
+@jjit
 def _get_dbk_linelum_decomposition(dbk_weights, spec_kern_results, ssp_data):
     linelum_bulge = sspwk._compute_linelum_from_weights(
         jnp.log10(dbk_weights.mstar_bulge),
