@@ -1,3 +1,8 @@
+0.3.9 (Unreleased)
+-------------------
+- Improve performance of SED calculations by using jnp.einsum (https://github.com/ArgonneCPAC/diffsky/pull/495)
+
+
 0.3.8 (2026-08-25)
 -------------------
 - Add HLTDS fields for image simulation: ELIAS-N1, EDFS_a, EDFS_b
