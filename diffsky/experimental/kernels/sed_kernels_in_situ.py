@@ -202,6 +202,8 @@ def _sed_kern(
         spspop_params.dustpop_params,
         scatter_params,
     )
+    dust_frac_trans = dust_frac_trans.swapaxes(1, 2)  # (n_gals, n_age, n_wave)
+
     dust_params = dust_params._replace(
         av=dust_params.av[:, 0, -1],
         delta=dust_params.delta[:, 0],
@@ -217,12 +219,12 @@ def _sed_kern(
         wave_eff_galpop, frac_ssp_errors, phot_randoms.delta_mag_ssp_scatter
     )
 
-    # dust_frac_trans: (n_gals, n_wave, n_age)
+    # dust_frac_trans: (n_gals, n_age, n_wave)
     # ssp_weights_mc: (n_gals, n_met, n_age)
     # ssp_flux: (n_met, n_age, n_wave)
     # frac_ssp_errors: (n_gals, n_wave)
     rest_sed = jnp.einsum(
-        "gla,gma,mal,gl->gl",
+        "gal,gma,mal,gl->gl",
         dust_frac_trans,
         burstiness_info.ssp_weights_mc,
         ssp_data.ssp_flux,
