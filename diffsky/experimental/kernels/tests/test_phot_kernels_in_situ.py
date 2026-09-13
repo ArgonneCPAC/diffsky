@@ -181,3 +181,68 @@ def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
         mc_gd_phot_kern_results_all_cens.obs_mags,
         rtol=1e-3,
     )
+
+
+def test_mc_phot_kern_einsum(num_halos=75):
+    ran_key = jran.key(0)
+    # lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+
+    fb = 0.156
+    ran_key, phot_key = jran.split(ran_key, 2)
+
+    # Assume all galaxies are centrals so we can test against phot_kernels_in_situ.py,
+    # which does not implement satellite quenching
+    n_gals = lc_data.z_obs.size
+    upid = np.zeros(n_gals).astype(int) - 1
+    lgmu_infall = np.zeros(n_gals).astype(int)
+    logmhost_infall = np.zeros(n_gals).astype(int)
+    gyr_since_infall = np.zeros(n_gals).astype(int)
+
+    _res = phot_kernels_in_situ._mc_phot_kern(
+        phot_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+    mc_gd_phot_kern_results, mc_gd_phot_randoms, diffstarpop_results = _res
+
+    _res2 = phot_kernels_in_situ._mc_phot_kern(
+        phot_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        upid,
+        lgmu_infall,
+        logmhost_infall,
+        gyr_since_infall,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+    mc_gd_phot_kern_results2, mc_gd_phot_randoms2, diffstarpop_results2 = _res2
+    assert np.allclose(
+        mc_gd_phot_kern_results.obs_mags, mc_gd_phot_kern_results2.obs_mags, rtol=1e-4
+    )
+    assert np.allclose(
+        mc_gd_phot_kern_results.obs_mags_weighted,
+        mc_gd_phot_kern_results2.obs_mags_weighted,
+        rtol=1e-4,
+    )
