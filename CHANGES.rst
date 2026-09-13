@@ -1,6 +1,6 @@
 0.3.9 (Unreleased)
 -------------------
-- Improve performance of SED calculations by using jnp.einsum (https://github.com/ArgonneCPAC/diffsky/pull/495)
+- Improve performance of all photometry/SED kernels by using jnp.einsum (https://github.com/ArgonneCPAC/diffsky/pull/496)
 
 
 0.3.8 (2026-08-25)
