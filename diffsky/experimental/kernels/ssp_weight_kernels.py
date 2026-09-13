@@ -333,7 +333,7 @@ def _compute_obs_flux_from_weights(
 
 
 @jjit
-def _compute_linelum_from_weights(
+def _compute_linelum_from_weights_no_einsum(
     logsm_obs,
     frac_trans,
     ssp_data,
@@ -356,6 +356,28 @@ def _compute_linelum_from_weights(
 
     integrand = _ssp_linelum * _weights * _ftrans
     linelum_galpop_cgs = jnp.sum(integrand, axis=(2, 3)) * _mstar
+
+    return linelum_galpop_cgs
+
+
+@jjit
+def _compute_linelum_from_weights(
+    logsm_obs,
+    frac_trans,
+    ssp_data,
+    ssp_weights,
+):
+    """
+    Returns emission line luminosity:
+        linelum_galpop_cgs.shape (n_gal, n_line)
+    """
+
+    n_gal = logsm_obs.size
+    mstar = 10 ** logsm_obs.reshape((n_gal, 1))
+    s = "mal,gma,gla->gl"
+    linelum_galpop_cgs = mstar * jnp.einsum(
+        s, ssp_data.ssp_emline_luminosity, ssp_weights, frac_trans
+    )
 
     return linelum_galpop_cgs
 

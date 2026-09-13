@@ -70,26 +70,80 @@ def test_mc_photline_kern(num_halos=150):
         fb,
     )
     _photline_res = linelum_kernels_in_situ._mc_photline_kern(*args)
-    # _photline_res = linelum_kernels_in_situ._mc_photline_kern(
-    #     phot_key,
-    #     lc_data.z_obs,
-    #     lc_data.t_obs,
-    #     lc_data.mah_params,
-    #     lc_data.ssp_data,
-    #     lc_data.precomputed_ssp_mag_table,
-    #     lc_data.z_phot_table,
-    #     lc_data.wave_eff_table,
-    #     line_wave_table,
-    #     dpwm.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
-    #     dpwm.DEFAULT_PARAM_COLLECTION.mzr_params,
-    #     dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
-    #     dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
-    #     dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
-    #     DEFAULT_COSMOLOGY,
-    #     fb,
-    # )
 
     phot_kern_results2, phot_randoms2, spec_kern_results = _photline_res
     assert np.allclose(
         phot_kern_results.obs_mags, phot_kern_results2.obs_mags, rtol=1e-4
+    )
+
+
+def test_mc_photline_kern_einsum(num_halos=150):
+    ran_key = jran.key(0)
+    lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
+        num_halos=num_halos
+    )
+    fb = 0.176
+    ran_key, phot_key = jran.split(ran_key, 2)
+
+    upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
+    lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
+    gyr_since_infall = lc_data.t_infall - lc_data.t_obs
+    _res = phot_kernels_in_situ._mc_phot_kern(
+        phot_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        upid,
+        lgmu_infall,
+        lc_data.logmhost_infall,
+        gyr_since_infall,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        *dpwm.DEFAULT_PARAM_COLLECTION,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+    phot_kern_results, phot_randoms, diffstarpop_results = _res
+
+    n_lines = 3
+    line_wave_table = np.linspace(1_000, 10_000, n_lines)
+    emline_names = lc_data.ssp_data.ssp_emline_wave._fields[0:n_lines]
+    ssp_data = lemi.get_subset_emline_data(lc_data.ssp_data, emline_names)
+    lc_data = lc_data._replace(ssp_data=ssp_data)
+
+    args = (
+        phot_key,
+        lc_data.z_obs,
+        lc_data.t_obs,
+        lc_data.mah_params,
+        upid,
+        lgmu_infall,
+        lc_data.logmhost_infall,
+        gyr_since_infall,
+        lc_data.ssp_data,
+        lc_data.precomputed_ssp_mag_table,
+        lc_data.z_phot_table,
+        lc_data.wave_eff_table,
+        line_wave_table,
+        dpwm.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.mzr_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
+        dpwm.DEFAULT_PARAM_COLLECTION.merging_params,
+        DEFAULT_COSMOLOGY,
+        fb,
+    )
+    _photline_res, __, spec_res = linelum_kernels_in_situ._mc_photline_kern(*args)
+    _photline_res2, __, spec_res2 = linelum_kernels_in_situ._mc_photline_kern_no_einsum(
+        *args
+    )
+
+    assert np.allclose(spec_res.linelum_gal, spec_res2.linelum_gal, rtol=1e-4)
+    assert np.allclose(
+        spec_res.linelum_weighted,
+        spec_res2.linelum_weighted,
+        rtol=1e-4,
     )
