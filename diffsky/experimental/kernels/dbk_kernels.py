@@ -145,6 +145,28 @@ def get_bulge_age_weights_rq(
 
 
 @jjit
+def _weighted_mags(ssp_photflux_table, ssp_weights, dust_ftrans, frac_ssp_err, mstar):
+    """
+    # ssp_photflux_table: (n_gals, n_bands, n_met, n_age)
+    # ssp_weights: (n_gals, n_met, n_age)
+    # dust_ftrans: (n_gals, n_bands, n_age)
+    # ssp_flux: (n_met, n_age, n_bands)
+    # frac_ssp_errors: (n_gals, n_bands)
+    """
+    flux = (
+        jnp.einsum(
+            "gbma,gma,gba,gb->gb",
+            ssp_photflux_table,
+            ssp_weights,
+            dust_ftrans,
+            frac_ssp_err,
+        )
+        * mstar[:, None]
+    )
+    return -2.5 * jnp.log10(flux)
+
+
+@jjit
 def _get_dbk_phot_from_dbk_weights(
     ssp_photflux_table, dbk_weights, dust_frac_trans, frac_ssp_err
 ):
