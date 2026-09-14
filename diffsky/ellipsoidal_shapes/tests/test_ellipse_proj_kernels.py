@@ -88,7 +88,7 @@ def test_projected_beta_alpha_respect_mathematical_bounds():
     assert np.all(ellipse2d.beta <= ellipse2d.alpha)
     assert np.any(ellipse2d.beta < ellipse2d.alpha)
 
-    # Enforce 2d axis ratio is bounded by the min/max of 3d axis ratios
+    # Enforce 2d axis ratio is bounded by the min of 3d axis ratios
     axis_ratio_2d = ellipse2d.beta / ellipse2d.alpha
     ba_axis_ratio_3d = b / a
     ca_axis_ratio_3d = c / a
@@ -97,12 +97,9 @@ def test_projected_beta_alpha_respect_mathematical_bounds():
     axis_ratio_2d_min = np.minimum(
         np.minimum(ba_axis_ratio_3d, ca_axis_ratio_3d), cb_axis_ratio_3d
     )
-    axis_ratio_2d_max = np.maximum(
-        np.maximum(ba_axis_ratio_3d, ca_axis_ratio_3d), cb_axis_ratio_3d
-    )
 
     assert np.all(axis_ratio_2d >= axis_ratio_2d_min)
-    assert np.all(axis_ratio_2d <= axis_ratio_2d_max)
+    assert np.all(axis_ratio_2d <= 1)
 
 
 def test_calculate_ellipse2d_psi_respect_mathematical_bounds():
