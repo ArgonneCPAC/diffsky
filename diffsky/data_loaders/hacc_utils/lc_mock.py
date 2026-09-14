@@ -659,7 +659,7 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["zscore_r50_disk"] = zscore_disk
     diffsky_data["zscore_r50_bulge"] = zscore_bulge
 
-    orientation_key, disk_shape_key, bulge_shape_key = jran.split(morph_key, 3)
+    _, disk_shape_key, bulge_shape_key = jran.split(morph_key, 3)
     n = diffsky_data["r50_disk_3d"].size
     disk_axis_ratios = disk_shapes.sample_disk_axis_ratios(disk_shape_key, n)
     bulge_axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_shape_key, n)
@@ -671,7 +671,7 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["c_over_a_bulge"] = bulge_axis_ratios.c_over_a
 
     ellipse2d_disk, ellipse2d_bulge = mcdbs.mc_disk_bulge_ellipsoids(
-        orientation_key,
+        morph_key,
         diffsky_data["r50_disk_3d"],
         diffsky_data["r50_bulge_3d"],
         lc_data["x_nfw"],
