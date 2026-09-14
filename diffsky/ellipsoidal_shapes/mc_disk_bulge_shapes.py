@@ -10,7 +10,18 @@ from . import ellipse_proj_kernels as epk
 
 Ellipse2DParams = namedtuple(
     "Ellipse2DParams",
-    ("alpha", "beta", "psi", "ellipticity", "e_alpha", "e_beta", "A", "B", "C"),
+    (
+        "alpha",
+        "beta",
+        "psi",
+        "ellipticity",
+        "e_alpha",
+        "e_beta",
+        "A",
+        "B",
+        "C",
+        "mu_inclination",
+    ),
 )
 
 
@@ -186,6 +197,14 @@ def mc_disk_bulge_ellipsoids(
     e_alpha_disk, e_beta_disk = epk._get_xy_coords_of_projected_semi_axes(psi_disk)
     e_alpha_bulge, e_beta_bulge = epk._get_xy_coords_of_projected_semi_axes(psi_bulge)
 
+    # Now we generate the inclination angles.
+    # For the disk, it is the disk inclination angle,
+    # which is the angle between the disk normal (C) and the LoS.
+    mu_inclination_disk = jnp.abs(mu_proj)
+    # For the bulge, it is the angle between the bulge major axis
+    # (A) and the LoS.
+    mu_inclination_bulge = jnp.abs(jnp.sum(A * obs_z, axis=-1))
+
     disk_ellipse = Ellipse2DParams(
         alpha_disk,
         beta_disk,
@@ -196,6 +215,7 @@ def mc_disk_bulge_ellipsoids(
         A_disk,
         B_disk,
         C_disk,
+        mu_inclination_disk,
     )
 
     bulge_ellipse = Ellipse2DParams(
@@ -208,6 +228,7 @@ def mc_disk_bulge_ellipsoids(
         A_bulge,
         B_bulge,
         C_bulge,
+        mu_inclination_bulge,
     )
 
     return disk_ellipse, bulge_ellipse
