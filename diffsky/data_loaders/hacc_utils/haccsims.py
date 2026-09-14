@@ -18,6 +18,27 @@ SIM_INFO = dict(
     DiscoveryW0WA=SimSpecs(969.9, 6720, 286943385.1781562),
 )
 
+LC_COLNAMES_MPCH = (
+    "x",
+    "y",
+    "z",
+    "lc_halo_x",
+    "lc_halo_y",
+    "lc_halo_z",
+    "top_host_infall_fof_halo_eigS1X",
+    "top_host_infall_fof_halo_eigS1Y",
+    "top_host_infall_fof_halo_eigS1Z",
+    "top_host_infall_fof_halo_eigS2X",
+    "top_host_infall_fof_halo_eigS2Y",
+    "top_host_infall_fof_halo_eigS2Z",
+    "top_host_infall_fof_halo_eigS3X",
+    "top_host_infall_fof_halo_eigS3Y",
+    "top_host_infall_fof_halo_eigS3Z",
+    "infall_fof_halo_center_x",
+    "infall_fof_halo_center_y",
+    "infall_fof_halo_center_z",
+)
+
 
 class HACCSim(object):
 

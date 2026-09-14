@@ -20,6 +20,7 @@ from . import load_lc_cores as llcc
 SIM_INFO_KEYS = ("sim", "cosmo_params", "z_sim", "t_sim", "lgt0", "fb", "num_subvols")
 DiffskySimInfo = namedtuple("DiffskySimInfo", SIM_INFO_KEYS)
 
+
 try:
     import haccytrees  # noqa
 
@@ -55,13 +56,35 @@ def get_diffsky_info_from_hacc_sim(sim_name):
     return diffsky_info
 
 
-def load_lc_diffsky_patch_data(fn_lc_diffsky, indir_lc_data, *, istart=0, iend=None):
+def load_lc_diffsky_patch_data(
+    fn_lc_diffsky, indir_lc_data, *, sim_name, convert_mpch_to_mpc, istart=0, iend=None
+):
     diffsky_data = load_flat_hdf5(fn_lc_diffsky, istart=istart, iend=iend)
 
     bn_in = os.path.basename(fn_lc_diffsky)
     bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
     fn_lc = os.path.join(indir_lc_data, bn_lc)
     lc_data = load_flat_hdf5(fn_lc, istart=istart, iend=iend, dataset="data")
+
+    if convert_mpch_to_mpc:
+        sim_info = get_diffsky_info_from_hacc_sim(sim_name)
+        littleh = sim_info.cosmo_params.h
+        for colname in haccsims.LC_COLNAMES_MPCH:
+            # Convert lc_data for any columns appearing in haccsims.LC_COLNAMES_MPCH
+            try:
+                distance_quantity_mpch = lc_data[colname]
+                distance_quantity_mpc = distance_quantity_mpch / littleh
+                lc_data[colname] = distance_quantity_mpc
+            except KeyError:
+                pass
+
+            # Convert diffsky_data for any columns appearing in haccsims.LC_COLNAMES_MPCH
+            try:
+                distance_quantity_mpch = diffsky_data[colname]
+                distance_quantity_mpc = distance_quantity_mpch / littleh
+                diffsky_data[colname] = distance_quantity_mpc
+            except KeyError:
+                pass
 
     lc_data["redshift_true"] = 1 / lc_data["scale_factor"] - 1
 
@@ -160,6 +183,8 @@ def load_lc_cf_chunk(
     *,
     nchunks,
     chunknum,
+    sim_name,
+    convert_mpch_to_mpc,
     lc_cores_keys=None,
     convert_vcom_to_vphys=True,
 ):
@@ -181,6 +206,26 @@ def load_lc_cf_chunk(
         diffsky_data["vx"] = lc_data["scale_factor"] * diffsky_data["vx"]
         diffsky_data["vy"] = lc_data["scale_factor"] * diffsky_data["vy"]
         diffsky_data["vz"] = lc_data["scale_factor"] * diffsky_data["vz"]
+
+    if convert_mpch_to_mpc:
+        sim_info = get_diffsky_info_from_hacc_sim(sim_name)
+        littleh = sim_info.cosmo_params.h
+        for colname in haccsims.LC_COLNAMES_MPCH:
+            # Convert lc_data for any columns appearing in haccsims.LC_COLNAMES_MPCH
+            try:
+                distance_quantity_mpch = lc_data[colname]
+                distance_quantity_mpc = distance_quantity_mpch / littleh
+                lc_data[colname] = distance_quantity_mpc
+            except KeyError:
+                pass
+
+            # Convert diffsky_data for any columns appearing in haccsims.LC_COLNAMES_MPCH
+            try:
+                distance_quantity_mpch = diffsky_data[colname]
+                distance_quantity_mpc = distance_quantity_mpch / littleh
+                diffsky_data[colname] = distance_quantity_mpc
+            except KeyError:
+                pass
 
     lc_data["redshift_true"] = 1.0 / lc_data["scale_factor"] - 1.0
 

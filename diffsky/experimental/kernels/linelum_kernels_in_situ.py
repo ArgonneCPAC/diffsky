@@ -5,7 +5,7 @@ from collections import namedtuple
 from jax import jit as jjit
 
 from ...merging import merging_model
-from . import phot_kernels_in_situ, mc_randoms
+from . import mc_randoms, phot_kernels_in_situ
 from . import ssp_weight_kernels as sspwk
 
 

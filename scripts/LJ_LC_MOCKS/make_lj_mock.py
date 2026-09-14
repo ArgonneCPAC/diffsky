@@ -55,8 +55,6 @@ DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-7-cf-diffsky
 
 SIM_NAME = "LastJourney"
 
-ROMAN_HLTDS_PATCHES = [157, 158, 118, 119]
-
 LSST_FILTER_NICKNAMES = [f"lsst_{x}" for x in ("u", "g", "r", "i", "z", "y")]
 
 ROMAN_FILTER_NICKNAMES = (
@@ -101,6 +99,11 @@ if __name__ == "__main__":
         help="Infer mock_version_name from directory",
         action="store_true",
     )
+    parser.add_argument(
+        "-core_lc_7_correction",
+        help="Implement bug-fix for core-lc-7",
+        action="store_false",
+    )
 
     cl_args = parser.parse_args()
     config_path = cl_args.config_yaml
@@ -115,12 +118,11 @@ if __name__ == "__main__":
     z_max = float(config["z_max"])
     istart = int(config["istart"])
     iend = int(config["iend"])
+    fn_patch_list = config.get("fn_patch_list", None)
     drn_out = config["drn_out"]
     mock_nickname = config["mock_nickname"]
 
     mock_version_name_in = config.get("mock_version_name", "")
-    roman_hltds = config.get("roman_hltds", False)
-    lsst_ddf = config.get("lsst_ddf", False)
     lsst_only = config.get("lsst_only", False)
     cosmos_fit = config.get("cosmos_fit", "")
     sfh_model = config.get("sfh_model", "tng")
@@ -176,6 +178,22 @@ if __name__ == "__main__":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
 
+    if cl_args.core_lc_7_correction:
+        if "core-lc-7" in indir_lc_data:
+            implement_core_lc_7_correction = True
+            if rank == 0:
+                print("\nImplementing core_lc_7_correction\n")
+        else:
+            implement_core_lc_7_correction = False
+            if rank == 0:
+                msg = f"\n Skipping core_lc_7_correction because `core-lc-7` not in indir_lc_data=`{indir_lc_data}`\n"
+                print(msg)
+    else:
+        implement_core_lc_7_correction = False
+        if rank == 0:
+            msg = "\n Skipping core_lc_7_correction because cl_args.core_lc_7_correction=False\n"
+            print(msg)
+
     if emline_names == "roman_grs_pit":
         emline_dict = load_emline_info.read_emlines_info_fsps(FN_GRS_PIT_EMLINE_INFO)
         emline_names = list(emline_dict.keys())
@@ -187,25 +205,12 @@ if __name__ == "__main__":
     if itest == 1:
         lc_patch_list = [0, 1]
     else:
-        lc_patch_list = []
-        ignore_istart_iend = roman_hltds | lsst_ddf
-        if ignore_istart_iend:
-            if roman_hltds:
-                lc_patch_list.extend(ROMAN_HLTDS_PATCHES)
-                if rank == 0:
-                    print("Making all lightcone patches for Roman HLTDS")
-            if lsst_ddf:
-                fn_lc_decomp = os.path.join(indir_lc_data, "lc_cores-decomposition.txt")
-                lc_patch_dict = hlu.get_lsst_ddf_patches(fn_lc_decomp)
-                lc_patch_list_lsst = np.unique(
-                    np.concatenate([arr for arr in lc_patch_dict.values()])
-                )
-                lc_patch_list.extend(list(lc_patch_list_lsst))
-                if rank == 0:
-                    print("Making all lightcone patches for LSST DDF")
+        if fn_patch_list is not None:
+            lc_patch_list = np.loadtxt(fn_patch_list).astype(int)
+            msg = f"{fn_patch_list} contains repeated entries"
+            assert len(lc_patch_list) == len(np.unique(lc_patch_list)), msg
         else:
             lc_patch_list = np.arange(istart, iend).astype(int)
-    lc_patch_list = np.array(lc_patch_list)
     if rank == 0:
         print(f"Making mock with lc_patch_list={lc_patch_list}")
 
@@ -286,6 +291,7 @@ if __name__ == "__main__":
                 lc_patch_info.z_lo,
                 lc_patch_info.z_hi,
                 lc_patch_info.sky_area_degsq,
+                lgmp_max=lgmp_max,
             )
             nhalos_estimate = int(np.round(mean_nhalos))
             z_min_shell = lc_patch_info.z_lo
@@ -314,7 +320,8 @@ if __name__ == "__main__":
         else:
             nchunks = nhalos_estimate // batch_size
         msg = f"Loading {nhalos_estimate} halos in {nchunks} chunks with batch_size={batch_size}"
-        print(msg)
+        if rank == 0:
+            print(msg)
 
         n_cuml_fn = 0
         for chunknum in range(0, nchunks):
@@ -329,10 +336,19 @@ if __name__ == "__main__":
                     indir_lc_data,
                     nchunks=nchunks,
                     chunknum=chunknum,
+                    sim_name=sim_name,
+                    convert_mpch_to_mpc=True,
                     convert_vcom_to_vphys=True,
                 )
+                # Overwrite theta, phi to fix bug in core-lc-7 dataset
+                theta, phi = hlu.get_theta_phi(
+                    lc_data_batch["x"], lc_data_batch["y"], lc_data_batch["z"]
+                )
+                lc_data_batch["theta"] = theta
+                lc_data_batch["phi"] = phi
             else:
                 downsample_factor = nhalos_estimate / batch_size
+                downsample_factor = max(downsample_factor, 1)
                 batch_key, synthetic_lc_key = jran.split(batch_key, 2)
                 lc_data_batch, diffsky_data_batch = llcs.load_lc_diffsky_patch_data(
                     fn_lc_cores,
@@ -342,6 +358,7 @@ if __name__ == "__main__":
                     lgmp_max,
                     downsample_factor=downsample_factor,
                     read_start=n_cuml_fn,
+                    core_lc_7_correction=implement_core_lc_7_correction,
                 )
 
             n_gals_batch = len(lc_data_batch["core_tag"])

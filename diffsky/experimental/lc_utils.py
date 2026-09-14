@@ -20,6 +20,14 @@ d_Rcom_dz_func = jjit(
 )
 
 
+@jjit
+def _get_corrected_phi_bounds_for_last_journey_core_lc_7(phi_lo, phi_hi):
+    """Fix bug in phi coordinate in LastJourney/core-lc-7 dataset"""
+    phi_lo = jnp.mod(phi_lo + jnp.pi, 2 * jnp.pi)
+    phi_hi = jnp.mod(phi_hi + jnp.pi, 2 * jnp.pi)
+    return phi_lo, phi_hi
+
+
 @partial(jjit, static_argnames=["npts"])
 def mc_lightcone_random_ra_dec(ran_key, npts, ra_min, ra_max, dec_min, dec_max):
     """Generate random ra, dec in the input patch of sky
@@ -44,11 +52,9 @@ def mc_lightcone_random_ra_dec(ran_key, npts, ra_min, ra_max, dec_min, dec_max):
         Random coords on the sphere within the input range
 
     """
-    phi_min = jnp.deg2rad(ra_min)
-    phi_max = jnp.deg2rad(ra_max)
-
-    theta_min = jnp.deg2rad(90.0 - dec_max)
-    theta_max = jnp.deg2rad(90.0 - dec_min)
+    theta_min, theta_max, phi_min, phi_max = _get_theta_phi_minmax_from_ra_dec_minmax(
+        ra_min, ra_max, dec_min, dec_max
+    )
 
     theta, phi = mc_lightcone_random_theta_phi(
         ran_key, npts, theta_min, theta_max, phi_min, phi_max
@@ -58,15 +64,41 @@ def mc_lightcone_random_ra_dec(ran_key, npts, ra_min, ra_max, dec_min, dec_max):
     return ra, dec
 
 
+@jjit
+def _get_ra_dec_minmax_from_theta_phi_minmax(theta_min, theta_max, phi_min, phi_max):
+    ra_min = jnp.rad2deg(phi_min)
+    ra_max = jnp.rad2deg(phi_max)
+
+    dec_min = 90.0 - jnp.rad2deg(theta_max)
+    dec_max = 90.0 - jnp.rad2deg(theta_min)
+
+    return ra_min, ra_max, dec_min, dec_max
+
+
+@jjit
+def _get_theta_phi_minmax_from_ra_dec_minmax(ra_min, ra_max, dec_min, dec_max):
+    phi_min = jnp.deg2rad(ra_min)
+    phi_max = jnp.deg2rad(ra_max)
+
+    theta_min = jnp.deg2rad(90.0 - dec_max)
+    theta_max = jnp.deg2rad(90.0 - dec_min)
+
+    return theta_min, theta_max, phi_min, phi_max
+
+
 @partial(jjit, static_argnames=["npts"])
 def mc_lightcone_random_theta_phi(
     ran_key, npts, theta_min, theta_max, phi_min, phi_max
 ):
     """Generate random theta, phi in the input patch of sky"""
     theta_key, phi_key = jran.split(ran_key, 2)
-    # Sample uniformly in phi
-    phi = jran.uniform(phi_key, (npts,), minval=phi_min, maxval=phi_max)
-    # Sample uniformly in cos(theta)
+
+    # Uniform random 0<Φ<2π, accounting for possible wrapping by 2π
+    delta_phi = phi_max - phi_min
+    uran = jran.uniform(phi_key, shape=(npts,), minval=0.0, maxval=delta_phi)
+    phi = jnp.mod(uran + phi_min, 2 * jnp.pi)
+
+    # Sample uniformly in cos(θ)
     cos_lo = jnp.cos(theta_max)
     cos_hi = jnp.cos(theta_min)
     cos_theta = jran.uniform(theta_key, (npts,), minval=cos_lo, maxval=cos_hi)

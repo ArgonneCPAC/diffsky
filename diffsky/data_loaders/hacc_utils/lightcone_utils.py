@@ -36,6 +36,18 @@ LSST_DDF_FIELDS = dict(
 )
 LSST_DDF_RADIUS = 5.0  # deg^2
 
+GALPLANE_FIELDS = dict(GC=(266.405, -28.9362), GP0=(251.7436, -45.2462))
+GALPLANE_FIELD_RADIUS = LSST_DDF_RADIUS
+
+# ELAIS_N1 info taken from:
+#  https://roman-docs.stsci.edu/roman-community-defined-surveys/high-latitude-time-domain-survey
+HLTDS_FIELDS = dict(
+    ELAIS_N1=(242.504, 54.51),
+    EDFS_a=(58.9, -49.32),
+    EDFS_b=(63.6, -47.6),
+)
+HLTDS_RADIUS = LSST_DDF_RADIUS  # deg^2
+
 MAX_LJ_LC_TIMESTEP = 487
 
 TOP_HOST_MAH_KEYS = ["top_host_" + key for key in DEFAULT_MAH_PARAMS._fields]
@@ -658,7 +670,16 @@ def _generate_matching_patches(
             yield int(ipatch)
 
 
-def get_lsst_ddf_patches(fn, lsst_ddf_fields=LSST_DDF_FIELDS, rad_deg=LSST_DDF_RADIUS):
+def _get_field_info_from_pointing(pointing, radius_deg):
+    ra_min, ra_max = pointing[0] - radius_deg / 2, pointing[0] + radius_deg / 2
+    dec_min, dec_max = pointing[1] - radius_deg / 2, pointing[1] + radius_deg / 2
+    field_info = (ra_min, ra_max, dec_min, dec_max)
+    return field_info
+
+
+def get_lsst_ddf_patches(
+    fn, lsst_ddf_fields=LSST_DDF_FIELDS, radius_deg=LSST_DDF_RADIUS
+):
     """Get overlapping lightcone patches for each LSST DDF field
 
     Parameters
@@ -678,14 +699,25 @@ def get_lsst_ddf_patches(fn, lsst_ddf_fields=LSST_DDF_FIELDS, rad_deg=LSST_DDF_R
 
     """
     lsst_ddf_patches = dict()
-    for field_name, field_info in lsst_ddf_fields.items():
-        ra_mid, dec_mid = lsst_ddf_fields[field_name]
-        ra_min, ra_max = ra_mid - rad_deg, ra_mid + rad_deg
-        dec_min, dec_max = dec_mid - rad_deg, dec_mid + rad_deg
-        field_info = ra_min, ra_max, dec_min, dec_max
+    for field_name, pointing in lsst_ddf_fields.items():
+        field_info = _get_field_info_from_pointing(pointing, radius_deg)
         lc_patches = get_matching_lc_patches(fn, field_info)
         lsst_ddf_patches[field_name] = lc_patches
     return lsst_ddf_patches
+
+
+def _get_galplane_patches(
+    fn, galplane_fields=GALPLANE_FIELDS, radius_deg=GALPLANE_FIELD_RADIUS
+):
+    """Get overlapping lightcone patches for fields in the plane of the Galaxy"""
+    galplane_patches = get_lsst_ddf_patches(fn, galplane_fields, radius_deg)
+    return galplane_patches
+
+
+def _get_hltds_patches(fn, hltds_fields=HLTDS_FIELDS, radius_deg=GALPLANE_FIELD_RADIUS):
+    """Get overlapping lightcone patches for fields in the plane of the Galaxy"""
+    hltds_patches = get_lsst_ddf_patches(fn, hltds_fields, radius_deg)
+    return hltds_patches
 
 
 def _estimate_nhalos_sky_patch(sim_name, stepnum):
@@ -699,3 +731,18 @@ def _estimate_nhalos_sky_patch(sim_name, stepnum):
 
     vol_at_z = np.interp(z_obs, z_grid, vol_shell_grid_mpc)
     return vol_at_z
+
+
+def _get_ou26_lc_patches(fn):
+
+    lsst_ddf_patches = get_lsst_ddf_patches(fn)
+    galplane_patches = _get_galplane_patches(fn)
+    hltds_patches = _get_hltds_patches(fn)
+
+    ddf_arr = np.array(lsst_ddf_patches["XMM_LSS"] + lsst_ddf_patches["COSMOS"])
+    hltds_arr = np.concatenate([x for x in hltds_patches.values()])
+    galplane_arr = np.concatenate([x for x in galplane_patches.values()])
+
+    ou26_lc_patches = np.unique(np.concatenate((ddf_arr, hltds_arr, galplane_arr)))
+
+    return ou26_lc_patches

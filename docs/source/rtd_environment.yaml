@@ -17,7 +17,7 @@ dependencies:
   - dsps
   - diffmah>=0.7.2
   - diffstar>=1.0.0
-  - h5py
+  - h5py>=3.14
   - mpi4py
   - mpich
   - pip:

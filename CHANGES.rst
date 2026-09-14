@@ -1,4 +1,17 @@
-0.3.7 (Unreleased)
+0.3.9 (Unreleased)
+-------------------
+- Improve performance of all photometry/SED kernels by using jnp.einsum (https://github.com/ArgonneCPAC/diffsky/pull/496)
+
+
+0.3.8 (2026-08-25)
+-------------------
+- Add HLTDS fields for image simulation: ELIAS-N1, EDFS_a, EDFS_b
+- Change littleh convention so that all spatial positions of mocks are now in Mpc (not Mpc/h) (https://github.com/ArgonneCPAC/diffsky/pull/478)
+- Fix bug in ra, dec of synthetic halos due to outdated LastJourney file (https://github.com/ArgonneCPAC/diffsky/pull/481)
+- Fix bug in abundance of low-redshift synthetic halos due to incorrect downsampling factor (https://github.com/ArgonneCPAC/diffsky/pull/482)
+- Include `redshift_obs` column in diffsky mocks (https://github.com/ArgonneCPAC/diffsky/pull/484)
+
+0.3.7 (2026-08-05)
 -------------------
 - Reinstate OpenCosmo docs (https://github.com/ArgonneCPAC/diffsky/pull/439)
 - Migrate top-level modules into subdirectories
@@ -11,6 +24,7 @@
 - Fix bug in `ra, dec` for synthetic halos (https://github.com/ArgonneCPAC/diffsky/pull/469)
 - Fix bug in ellipsoidal shapes (https://github.com/ArgonneCPAC/diffsky/pull/468)
 - Retune disk axis ratio distribution and size--mass relation (https://github.com/ArgonneCPAC/diffsky/pull/470)
+- Version of code used to produce `c260710_08_02_2026`
 
 
 0.3.6 (2026-06-12)

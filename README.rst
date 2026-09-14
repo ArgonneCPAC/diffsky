@@ -34,10 +34,10 @@ Online documentation for diffsky is available at
 Latest version of diffsky mocks
 -------------------------------
 
-See `this OpenCosmo tutorial <https://github.com/ArgonneCPAC/opencosmo-examples/blob/main/03-Diffsky/demo_diffmah_diffstar.ipynb/>`_
-for information about how to access the latest mock with OpenCosmo.
-The latest release of the mocks is publicly available on NERSC:
+See `this OpenCosmo tutorial <https://argonnecpac.github.io/opencosmo-examples/demo-diffsky-nersc/>`_
+for information about how to access and query the latest mock with OpenCosmo, and `this tutorial <https://argonnecpac.github.io/opencosmo-examples/demo-diffmah-diffstar/>`_ about how to compute mass accretion and star formation histories.
+The latest release of the mocks can be downloaded at these URLs:
 
-    /global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/c260710_08_02_2026
+    /global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/c260710_09_02_2026
 
-See  `this PR <https://github.com/ArgonneCPAC/diffsky/pull/472/>`_ for further information about the latest mock.
+See  `this PR <https://github.com/ArgonneCPAC/diffsky/pull/493/>`_ for further information about the latest mock.

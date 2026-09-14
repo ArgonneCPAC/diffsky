@@ -6,9 +6,11 @@ from glob import glob
 import h5py
 import numpy as np
 import yaml
+from dsps.cosmology import flat_wcdm
 from dsps.photometry import photometry_kernels as phk
 from jax import vmap
 
+from ....experimental import mc_lightcone_halos as mclh
 from ....param_utils import diffsky_param_wrapper as dpw
 from .. import lc_mock as lcmp
 from .. import lightcone_utils, load_flat_hdf5, load_lc_cf, load_lc_mock, sed_from_mock
@@ -51,6 +53,18 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     msg = check_all_columns_have_expected_shapes(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["column_sizes"] = msg
+
+    msg = check_xyz_littleh(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["xyz_littleh"] = msg
+
+    msg = check_expected_number_of_synthetic_galaxies(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["ngal_expected"] = msg
+
+    msg = check_mock_has_observed_redshift(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["z_obs_column_exists"] = msg
 
     msg = check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=data)
     if len(msg) > 0:
@@ -150,6 +164,20 @@ def check_yaml_config(fn_lc_mock, yaml_req_list=YAML_REQ_LIST):
         if len(missing_lines) > 0:
             s = f"{fn_config} is missing the following entries: {missing_lines}"
             msg.append(s)
+
+    return msg
+
+
+def check_mock_has_observed_redshift(fn_lc_mock, data=None):
+
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    msg = []
+    try:
+        assert "redshift_obs" in list(data.keys())
+    except AssertionError:
+        msg.append("Mock is missing `redshift_obs` column")
 
     return msg
 
@@ -310,6 +338,51 @@ def check_metadata(fn_lc_mock):
     return msg
 
 
+def check_expected_number_of_synthetic_galaxies(fn_lc_mock, data=None):
+    msg = []
+    bn_mock = os.path.basename(fn_lc_mock)
+    if "synthetic" not in bn_mock:
+        return msg
+
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    sizes = [x.shape[0] for x in data.values()]
+    ngals = int(sizes[0])
+
+    z_min = np.percentile(data["redshift_true"], 1)
+    z_max = np.percentile(data["redshift_true"], 99)
+
+    drn_mock = os.path.dirname(fn_lc_mock)
+    fn_list_yamls = glob(os.path.join(drn_mock, "*.yaml"))
+    fn_yaml = fn_list_yamls[0]
+    with open(fn_yaml, "r") as fobj:
+        config = yaml.safe_load(fobj)
+
+    lgmp_min = config["lgmp_min"]
+    lgmp_max = config["lgmp_max"]
+
+    metadata = load_lc_mock.load_mock_metadata(fn_lc_mock)
+    sim_name = metadata["nbody_info"]["sim_name"]
+    _res = lightcone_utils.read_hacc_lc_patch_decomposition(sim_name)
+    patch_decomposition, sky_frac, solid_angles = _res
+    stepnum, lc_patch = lcmp.infer_lc_patch_stepnum_from_bname(bn_mock)
+    sky_area_degsq = solid_angles[lc_patch]
+
+    nhalos_estimate = mclh.estimate_nhalos_in_lightcone(
+        lgmp_min, z_min, z_max, sky_area_degsq, lgmp_max=lgmp_max
+    )
+
+    ngal_ratio = ngals / nhalos_estimate
+    try:
+        assert np.all((ngal_ratio >= 0.5) & (ngal_ratio <= 2.0))
+    except AssertionError:
+        s = f"ngals={ngals:_} but nhalos_estimate={nhalos_estimate:_}"
+        msg.append(s)
+
+    return msg
+
+
 def check_lc_cores_decomposition(fn_lc_mock, bn=BNAME_LC_PATCH_DECOMPOSITION):
     msg = []
     drn_mock = os.path.dirname(fn_lc_mock)
@@ -321,9 +394,29 @@ def check_lc_cores_decomposition(fn_lc_mock, bn=BNAME_LC_PATCH_DECOMPOSITION):
         msg.append(s)
 
     try:
-        lightcone_utils.read_lc_ra_dec_patch_decomposition(fn)
+        _res = lightcone_utils.read_lc_ra_dec_patch_decomposition(fn)
+        patch_decomposition_from_mock, sky_frac_from_mock, solid_angles_from_mock = _res
     except:  # noqa
         s = f"Failure to read {fn} with read_lc_ra_dec_patch_decomposition"
+        msg.append(s)
+
+    metadata = load_lc_mock.load_mock_metadata(fn_lc_mock)
+    sim_name = metadata["nbody_info"]["sim_name"]
+    _res = lightcone_utils.read_hacc_lc_patch_decomposition(sim_name)
+    patch_decomposition_from_src, sky_frac_from_src, solid_angles_from_src = _res
+
+    try:
+        assert len(patch_decomposition_from_mock) == len(patch_decomposition_from_src)
+        assert len(sky_frac_from_mock) == len(sky_frac_from_src)
+        assert len(solid_angles_from_mock) == len(solid_angles_from_src)
+
+        assert np.allclose(
+            patch_decomposition_from_mock, patch_decomposition_from_src, rtol=1e-4
+        )
+        assert np.allclose(sky_frac_from_mock, sky_frac_from_src, rtol=1e-4)
+        assert np.allclose(solid_angles_from_mock, solid_angles_from_src, rtol=1e-4)
+    except AssertionError:
+        s = f"Inconsistency between {fn} and file stored in source code"
         msg.append(s)
 
     return msg
@@ -704,3 +797,24 @@ def check_recomputed_dbk_sed(fn_lc_mock, *, nchunks, chunknum, return_results=Fa
         return mock_chunk, metadata, sed_info, phot_info, msg
     else:
         return msg
+
+
+def check_xyz_littleh(fn_lc_mock, data=None):
+    """Columns storing xyz should be in units of Mpc, not Mpc/h"""
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock)
+
+    metadata = load_lc_mock.load_mock_metadata(fn_lc_mock)
+
+    rcom_from_xyz = np.sqrt(data["x"] ** 2 + data["y"] ** 2 + data["z"] ** 2)
+    rcom_from_redshift = flat_wcdm.comoving_distance(
+        data["redshift_true"], *metadata["sim_info"].cosmo_params
+    )
+    msg = []
+    try:
+        s = "Discrepancy between xyz and redshift_true - likely due to littleh"
+        assert np.allclose(rcom_from_xyz, rcom_from_redshift, rtol=0.02)
+    except AssertionError:
+        msg.append(s)
+
+    return msg
