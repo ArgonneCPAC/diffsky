@@ -92,6 +92,7 @@ _ORIEN_PATS = (
     "alpha_{}",
     "ellipticity_{}",
     "psi_{}",
+    "mu_inclination_{}",
 )
 ORIENTATION_KEYS = [pat.format("disk") for pat in _ORIEN_PATS]
 ORIENTATION_KEYS.extend([pat.format("bulge") for pat in _ORIEN_PATS])
