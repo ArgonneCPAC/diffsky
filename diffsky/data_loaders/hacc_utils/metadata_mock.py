@@ -414,6 +414,10 @@ def add_metadata_dbk_morphology_columns(metadata):
         str(u.dimensionless_unscaled),
         "Angular coordinate of projected semi-major axis of the disk, where 0<ψ<2π",
     )
+    metadata["mu_inclination_disk"] = (
+        str(u.dimensionless_unscaled),
+        "Inclination angle of the disk normal (minor axis) with respect to the line of sight, where μ=cos(i)",
+    )
 
     metadata["beta_bulge"] = (
         str(u.kpc),
@@ -430,6 +434,10 @@ def add_metadata_dbk_morphology_columns(metadata):
     metadata["psi_bulge"] = (
         str(u.dimensionless_unscaled),
         "Angular coordinate of projected semi-major axis of the bulge, where 0<ψ<2π",
+    )
+    metadata["mu_inclination_bulge"] = (
+        str(u.dimensionless_unscaled),
+        "Inclination angle of the bulge major axis with respect to the line of sight, where μ=cos(i)",
     )
 
     return metadata
