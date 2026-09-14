@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax.flatten_util import ravel_pytree
+from functools import partial
 import time
 
 try:
@@ -177,9 +178,14 @@ def run_warmup(
     chain_inits,
     hmc_settings,
     inverse_mass_matrix,
+    **kwargs_likelihood,
 ):
     """Run NUTS warmup and return ``(warmup_states, step_sizes, warmup_info,
     inverse_mass_matrix_for_sampling)``.
+
+    ``flat_logdensity`` is called as ``flat_logdensity(position,
+    **kwargs_likelihood)``; any additional data the log-density needs
+    (e.g. loss data) is passed via ``**kwargs_likelihood``.
 
     The mode is chosen by whether an ``inverse_mass_matrix`` is provided:
 
@@ -190,6 +196,8 @@ def run_warmup(
       size), one chain at a time. ``inverse_mass_matrix_for_sampling`` is the
       per-chain Python list returned by the adaptation.
     """
+    if kwargs_likelihood:
+        flat_logdensity = partial(flat_logdensity, **kwargs_likelihood)
     warmup_num_steps = hmc_settings["warmup_num_steps"]
     max_num_doublings = hmc_settings["max_num_doublings"]
     target_accept = hmc_settings.get("target_acceptance_rate", 0.8)
@@ -284,8 +292,13 @@ def run_sampling(
     sampler_keys,
     warmup_states,
     step_sizes,
+    **kwargs_likelihood,
 ):
     """Run NUTS sampling for every chain.
+
+    ``flat_logdensity`` is called as ``flat_logdensity(position,
+    **kwargs_likelihood)``; any additional data the log-density needs
+    (e.g. loss data) is passed via ``**kwargs_likelihood``.
 
     Returns ``positions`` as a batched varied-param namedtuple (each leaf has
     shape ``(num_chains, num_samples)``) and ``sample_info`` (a NUTSInfo pytree
@@ -296,6 +309,8 @@ def run_sampling(
     :func:`run_chains` (``jax.pmap``); or a Python list of per-chain mass
     matrices (window adaptation) -> chains run sequentially, each with its own.
     """
+    if kwargs_likelihood:
+        flat_logdensity = partial(flat_logdensity, **kwargs_likelihood)
     num_chains = len(sampler_keys)
     start = time.time()
 
