@@ -659,17 +659,6 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["zscore_r50_disk"] = zscore_disk
     diffsky_data["zscore_r50_bulge"] = zscore_bulge
 
-    _, disk_shape_key, bulge_shape_key = jran.split(morph_key, 3)
-    n = diffsky_data["r50_disk_3d"].size
-    disk_axis_ratios = disk_shapes.sample_disk_axis_ratios(disk_shape_key, n)
-    bulge_axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_shape_key, n)
-
-    diffsky_data["b_over_a_disk"] = disk_axis_ratios.b_over_a
-    diffsky_data["c_over_a_disk"] = disk_axis_ratios.c_over_a
-
-    diffsky_data["b_over_a_bulge"] = bulge_axis_ratios.b_over_a
-    diffsky_data["c_over_a_bulge"] = bulge_axis_ratios.c_over_a
-
     ellipse2d_disk, ellipse2d_bulge = mcdbs.mc_disk_bulge_ellipsoids(
         morph_key,
         diffsky_data["r50_disk_3d"],
@@ -686,12 +675,16 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["ellipticity_disk"] = ellipse2d_disk.ellipticity
     diffsky_data["psi_disk"] = ellipse2d_disk.psi
     diffsky_data["mu_inclination_disk"] = ellipse2d_disk.mu_inclination
+    diffsky_data["b_over_a_disk"] = ellipse2d_disk.b_over_a
+    diffsky_data["c_over_a_disk"] = ellipse2d_disk.c_over_a
 
     diffsky_data["beta_bulge"] = ellipse2d_bulge.beta
     diffsky_data["alpha_bulge"] = ellipse2d_bulge.alpha
     diffsky_data["ellipticity_bulge"] = ellipse2d_bulge.ellipticity
     diffsky_data["psi_bulge"] = ellipse2d_bulge.psi
     diffsky_data["mu_inclination_bulge"] = ellipse2d_bulge.mu_inclination
+    diffsky_data["b_over_a_bulge"] = ellipse2d_bulge.b_over_a
+    diffsky_data["c_over_a_bulge"] = ellipse2d_bulge.c_over_a
 
     # Jiachuan Xu:
     # Assuming a Gaussian profile, the 2D half-light radius would be 0.765*alpha

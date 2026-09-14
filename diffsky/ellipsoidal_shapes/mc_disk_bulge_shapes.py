@@ -21,6 +21,8 @@ Ellipse2DParams = namedtuple(
         "B",
         "C",
         "mu_inclination",
+        "b_over_a",
+        "c_over_a",
     ),
 )
 
@@ -216,6 +218,8 @@ def mc_disk_bulge_ellipsoids(
         B_disk,
         C_disk,
         mu_inclination_disk,
+        disk_axis_ratios.b_over_a,
+        disk_axis_ratios.c_over_a,
     )
 
     bulge_ellipse = Ellipse2DParams(
@@ -229,6 +233,8 @@ def mc_disk_bulge_ellipsoids(
         B_bulge,
         C_bulge,
         mu_inclination_bulge,
+        bulge_axis_ratios.b_over_a,
+        bulge_axis_ratios.c_over_a,
     )
 
     return disk_ellipse, bulge_ellipse
