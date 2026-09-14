@@ -685,11 +685,13 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["alpha_disk"] = ellipse2d_disk.alpha
     diffsky_data["ellipticity_disk"] = ellipse2d_disk.ellipticity
     diffsky_data["psi_disk"] = ellipse2d_disk.psi
+    diffsky_data["mu_inclination_disk"] = ellipse2d_disk.mu_inclination
 
     diffsky_data["beta_bulge"] = ellipse2d_bulge.beta
     diffsky_data["alpha_bulge"] = ellipse2d_bulge.alpha
     diffsky_data["ellipticity_bulge"] = ellipse2d_bulge.ellipticity
     diffsky_data["psi_bulge"] = ellipse2d_bulge.psi
+    diffsky_data["mu_inclination_bulge"] = ellipse2d_bulge.mu_inclination
 
     # Jiachuan Xu:
     # Assuming a Gaussian profile, the 2D half-light radius would be 0.765*alpha
