@@ -31,3 +31,5 @@ def test_mc_disk_bulge_ellipsoids():
     for ellipse in (disk_ellipse, bulge_ellipse):
         assert np.all(ellipse.psi >= -np.pi)
         assert np.all(ellipse.psi <= np.pi)
+        assert np.all(ellipse.mu_inclination >= 0)
+        assert np.all(ellipse.mu_inclination <= 1)

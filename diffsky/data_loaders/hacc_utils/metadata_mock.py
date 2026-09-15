@@ -400,36 +400,44 @@ def add_metadata_dbk_morphology_columns(metadata):
 
     metadata["beta_disk"] = (
         str(u.kpc),
-        "2d projected size of the semi-major axis of the disk",
+        "2d projected size of the semi-minor axis of the disk",
     )
     metadata["alpha_disk"] = (
         str(u.kpc),
-        "2d projected size of the semi-minor axis of the disk",
+        "2d projected size of the semi-major axis of the disk",
     )
     metadata["ellipticity_disk"] = (
         str(u.dimensionless_unscaled),
-        "2d projected size of the semi-major axis of the disk",
+        "2d projected ellipticity of the disk",
     )
     metadata["psi_disk"] = (
         str(u.dimensionless_unscaled),
         "Angular coordinate of projected semi-major axis of the disk, where 0<ψ<2π",
     )
+    metadata["mu_inclination_disk"] = (
+        str(u.dimensionless_unscaled),
+        "Inclination angle of the disk normal (minor axis) with respect to the line of sight, where μ=cos(i)",
+    )
 
     metadata["beta_bulge"] = (
         str(u.kpc),
-        "2d projected size of the semi-major axis of the bulge",
+        "2d projected size of the semi-minor axis of the bulge",
     )
     metadata["alpha_bulge"] = (
         str(u.kpc),
-        "2d projected size of the semi-minor axis of the bulge",
+        "2d projected size of the semi-major axis of the bulge",
     )
     metadata["ellipticity_bulge"] = (
         str(u.dimensionless_unscaled),
-        "2d projected size of the semi-major axis of the bulge",
+        "2d projected ellipticity of the bulge",
     )
     metadata["psi_bulge"] = (
         str(u.dimensionless_unscaled),
         "Angular coordinate of projected semi-major axis of the bulge, where 0<ψ<2π",
+    )
+    metadata["mu_inclination_bulge"] = (
+        str(u.dimensionless_unscaled),
+        "Inclination angle of the bulge major axis with respect to the line of sight, where μ=cos(i)",
     )
 
     return metadata
@@ -531,7 +539,6 @@ def append_metadata(
         column_metadata.pop(colname)
 
     with h5py.File(fnout, "r+") as hdf_out:
-
         metadata_group = hdf_out.require_group("metadata")
 
         metadata_group["z_phot_table"] = z_phot_table
@@ -580,7 +587,6 @@ def append_metadata(
 
         # Filter magnitudes
         for nickname in filter_nicknames:
-
             # Composite magnitudes
             key_out = "data/" + nickname
             assert key_out in hdf_out.keys(), f"{key_out} is missing from {fnout}"
@@ -598,9 +604,9 @@ def append_metadata(
             else:
                 for component in ("bulge", "disk", "knots"):
                     key_out = "data/" + "_".join((nickname, component))
-                    assert (
-                        key_out in hdf_out.keys()
-                    ), f"{key_out} is missing from {fnout}"
+                    assert key_out in hdf_out.keys(), (
+                        f"{key_out} is missing from {fnout}"
+                    )
 
                     msg = COMPONENT_MAG_MSG_PAT.format(component)
                     hdf_out[key_out].attrs["unit"] = str(u.ABmag)
@@ -613,7 +619,6 @@ def append_metadata(
 
         # emission line fluxes
         for linename in lineflux_nicknames:
-
             key_out = "data/" + linename
             assert key_out in hdf_out.keys(), f"{key_out} is missing from {fnout}"
 
