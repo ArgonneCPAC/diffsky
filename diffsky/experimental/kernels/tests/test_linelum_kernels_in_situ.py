@@ -70,24 +70,6 @@ def test_mc_photline_kern(num_halos=150):
         fb,
     )
     _photline_res = linelum_kernels_in_situ._mc_photline_kern(*args)
-    # _photline_res = linelum_kernels_in_situ._mc_photline_kern(
-    #     phot_key,
-    #     lc_data.z_obs,
-    #     lc_data.t_obs,
-    #     lc_data.mah_params,
-    #     lc_data.ssp_data,
-    #     lc_data.precomputed_ssp_mag_table,
-    #     lc_data.z_phot_table,
-    #     lc_data.wave_eff_table,
-    #     line_wave_table,
-    #     dpwm.DEFAULT_PARAM_COLLECTION.diffstarpop_params,
-    #     dpwm.DEFAULT_PARAM_COLLECTION.mzr_params,
-    #     dpwm.DEFAULT_PARAM_COLLECTION.spspop_params,
-    #     dpwm.DEFAULT_PARAM_COLLECTION.scatter_params,
-    #     dpwm.DEFAULT_PARAM_COLLECTION.ssperr_params,
-    #     DEFAULT_COSMOLOGY,
-    #     fb,
-    # )
 
     phot_kern_results2, phot_randoms2, spec_kern_results = _photline_res
     assert np.allclose(

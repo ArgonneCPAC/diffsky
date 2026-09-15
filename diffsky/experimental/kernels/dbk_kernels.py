@@ -145,35 +145,53 @@ def get_bulge_age_weights_rq(
 
 
 @jjit
+def _weighted_mags(ssp_photflux_table, ssp_weights, dust_ftrans, frac_ssp_err, mstar):
+    """
+    # ssp_photflux_table: (n_gals, n_bands, n_met, n_age)
+    # ssp_weights: (n_gals, n_met, n_age)
+    # dust_ftrans: (n_gals, n_bands, n_age)
+    # frac_ssp_errors: (n_gals, n_bands)
+    # mstar: (n_gals, )
+    """
+    flux = (
+        jnp.einsum(
+            "gbma,gma,gba,gb->gb",
+            ssp_photflux_table,
+            ssp_weights,
+            dust_ftrans,
+            frac_ssp_err,
+        )
+        * mstar[:, None]
+    )
+    return -2.5 * jnp.log10(flux)
+
+
+@jjit
 def _get_dbk_phot_from_dbk_weights(
     ssp_photflux_table, dbk_weights, dust_frac_trans, frac_ssp_err
 ):
-    n_gals, n_bands, n_met, n_age = ssp_photflux_table.shape
+    obs_mags_bulge = _weighted_mags(
+        ssp_photflux_table,
+        dbk_weights.ssp_weights_bulge,
+        dust_frac_trans,
+        frac_ssp_err,
+        dbk_weights.mstar_bulge,
+    )
+    obs_mags_disk = _weighted_mags(
+        ssp_photflux_table,
+        dbk_weights.ssp_weights_disk,
+        dust_frac_trans,
+        frac_ssp_err,
+        dbk_weights.mstar_disk,
+    )
 
-    # Reshape arrays before calculating galaxy magnitudes
-    _ftrans = dust_frac_trans.reshape((n_gals, n_bands, 1, n_age))
-
-    _ferr_ssp = frac_ssp_err.reshape((n_gals, n_bands, 1, 1))
-
-    _w_bulge = dbk_weights.ssp_weights_bulge.reshape((n_gals, 1, n_met, n_age))
-    _w_dd = dbk_weights.ssp_weights_disk.reshape((n_gals, 1, n_met, n_age))
-    _w_knot = dbk_weights.ssp_weights_knots.reshape((n_gals, 1, n_met, n_age))
-
-    _mstar_bulge = dbk_weights.mstar_bulge.reshape((n_gals, 1))
-    _mstar_disk = dbk_weights.mstar_disk.reshape((n_gals, 1))
-    _mstar_knots = dbk_weights.mstar_knots.reshape((n_gals, 1))
-
-    integrand_bulge = ssp_photflux_table * _w_bulge * _ftrans * _ferr_ssp
-    flux_bulge = jnp.sum(integrand_bulge, axis=(2, 3)) * _mstar_bulge
-    obs_mags_bulge = -2.5 * jnp.log10(flux_bulge)
-
-    integrand_disk = ssp_photflux_table * _w_dd * _ftrans * _ferr_ssp
-    flux_disk = jnp.sum(integrand_disk, axis=(2, 3)) * _mstar_disk
-    obs_mags_disk = -2.5 * jnp.log10(flux_disk)
-
-    integrand_knots = ssp_photflux_table * _w_knot * _ftrans * _ferr_ssp
-    flux_knots = jnp.sum(integrand_knots, axis=(2, 3)) * _mstar_knots
-    obs_mags_knots = -2.5 * jnp.log10(flux_knots)
+    obs_mags_knots = _weighted_mags(
+        ssp_photflux_table,
+        dbk_weights.ssp_weights_knots,
+        dust_frac_trans,
+        frac_ssp_err,
+        dbk_weights.mstar_knots,
+    )
 
     return DBKPhotInfo(obs_mags_bulge, obs_mags_disk, obs_mags_knots)
 
