@@ -27,7 +27,7 @@ build:
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/diffsky_c260710_test_09_15_2026_ssp_data.hdf5 -P docs/source/mock_download_dir
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/diffsky_c260710_test_09_15_2026_transmission_curves.hdf5 -P docs/source/mock_download_dir
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/diffsky_c260710_test_09_15_2026_t_table.hdf5 -P docs/source/mock_download_dir
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/testmock_cfg.yaml -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/testmock_cfg.yaml -P docs/source/mock_download_dir
 
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-411.843.diffsky_gals.hdf5 -P docs/source/mock_download_dir
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-421.843.diffsky_gals.hdf5 -P docs/source/mock_download_dir
