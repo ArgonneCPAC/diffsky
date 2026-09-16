@@ -43,7 +43,7 @@ build:
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-453.843.diffsky_gals.synthetic_halos.hdf5 -P docs/source/mock_download_dir
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-464.843.diffsky_gals.synthetic_halos.hdf5 -P docs/source/mock_download_dir
 
-      - ls -l docs/source/oc_download_dir docs/source/mock_download_dir
+      - ls -l docs/source/mock_download_dir
 
       # Download a pre-computed OpenCosmo-formatted mock for use in demo notebooks
       - mkdir -p docs/source/oc_download_dir
@@ -61,7 +61,7 @@ build:
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/lc_cores-453.diffsky_gals.hdf5 -P docs/source/oc_download_dir
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/lc_cores-464.diffsky_gals.hdf5 -P docs/source/oc_download_dir
 
-      - ls -l docs/source/oc_download_dir docs/source/oc_download_dir
+      - ls -l docs/source/oc_download_dir
 
 conda:
   environment: docs/source/rtd_environment.yaml
