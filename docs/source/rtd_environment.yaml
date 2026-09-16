@@ -22,5 +22,5 @@ dependencies:
   - mpich
   - diffhalos
   - pip:
-    - opencosmo
+    - git+https://github.com/AstroPatty/opencosmo.git
     - git+https://github.com/AstroPatty/diffpipe.git
