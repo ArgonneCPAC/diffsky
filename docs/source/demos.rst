@@ -16,6 +16,7 @@ or alternatively using the flat hdf5 files natively produced by Diffsky.
     :maxdepth: 1
 
     demo_diffsky_recompute_from_mock.ipynb
+    demo_diffsky_recompute_from_mock_opencosmo.ipynb
 
 
 Generating synthetic lightcones
