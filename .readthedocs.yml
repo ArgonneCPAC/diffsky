@@ -20,29 +20,44 @@ build:
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/filters-v1/lsst_y_transmission.h5 -P docs/source/dsps_drn/filters
       - export DSPS_DRN="dsps_drn"
 
-      # Download a pre-computed example mock for use in demo notebooks
+      # Download a pre-computed Diffsky-native mock for use in demo notebooks
       - mkdir -p docs/source/mock_download_dir
       - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v1/lc_cores-decomposition.txt -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/diffsky_c260710_test_09_15_2026_param_collection.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/diffsky_c260710_test_09_15_2026_ssp_data.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/diffsky_c260710_test_09_15_2026_transmission_curves.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/diffsky_c260710_test_09_15_2026_t_table.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/testmock_cfg.yaml -P docs/source/oc_download_dir
 
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v1/diffsky_cosmos_260316_05_03_2026_param_collection.hdf5 -P docs/source/mock_download_dir
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v1/diffsky_cosmos_260316_05_03_2026_ssp_data.hdf5 -P docs/source/mock_download_dir
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v1/diffsky_cosmos_260316_05_03_2026_transmission_curves.hdf5 -P docs/source/mock_download_dir
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v1/diffsky_cosmos_260316_05_03_2026_t_table.hdf5 -P docs/source/mock_download_dir
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v1/lc_cores-442.0.diffsky_gals.hdf5 -P docs/source/mock_download_dir
-      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v1/lc_cores-453.0.diffsky_gals.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-411.843.diffsky_gals.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-421.843.diffsky_gals.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-432.843.diffsky_gals.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-442.843.diffsky_gals.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-453.843.diffsky_gals.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-464.843.diffsky_gals.hdf5 -P docs/source/mock_download_dir
 
-      # # Generate the mock
-      # - export DSPS_DRN="${PWD}/dsps_drn" && python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
-      # - export DSPS_DRN="${PWD}/dsps_drn" && python scripts/LJ_LC_MOCKS/create_dummy_mock_data.py ci_test_output/dummy_version_name
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-411.843.diffsky_gals.synthetic_halos.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-421.843.diffsky_gals.synthetic_halos.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-432.843.diffsky_gals.synthetic_halos.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-442.843.diffsky_gals.synthetic_halos.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-453.843.diffsky_gals.synthetic_halos.hdf5 -P docs/source/mock_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/mock-galaxies-v2/lc_cores-464.843.diffsky_gals.synthetic_halos.hdf5 -P docs/source/mock_download_dir
 
-      # # Copy mock data to where the notebook expects it
-      # - cp ci_test_output/dummy_version_name/* docs/source/mock_download_dir/
-
-      # Use the toolkit to create OpenCosmo-formatted data
+      # Download a pre-computed OpenCosmo-formatted mock for use in demo notebooks
       - mkdir -p docs/source/oc_download_dir
-      - diffpipe run docs/source/mock_download_dir docs/source/oc_download_dir -n 1
-      - cp docs/source/mock_download_dir/diffsky_*.hdf5 docs/source/oc_download_dir/
-      - cp docs/source/mock_download_dir/lc_cores-decomposition.txt docs/source/oc_download_dir/
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v1/lc_cores-decomposition.txt -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/diffsky_c260710_test_09_15_2026_param_collection.hdf5 -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/diffsky_c260710_test_09_15_2026_ssp_data.hdf5 -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/diffsky_c260710_test_09_15_2026_transmission_curves.hdf5 -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/diffsky_c260710_test_09_15_2026_t_table.hdf5 -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/testmock_cfg.yaml -P docs/source/oc_download_dir
+
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/lc_cores-411.diffsky_gals.hdf5 -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/lc_cores-421.diffsky_gals.hdf5 -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/lc_cores-432.diffsky_gals.hdf5 -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/lc_cores-442.diffsky_gals.hdf5 -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/lc_cores-453.diffsky_gals.hdf5 -P docs/source/oc_download_dir
+      - wget -q https://github.com/ArgonneCPAC/diffsky-data/releases/download/oc-mock-galaxies-v1/lc_cores-464.diffsky_gals.hdf5 -P docs/source/oc_download_dir
 
 conda:
   environment: docs/source/rtd_environment.yaml
