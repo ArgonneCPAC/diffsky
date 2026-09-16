@@ -15,7 +15,6 @@ or alternatively using the flat hdf5 files natively produced by Diffsky.
 .. toctree::
     :maxdepth: 1
 
-    demo_diffsky_recompute_from_mock_opencosmo.ipynb
     demo_diffsky_recompute_from_mock.ipynb
 
 
