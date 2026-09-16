@@ -20,7 +20,7 @@ dependencies:
   - h5py>=3.14
   - mpi4py
   - mpich
-  - diffhalos
   - pip:
-    - git+https://github.com/AstroPatty/opencosmo.git
     - git+https://github.com/AstroPatty/diffpipe.git
+    - git+https://github.com/ArgonneCPAC/opencosmo.git
+    - git+https://github.com/ArgonneCPAC/diffhalos.git
