@@ -86,6 +86,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if len(msg) > 0:
         report["reasonable_merging"] = msg
 
+    msg = check_2d_3d_shapes_consistent(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["2d_3d_shapes"] = msg
+
     nchunks = load_lc_mock.estimate_nchunks(fn_lc_mock, BATCH_SIZE)
     chunknum_test = int(nchunks // 2)
 
@@ -814,6 +818,41 @@ def check_xyz_littleh(fn_lc_mock, data=None):
     try:
         s = "Discrepancy between xyz and redshift_true - likely due to littleh"
         assert np.allclose(rcom_from_xyz, rcom_from_redshift, rtol=0.02)
+    except AssertionError:
+        msg.append(s)
+
+    return msg
+
+
+def check_2d_3d_shapes_consistent(fn_lc_mock, data=None):
+    """Projected 2D axis ratios must be consistent with 3D axis ratios."""
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    q_2d_bulge = data["beta_bulge"] / data["alpha_bulge"]
+    q_2d_disk = data["beta_disk"] / data["alpha_disk"]
+
+    c_over_b_bulge = data["c_over_a_bulge"] / data["b_over_a_bulge"]
+    c_over_b_disk = data["c_over_a_disk"] / data["b_over_a_disk"]
+    min_3D_axrat_bulge = np.minimum.reduce(
+        [data["c_over_a_bulge"], data["b_over_a_bulge"], c_over_b_bulge]
+    )
+    min_3D_axrat_disk = np.minimum.reduce(
+        [data["c_over_a_disk"], data["b_over_a_disk"], c_over_b_disk]
+    )
+    valid_2D_projection_bulge = (q_2d_bulge >= min_3D_axrat_bulge) & (q_2d_bulge <= 1.0)
+    valid_2D_projection_disk = (q_2d_disk >= min_3D_axrat_disk) & (q_2d_disk <= 1.0)
+
+    msg = []
+    try:
+        s = "Invalid 2D projection for disk shapes"
+        assert np.all(valid_2D_projection_disk)
+    except AssertionError:
+        msg.append(s)
+
+    try:
+        s = "Invalid 2D projection for bulge shapes"
+        assert np.all(valid_2D_projection_bulge)
     except AssertionError:
         msg.append(s)
 
