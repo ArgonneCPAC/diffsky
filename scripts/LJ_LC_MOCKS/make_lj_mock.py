@@ -336,12 +336,6 @@ if __name__ == "__main__":
                     convert_mpch_to_mpc=True,
                     convert_vcom_to_vphys=True,
                 )
-                # Overwrite theta, phi to fix bug in core-lc-7 dataset
-                theta, phi = hlu.get_theta_phi(
-                    lc_data_batch["x"], lc_data_batch["y"], lc_data_batch["z"]
-                )
-                lc_data_batch["theta"] = theta
-                lc_data_batch["phi"] = phi
             else:
                 downsample_factor = nhalos_estimate / batch_size
                 downsample_factor = max(downsample_factor, 1)
