@@ -232,39 +232,36 @@ if __name__ == "__main__":
     assert len(tcurves) == len(OUTPUT_FILTER_NICKNAMES)
 
     # Get complete list of files to process
-    fn_lc_list = []
+    fn_lc_cores_list = []
     for lc_patch in lc_patch_list:
         for stepnum in output_timesteps:
-            bn_lc_diffsky = lcmp_repro.LC_CF_BNPAT.format(stepnum, lc_patch)
-            fn_lc_diffsky = os.path.join(indir_lc_diffsky, bn_lc_diffsky)
-            fn_lc_list.append(fn_lc_diffsky)
+            bn_lc_cores = lcmp_repro.LC_CORES_BNPAT.format(stepnum, lc_patch)
+            fn_lc_cores = os.path.join(indir_lc_diffsky, bn_lc_cores)
+            fn_lc_cores_list.append(fn_lc_cores)
 
     if synthetic_cores == 0:
-        fn_sizes = [os.path.getsize(fn) for fn in fn_lc_list]
+        fn_sizes = [os.path.getsize(fn) for fn in fn_lc_cores_list]
     else:
         fn_sizes = []
-        for fn in fn_lc_list:
+        for fn in fn_lc_cores_list:
             bn = os.path.basename(fn)
             stepnum, lc_patch = [int(x) for x in bn.split("-")[1].split(".")[:2]]
             fn_size = hlu._estimate_nhalos_sky_patch(sim_name, stepnum)
             fn_sizes.append(fn_size)
     rank_assignments, __ = mpi_utils.distribute_files_by_size(fn_sizes, nranks)
-    fn_lc_list_for_rank = [fn_lc_list[i] for i in rank_assignments[rank]]
+    fn_lc_cores_list_for_rank = [fn_lc_cores_list[i] for i in rank_assignments[rank]]
 
     print(f"\nFor rank = {rank}:")
-    print(fn_lc_list_for_rank)
+    print(fn_lc_cores_list_for_rank)
     print("\n")
 
     start_script = time()
-    for fn_lc_diffsky in fn_lc_list_for_rank:
+    for fn_lc_cores in fn_lc_cores_list_for_rank:
         gc.collect()
 
-        bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
-        stepnum, lc_patch = [int(x) for x in bn_lc_diffsky.split("-")[1].split(".")[:2]]
+        bn_lc_cores = os.path.basename(fn_lc_cores)
+        stepnum, lc_patch = [int(x) for x in fn_lc_cores.split("-")[1].split(".")[:2]]
 
-        bn_in = os.path.basename(fn_lc_diffsky)
-        bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
-        fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
         lc_patch_info = llcs.get_lc_patch_info_from_lc_cores(fn_lc_cores, sim_name)
 
         bn_out = lcmp_repro.LC_MOCK_BNPAT.format(stepnum, lc_patch)
@@ -276,7 +273,7 @@ if __name__ == "__main__":
             os.remove(fn_out)
 
         if rank == 0:
-            print(f"...working on {os.path.basename(fn_lc_diffsky)}")
+            print(f"...working on {os.path.basename(fn_lc_cores)}")
 
         ran_key, patch_key = jran.split(ran_key, 2)
 
@@ -332,8 +329,7 @@ if __name__ == "__main__":
 
             if synthetic_cores == 0:
                 lc_data_batch, diffsky_data_batch = load_lc_cf.load_lc_cf_chunk(
-                    fn_lc_diffsky,
-                    indir_lc_data,
+                    fn_lc_cores,
                     nchunks=nchunks,
                     chunknum=chunknum,
                     sim_name=sim_name,
