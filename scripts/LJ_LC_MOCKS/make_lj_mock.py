@@ -45,12 +45,9 @@ DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 
 DRN_LJ_LC_LCRC = (
-    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-7/output"
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-8/output"
 )
-DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-7"
-
-DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-7-cf-diffsky"
-DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-7-cf-diffsky"
+DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-8"
 
 
 SIM_NAME = "LastJourney"
@@ -98,11 +95,6 @@ if __name__ == "__main__":
         "-infer_mockname",
         help="Infer mock_version_name from directory",
         action="store_true",
-    )
-    parser.add_argument(
-        "-core_lc_7_correction",
-        help="Implement bug-fix for core-lc-7",
-        action="store_false",
     )
 
     cl_args = parser.parse_args()
@@ -172,27 +164,9 @@ if __name__ == "__main__":
     comm.Barrier()
 
     if machine == "poboy":
-        indir_lc_diffsky = DRN_LJ_CROSSX_OUT_POBOY
         indir_lc_data = DRN_LJ_LC_POBOY
     elif machine == "lcrc":
-        indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
-
-    if cl_args.core_lc_7_correction:
-        if "core-lc-7" in indir_lc_data:
-            implement_core_lc_7_correction = True
-            if rank == 0:
-                print("\nImplementing core_lc_7_correction\n")
-        else:
-            implement_core_lc_7_correction = False
-            if rank == 0:
-                msg = f"\n Skipping core_lc_7_correction because `core-lc-7` not in indir_lc_data=`{indir_lc_data}`\n"
-                print(msg)
-    else:
-        implement_core_lc_7_correction = False
-        if rank == 0:
-            msg = "\n Skipping core_lc_7_correction because cl_args.core_lc_7_correction=False\n"
-            print(msg)
 
     if emline_names == "roman_grs_pit":
         emline_dict = load_emline_info.read_emlines_info_fsps(FN_GRS_PIT_EMLINE_INFO)
@@ -232,39 +206,36 @@ if __name__ == "__main__":
     assert len(tcurves) == len(OUTPUT_FILTER_NICKNAMES)
 
     # Get complete list of files to process
-    fn_lc_list = []
+    fn_lc_cores_list = []
     for lc_patch in lc_patch_list:
         for stepnum in output_timesteps:
-            bn_lc_diffsky = lcmp_repro.LC_CF_BNPAT.format(stepnum, lc_patch)
-            fn_lc_diffsky = os.path.join(indir_lc_diffsky, bn_lc_diffsky)
-            fn_lc_list.append(fn_lc_diffsky)
+            bn_lc_cores = lcmp_repro.LC_CORES_BNPAT.format(stepnum, lc_patch)
+            fn_lc_cores = os.path.join(indir_lc_data, bn_lc_cores)
+            fn_lc_cores_list.append(fn_lc_cores)
 
     if synthetic_cores == 0:
-        fn_sizes = [os.path.getsize(fn) for fn in fn_lc_list]
+        fn_sizes = [os.path.getsize(fn) for fn in fn_lc_cores_list]
     else:
         fn_sizes = []
-        for fn in fn_lc_list:
+        for fn in fn_lc_cores_list:
             bn = os.path.basename(fn)
             stepnum, lc_patch = [int(x) for x in bn.split("-")[1].split(".")[:2]]
             fn_size = hlu._estimate_nhalos_sky_patch(sim_name, stepnum)
             fn_sizes.append(fn_size)
     rank_assignments, __ = mpi_utils.distribute_files_by_size(fn_sizes, nranks)
-    fn_lc_list_for_rank = [fn_lc_list[i] for i in rank_assignments[rank]]
+    fn_lc_cores_list_for_rank = [fn_lc_cores_list[i] for i in rank_assignments[rank]]
 
     print(f"\nFor rank = {rank}:")
-    print(fn_lc_list_for_rank)
+    print(fn_lc_cores_list_for_rank)
     print("\n")
 
     start_script = time()
-    for fn_lc_diffsky in fn_lc_list_for_rank:
+    for fn_lc_cores in fn_lc_cores_list_for_rank:
         gc.collect()
 
-        bn_lc_diffsky = os.path.basename(fn_lc_diffsky)
-        stepnum, lc_patch = [int(x) for x in bn_lc_diffsky.split("-")[1].split(".")[:2]]
+        bn_lc_cores = os.path.basename(fn_lc_cores)
+        stepnum, lc_patch = hlu.get_stepnum_and_skypatch_from_lc_bname(bn_lc_cores)
 
-        bn_in = os.path.basename(fn_lc_diffsky)
-        bn_lc = os.path.basename(bn_in).replace(".diffsky_data.hdf5", ".hdf5")
-        fn_lc_cores = os.path.join(indir_lc_data, bn_lc)
         lc_patch_info = llcs.get_lc_patch_info_from_lc_cores(fn_lc_cores, sim_name)
 
         bn_out = lcmp_repro.LC_MOCK_BNPAT.format(stepnum, lc_patch)
@@ -276,7 +247,7 @@ if __name__ == "__main__":
             os.remove(fn_out)
 
         if rank == 0:
-            print(f"...working on {os.path.basename(fn_lc_diffsky)}")
+            print(f"...working on {os.path.basename(fn_lc_cores)}")
 
         ran_key, patch_key = jran.split(ran_key, 2)
 
@@ -332,20 +303,13 @@ if __name__ == "__main__":
 
             if synthetic_cores == 0:
                 lc_data_batch, diffsky_data_batch = load_lc_cf.load_lc_cf_chunk(
-                    fn_lc_diffsky,
-                    indir_lc_data,
+                    fn_lc_cores,
                     nchunks=nchunks,
                     chunknum=chunknum,
                     sim_name=sim_name,
                     convert_mpch_to_mpc=True,
                     convert_vcom_to_vphys=True,
                 )
-                # Overwrite theta, phi to fix bug in core-lc-7 dataset
-                theta, phi = hlu.get_theta_phi(
-                    lc_data_batch["x"], lc_data_batch["y"], lc_data_batch["z"]
-                )
-                lc_data_batch["theta"] = theta
-                lc_data_batch["phi"] = phi
             else:
                 downsample_factor = nhalos_estimate / batch_size
                 downsample_factor = max(downsample_factor, 1)
@@ -358,7 +322,6 @@ if __name__ == "__main__":
                     lgmp_max,
                     downsample_factor=downsample_factor,
                     read_start=n_cuml_fn,
-                    core_lc_7_correction=implement_core_lc_7_correction,
                 )
 
             n_gals_batch = len(lc_data_batch["core_tag"])

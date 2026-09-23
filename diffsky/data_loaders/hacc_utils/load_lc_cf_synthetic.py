@@ -27,7 +27,6 @@ def load_lc_diffsky_patch_data(
     lgmp_max,
     *,
     read_start,
-    core_lc_7_correction,
     downsample_factor=1.0,
 ):
     """
@@ -71,10 +70,6 @@ def load_lc_diffsky_patch_data(
     theta_lo, theta_hi, phi_lo, phi_hi = [
         patch_decomposition[lc_patch, i] for i in range(1, 5)
     ]
-    if core_lc_7_correction:
-        phi_lo, phi_hi = lc_utils._get_corrected_phi_bounds_for_last_journey_core_lc_7(
-            phi_lo, phi_hi
-        )
     ran_key, ra_dec_key = jran.split(ran_key, 2)
     mc_theta, mc_phi = lc_utils.mc_lightcone_random_theta_phi(
         ra_dec_key, n_gals, theta_lo, theta_hi, phi_lo, phi_hi

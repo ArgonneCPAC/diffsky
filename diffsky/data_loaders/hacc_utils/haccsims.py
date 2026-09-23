@@ -39,6 +39,40 @@ LC_COLNAMES_MPCH = (
     "infall_fof_halo_center_z",
 )
 
+LC_CF_COLNAMES = [
+    "early_index",
+    "late_index",
+    "logm0",
+    "logtc",
+    "loss",
+    "n_points_per_fit",
+    "t_peak",
+    "top_host_early_index",
+    "top_host_late_index",
+    "top_host_logm0",
+    "top_host_logtc",
+    "top_host_t_peak",
+    "sec_host_early_index",
+    "sec_host_late_index",
+    "sec_host_logm0",
+    "sec_host_logtc",
+    "sec_host_t_peak",
+    "top_host_infall_fof_halo_eigS1X",
+    "top_host_infall_fof_halo_eigS1Y",
+    "top_host_infall_fof_halo_eigS1Z",
+    "top_host_infall_fof_halo_eigS2X",
+    "top_host_infall_fof_halo_eigS2Y",
+    "top_host_infall_fof_halo_eigS2Z",
+    "top_host_infall_fof_halo_eigS3X",
+    "top_host_infall_fof_halo_eigS3Y",
+    "top_host_infall_fof_halo_eigS3Z",
+    "indx_t_pen_inf",
+    "indx_t_ult_inf",
+    "vx",
+    "vy",
+    "vz",
+]
+
 
 class HACCSim(object):
 
