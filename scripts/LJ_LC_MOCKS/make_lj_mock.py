@@ -45,9 +45,9 @@ DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 
 DRN_LJ_LC_LCRC = (
-    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-7/output"
+    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-8/output"
 )
-DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-7"
+DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-8"
 
 DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-7-cf-diffsky"
 DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-7-cf-diffsky"
@@ -98,11 +98,6 @@ if __name__ == "__main__":
         "-infer_mockname",
         help="Infer mock_version_name from directory",
         action="store_true",
-    )
-    parser.add_argument(
-        "-core_lc_7_correction",
-        help="Implement bug-fix for core-lc-7",
-        action="store_false",
     )
 
     cl_args = parser.parse_args()
@@ -177,22 +172,6 @@ if __name__ == "__main__":
     elif machine == "lcrc":
         indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
-
-    if cl_args.core_lc_7_correction:
-        if "core-lc-7" in indir_lc_data:
-            implement_core_lc_7_correction = True
-            if rank == 0:
-                print("\nImplementing core_lc_7_correction\n")
-        else:
-            implement_core_lc_7_correction = False
-            if rank == 0:
-                msg = f"\n Skipping core_lc_7_correction because `core-lc-7` not in indir_lc_data=`{indir_lc_data}`\n"
-                print(msg)
-    else:
-        implement_core_lc_7_correction = False
-        if rank == 0:
-            msg = "\n Skipping core_lc_7_correction because cl_args.core_lc_7_correction=False\n"
-            print(msg)
 
     if emline_names == "roman_grs_pit":
         emline_dict = load_emline_info.read_emlines_info_fsps(FN_GRS_PIT_EMLINE_INFO)
@@ -348,7 +327,6 @@ if __name__ == "__main__":
                     lgmp_max,
                     downsample_factor=downsample_factor,
                     read_start=n_cuml_fn,
-                    core_lc_7_correction=implement_core_lc_7_correction,
                 )
 
             n_gals_batch = len(lc_data_batch["core_tag"])

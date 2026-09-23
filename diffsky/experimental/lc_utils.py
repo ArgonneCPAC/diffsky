@@ -20,14 +20,6 @@ d_Rcom_dz_func = jjit(
 )
 
 
-@jjit
-def _get_corrected_phi_bounds_for_last_journey_core_lc_7(phi_lo, phi_hi):
-    """Fix bug in phi coordinate in LastJourney/core-lc-7 dataset"""
-    phi_lo = jnp.mod(phi_lo + jnp.pi, 2 * jnp.pi)
-    phi_hi = jnp.mod(phi_hi + jnp.pi, 2 * jnp.pi)
-    return phi_lo, phi_hi
-
-
 @partial(jjit, static_argnames=["npts"])
 def mc_lightcone_random_ra_dec(ran_key, npts, ra_min, ra_max, dec_min, dec_max):
     """Generate random ra, dec in the input patch of sky
