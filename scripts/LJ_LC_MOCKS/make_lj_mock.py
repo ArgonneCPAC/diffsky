@@ -49,9 +49,6 @@ DRN_LJ_LC_LCRC = (
 )
 DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-8"
 
-DRN_LJ_CROSSX_OUT_LCRC = "/lcrc/project/cosmo_ai/ahearin/LastJourney/lc-7-cf-diffsky"
-DRN_LJ_CROSSX_OUT_POBOY = "/Users/aphearin/work/DATA/LastJourney/lc-7-cf-diffsky"
-
 
 SIM_NAME = "LastJourney"
 
@@ -167,10 +164,8 @@ if __name__ == "__main__":
     comm.Barrier()
 
     if machine == "poboy":
-        indir_lc_diffsky = DRN_LJ_CROSSX_OUT_POBOY
         indir_lc_data = DRN_LJ_LC_POBOY
     elif machine == "lcrc":
-        indir_lc_diffsky = DRN_LJ_CROSSX_OUT_LCRC
         indir_lc_data = DRN_LJ_LC_LCRC
 
     if emline_names == "roman_grs_pit":
@@ -215,7 +210,7 @@ if __name__ == "__main__":
     for lc_patch in lc_patch_list:
         for stepnum in output_timesteps:
             bn_lc_cores = lcmp_repro.LC_CORES_BNPAT.format(stepnum, lc_patch)
-            fn_lc_cores = os.path.join(indir_lc_diffsky, bn_lc_cores)
+            fn_lc_cores = os.path.join(indir_lc_data, bn_lc_cores)
             fn_lc_cores_list.append(fn_lc_cores)
 
     if synthetic_cores == 0:
@@ -239,7 +234,7 @@ if __name__ == "__main__":
         gc.collect()
 
         bn_lc_cores = os.path.basename(fn_lc_cores)
-        stepnum, lc_patch = [int(x) for x in fn_lc_cores.split("-")[1].split(".")[:2]]
+        stepnum, lc_patch = hlu.get_stepnum_and_skypatch_from_lc_bname(bn_lc_cores)
 
         lc_patch_info = llcs.get_lc_patch_info_from_lc_cores(fn_lc_cores, sim_name)
 
