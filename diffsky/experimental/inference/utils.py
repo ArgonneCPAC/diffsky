@@ -56,7 +56,6 @@ def compute_varied_params_indices(var_uparam_flat, uparam_flat):
 
 def bounded_name(name):
     """Unbounded (``u_``-prefixed) -> bounded diffsky parameter name."""
-    # TODO: this may not work for all diffsky parameters.
     return name[2:] if name.startswith("u_") else name
 
 
