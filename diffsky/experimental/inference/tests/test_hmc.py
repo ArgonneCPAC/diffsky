@@ -1,5 +1,6 @@
 """ """
 
+import pytest
 from collections import namedtuple
 
 import jax
@@ -12,6 +13,7 @@ from .. import hmc
 MockParams = namedtuple("MockParams", ("a", "b"))
 
 
+@pytest.mark.skipif(not hmc.HAS_BLACKJAX, reason=hmc.BLACKJAX_MSG)
 def test_run_chains_stacks_sequential_outputs_along_chain_axis():
     @jax.jit
     def add_one(x):
@@ -25,6 +27,7 @@ def test_run_chains_stacks_sequential_outputs_along_chain_axis():
     assert np.allclose(out, jnp.arange(6.0).reshape(num_chains, 2) + 1.0)
 
 
+@pytest.mark.skipif(not hmc.HAS_BLACKJAX, reason=hmc.BLACKJAX_MSG)
 def test_run_warmup_and_sampling_recover_gaussian_posterior():
     ran_key = jran.key(0)
     init_key, warmup_key, sampler_key = jran.split(ran_key, 3)

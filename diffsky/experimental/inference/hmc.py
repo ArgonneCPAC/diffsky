@@ -8,8 +8,13 @@ try:
     import blackjax
     from blackjax.mcmc.nuts import build_kernel, init as nuts_init
     from blackjax.adaptation.window_adaptation import dual_averaging_adaptation
-except ImportError as e:
-    raise ImportError("This module requires blackjax >= 1.0.") from e
+
+    HAS_BLACKJAX = True
+
+except ImportError:
+    HAS_BLACKJAX = False
+
+BLACKJAX_MSG = "Must have blackjax installed to run this function."
 
 
 # ---------------------------------------------------------------------------
@@ -92,6 +97,8 @@ def _build_stepsize_warmup_fn(
     Build a jitted ``warmup_single(rng_key, init_pos, init_ss)`` for the
     Fisher-mass strategy (dual-averaging step-size adaptation, IMM fixed).
     """
+    assert HAS_BLACKJAX, BLACKJAX_MSG
+
     nuts_step = build_kernel()
     da_init, da_update, da_final = dual_averaging_adaptation(target_accept)
 
@@ -143,6 +150,9 @@ def _run_window_warmup_sequential(
     ``warmup_states`` / ``imms`` are Python lists (one entry per chain),
     ``step_sizes`` is ``(num_chains,)`` and ``warmup_info`` is the per-chain
     NUTSInfo stacked along a new chain axis."""
+
+    assert HAS_BLACKJAX, BLACKJAX_MSG
+
     n_chains = len(warmup_keys)
 
     @jax.jit
@@ -309,6 +319,8 @@ def run_sampling(
     :func:`run_chains` (``jax.pmap``); or a Python list of per-chain mass
     matrices (window adaptation) -> chains run sequentially, each with its own.
     """
+    assert HAS_BLACKJAX, BLACKJAX_MSG
+
     if kwargs_likelihood:
         flat_logdensity = partial(flat_logdensity, **kwargs_likelihood)
     num_chains = len(sampler_keys)

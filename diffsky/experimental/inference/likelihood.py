@@ -7,7 +7,7 @@ They were taken from diffsky's docs tutorial:
 import jax
 import jax.numpy as jnp
 
-from diffsky.soft_histograms.signdhist_lomem import nnsig_ndhist, nnsig_ndhist_weighted
+from diffsky.soft_histograms.signdhist_lomem import nnsig_ndhist
 
 
 @jax.jit
