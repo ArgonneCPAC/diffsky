@@ -327,7 +327,7 @@ if __name__ == "__main__":
             lc_data_batch["stepnum"] = np.zeros(n_gals_batch).astype(int) + stepnum
             lc_data_batch["lc_patch"] = np.zeros(n_gals_batch).astype(int) + lc_patch
 
-            diffsky_data_batch["mp0"] = np.zeros(n_gals_batch) + 12.0
+            diffsky_data_batch["mp0"] = np.zeros(n_gals_batch) + 1e12
             diffsky_data_batch["mp_obs"] = np.zeros(n_gals_batch) + 1e12
 
             batch_key, vzero_key = jran.split(batch_key, 2)
