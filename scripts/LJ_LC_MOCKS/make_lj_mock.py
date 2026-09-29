@@ -416,7 +416,9 @@ if __name__ == "__main__":
                 dataset="data",
             )
 
-        metadata_mock.append_index_metadata(fn_out, indir_lc_data, synthetic_cores)
+        metadata_mock.append_index_metadata(
+            fn_out, os.path.join(indir_lc_data, f"step_{stepnum}"), synthetic_cores
+        )
 
         gc.collect()
         jax.clear_caches()
