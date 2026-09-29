@@ -44,9 +44,7 @@ from diffsky.param_utils import diffsky_param_wrapper_merging as dpwm
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 
-DRN_LJ_LC_LCRC = (
-    "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-8/output"
-)
+DRN_LJ_LC_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-8"
 DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-8"
 
 
@@ -210,7 +208,7 @@ if __name__ == "__main__":
     for lc_patch in lc_patch_list:
         for stepnum in output_timesteps:
             bn_lc_cores = lcmp_repro.LC_CORES_BNPAT.format(stepnum, lc_patch)
-            fn_lc_cores = os.path.join(indir_lc_data, bn_lc_cores)
+            fn_lc_cores = os.path.join(indir_lc_data, f"step_{stepnum}", bn_lc_cores)
             fn_lc_cores_list.append(fn_lc_cores)
 
     if synthetic_cores == 0:
