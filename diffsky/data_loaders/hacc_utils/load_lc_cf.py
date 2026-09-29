@@ -193,8 +193,6 @@ def load_lc_cf_chunk(
         if lc_cores_keys is None:
             lc_cores_keys = list(hdf["data"].keys())
 
-    lc_cores_keys_to_skip = set(lc_cores_keys) & set(haccsims.LC_CF_COLNAMES)
-    lc_cores_keys = list(set(lc_cores_keys) - lc_cores_keys_to_skip)
     assert len(lc_cores_keys) > 0, f"Error in column names of {fn_lc_cores}"
 
     with h5py.File(fn_lc_cores, "r") as hdf:
@@ -204,9 +202,14 @@ def load_lc_cf_chunk(
         lc_data, (istart, iend) = llcc._read_lc_cores_chunk(
             hdf, nchunks, chunknum, lc_cores_keys
         )
-        diffsky_data, (istart, iend) = llcc._read_lc_cores_chunk(
-            hdf, nchunks, chunknum, haccsims.LC_CF_COLNAMES
-        )
+
+        diffsky_data = dict()
+        keys_diffsky_data = haccsims.LC_CF_COLNAMES + [
+            "top_host_idx_chunk",
+            "secondary_top_host_idx_chunk",
+        ]
+        for key in keys_diffsky_data:
+            diffsky_data[key] = lc_data[key]
 
     if convert_vcom_to_vphys:
         diffsky_data["vx"] = lc_data["scale_factor"] * diffsky_data["vx"]
