@@ -40,6 +40,8 @@ LC_COLNAMES_MPCH = (
 )
 
 LC_CF_COLNAMES = [
+    "mp0",
+    "mp_obs",
     "early_index",
     "late_index",
     "logm0",
