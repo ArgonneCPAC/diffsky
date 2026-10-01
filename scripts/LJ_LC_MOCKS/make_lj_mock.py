@@ -44,8 +44,8 @@ from diffsky.param_utils import diffsky_param_wrapper_merging as dpwm
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 
-DRN_LJ_LC_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-8"
-DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-8"
+DRN_LJ_LC_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-9"
+DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-9"
 
 
 SIM_NAME = "LastJourney"
