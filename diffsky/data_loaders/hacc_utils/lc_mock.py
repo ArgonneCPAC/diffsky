@@ -48,6 +48,7 @@ from . import load_lc_cf
 
 N_T_TABLE = 100
 
+LC_CORES_BNPAT = "lc_cores-{0}.{1}.hdf5"
 LC_CF_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_MOCK_BNPAT = LC_CF_BNPAT.replace("diffsky_data", "diffsky_gals")
 

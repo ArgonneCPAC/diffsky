@@ -105,7 +105,7 @@ jobs:
           cd ..
 
           # download lc_cores-decomposition.txt
-          wget $WGET_OPTS https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v1/lc_cores-decomposition.txt
+          wget $WGET_OPTS https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v2/lc_cores-decomposition.txt
 
           # Set environment variable
           export DSPS_DRN="${GITHUB_WORKSPACE}/dsps_drn"
