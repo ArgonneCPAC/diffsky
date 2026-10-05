@@ -114,7 +114,7 @@ if __name__ == "__main__":
         else:
             print("\nNo missing mock files")
 
-    if not cl_args.ignore_synth:
+    if cl_args.ignore_synth:
         print("No missing synthetic mock files (ignoring)")
     else:
         if len(missing_file_results["missing_synth_files"]) > 0:
