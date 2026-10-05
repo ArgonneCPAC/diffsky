@@ -38,7 +38,9 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
+def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed, skip_slow_checks=False):
+    incl_slow_checks = not skip_slow_checks
+
     report = dict()
     data = load_flat_hdf5(fn_lc_mock, dataset="data")
 
@@ -53,6 +55,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     msg = check_all_columns_have_expected_shapes(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["column_sizes"] = msg
+
+    msg = check_consistency_of_ra_dec_synth_vs_real(fn_lc_mock)
+    if len(msg) > 0:
+        report["consistency_of_ra_dec_synth_vs_real"] = msg
 
     msg = check_xyz_littleh(fn_lc_mock, data=data)
     if len(msg) > 0:
@@ -107,26 +113,32 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if no_sed:
         pass
     else:
-        msg = check_recomputed_photometry(
-            fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
-        )
-        if len(msg) > 0:
-            report["recomputed_photometry"] = msg
+        if incl_slow_checks:
+            msg = check_recomputed_photometry(
+                fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
+            )
+            if len(msg) > 0:
+                report["recomputed_photometry"] = msg
 
     if no_dbk is False:
-        msg = check_recomputed_dbk_photometry(
+        if incl_slow_checks:
+            msg = check_recomputed_dbk_photometry(
+                fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
+            )
+            if len(msg) > 0:
+                report["recomputed_dbk_photometry"] = msg
+
+    if incl_slow_checks:
+        msg = check_recomputed_sed(fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test)
+        if len(msg) > 0:
+            report["recomputed_sed"] = msg
+
+    if incl_slow_checks:
+        msg = check_recomputed_dbk_sed(
             fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
         )
         if len(msg) > 0:
-            report["recomputed_dbk_photometry"] = msg
-
-    msg = check_recomputed_sed(fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test)
-    if len(msg) > 0:
-        report["recomputed_sed"] = msg
-
-    msg = check_recomputed_dbk_sed(fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test)
-    if len(msg) > 0:
-        report["recomputed_dbk_sed"] = msg
+            report["recomputed_dbk_sed"] = msg
 
     return report
 
@@ -898,3 +910,44 @@ def check_for_missing_mock_patches(fn_list_all_mocks, bnpat, ignore_synth=False)
     results["all_stepnums"] = all_stepnums
     results["all_lc_patches"] = all_lc_patches
     return results
+
+
+def check_consistency_of_ra_dec_synth_vs_real(fn_mock_real_halos):
+    coords = ("ra", "dec", "ra_nfw", "dec_nfw")
+
+    if "synthetic_halos" in fn_mock_real_halos:
+        return []
+
+    real = load_flat_hdf5(fn_mock_real_halos, dataset="data", keys=coords)
+    fn_mock_synth_halos = fn_mock_real_halos.replace(".hdf5", ".synthetic_halos.hdf5")
+    synth = load_flat_hdf5(fn_mock_synth_halos, dataset="data", keys=coords)
+
+    bn_mock = os.path.basename(fn_mock_real_halos)
+    bn_synth = os.path.basename(fn_mock_synth_halos)
+
+    msg = []
+    for coord in coords:
+        min1 = real[coord].min()
+        max1 = real[coord].max()
+        dx1 = max1 - min1
+
+        min2 = synth[coord].min()
+        max2 = synth[coord].max()
+        dx2 = max2 - min2
+
+        mean1 = real[coord].mean()
+        mean2 = synth[coord].mean()
+
+        s = f"Mean {coord} of {bn_synth} falls outside min/max of {coord} in {bn_mock}"
+        try:
+            assert min1 + dx1 / 10 < mean2 < max1 - dx1 / 10
+        except AssertionError:
+            msg.append(s)
+
+        s = f"Mean {coord} of {bn_mock} falls outside min/max of {coord} in {bn_synth}"
+        try:
+            assert min2 + dx2 / 10 < mean1 < max2 - dx2 / 10
+        except AssertionError:
+            msg.append(s)
+
+    return msg

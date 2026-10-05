@@ -26,6 +26,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-drn_mock", help="Directory of mock overrides config_yaml", default=""
     )
+
     parser.add_argument(
         "-ignore_synth",
         help="Ignore synthetic halo files, default is False",
@@ -51,6 +52,9 @@ if __name__ == "__main__":
         "-infer_mockname",
         help="Infer mock_version_name from directory",
         action="store_true",
+    )
+    parser.add_argument(
+        "-skip_slow_checks", help="Skip slow tests", action="store_true"
     )
 
     cl_args = parser.parse_args()
@@ -140,6 +144,7 @@ if __name__ == "__main__":
                 fn_lc_mock,
                 no_dbk=no_dbk,
                 no_sed=no_sed,
+                skip_slow_checks=cl_args.skip_slow_checks,
             )
             all_good = len(report) == 0
             if not all_good:
