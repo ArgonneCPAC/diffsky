@@ -33,6 +33,11 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
+        "-ignore_real",
+        help="Ignore real halo files, default is False",
+        action="store_true",
+    )
+    parser.add_argument(
         "--no_dbk",
         help="disk/bulge/knot quantities are not in the mock",
         action="store_true",
@@ -93,16 +98,25 @@ if __name__ == "__main__":
     assert n_files_tot > 1, msg_no_mocks
 
     missing_file_results = vlcm.check_for_missing_mock_patches(
-        fn_list_all_mocks, BN_CHECKPAT_LC_MOCK, ignore_synth=cl_args.ignore_synth
+        fn_list_all_mocks,
+        BN_CHECKPAT_LC_MOCK,
+        ignore_synth=cl_args.ignore_synth,
+        ignore_real=cl_args.ignore_real,
     )
-    if len(missing_file_results["missing_mock_files"]) > 0:
-        print("The following mock files are missing:")
-        for fn in missing_file_results["missing_mock_files"]:
-            print(fn)
+
+    if cl_args.ignore_real:
+        print("\nNo missing mock files (ignoring)")
     else:
-        print("\nNo missing mock files")
+        if len(missing_file_results["missing_mock_files"]) > 0:
+            print("The following mock files are missing:")
+            for fn in missing_file_results["missing_mock_files"]:
+                print(fn)
+        else:
+            print("\nNo missing mock files")
 
     if not cl_args.ignore_synth:
+        print("No missing synthetic mock files (ignoring)")
+    else:
         if len(missing_file_results["missing_synth_files"]) > 0:
             print("The following synthetic files are missing:")
             for fn in missing_file_results["missing_synth_files"]:
@@ -118,11 +132,20 @@ if __name__ == "__main__":
     for __ in range(n_files_to_check):
         stepnum = np.random.choice(missing_file_results["all_stepnums"])
         lc_patch = np.random.choice(missing_file_results["all_lc_patches"])
+
         bn = BN_CHECKPAT_LC_MOCK.format(stepnum, lc_patch)
         fn = os.path.join(drn_mock, bn)
-        fn_list_mocks_to_test.append(fn)
+        if cl_args.ignore_real:
+            pass
+        else:
+            fn_list_mocks_to_test.append(fn)
+
         fn_synth = os.path.join(drn_mock, bn.replace(".hdf5", ".synthetic_halos.hdf5"))
-        fn_list_mocks_to_test.append(fn_synth)
+        if cl_args.ignore_synth:
+            pass
+        else:
+            fn_list_mocks_to_test.append(fn_synth)
+
     fn_list_mocks_to_test = sorted(list(set(fn_list_mocks_to_test)))
 
     bn_list_mocks_to_test = [os.path.basename(fn) for fn in fn_list_mocks_to_test]

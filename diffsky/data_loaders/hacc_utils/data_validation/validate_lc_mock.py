@@ -871,7 +871,9 @@ def check_2d_3d_shapes_consistent(fn_lc_mock, data=None):
     return msg
 
 
-def check_for_missing_mock_patches(fn_list_all_mocks, bnpat, ignore_synth=False):
+def check_for_missing_mock_patches(
+    fn_list_all_mocks, bnpat, ignore_synth=False, ignore_real=True
+):
     drn_mock = os.path.dirname(fn_list_all_mocks[0])
 
     step_collector = []
@@ -890,10 +892,14 @@ def check_for_missing_mock_patches(fn_list_all_mocks, bnpat, ignore_synth=False)
     for stepnum in all_stepnums:
         for lc_patch in all_lc_patches:
             bn_mock = bnpat.format(stepnum, lc_patch)
-            if os.path.isfile(os.path.join(drn_mock, bn_mock)):
+
+            if ignore_real:
                 pass
             else:
-                missing_mock_files.append(bn_mock)
+                if os.path.isfile(os.path.join(drn_mock, bn_mock)):
+                    pass
+                else:
+                    missing_mock_files.append(bn_mock)
 
             if ignore_synth:
                 pass
