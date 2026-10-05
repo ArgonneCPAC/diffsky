@@ -156,8 +156,8 @@ if __name__ == "__main__":
     n_checked = 0
     start = time()
     all_good = True
-    failure_collector = []
-    no_report_collector = []
+    failure_collector = dict()
+    no_report_collector = dict()
     for fn_lc_mock in fn_list_mocks_to_test:
         n_checked += 1
         jax.clear_caches()
@@ -175,30 +175,30 @@ if __name__ == "__main__":
             if not all_good:
                 vlcm.write_lc_mock_report_to_disk(report, fn_lc_mock, drn_report)
                 print(f"{bn_lc_mock} fails readiness test")
-                failure_collector.append(bn_lc_mock)
+                failure_collector[bn_lc_mock] = report
         except OSError:
             report = dict()
             report["report_does_not_exist"] = ["Unable to generate report"]
             print(f"Unable to generate report for {bn_lc_mock}")
-            no_report_collector.append(bn_lc_mock)
+            no_report_collector[bn_lc_mock] = report
 
     all_pass = (len(failure_collector) == 0) & (len(no_report_collector) == 0)
 
     if len(failure_collector) > 0:
         print("\nSome failures in the following lightcone patches:\n")
-        for failing_bn in failure_collector:
+        for failing_bn in failure_collector.keys():
             print(f"{failing_bn}")
 
         fn_out = os.path.join(drn_report, "fn_list_fails_readiness.txt")
         with open(fn_out, "w") as fout:
-            for failed_bn in failure_collector:
+            for failed_bn in failure_collector.keys():
                 fn_lc_mock = os.path.join(drn_mock, failed_bn)
                 fout.write(fn_lc_mock + "\n")
 
     if len(no_report_collector) > 0:
         fn_out = os.path.join(drn_report, "fn_list_no_report.txt")
         with open(fn_out, "w") as fout:
-            for no_report_bn in no_report_collector:
+            for no_report_bn in no_report_collector.keys():
                 fn_lc_mock = os.path.join(drn_mock, no_report_bn)
                 fout.write(fn_lc_mock + "\n")
 
@@ -210,16 +210,12 @@ if __name__ == "__main__":
         print("\nEvery lc_mock data file passes all tests\n")
     else:
         if len(failure_collector) > 0:
-            bn_lc_mock = failure_collector[0]
+            bn_lc_mock = list(failure_collector.keys())[0]
             fn_lc_mock = os.path.join(drn_mock, bn_lc_mock)
-            report = vlcm.get_lc_mock_data_report(
-                fn_lc_mock,
-                no_dbk=no_dbk,
-                no_sed=no_sed,
-            )
+            report = failure_collector[bn_lc_mock]
             msg = f"{bn_lc_mock} fails readiness test:\n{report}"
             raise ValueError(msg)
         elif len(no_report_collector) > 0:
-            bn_lc_mock = no_report_collector[0]
+            bn_lc_mock = list(no_report_collector.keys())[0]
             msg = f"Unable to generate report for {bn_lc_mock}"
             raise ValueError(msg)
