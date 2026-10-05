@@ -913,7 +913,18 @@ def check_for_missing_mock_patches(fn_list_all_mocks, bnpat, ignore_synth=False)
 
 
 def check_consistency_of_ra_dec_synth_vs_real(fn_mock_real_halos):
-    coords = ("ra", "dec", "ra_nfw", "dec_nfw")
+    coords = (
+        "ra",
+        "dec",
+        "ra_nfw",
+        "dec_nfw",
+        "x",
+        "y",
+        "z",
+        "x_nfw",
+        "y_nfw",
+        "z_nfw",
+    )
 
     if "synthetic_halos" in fn_mock_real_halos:
         return []
