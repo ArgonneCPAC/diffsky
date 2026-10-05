@@ -912,7 +912,7 @@ def check_for_missing_mock_patches(fn_list_all_mocks, bnpat, ignore_synth=False)
     return results
 
 
-def check_consistency_of_ra_dec_synth_vs_real(fn_mock_real_halos):
+def check_consistency_of_ra_dec_synth_vs_real(fn_mock_real_halos, n_min=100):
     coords = (
         "ra",
         "dec",
@@ -928,8 +928,11 @@ def check_consistency_of_ra_dec_synth_vs_real(fn_mock_real_halos):
 
     if "synthetic_halos" in fn_mock_real_halos:
         return []
+    else:
+        real = load_flat_hdf5(fn_mock_real_halos, dataset="data", keys=coords)
+        if real[coords[0]].size < n_min:
+            return []
 
-    real = load_flat_hdf5(fn_mock_real_halos, dataset="data", keys=coords)
     fn_mock_synth_halos = fn_mock_real_halos.replace(".hdf5", ".synthetic_halos.hdf5")
     synth = load_flat_hdf5(fn_mock_synth_halos, dataset="data", keys=coords)
 
