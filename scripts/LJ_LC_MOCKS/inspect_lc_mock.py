@@ -170,6 +170,8 @@ if __name__ == "__main__":
                 no_dbk=no_dbk,
                 no_sed=no_sed,
                 skip_slow_checks=cl_args.skip_slow_checks,
+                ignore_synth=cl_args.ignore_synth,
+                ignore_real=cl_args.ignore_real,
             )
             all_good = len(report) == 0
             if not all_good:

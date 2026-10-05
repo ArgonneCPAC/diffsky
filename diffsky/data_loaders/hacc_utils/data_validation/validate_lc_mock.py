@@ -38,7 +38,15 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed, skip_slow_checks=False):
+def get_lc_mock_data_report(
+    fn_lc_mock,
+    *,
+    no_dbk,
+    no_sed,
+    skip_slow_checks=False,
+    ignore_real=False,
+    ignore_synth=False,
+):
     incl_slow_checks = not skip_slow_checks
 
     report = dict()
@@ -56,7 +64,9 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed, skip_slow_checks=Fals
     if len(msg) > 0:
         report["column_sizes"] = msg
 
-    msg = check_consistency_of_ra_dec_synth_vs_real(fn_lc_mock)
+    msg = check_consistency_of_ra_dec_synth_vs_real(
+        fn_lc_mock, ignore_real=ignore_real, ignore_synth=ignore_synth
+    )
     if len(msg) > 0:
         report["consistency_of_ra_dec_synth_vs_real"] = msg
 
@@ -918,7 +928,12 @@ def check_for_missing_mock_patches(
     return results
 
 
-def check_consistency_of_ra_dec_synth_vs_real(fn_mock_real_halos, n_min=100):
+def check_consistency_of_ra_dec_synth_vs_real(
+    fn_mock_real_halos, *, ignore_real=False, ignore_synth=False, n_min=100
+):
+    if ignore_real | ignore_synth:
+        return []
+
     coords = (
         "ra",
         "dec",
@@ -932,6 +947,7 @@ def check_consistency_of_ra_dec_synth_vs_real(fn_mock_real_halos, n_min=100):
         "z_nfw",
     )
 
+    # Only run the check on real halos so that we don't duplicate the check
     if "synthetic_halos" in fn_mock_real_halos:
         return []
     else:

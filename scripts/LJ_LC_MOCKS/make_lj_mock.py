@@ -2,11 +2,11 @@
 
 To run a unit test of this script:
     python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -machine poboy
-    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -ignore_real
 
 To run a local test on poboy:
     mpiexec -n 2 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml
-    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml -ignore_synth
 
 """
 
