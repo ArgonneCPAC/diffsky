@@ -2,6 +2,7 @@
 
 import os
 from glob import glob
+from time import time
 
 import h5py
 import numpy as np
@@ -39,53 +40,82 @@ calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
 def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
+    start = time()
     report = dict()
     data = load_flat_hdf5(fn_lc_mock, dataset="data")
+    runtime = time() - start
+    print(f"{runtime:.2f} sec to load {os.path.basename(fn_lc_mock)}")
 
+    start = time()
     msg = check_yaml_config(fn_lc_mock)
+    runtime = time() - start
+    print(f"{runtime:.2f} sec to run check_yaml_config")
     if len(msg) > 0:
         report["yaml_config"] = msg
 
+    start = time()
     msg = check_all_columns_are_finite(fn_lc_mock, data=data)
+    runtime = time() - start
+    print(f"{runtime:.2f} sec to run check_all_columns_are_finite")
     if len(msg) > 0:
         report["finite_colums"] = msg
 
+    start = time()
     msg = check_all_columns_have_expected_shapes(fn_lc_mock, data=data)
+    runtime = time() - start
+    print(f"{runtime:.2f} sec to run check_all_columns_have_expected_shapes")
     if len(msg) > 0:
         report["column_sizes"] = msg
 
+    start = time()
     msg = check_xyz_littleh(fn_lc_mock, data=data)
+    runtime = time() - start
+    print(f"{runtime:.2f} sec to run check_xyz_littleh")
     if len(msg) > 0:
         report["xyz_littleh"] = msg
 
+    start = time()
     msg = check_expected_number_of_synthetic_galaxies(fn_lc_mock, data=data)
+    runtime = time() - start
+    print(f"{runtime:.2f} sec to run check_expected_number_of_synthetic_galaxies")
     if len(msg) > 0:
         report["ngal_expected"] = msg
 
+    start = time()
     msg = check_mock_has_observed_redshift(fn_lc_mock, data=data)
+    runtime = time() - start
+    print(f"{runtime:.2f} sec to run check_mock_has_observed_redshift")
     if len(msg) > 0:
         report["z_obs_column_exists"] = msg
 
+    start = time()
     msg = check_host_pos_is_near_galaxy_pos(fn_lc_mock, data=data)
+    runtime = time() - start
+    print(f"{runtime:.2f} sec to run check_host_pos_is_near_galaxy_pos")
     if len(msg) > 0:
         report["nfw_host_distance"] = msg
 
+    start = time()
     msg = check_metadata(fn_lc_mock)
     if len(msg) > 0:
         report["metadata"] = msg
 
+    start = time()
     msg = check_all_data_columns_have_metadata(fn_lc_mock)
     if len(msg) > 0:
         report["column_metadata"] = msg
 
+    start = time()
     msg = check_column_shapes(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["column_shapes"] = msg
 
+    start = time()
     msg = check_merging_is_nontrivial(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["reasonable_merging"] = msg
 
+    start = time()
     msg = check_2d_3d_shapes_consistent(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["2d_3d_shapes"] = msg
@@ -96,7 +126,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if no_dbk or no_sed:
         pass
     else:
+        start = time()
         msg = check_consistent_disk_bulge_knot_luminosities(fn_lc_mock, data=data)
+        runtime = time() - start
+        print(f"{runtime:.2f} sec to run check_consistent_disk_bulge_knot_luminosities")
         if len(msg) > 0:
             report["disk_bulge_knot_inconsistency"] = msg
 
@@ -107,24 +140,36 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if no_sed:
         pass
     else:
+        start = time()
         msg = check_recomputed_photometry(
             fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
         )
+        runtime = time() - start
+        print(f"{runtime:.2f} sec to run check_recomputed_photometry")
         if len(msg) > 0:
             report["recomputed_photometry"] = msg
 
     if no_dbk is False:
+        start = time()
         msg = check_recomputed_dbk_photometry(
             fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
         )
+        runtime = time() - start
+        print(f"{runtime:.2f} sec to run check_recomputed_dbk_photometry")
         if len(msg) > 0:
             report["recomputed_dbk_photometry"] = msg
 
+    start = time()
     msg = check_recomputed_sed(fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test)
+    runtime = time() - start
+    print(f"{runtime:.2f} sec to run check_recomputed_sed")
     if len(msg) > 0:
         report["recomputed_sed"] = msg
 
+    start = time()
     msg = check_recomputed_dbk_sed(fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test)
+    runtime = time() - start
+    print(f"{runtime:.2f} sec to run check_recomputed_dbk_sed")
     if len(msg) > 0:
         report["recomputed_dbk_sed"] = msg
 
@@ -607,6 +652,8 @@ def check_recomputed_photometry(fn_lc_mock, *, nchunks, chunknum):
         fn_lc_mock, nchunks=nchunks, chunknum=chunknum
     )
     phot_info = sed_from_mock.compute_phot_from_mock(mock_chunk, metadata)
+    ngals = phot_info["obs_mags"].shape[0]
+    print(f"Recomputed photometry for {ngals} galaxies")
 
     RTOL = 0.1
     ATOL = 0.2
