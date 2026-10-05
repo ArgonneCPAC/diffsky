@@ -43,11 +43,6 @@ if __name__ == "__main__":
         help="Infer mock_version_name from directory",
         action="store_true",
     )
-    parser.add_argument(
-        "-drn_mock",
-        help="Script argument of mock location, overrides drn_out in yaml config file",
-        default="",
-    )
 
     cl_args = parser.parse_args()
     config_yaml = cl_args.config_yaml
@@ -61,10 +56,11 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     mock_nickname = config["mock_nickname"]
+    drn_out = config["drn_out"]
 
     mock_version_name_in = config.get("mock_version_name", "")
     if cl_args.infer_mockname:
-        fn_list = glob(os.path.join(config["drn_out"], mock_nickname + "_*"))
+        fn_list = glob(os.path.join(drn_out, mock_nickname + "_*"))
         drn_mock = fn_list[0]
         mock_version_name = os.path.basename(drn_mock)
     else:
@@ -73,10 +69,7 @@ if __name__ == "__main__":
         else:
             mock_version_name = mock_version_name_in
 
-    if cl_args.drn_mock == "":
-        drn_mock = os.path.join(config["drn_out"], mock_version_name)
-    else:
-        drn_mock = cl_args.drn_mock
+    drn_mock = os.path.join(config["drn_out"], mock_version_name)
 
     fn_pat = os.path.join(drn_mock, bnpat)
     fn_list_all_mocks = glob(fn_pat)
@@ -97,8 +90,7 @@ if __name__ == "__main__":
     all_good = True
     failure_collector = []
     no_report_collector = []
-    for fn_lc_mock in fn_list_mocks_to_test[:2]:
-        print("\n")
+    for fn_lc_mock in fn_list_mocks_to_test:
         jax.clear_caches()
         gc.collect()
         bn_lc_mock = os.path.basename(fn_lc_mock)
