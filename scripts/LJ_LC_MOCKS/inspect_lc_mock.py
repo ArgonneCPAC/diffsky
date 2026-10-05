@@ -14,7 +14,7 @@ from diffsky.data_loaders.hacc_utils.data_validation import validate_lc_mock as 
 from diffsky.data_loaders.mock_utils import get_mock_version_name
 
 BN_GLOBPAT_LC_MOCK = "lc_cores-*.*.diffsky_gals*.hdf5"
-
+BN_CHECKPAT_LC_MOCK = "lc_cores-{0}.{1}.diffsky_gals.hdf5"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -22,6 +22,15 @@ if __name__ == "__main__":
     parser.add_argument("config_yaml", help="YAML configuration file")
     parser.add_argument("-bnpat", help="Basename pattern", default=BN_GLOBPAT_LC_MOCK)
     parser.add_argument("-drn_report", help="Directory to write report", default="")
+
+    parser.add_argument(
+        "-drn_mock", help="Directory of mock overrides config_yaml", default=""
+    )
+    parser.add_argument(
+        "-ignore_synth",
+        help="Ignore synthetic halo files, default is False",
+        action="store_true",
+    )
     parser.add_argument(
         "--no_dbk",
         help="disk/bulge/knot quantities are not in the mock",
@@ -35,7 +44,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-n_files_to_check",
         help="Number of randomly selected files to check",
-        default=5,
+        default=3,
         type=int,
     )
     parser.add_argument(
@@ -56,11 +65,10 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     mock_nickname = config["mock_nickname"]
-    drn_out = config["drn_out"]
 
     mock_version_name_in = config.get("mock_version_name", "")
     if cl_args.infer_mockname:
-        fn_list = glob(os.path.join(drn_out, mock_nickname + "_*"))
+        fn_list = glob(os.path.join(config["drn_out"], mock_nickname + "_*"))
         drn_mock = fn_list[0]
         mock_version_name = os.path.basename(drn_mock)
     else:
@@ -69,7 +77,10 @@ if __name__ == "__main__":
         else:
             mock_version_name = mock_version_name_in
 
-    drn_mock = os.path.join(config["drn_out"], mock_version_name)
+    if cl_args.drn_mock == "":
+        drn_mock = os.path.join(config["drn_out"], mock_version_name)
+    else:
+        drn_mock = cl_args.drn_mock
 
     fn_pat = os.path.join(drn_mock, bnpat)
     fn_list_all_mocks = glob(fn_pat)
@@ -77,10 +88,39 @@ if __name__ == "__main__":
     msg_no_mocks = f"No mocks detected with filename pattern {fn_pat}"
     assert n_files_tot > 1, msg_no_mocks
 
-    n_files_to_check = min(n_files_to_check, n_files_tot)
-    fn_list_mocks_to_test = np.random.choice(
-        fn_list_all_mocks, n_files_to_check, replace=False
+    missing_file_results = vlcm.check_for_missing_mock_patches(
+        fn_list_all_mocks, BN_CHECKPAT_LC_MOCK, ignore_synth=cl_args.ignore_synth
     )
+    if len(missing_file_results["missing_mock_files"]) > 0:
+        print("The following mock files are missing:")
+        for fn in missing_file_results["missing_mock_files"]:
+            print(fn)
+    else:
+        print("\nNo missing mock files")
+
+    if not cl_args.ignore_synth:
+        if len(missing_file_results["missing_synth_files"]) > 0:
+            print("The following synthetic files are missing:")
+            for fn in missing_file_results["missing_synth_files"]:
+                print(fn)
+        else:
+            print("No missing synthetic mock files")
+
+    n_steps = len(missing_file_results["all_stepnums"])
+    n_patches = len(missing_file_results["all_lc_patches"])
+    n_files_tot = n_steps * n_patches
+    n_files_to_check = min(n_files_to_check, n_files_tot)
+
+    fn_list_mocks_to_test = []
+    for __ in range(n_files_to_check):
+        stepnum = np.random.choice(missing_file_results["all_stepnums"])
+        lc_patch = np.random.choice(missing_file_results["all_lc_patches"])
+        bn = BN_CHECKPAT_LC_MOCK.format(stepnum, lc_patch)
+        fn = os.path.join(drn_mock, bn)
+        fn_list_mocks_to_test.append(fn)
+        fn_synth = os.path.join(drn_mock, bn.replace(".hdf5", ".synthetic_halos.hdf5"))
+        fn_list_mocks_to_test.append(fn_synth)
+
     bn_list_mocks_to_test = [os.path.basename(fn) for fn in fn_list_mocks_to_test]
     print("\nTesting the following mocks:")
     for bn in bn_list_mocks_to_test:
@@ -134,7 +174,10 @@ if __name__ == "__main__":
 
     end = time()
     runtime = (end - start) / 60.0
-    print(f"\nChecked {n_files_to_check}/{n_files_tot} files in {runtime:.1f} minutes")
+
+    print(
+        f"\nChecked {len(fn_list_mocks_to_test)}/{n_files_tot} files in {runtime:.1f} minutes"
+    )
     if all_pass:
         print("\nEvery lc_mock data file passes all tests\n")
     else:

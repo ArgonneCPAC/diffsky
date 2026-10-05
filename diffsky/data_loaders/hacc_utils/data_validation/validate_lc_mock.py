@@ -857,3 +857,44 @@ def check_2d_3d_shapes_consistent(fn_lc_mock, data=None):
         msg.append(s)
 
     return msg
+
+
+def check_for_missing_mock_patches(fn_list_all_mocks, bnpat, ignore_synth=False):
+    drn_mock = os.path.dirname(fn_list_all_mocks[0])
+
+    step_collector = []
+    lc_patch_collector = []
+    for fn in fn_list_all_mocks:
+        bn = os.path.basename(fn)
+        stepnum, lc_patch = lightcone_utils.get_stepnum_and_skypatch_from_lc_bname(bn)
+        step_collector.append(stepnum)
+        lc_patch_collector.append(lc_patch)
+
+    all_stepnums = np.unique(step_collector)
+    all_lc_patches = np.unique(lc_patch_collector)
+
+    missing_mock_files = []
+    missing_synth_files = []
+    for stepnum in all_stepnums:
+        for lc_patch in all_lc_patches:
+            bn_mock = bnpat.format(stepnum, lc_patch)
+            if os.path.isfile(os.path.join(drn_mock, bn_mock)):
+                pass
+            else:
+                missing_mock_files.append(bn_mock)
+
+            if ignore_synth:
+                pass
+            else:
+                bn_synth = bn_mock.replace(".hdf5", ".synthetic_halos.hdf5")
+                if os.path.isfile(os.path.join(drn_mock, bn_synth)):
+                    pass
+                else:
+                    missing_synth_files.append(bn_synth)
+
+    results = dict()
+    results["missing_mock_files"] = missing_mock_files
+    results["missing_synth_files"] = missing_synth_files
+    results["all_stepnums"] = all_stepnums
+    results["all_lc_patches"] = all_lc_patches
+    return results

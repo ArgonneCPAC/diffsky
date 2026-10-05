@@ -464,9 +464,12 @@ def overwrite_lc_patch_data_out(lc_patch_data_out, drn_out, bn_patch, rank):
 
 def get_stepnum_and_skypatch_from_lc_bname(lc_bname):
     """Assumes basename format such as lc_cores-300.0.hdf5"""
-    seq = lc_bname.split("-")[1].split(".")
-    stepnum = int(seq[0])
-    patchnum = int(seq[1])
+    try:
+        seq = lc_bname.split("-")[1].split(".")
+        stepnum = int(seq[0])
+        patchnum = int(seq[1])
+    except IndexError:
+        raise ValueError(f"Failed to parse basename {lc_bname}")
     return stepnum, patchnum
 
 
