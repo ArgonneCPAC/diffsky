@@ -112,7 +112,6 @@ if __name__ == "__main__":
 
     n_steps = len(missing_file_results["all_stepnums"])
     n_patches = len(missing_file_results["all_lc_patches"])
-    n_files_tot = n_steps * n_patches
     n_files_to_check = min(n_files_to_check, n_files_tot)
 
     fn_list_mocks_to_test = []
@@ -124,17 +123,20 @@ if __name__ == "__main__":
         fn_list_mocks_to_test.append(fn)
         fn_synth = os.path.join(drn_mock, bn.replace(".hdf5", ".synthetic_halos.hdf5"))
         fn_list_mocks_to_test.append(fn_synth)
+    fn_list_mocks_to_test = sorted(list(set(fn_list_mocks_to_test)))
 
     bn_list_mocks_to_test = [os.path.basename(fn) for fn in fn_list_mocks_to_test]
     print("\nTesting the following mocks:")
     for bn in bn_list_mocks_to_test:
         print("       " + bn)
 
+    n_checked = 0
     start = time()
     all_good = True
     failure_collector = []
     no_report_collector = []
     for fn_lc_mock in fn_list_mocks_to_test:
+        n_checked += 1
         jax.clear_caches()
         gc.collect()
         bn_lc_mock = os.path.basename(fn_lc_mock)
@@ -180,9 +182,7 @@ if __name__ == "__main__":
     end = time()
     runtime = (end - start) / 60.0
 
-    print(
-        f"\nChecked {len(fn_list_mocks_to_test)}/{n_files_tot} files in {runtime:.1f} minutes"
-    )
+    print(f"\nChecked {n_checked}/{n_files_tot} files in {runtime:.1f} minutes")
     if all_pass:
         print("\nEvery lc_mock data file passes all tests\n")
     else:
