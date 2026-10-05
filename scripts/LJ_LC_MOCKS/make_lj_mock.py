@@ -121,7 +121,7 @@ if __name__ == "__main__":
     synthetic_cores = config.get("synthetic_cores", 0)
     lgmp_min = config.get("lgmp_min", -1.0)
     lgmp_max = config.get("lgmp_max", -1.0)
-    batch_size = config.get("batch_size", 20_000)
+    batch_size = config.get("batch_size", 10_000)
     no_dbk = config.get("no_dbk", False)
     no_sed = config.get("no_sed", False)
     incl_in_situ = config.get("incl_in_situ", False)
