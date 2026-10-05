@@ -882,7 +882,7 @@ def check_2d_3d_shapes_consistent(fn_lc_mock, data=None):
 
 
 def check_for_missing_mock_patches(
-    fn_list_all_mocks, bnpat, ignore_synth=False, ignore_real=True
+    fn_list_all_mocks, bnpat, ignore_synth=False, ignore_real=False
 ):
     drn_mock = os.path.dirname(fn_list_all_mocks[0])
 
