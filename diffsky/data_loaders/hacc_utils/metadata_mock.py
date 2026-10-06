@@ -511,6 +511,11 @@ def add_metadata_lc_core_data_columns(metadata):
     return metadata
 
 
+def append_write_complete(fnout):
+    with h5py.File(fnout, "a") as hdf:
+        hdf.attrs["write_complete"] = True
+
+
 def append_metadata(
     fnout,
     sim_name,
@@ -604,9 +609,9 @@ def append_metadata(
             else:
                 for component in ("bulge", "disk", "knots"):
                     key_out = "data/" + "_".join((nickname, component))
-                    assert key_out in hdf_out.keys(), (
-                        f"{key_out} is missing from {fnout}"
-                    )
+                    assert (
+                        key_out in hdf_out.keys()
+                    ), f"{key_out} is missing from {fnout}"
 
                     msg = COMPONENT_MAG_MSG_PAT.format(component)
                     hdf_out[key_out].attrs["unit"] = str(u.ABmag)

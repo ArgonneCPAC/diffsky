@@ -2,11 +2,11 @@
 
 To run a unit test of this script:
     python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -machine poboy
-    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -ignore_real
 
 To run a local test on poboy:
     mpiexec -n 2 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml
-    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml
+    python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/poboy_testing_lj_mock_config.yaml -ignore_synth
 
 """
 
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     synthetic_cores = config.get("synthetic_cores", 0)
     lgmp_min = config.get("lgmp_min", -1.0)
     lgmp_max = config.get("lgmp_max", -1.0)
-    batch_size = config.get("batch_size", 20_000)
+    batch_size = config.get("batch_size", 10_000)
     no_dbk = config.get("no_dbk", False)
     no_sed = config.get("no_sed", False)
     incl_in_situ = config.get("incl_in_situ", False)
@@ -436,6 +436,7 @@ if __name__ == "__main__":
             no_dbk=no_dbk,
             incl_in_situ=incl_in_situ,
         )
+        metadata_mock.append_write_complete(fn_out)
 
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
