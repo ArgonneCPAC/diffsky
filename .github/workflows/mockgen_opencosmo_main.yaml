@@ -127,7 +127,7 @@ jobs:
           # Create output directory
           mkdir -p ci_test_output
 
-          # Run mock production script with synthetics only
+          # Run mock production script with real halos and synthetics
           mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
           mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -synthetic_cores 1
 

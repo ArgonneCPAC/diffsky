@@ -99,8 +99,18 @@ jobs:
           cd ..
           cd ..
 
-          # download lc_cores-decomposition.txt
-          wget $WGET_OPTS https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v2/lc_cores-decomposition.txt
+          # download HACC core lightcone
+          mkdir -p LastJourney/core-lc-9
+          cd LastJourney/core-lc-9
+          wget $WGET_OPTS https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-decomposition.txt
+
+          wget $WGET_OPTS -P step_411 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-411.843.hdf5
+          wget $WGET_OPTS -P step_421 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-421.843.hdf5
+          wget $WGET_OPTS -P step_432 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-432.843.hdf5
+          wget $WGET_OPTS -P step_442 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-442.843.hdf5
+          wget $WGET_OPTS -P step_453 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-453.843.hdf5
+          wget $WGET_OPTS -P step_464 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-464.843.hdf5
+          cd ../..
 
           # Set environment variable
           export DSPS_DRN="${GITHUB_WORKSPACE}/dsps_drn"
@@ -112,10 +122,11 @@ jobs:
           # Create output directory
           mkdir -p ci_test_output
 
-          # Run mock production script
+          # Run mock production script with real halos and synthetics
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
           mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -synthetic_cores 1
 
-          mv lc_cores-decomposition.txt ci_test_output/dummy_version_name/
+          cp LastJourney/core-lc-9/lc_cores-decomposition.txt ci_test_output/dummy_version_name/
 
       - name: verify script completed
         shell: bash -l {0}
