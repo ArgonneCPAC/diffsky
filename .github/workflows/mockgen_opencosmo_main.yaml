@@ -129,6 +129,7 @@ jobs:
 
           # Run mock production script with synthetics only
           mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -synthetic_cores 1 -infer_mockname
 
           cp LastJourney/core-lc-9/lc_cores-decomposition.txt ci_test_output/dummy_version_name/
 
@@ -140,12 +141,7 @@ jobs:
       - name: validate mock
         shell: bash -l {0}
         run: |
-          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -ignore_real
-
-      - name: Create dummy diffsky galaxies for OpenCosmo
-        shell: bash -l {0}
-        run: |
-          python scripts/LJ_LC_MOCKS/create_dummy_mock_data.py ci_test_output/dummy_version_name
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
 
       - name: OpenCosmo toolkit data conversion
         shell: bash -l {0}
