@@ -113,7 +113,7 @@ jobs:
           mkdir -p ci_test_output
 
           # Run mock production script
-          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -synthetic_cores 1
 
           mv lc_cores-decomposition.txt ci_test_output/dummy_version_name/
 
