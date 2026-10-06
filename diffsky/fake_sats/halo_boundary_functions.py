@@ -57,7 +57,7 @@ def halo_mass_to_halo_radius(mass, cosmo_params, redshift, mdef):
     Returns
     -------
     radius : float or array
-        Units of kpc (not kpc/h)
+        Units of kpc (not kpc/h) in physical distance (not comoving)
 
     """
     rho = density_threshold(cosmo_params, redshift, mdef)

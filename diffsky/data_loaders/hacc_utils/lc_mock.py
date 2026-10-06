@@ -728,7 +728,9 @@ def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5
         lc_data["redshift_true"],
         "200m",
     )
-    host_radius_mpc = hbf.halo_mass_to_halo_radius(*args) / 1000.0
+    host_radius_mpc_phys = hbf.halo_mass_to_halo_radius(*args) / 1000.0
+    # xyz coords of host halos are in comoving units, so convert Rhalo to comoving
+    host_radius_mpc_com = host_radius_mpc_phys * (1 + lc_data["redshift_true"])
 
     n_cores = host_logmp_obs.shape[0]
     axis_key, nfw_key = jran.split(ran_key, 2)
@@ -737,7 +739,7 @@ def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5
     c_to_a = np.ones(n_cores)
     conc = np.zeros(n_cores) + fixed_conc
 
-    args = (nfw_key, host_radius_mpc, conc, major_axes, b_to_a, c_to_a)
+    args = (nfw_key, host_radius_mpc_com, conc, major_axes, b_to_a, c_to_a)
     host_centric_pos = nfwcs.mc_ellipsoidal_positions(*args)
 
     new_pos = host_centric_pos + host_pos
