@@ -64,6 +64,10 @@ def get_lc_mock_data_report(
     if len(msg) > 0:
         report["column_sizes"] = msg
 
+    msg = check_write_complete(fn_lc_mock)
+    if len(msg) > 0:
+        report["write_complete"] = msg
+
     msg = check_consistency_of_ra_dec_synth_vs_real(
         fn_lc_mock, ignore_real=ignore_real, ignore_synth=ignore_synth
     )
@@ -287,6 +291,21 @@ def check_all_data_columns_have_metadata(fn_lc_mock):
             except (AssertionError, ValueError):
                 s = f"No metadata description of `{key}` column"
                 msg.append(s)
+    return msg
+
+
+def check_write_complete(fn_lc_mock):
+    with h5py.File(os.path.join(fn_lc_mock), "r") as hdf:
+        try:
+            write_complete = hdf.attrs["write_complete"]
+        except KeyError:
+            write_complete = False
+
+    if write_complete:
+        msg = []
+    else:
+        msg = [f"write_complete={write_complete} in metadata"]
+
     return msg
 
 

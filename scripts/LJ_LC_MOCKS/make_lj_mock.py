@@ -436,6 +436,7 @@ if __name__ == "__main__":
             no_dbk=no_dbk,
             incl_in_situ=incl_in_situ,
         )
+        metadata_mock.append_write_complete(fn_out)
 
         if rank == 0:
             print("All ranks completing file operations...", flush=True)
