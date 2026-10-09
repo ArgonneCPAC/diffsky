@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import jax.numpy as jnp
 import numpy as np
@@ -99,9 +99,9 @@ def compute_dbk_phot_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     bands: list[str],
-    include_extras: Optional[list] = None,
+    include_extras: list | None = None,
     insert: bool = True,
-    batch_size: int = 50,
+    batch_size: int = 1000,
 ):
     """
     Compute photometry for all objects in the catalog for the given bands, including
@@ -267,7 +267,7 @@ def __run_photometry(
     aux_data: dict,
     z_phot_tables: dict[str | float, np.ndarray],
     band_names: list[str],
-    include_extras: Optional[list],
+    include_extras: list | None,
     dbk: bool,
     insert: bool = True,
     suffix: str = "",
