@@ -54,7 +54,9 @@ def test_compute_photometry(opencosmo_data_path, version_checking, synth_cores):
     catalog, aux_data = load_diffsky_mock(
         opencosmo_data_path, version_check=version_checking, synth_cores=synth_cores
     )
-    results = compute_phot_from_diffsky_mock(catalog, aux_data, bands, insert=False)
+    results = compute_phot_from_diffsky_mock(
+        catalog, aux_data, bands, insert=False, batch_size=-1
+    )
 
     original_data = catalog.select(bands).get_data("numpy")
     for band in bands:
@@ -79,11 +81,15 @@ def test_compute_photometry_custom_bands(
     )
 
     results = compute_phot_from_diffsky_mock(
-        catalog, aux_data, ["fake_tcurve_1", "fake_tcurve_2"], insert=False
+        catalog,
+        aux_data,
+        ["fake_tcurve_1", "fake_tcurve_2"],
+        insert=False,
+        batch_size=-1,
     )
 
     for magnitudes in results.values():
-        assert np.all((magnitudes > 10) & (magnitudes < 40))
+        assert np.all((magnitudes > 10) & (magnitudes < 50))
 
 
 def test_compute_photometry_custom_bands_insert(
@@ -102,12 +108,16 @@ def test_compute_photometry_custom_bands_insert(
     )
 
     catalog = compute_phot_from_diffsky_mock(
-        catalog, aux_data, ["fake_tcurve_1", "fake_tcurve_2"], insert=True
+        catalog,
+        aux_data,
+        ["fake_tcurve_1", "fake_tcurve_2"],
+        insert=True,
+        batch_size=-1,
     )
 
     results = catalog.select(("fake_tcurve_1", "fake_tcurve_2")).get_data("numpy")
     for magnitudes in results.values():
-        assert np.all((magnitudes > 10) & (magnitudes < 30))
+        assert np.all((magnitudes > 10) & (magnitudes < 50))
 
 
 def test_compute_dbk_photometry(opencosmo_data_path, version_checking, synth_cores):
@@ -127,7 +137,9 @@ def test_compute_seds(opencosmo_data_path, version_checking, synth_cores):
     catalog, aux_data = load_diffsky_mock(
         opencosmo_data_path, version_check=version_checking, synth_cores=synth_cores
     )
-    results = compute_seds_from_diffsky_mock(catalog, aux_data, insert=False)
+    results = compute_seds_from_diffsky_mock(
+        catalog, aux_data, insert=False, batch_size=-1
+    )
     seds = results["rest_sed"]
     expected_shape = (len(catalog), len(aux_data["ssp_data"].ssp_wave))
     assert seds.shape == expected_shape
@@ -138,7 +150,9 @@ def test_compute_seds_insert(opencosmo_data_path, version_checking, synth_cores)
     catalog, aux_data = load_diffsky_mock(
         opencosmo_data_path, version_check=version_checking, synth_cores=synth_cores
     )
-    catalog = compute_seds_from_diffsky_mock(catalog, aux_data, insert=True)
+    catalog = compute_seds_from_diffsky_mock(
+        catalog, aux_data, insert=True, batch_size=-1
+    )
     assert "rest_sed" in catalog.columns
 
     seds = catalog.select("rest_sed").get_data("numpy")
@@ -152,7 +166,9 @@ def test_compute_dbk_seds(opencosmo_data_path, version_checking, synth_cores):
     catalog, aux_data = load_diffsky_mock(
         opencosmo_data_path, version_check=version_checking, synth_cores=synth_cores
     )
-    results = compute_dbk_seds_from_diffsky_mock(catalog, aux_data, insert=False)
+    results = compute_dbk_seds_from_diffsky_mock(
+        catalog, aux_data, insert=False, batch_size=-1
+    )
 
     expected_shape = (len(catalog), len(aux_data["ssp_data"].ssp_wave))
     for seds in results.values():

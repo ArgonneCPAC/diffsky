@@ -1,4 +1,4 @@
-name: make_lj_mock.py synthetic halos (opencosmo main)
+name: make_lj_mock.py synthetic halos
 
 on:
   workflow_dispatch: null
@@ -12,8 +12,13 @@ on:
 
 jobs:
   mock-generation:
-    name: python make_lj_mock.py testing_lj_mock_config.yaml
+    name: python make_lj_mock.py testing_lj_mock_config.yaml (opencosmo ${{ matrix.opencosmo }})
     runs-on: "ubuntu-latest"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        opencosmo: [release, main]
 
     env:
       # Force UCX to use standard TCP/shared memory
@@ -70,16 +75,12 @@ jobs:
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/dsps.git
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffhalos.git
 
-          pip install git+https://github.com/ArgonneCPAC/opencosmo.git
+          if [ "${{ matrix.opencosmo }}" = "main" ]; then
+            pip install git+https://github.com/ArgonneCPAC/opencosmo.git
+          fi
           pip install git+https://github.com/AstroPatty/diffpipe.git
 
           python -m pip install --no-build-isolation --no-deps -e .
-
-      - name: check download IP addresses
-        shell: bash -l {0}
-        run: |
-          curl -4 https://api.ipify.org
-          curl -6 https://api6.ipify.org || echo "No IPv6"
 
       - name: download dsps data
         timeout-minutes: 5
@@ -104,8 +105,18 @@ jobs:
           cd ..
           cd ..
 
-          # download lc_cores-decomposition.txt
-          wget $WGET_OPTS https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v2/lc_cores-decomposition.txt
+          # download HACC core lightcone
+          mkdir -p LastJourney/core-lc-9
+          cd LastJourney/core-lc-9
+          wget $WGET_OPTS https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-decomposition.txt
+
+          wget $WGET_OPTS -P step_411 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-411.843.hdf5
+          wget $WGET_OPTS -P step_421 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-421.843.hdf5
+          wget $WGET_OPTS -P step_432 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-432.843.hdf5
+          wget $WGET_OPTS -P step_442 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-442.843.hdf5
+          wget $WGET_OPTS -P step_453 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-453.843.hdf5
+          wget $WGET_OPTS -P step_464 https://github.com/ArgonneCPAC/diffsky-data/releases/download/hacc-data-lastjourney-v3/lc_cores-464.843.hdf5
+          cd ../..
 
           # Set environment variable
           export DSPS_DRN="${GITHUB_WORKSPACE}/dsps_drn"
@@ -117,10 +128,11 @@ jobs:
           # Create output directory
           mkdir -p ci_test_output
 
-          # Run mock production script
+          # Run mock production script with real halos and synthetics
           mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -synthetic_cores 1
 
-          mv lc_cores-decomposition.txt ci_test_output/dummy_version_name/
+          cp LastJourney/core-lc-9/lc_cores-decomposition.txt ci_test_output/dummy_version_name/
 
       - name: verify script completed
         shell: bash -l {0}
@@ -130,12 +142,7 @@ jobs:
       - name: validate mock
         shell: bash -l {0}
         run: |
-          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -ignore_real
-
-      - name: Create dummy diffsky galaxies for OpenCosmo
-        shell: bash -l {0}
-        run: |
-          python scripts/LJ_LC_MOCKS/create_dummy_mock_data.py ci_test_output/dummy_version_name
+          python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
 
       - name: OpenCosmo toolkit data conversion
         shell: bash -l {0}
