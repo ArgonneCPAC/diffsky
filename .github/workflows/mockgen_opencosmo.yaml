@@ -1,4 +1,4 @@
-name: make_lj_mock.py synthetic halos (opencosmo main)
+name: make_lj_mock.py synthetic halos
 
 on:
   workflow_dispatch: null
@@ -12,8 +12,13 @@ on:
 
 jobs:
   mock-generation:
-    name: python make_lj_mock.py testing_lj_mock_config.yaml
+    name: python make_lj_mock.py testing_lj_mock_config.yaml (opencosmo ${{ matrix.opencosmo }})
     runs-on: "ubuntu-latest"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        opencosmo: [release, main]
 
     env:
       # Force UCX to use standard TCP/shared memory
@@ -70,16 +75,12 @@ jobs:
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/dsps.git
           pip install --no-deps --no-build-isolation git+https://github.com/ArgonneCPAC/diffhalos.git
 
-          pip install git+https://github.com/ArgonneCPAC/opencosmo.git
+          if [ "${{ matrix.opencosmo }}" = "main" ]; then
+            pip install git+https://github.com/ArgonneCPAC/opencosmo.git
+          fi
           pip install git+https://github.com/AstroPatty/diffpipe.git
 
           python -m pip install --no-build-isolation --no-deps -e .
-
-      - name: check download IP addresses
-        shell: bash -l {0}
-        run: |
-          curl -4 https://api.ipify.org
-          curl -6 https://api6.ipify.org || echo "No IPv6"
 
       - name: download dsps data
         timeout-minutes: 5
