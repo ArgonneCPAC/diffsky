@@ -5,6 +5,7 @@
 - Restore readthedocs builds (https://github.com/ArgonneCPAC/diffsky/pull/500)
 - Update Last Journey mocks to be based on core-lc-9 (https://github.com/ArgonneCPAC/diffsky/pull/503)
 - Improve script validating mock (https://github.com/ArgonneCPAC/diffsky/pull/509)
+- Begin using actual HACC core lightcones in CI testing workflows (https://github.com/ArgonneCPAC/diffsky/pull/510)
 - Fix bug in redshift-dependence of satellite NFW positions (https://github.com/ArgonneCPAC/diffsky/pull/511)
 
 
