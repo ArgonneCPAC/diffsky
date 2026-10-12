@@ -46,6 +46,7 @@ DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"
 
 DRN_LJ_LC_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/core-lc-9"
 DRN_LJ_LC_POBOY = "/Users/aphearin/work/DATA/LastJourney/core-lc-9"
+DRN_LJ_LC_GITHUB = "LastJourney/core-lc-9"
 
 
 SIM_NAME = "LastJourney"
@@ -165,6 +166,8 @@ if __name__ == "__main__":
         indir_lc_data = DRN_LJ_LC_POBOY
     elif machine == "lcrc":
         indir_lc_data = DRN_LJ_LC_LCRC
+    elif machine == "github":
+        indir_lc_data = DRN_LJ_LC_GITHUB
 
     if emline_names == "roman_grs_pit":
         emline_dict = load_emline_info.read_emlines_info_fsps(FN_GRS_PIT_EMLINE_INFO)
@@ -202,6 +205,10 @@ if __name__ == "__main__":
 
     tcurves = lcmp_repro.get_dsps_transmission_curves(OUTPUT_FILTER_NICKNAMES)
     assert len(tcurves) == len(OUTPUT_FILTER_NICKNAMES)
+
+    msg = f"Path to simulation data = {os.path.abspath(indir_lc_data)}"
+    if rank == 0:
+        print(msg)
 
     # Get complete list of files to process
     fn_lc_cores_list = []
