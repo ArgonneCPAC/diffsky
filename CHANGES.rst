@@ -7,6 +7,7 @@
 - Improve script validating mock (https://github.com/ArgonneCPAC/diffsky/pull/509)
 - Begin using actual HACC core lightcones in CI testing workflows (https://github.com/ArgonneCPAC/diffsky/pull/510)
 - Fix bug in redshift-dependence of satellite NFW positions (https://github.com/ArgonneCPAC/diffsky/pull/511)
+- Add checkpointing feature to mock-production script (https://github.com/ArgonneCPAC/diffsky/pull/512)
 
 
 0.3.8 (2026-08-25)

@@ -88,13 +88,21 @@ if __name__ == "__main__":
         type=int,
     )
     parser.add_argument(
-        "-machine", help="Machine name. Overrides config_yaml", default=""
+        "-machine", help="Machine name. Overrides config_yaml.", default=""
+    )
+    parser.add_argument(
+        "-drn_out",
+        default="",
+        help="Output directory. Overrides config_yaml."
+        "If empty, mock_version_name will be appended to drn_out in config_yaml.",
     )
     parser.add_argument(
         "-infer_mockname",
         help="Infer mock_version_name from directory",
         action="store_true",
     )
+    parser.add_argument("-resume", action="store_true")
+    parser.add_argument("-skip_job", action="store_true")
 
     cl_args = parser.parse_args()
     config_path = cl_args.config_yaml
@@ -110,8 +118,10 @@ if __name__ == "__main__":
     istart = int(config["istart"])
     iend = int(config["iend"])
     fn_patch_list = config.get("fn_patch_list", None)
-    drn_out = config["drn_out"]
     mock_nickname = config["mock_nickname"]
+
+    resume = cl_args.resume or config.get("resume", False)
+    skip_job = cl_args.skip_job or config.get("skip_job", False)
 
     mock_version_name_in = config.get("mock_version_name", "")
     lsst_only = config.get("lsst_only", False)
@@ -134,14 +144,29 @@ if __name__ == "__main__":
         synthetic_cores = cl_args.synthetic_cores
 
     if cl_args.infer_mockname:
-        fn_list = glob(os.path.join(drn_out, mock_nickname + "_*"))
-        drn_mock = fn_list[0]
-        mock_version_name = os.path.basename(drn_mock)
+        _fn_list = glob(os.path.join(config["drn_out"], mock_nickname + "_*"))
+        mock_version_name = os.path.basename(_fn_list[0])
     else:
         if mock_version_name_in == "":
             mock_version_name = get_mock_version_name(mock_nickname)
         else:
             mock_version_name = mock_version_name_in
+
+    if cl_args.drn_out == "":
+        drn_out = os.path.join(config["drn_out"], mock_version_name)
+    else:
+        drn_out = cl_args.drn_out
+
+    if rank == 0:
+        os.makedirs(drn_out, exist_ok=True)
+
+        yaml_bname = os.path.basename(config_path)
+        yaml_outname = os.path.join(drn_out, yaml_bname)
+        if os.path.exists(yaml_outname):
+            pass
+        else:
+            shutil.copy2(config_path, drn_out)
+    comm.Barrier()
 
     if lsst_only:
         OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES,)
@@ -155,12 +180,6 @@ if __name__ == "__main__":
             msg = f"When argument synthetic_cores={synthetic_cores} "
             msg += "must specify lgmp_min and lgmp_max"
             raise ValueError(msg)
-
-    drn_out = os.path.join(drn_out, mock_version_name)
-    if rank == 0:
-        os.makedirs(drn_out, exist_ok=True)
-        shutil.copy2(config_path, drn_out)
-    comm.Barrier()
 
     if machine == "poboy":
         indir_lc_data = DRN_LJ_LC_POBOY
@@ -217,6 +236,51 @@ if __name__ == "__main__":
             bn_lc_cores = lcmp_repro.LC_CORES_BNPAT.format(stepnum, lc_patch)
             fn_lc_cores = os.path.join(indir_lc_data, f"step_{stepnum}", bn_lc_cores)
             fn_lc_cores_list.append(fn_lc_cores)
+
+    # Skip already-complete files if running in resume mode
+    skipped = 0
+    if resume:
+        if rank != 0:
+            idx_incomplete = None
+        elif rank == 0:
+            print("\n...Running mock production in resume mode")
+            idx_incomplete = []
+            for idx, fn_lc_cores in enumerate(fn_lc_cores_list):
+                bn_lc_cores = os.path.basename(fn_lc_cores)
+                stepnum, lc_patch = hlu.get_stepnum_and_skypatch_from_lc_bname(
+                    bn_lc_cores
+                )
+                bn_out = lcmp_repro.LC_MOCK_BNPAT.format(stepnum, lc_patch)
+                if synthetic_cores == 1:
+                    bn_out = bn_out.replace(".hdf5", ".synthetic_halos.hdf5")
+                fn_out = os.path.join(drn_out, bn_out)
+                fn_exists, fn_is_complete = lcmp_repro.check_mock_data_file_is_complete(
+                    fn_out
+                )
+                if not fn_exists:
+                    print(f"{fn_out} does not exist")
+                else:
+                    if not fn_is_complete:
+                        print(f"{fn_out} is incomplete")
+
+                if fn_is_complete:
+                    skipped += 1
+                else:
+                    idx_incomplete.append(idx)
+
+        idx_incomplete = comm.bcast(idx_incomplete, root=0)
+        fn_lc_cores_list = [fn_lc_cores_list[idx] for idx in idx_incomplete]
+
+    if len(fn_lc_cores_list) == 0:
+        if rank == 0:
+            print(f"resume=={resume} and all requested files are already complete")
+        sys.exit(0)
+    else:
+        if rank == 0:
+            print(f"{skipped} mock files already complete")
+            print(f"{len(fn_lc_cores_list)} mock files remaining\n")
+        if skip_job:
+            sys.exit(0)
 
     if synthetic_cores == 0:
         fn_sizes = [os.path.getsize(fn) for fn in fn_lc_cores_list]

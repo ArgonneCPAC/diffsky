@@ -399,8 +399,15 @@ def check_expected_number_of_synthetic_galaxies(fn_lc_mock, data=None):
     z_max = np.percentile(data["redshift_true"], 99)
 
     drn_mock = os.path.dirname(fn_lc_mock)
-    fn_list_yamls = glob(os.path.join(drn_mock, "*.yaml"))
-    fn_yaml = fn_list_yamls[0]
+    yaml_pat = os.path.join(drn_mock, "*.yaml")
+    fn_list_yamls = glob(yaml_pat)
+    if len(fn_list_yamls) == 0:
+        raise ValueError(f"yaml_pat={yaml_pat} has no files")
+    elif len(fn_list_yamls) > 1:
+        raise ValueError(f"yaml_pat={yaml_pat} has more than one match")
+    else:
+        fn_yaml = fn_list_yamls[0]
+
     with open(fn_yaml, "r") as fobj:
         config = yaml.safe_load(fobj)
 
