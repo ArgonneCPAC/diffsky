@@ -235,13 +235,13 @@ if __name__ == "__main__":
             fn_lc_cores_list.append(fn_lc_cores)
 
     # Skip already-complete files if running in resume mode
+    skipped = 0
     if resume:
         if rank != 0:
             idx_incomplete = None
         elif rank == 0:
             print("\n...Running mock production in resume mode")
             idx_incomplete = []
-            skipped = 0
             for idx, fn_lc_cores in enumerate(fn_lc_cores_list):
                 bn_lc_cores = os.path.basename(fn_lc_cores)
                 stepnum, lc_patch = hlu.get_stepnum_and_skypatch_from_lc_bname(
