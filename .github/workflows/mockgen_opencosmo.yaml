@@ -142,6 +142,7 @@ jobs:
       - name: validate mock
         shell: bash -l {0}
         run: |
+          python scripts/LJ_LC_MOCKS/check_lc_mock_completeness.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -infer_drn_mock
           python scripts/LJ_LC_MOCKS/inspect_lc_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
 
       - name: OpenCosmo toolkit data conversion
