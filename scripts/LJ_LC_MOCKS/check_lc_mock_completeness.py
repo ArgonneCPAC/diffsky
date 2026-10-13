@@ -113,7 +113,7 @@ if __name__ == "__main__":
                 missing_files.append(fn_missing)
             print(msg_patch.format(patch))
 
-    msg_success = f"\nDetected complete set of mocks for all real halos spanning {z_min:.2f}<z<{z_max:.2f}\n"
+    msg_success = f"    Detected complete set of all real halos spanning {z_min:.2f}<z<{z_max:.2f}\n"
     if len(missing_files) > 0:
         print("\nThe following mock files are missing:")
         for missing_file in missing_files:
