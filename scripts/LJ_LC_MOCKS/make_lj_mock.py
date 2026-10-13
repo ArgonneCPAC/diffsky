@@ -236,6 +236,7 @@ if __name__ == "__main__":
 
     # Skip already-complete files if running in resume mode
     if resume:
+        print("\n...Running mock production in resume mode")
         if rank != 0:
             idx_incomplete = None
         elif rank == 0:
@@ -273,7 +274,7 @@ if __name__ == "__main__":
         sys.exit(0)
     else:
         if rank == 0:
-            print(f"{skipped} mock files already complete\n")
+            print(f"{skipped} mock files already complete")
             print(f"{len(fn_lc_cores_list)} mock files remaining\n")
         if skip_job:
             sys.exit(0)
