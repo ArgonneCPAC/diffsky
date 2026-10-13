@@ -23,11 +23,11 @@ def get_stepnum_and_patch(bname):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("config_yaml", help="YAML configuration file")
+    parser.add_argument("drn_out", help="Location of mock.")
 
     parser.add_argument(
-        "-drn_out",
-        help="Location of mock. Overrides config_yaml",
+        "-config_yaml",
+        help="Name of the config file. Overrides automatic detection",
         default="",
     )
     parser.add_argument(
@@ -44,14 +44,26 @@ if __name__ == "__main__":
     )
 
     cl_args = parser.parse_args()
-    config_path = cl_args.config_yaml
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
+    drn_out = cl_args.drn_out
 
-    if cl_args.drn_out == "":
-        drn_out = config["drn_out"]
+    if cl_args.config_yaml != "":
+        config_yaml = cl_args.config_yaml
     else:
-        drn_out = cl_args.drn_out
+        # Automatically detect config_yaml
+        config_yaml_list = glob(os.path.join(drn_out, "*.yaml"))
+        if len(config_yaml_list) == 1:
+            config_yaml = config_yaml_list[0]
+        elif len(config_yaml_list) == 0:
+            raise ValueError(
+                f"Missing config_yaml in {drn_out} - must specify with command line argument"
+            )
+        elif len(config_yaml_list) > 1:
+            raise ValueError(
+                f"Multiple detectiosn of config_yaml in {drn_out} - must disambiguate with command line argument"
+            )
+
+    with open(config_yaml, "r") as f:
+        config = yaml.safe_load(f)
 
     if cl_args.z_min == -1:
         z_min = config["z_min"]
