@@ -122,7 +122,7 @@ if __name__ == "__main__":
         print(msg_success)
 
     if cl_args.ignore_synthetics:
-        print("\nIgnoring synthetic halos")
+        print("\nIgnoring synthetic halos in completeness check")
         unmatched_bn_list = []
     else:
         # Check each lightcone file has a matching synthetic_halos file
