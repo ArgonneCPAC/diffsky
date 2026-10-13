@@ -159,7 +159,10 @@ if __name__ == "__main__":
 
     if rank == 0:
         os.makedirs(drn_out, exist_ok=True)
-        if os.path.exists(config_path):
+
+        yaml_bname = os.path.basename(config_path)
+        yaml_outname = os.path.join(drn_out, yaml_bname)
+        if os.path.exists(yaml_outname):
             pass
         else:
             shutil.copy2(config_path, drn_out)
