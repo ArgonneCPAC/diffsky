@@ -1,4 +1,4 @@
-0.3.9 (Unreleased)
+0.3.9 (2026-10-13)
 -------------------
 - Improve performance of all photometry/SED kernels by using jnp.einsum (https://github.com/ArgonneCPAC/diffsky/pull/496)
 - Fix bug in 2d shapes of mock galaxies (https://github.com/ArgonneCPAC/diffsky/pull/494)
