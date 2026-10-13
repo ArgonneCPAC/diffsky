@@ -226,9 +226,9 @@ if __name__ == "__main__":
     # Skip already-complete files if running in resume mode
     if resume:
         if rank != 0:
-            keep_idx = None
+            idx_incomplete = None
         elif rank == 0:
-            keep_idx = []
+            idx_incomplete = []
             skipped = 0
             for idx, fn_lc_cores in enumerate(fn_lc_cores_list):
                 bn_lc_cores = os.path.basename(fn_lc_cores)
@@ -239,14 +239,22 @@ if __name__ == "__main__":
                 if synthetic_cores == 1:
                     bn_out = bn_out.replace(".hdf5", ".synthetic_halos.hdf5")
                 fn_out = os.path.join(drn_out, bn_out)
-                fn_is_complete = lcmp_repro.mock_data_file_is_complete(fn_out)
+                fn_exists, fn_is_complete = lcmp_repro.check_mock_data_file_is_complete(
+                    fn_out
+                )
+                if not fn_exists:
+                    print(f"{fn_out} does not exist")
+                else:
+                    if not fn_is_complete:
+                        print(f"{fn_out} is incomplete")
+
                 if fn_is_complete:
                     skipped += 1
                 else:
-                    keep_idx.append(idx)
+                    idx_incomplete.append(idx)
 
-        keep_idx = comm.bcast(keep_idx, root=0)
-        fn_lc_cores_list = [fn_lc_cores_list[idx] for idx in keep_idx]
+        idx_incomplete = comm.bcast(idx_incomplete, root=0)
+        fn_lc_cores_list = [fn_lc_cores_list[idx] for idx in idx_incomplete]
 
     if len(fn_lc_cores_list) == 0:
         if rank == 0:
