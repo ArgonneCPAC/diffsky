@@ -103,9 +103,7 @@ if __name__ == "__main__":
             assert np.allclose(steps_patch, complete_stepnums)
         except AssertionError:
             msg_collector.append(msg_patch.format(patch))
-    msg_success = (
-        f"\nDetected complete set of lc_cores spanning {z_min:.2f}<z<{z_max:.2f}\n"
-    )
+    msg_success = f"\nDetected complete set of mocks with real halos spanning {z_min:.2f}<z<{z_max:.2f}\n"
     if len(msg_collector) > 0:
         for msg in msg_collector:
             print(msg)
