@@ -91,7 +91,7 @@ if __name__ == "__main__":
     print(
         f"Running checks on each of the {n_patches} sky patches has a complete set of redshifts"
     )
-    msg_patch = f"lc_patch={0} is missing some timesteps\n"
+    msg_patch = "lc_patch={0} is missing some timesteps\n"
     msg_collector = []
     for patch in patch_collector:
         fn_pat_patch = os.path.join(drn_out, BN_PAT_REAL_HALOS.format("*", patch))
