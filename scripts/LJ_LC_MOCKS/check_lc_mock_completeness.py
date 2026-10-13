@@ -77,6 +77,7 @@ if __name__ == "__main__":
     # Check completeness of simulated halos
     fn_pat = os.path.join(drn_out, BN_PAT_REAL_HALOS.format("*", "*"))
     fn_list = glob(fn_pat)
+    assert len(fn_list) > 0, f"Zero files matching {fn_pat}"
     bn_list = [os.path.basename(fn) for fn in fn_list]
 
     step_collector = np.unique([get_stepnum_and_patch(bn)[0] for bn in bn_list])
