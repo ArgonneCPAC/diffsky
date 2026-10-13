@@ -161,5 +161,5 @@ if __name__ == "__main__":
             print(f"{fn}")
     else:
         print(
-            f"\nEach of the {n_files} detected mock files has the `write_complete` metadata attribute"
+            f"\nEach of the {n_files} mock files has the `write_complete` metadata attribute\n"
         )
