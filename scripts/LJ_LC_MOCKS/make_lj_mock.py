@@ -96,6 +96,7 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument("-resume", action="store_true")
+    parser.add_argument("-skip_job", action="store_true")
 
     cl_args = parser.parse_args()
     config_path = cl_args.config_yaml
@@ -115,6 +116,7 @@ if __name__ == "__main__":
     mock_nickname = config["mock_nickname"]
 
     resume = cl_args.resume or config.get("resume", False)
+    skip_job = cl_args.skip_job or config.get("skip_job", False)
 
     mock_version_name_in = config.get("mock_version_name", "")
     lsst_only = config.get("lsst_only", False)
@@ -248,6 +250,12 @@ if __name__ == "__main__":
         if rank == 0:
             print(f"resume=={resume} and all requested files are already complete")
         sys.exit(0)
+    else:
+        if rank == 0:
+            print(f"{skipped} mock files already complete\n")
+            print(f"{len(fn_lc_cores_list)} mock files remaining\n")
+        if skip_job:
+            sys.exit(0)
 
     if synthetic_cores == 0:
         fn_sizes = [os.path.getsize(fn) for fn in fn_lc_cores_list]
