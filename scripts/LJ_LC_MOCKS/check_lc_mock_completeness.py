@@ -103,13 +103,14 @@ if __name__ == "__main__":
         print("\nEach lc_cores file has a synthetic_halos matching counterpart")
 
     # Check each mock file finished writing
-    fnpat = BN_PAT_REAL_OR_SYNTHETIC.format("*", "*")
+    fnpat = os.path.join(drn_out, BN_PAT_REAL_OR_SYNTHETIC.format("*", "*"))
     fn_list_all = glob(fnpat)
     incomplete_files = []
     for fn in fn_list_all:
         fn_exists, fn_is_complete = lc_mock.check_mock_data_file_is_complete(fn)
         if not fn_is_complete:
             incomplete_files.append(fn)
+
     if len(incomplete_files) > 0:
         print(
             "\n...The following files are missing the `write_complete` metadata attribute\n"
