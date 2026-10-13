@@ -64,7 +64,9 @@ if __name__ == "__main__":
     if cl_args.drn_out != "":
         drn_out = cl_args.drn_out
     elif cl_args.infer_drn_mock:
-        _fn_list = glob(os.path.join(config["drn_out"], config["mock_nickname"] + "*"))
+        drn_pat = os.path.join(config["drn_out"], config["mock_nickname"] + "*")
+        assert False, f"drn_pat={drn_pat}"
+        _fn_list = glob(drn_pat)
         mock_version_name = os.path.basename(_fn_list[0])
         drn_out = os.path.join(config["drn_out"], mock_version_name)
     else:
