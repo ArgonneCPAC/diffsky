@@ -159,7 +159,10 @@ if __name__ == "__main__":
 
     if rank == 0:
         os.makedirs(drn_out, exist_ok=True)
-        shutil.copy2(config_path, drn_out)
+        if os.path.exists(config_path):
+            pass
+        else:
+            shutil.copy2(config_path, drn_out)
     comm.Barrier()
 
     if lsst_only:
