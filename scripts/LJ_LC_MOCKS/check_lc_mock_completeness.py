@@ -50,9 +50,9 @@ if __name__ == "__main__":
 
     if cl_args.drn_mock == "":
         drn_mock = config["drn_mock"]
-    if cl_args.zmin == -1:
+    if cl_args.z_min == -1:
         z_min = config["z_min"]
-    if cl_args.zmax == -1:
+    if cl_args.z_max == -1:
         z_max = config["z_max"]
 
     # Check completeness of simulated halos
