@@ -1,6 +1,7 @@
 from collections import namedtuple
 from collections.abc import Callable
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import opencosmo as oc
@@ -313,6 +314,8 @@ def __run_photometry(
 
     chunked_output = []
     for row_batch in batches:
+        jax.clear_caches()
+
         batch_catalog = catalog.take_rows(row_batch)
         batch_ssp_mag_table = {
             k: v
@@ -376,6 +379,7 @@ def __run_sed_computation(
 
     chunked_output = []
     for row_batch in batches:
+        jax.clear_caches()
         batch_output = catalog.take_rows(row_batch).evaluate(
             to_compute,
             ssp_data=aux_data["ssp_data"],
