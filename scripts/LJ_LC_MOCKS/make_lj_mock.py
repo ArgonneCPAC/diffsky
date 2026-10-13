@@ -88,7 +88,13 @@ if __name__ == "__main__":
         type=int,
     )
     parser.add_argument(
-        "-machine", help="Machine name. Overrides config_yaml", default=""
+        "-machine", help="Machine name. Overrides config_yaml.", default=""
+    )
+    parser.add_argument(
+        "-drn_out",
+        default="",
+        help="Output directory. Overrides config_yaml."
+        "If empty, mock_version_name will be appended to drn_out in config_yaml.",
     )
     parser.add_argument(
         "-infer_mockname",
@@ -112,7 +118,6 @@ if __name__ == "__main__":
     istart = int(config["istart"])
     iend = int(config["iend"])
     fn_patch_list = config.get("fn_patch_list", None)
-    drn_out = config["drn_out"]
     mock_nickname = config["mock_nickname"]
 
     resume = cl_args.resume or config.get("resume", False)
@@ -139,14 +144,23 @@ if __name__ == "__main__":
         synthetic_cores = cl_args.synthetic_cores
 
     if cl_args.infer_mockname:
-        fn_list = glob(os.path.join(drn_out, mock_nickname + "_*"))
-        drn_mock = fn_list[0]
-        mock_version_name = os.path.basename(drn_mock)
+        _fn_list = glob(os.path.join(config["drn_out"], mock_nickname + "_*"))
+        mock_version_name = os.path.basename(_fn_list[0])
     else:
         if mock_version_name_in == "":
             mock_version_name = get_mock_version_name(mock_nickname)
         else:
             mock_version_name = mock_version_name_in
+
+    if cl_args.drn_out == "":
+        drn_out = os.path.join(config["drn_out"], mock_version_name)
+    else:
+        drn_out = cl_args.drn_out
+
+    if rank == 0:
+        os.makedirs(drn_out, exist_ok=True)
+        shutil.copy2(config_path, drn_out)
+    comm.Barrier()
 
     if lsst_only:
         OUTPUT_FILTER_NICKNAMES = (*LSST_FILTER_NICKNAMES,)
@@ -160,12 +174,6 @@ if __name__ == "__main__":
             msg = f"When argument synthetic_cores={synthetic_cores} "
             msg += "must specify lgmp_min and lgmp_max"
             raise ValueError(msg)
-
-    drn_out = os.path.join(drn_out, mock_version_name)
-    if rank == 0:
-        os.makedirs(drn_out, exist_ok=True)
-        shutil.copy2(config_path, drn_out)
-    comm.Barrier()
 
     if machine == "poboy":
         indir_lc_data = DRN_LJ_LC_POBOY
