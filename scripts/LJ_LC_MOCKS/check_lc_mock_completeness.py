@@ -155,10 +155,10 @@ if __name__ == "__main__":
 
     if len(incomplete_files) > 0:
         print(
-            "\n...The following files are missing the `write_complete` metadata attribute\n"
+            "\n...The following files are missing the `write_complete` metadata attribute"
         )
         for fn in incomplete_files:
-            print(f"{fn}\n")
+            print(f"{fn}")
     else:
         print(
             f"\nEach of the {n_files} detected mock files has the `write_complete` metadata attribute"
