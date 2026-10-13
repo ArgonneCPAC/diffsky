@@ -25,6 +25,11 @@ FENIKS_FIT_PARAMS["sdss_feniks_hizels_260710"] = get_calib_params(
     calibration_name="sdss_feniks_hizels_260710",
 )
 
+FENIKS_FIT_PARAMS["sdss_feniks_hizels_261013"] = get_calib_params(
+    calibration_dir=os.path.join("sdss_feniks_hizels_calibrations"),
+    calibration_name="sdss_feniks_hizels_261013",
+)
+
 
 DIFFSKY_FIT_PARAMS = dict()
 DIFFSKY_FIT_PARAMS.update(COSMOS_FIT_PARAMS)
