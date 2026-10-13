@@ -52,9 +52,15 @@ def load_flat_hdf5(fn, istart=0, iend=None, keys=None, dataset=None):
                 key_out = key_in.split("/")[1]
 
             if iend is None:
-                data[key_out] = hdf[key_in][istart:]
+                try:
+                    data[key_out] = hdf[key_in][istart:]
+                except TypeError:
+                    raise ValueError(f"Failed to read column {key_in}")
             else:
-                data[key_out] = hdf[key_in][istart:iend]
+                try:
+                    data[key_out] = hdf[key_in][istart:iend]
+                except TypeError:
+                    raise ValueError(f"Failed to read column {key_in}")
 
     return data
 
