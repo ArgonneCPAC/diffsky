@@ -50,6 +50,9 @@ if __name__ == "__main__":
         type=float,
         default=-1,
     )
+    parser.add_argument(
+        "-ignore_synthetics", help="Ignore synthetic halos", action="store_true"
+    )
 
     cl_args = parser.parse_args()
 
@@ -89,10 +92,10 @@ if __name__ == "__main__":
     complete_stepnums = hlu.get_timesteps_in_zrange("LastJourney", z_min, z_max)
 
     print(
-        f"Running checks on each of the {n_patches} sky patches has a complete set of redshifts"
+        f"\n...Checking each of the {n_patches} sky patches for a complete set of redshifts"
     )
-    msg_patch = "lc_patch={0} is missing some timesteps\n"
-    msg_collector = []
+    msg_patch = "lc_patch={0} is missing some timesteps"
+    missing_files = []
     for patch in patch_collector:
         fn_pat_patch = os.path.join(drn_out, BN_PAT_REAL_HALOS.format("*", patch))
         fn_list_patch = glob(fn_pat_patch)
@@ -102,29 +105,41 @@ if __name__ == "__main__":
             assert len(steps_patch) == len(complete_stepnums)
             assert np.allclose(steps_patch, complete_stepnums)
         except AssertionError:
-            msg_collector.append(msg_patch.format(patch))
+            missing_steps = set(complete_stepnums) - set(steps_patch)
+            missing_steps = sorted(list(missing_steps))
+            for missing_step in missing_steps:
+                bn_missing = BN_PAT_REAL_HALOS.format(missing_step, patch)
+                fn_missing = os.path.join(drn_out, bn_missing)
+                missing_files.append(fn_missing)
+            print(msg_patch.format(patch))
+
     msg_success = f"\nDetected complete set of mocks with real halos spanning {z_min:.2f}<z<{z_max:.2f}\n"
-    if len(msg_collector) > 0:
-        for msg in msg_collector:
-            print(msg)
+    if len(missing_files) > 0:
+        print("\nThe following mock files are missing:")
+        for missing_file in missing_files:
+            print(missing_files)
     else:
         print(msg_success)
 
-    # Check each lightcone file has a matching synthetic_halos file
-    unmatched_bn_list = []
-    for fn in fn_list:
-        bn = os.path.basename(fn)
-        bn_synthetic = bn.replace(".hdf5", ".synthetic_halos.hdf5")
-        fn_synthetic = os.path.join(drn_out, bn_synthetic)
-        if not os.path.isfile(fn_synthetic):
-            unmatched_bn_list.append(bn)
-
-    if len(unmatched_bn_list) > 0:
-        msg = "\nMissing synthetic_halos for some lightcone files\n"
-        msg += f"Example: {unmatched_bn_list[0]} has no synthetic_halos counterpart"
-        print(msg)
+    if cl_args.ignore_synthetics:
+        print("Ignoring synthetic halos")
+        unmatched_bn_list = []
     else:
-        print("\nEach lc_cores file has a synthetic_halos matching counterpart")
+        # Check each lightcone file has a matching synthetic_halos file
+        unmatched_bn_list = []
+        for fn in fn_list:
+            bn = os.path.basename(fn)
+            bn_synthetic = bn.replace(".hdf5", ".synthetic_halos.hdf5")
+            fn_synthetic = os.path.join(drn_out, bn_synthetic)
+            if not os.path.isfile(fn_synthetic):
+                unmatched_bn_list.append(bn)
+
+        if len(unmatched_bn_list) > 0:
+            msg = "\nMissing synthetic_halos for some lightcone files\n"
+            msg += f"Example: {unmatched_bn_list[0]} has no synthetic_halos counterpart"
+            print(msg)
+        else:
+            print("\nEach lc_cores file has a synthetic_halos matching counterpart")
 
     # Check each mock file finished writing
     fnpat = os.path.join(drn_out, BN_PAT_REAL_OR_SYNTHETIC.format("*", "*"))
