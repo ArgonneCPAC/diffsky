@@ -225,7 +225,9 @@ if __name__ == "__main__":
 
     # Skip already-complete files if running in resume mode
     if resume:
-        if rank == 0:
+        if rank != 0:
+            keep_idx = None
+        elif rank == 0:
             keep_idx = []
             skipped = 0
             for idx, fn_lc_cores in enumerate(fn_lc_cores_list):
