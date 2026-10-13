@@ -1,6 +1,7 @@
 from collections import namedtuple
-from typing import Callable, Optional
+from collections.abc import Callable
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import opencosmo as oc
@@ -99,7 +100,7 @@ def compute_dbk_phot_from_diffsky_mock(
     catalog: oc.Lightcone,
     aux_data: dict,
     bands: list[str],
-    include_extras: Optional[list] = None,
+    include_extras: list | None = None,
     insert: bool = True,
     batch_size: int = 50,
 ):
@@ -267,7 +268,7 @@ def __run_photometry(
     aux_data: dict,
     z_phot_tables: dict[str | float, np.ndarray],
     band_names: list[str],
-    include_extras: Optional[list],
+    include_extras: list | None,
     dbk: bool,
     insert: bool = True,
     suffix: str = "",
@@ -313,6 +314,8 @@ def __run_photometry(
 
     chunked_output = []
     for row_batch in batches:
+        jax.clear_caches()
+
         batch_catalog = catalog.take_rows(row_batch)
         batch_ssp_mag_table = {
             k: v
@@ -376,6 +379,7 @@ def __run_sed_computation(
 
     chunked_output = []
     for row_batch in batches:
+        jax.clear_caches()
         batch_output = catalog.take_rows(row_batch).evaluate(
             to_compute,
             ssp_data=aux_data["ssp_data"],
