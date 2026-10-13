@@ -26,7 +26,7 @@ if __name__ == "__main__":
     parser.add_argument("config_yaml", help="YAML configuration file")
 
     parser.add_argument(
-        "-drn_out",
+        "-drn_mock",
         help="Location of mock. Overrides config_yaml",
         default="",
     )
