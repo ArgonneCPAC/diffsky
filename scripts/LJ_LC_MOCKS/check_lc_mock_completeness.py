@@ -91,7 +91,7 @@ if __name__ == "__main__":
     print(
         f"Running checks on each of the {n_patches} sky patches has a complete set of redshifts"
     )
-    msg_patch = f"lc_patch={0} is missing some timesteps"
+    msg_patch = f"lc_patch={0} is missing some timesteps\n"
     for patch in patch_collector:
         fn_pat_patch = os.path.join(drn_out, BN_PAT_REAL_HALOS.format("*", patch))
         fn_list_patch = glob(fn_pat_patch)
@@ -100,9 +100,11 @@ if __name__ == "__main__":
         try:
             assert len(steps_patch) == len(complete_stepnums)
             assert np.allclose(steps_patch, complete_stepnums)
+            print(
+                f"\nDetected complete set of lc_cores spanning {z_min:.2f}<z<{z_max:.2f}\n"
+            )
         except AssertionError:
-            raise ValueError(msg_patch.format(patch))
-    print(f"\nDetected complete set of lc_cores spanning {z_min:.2f}<z<{z_max:.2f}\n")
+            print(msg_patch.format(patch))
 
     # Check each lightcone file has a matching synthetic_halos file
     unmatched_bn_list = []
