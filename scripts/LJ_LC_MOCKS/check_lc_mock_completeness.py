@@ -23,12 +23,16 @@ def get_stepnum_and_patch(bname):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("drn_out", help="Location of mock.")
 
     parser.add_argument(
-        "-config_yaml",
-        help="Name of the config file. Overrides automatic detection",
-        default="",
+        "config_yaml",
+        help="Name of the config file."
+        "Determines drn_mock unless overrided by drn_out or infer_drn_mock",
+    )
+
+    parser.add_argument("-drn_out", help="Location of mock.", default="")
+    parser.add_argument(
+        "-infer_drn_mock", help="Location of mock.", action="store_true"
     )
     parser.add_argument(
         "-z_min",
@@ -44,26 +48,20 @@ if __name__ == "__main__":
     )
 
     cl_args = parser.parse_args()
-    drn_out = cl_args.drn_out
 
-    if cl_args.config_yaml != "":
-        config_yaml = cl_args.config_yaml
-    else:
-        # Automatically detect config_yaml
-        config_yaml_list = glob(os.path.join(drn_out, "*.yaml"))
-        if len(config_yaml_list) == 1:
-            config_yaml = config_yaml_list[0]
-        elif len(config_yaml_list) == 0:
-            raise ValueError(
-                f"Missing config_yaml in {drn_out} - must specify with command line argument"
-            )
-        elif len(config_yaml_list) > 1:
-            raise ValueError(
-                f"Multiple detections of config_yaml in {drn_out} - must disambiguate with command line argument"
-            )
-
+    config_yaml = cl_args.config_yaml
     with open(config_yaml, "r") as f:
         config = yaml.safe_load(f)
+
+    # Determine location of mock
+    if cl_args.drn_out != "":
+        drn_out = cl_args.drn_out
+    elif cl_args.infer_drn_mock:
+        _fn_list = glob(os.path.join(config["drn_out"], config["mock_nickname"] + "_*"))
+        mock_version_name = os.path.basename(_fn_list[0])
+        drn_out = os.path.join(config["drn_out"], mock_version_name)
+    else:
+        drn_out = config["drn_out"]
 
     if cl_args.z_min == -1:
         z_min = config["z_min"]
