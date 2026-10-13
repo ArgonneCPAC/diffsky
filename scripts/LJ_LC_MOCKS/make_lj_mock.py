@@ -236,10 +236,10 @@ if __name__ == "__main__":
 
     # Skip already-complete files if running in resume mode
     if resume:
-        print("\n...Running mock production in resume mode")
         if rank != 0:
             idx_incomplete = None
         elif rank == 0:
+            print("\n...Running mock production in resume mode")
             idx_incomplete = []
             skipped = 0
             for idx, fn_lc_cores in enumerate(fn_lc_cores_list):
