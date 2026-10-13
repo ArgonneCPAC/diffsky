@@ -118,7 +118,9 @@ if __name__ == "__main__":
     # Check each mock file finished writing
     fnpat = os.path.join(drn_out, BN_PAT_REAL_OR_SYNTHETIC.format("*", "*"))
     fn_list_all = glob(fnpat)
-    assert len(fn_list_all) > 0, f"{fnpat} is an incorrect path to mock dataset"
+    n_files = len(fn_list_all)
+    assert n_files > 0, f"{fnpat} is an incorrect path to mock dataset"
+
     incomplete_files = []
     for fn in fn_list_all:
         fn_exists, fn_is_complete = lc_mock.check_mock_data_file_is_complete(fn)
@@ -131,3 +133,7 @@ if __name__ == "__main__":
         )
         for fn in incomplete_files:
             print(f"{fn}\n")
+    else:
+        print(
+            f"Each of the {n_files} detected mock files has the `write_complete` metadata attribute"
+        )
