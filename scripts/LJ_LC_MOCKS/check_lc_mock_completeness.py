@@ -59,7 +59,7 @@ if __name__ == "__main__":
             )
         elif len(config_yaml_list) > 1:
             raise ValueError(
-                f"Multiple detectiosn of config_yaml in {drn_out} - must disambiguate with command line argument"
+                f"Multiple detections of config_yaml in {drn_out} - must disambiguate with command line argument"
             )
 
     with open(config_yaml, "r") as f:
