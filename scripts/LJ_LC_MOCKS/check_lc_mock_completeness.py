@@ -97,8 +97,11 @@ if __name__ == "__main__":
         fn_list_patch = glob(fn_pat_patch)
         bn_list_patch = [os.path.basename(fn) for fn in fn_list_patch]
         steps_patch = np.unique([get_stepnum_and_patch(bn)[0] for bn in bn_list_patch])
-        assert len(steps_patch) == len(complete_stepnums), msg_patch.format(patch)
-        assert np.allclose(steps_patch, complete_stepnums), msg_patch.format(patch)
+        try:
+            assert len(steps_patch) == len(complete_stepnums)
+            assert np.allclose(steps_patch, complete_stepnums)
+        except AssertionError:
+            raise ValueError(msg_patch.format(patch))
     print(f"\nDetected complete set of lc_cores spanning {z_min:.2f}<z<{z_max:.2f}\n")
 
     # Check each lightcone file has a matching synthetic_halos file
