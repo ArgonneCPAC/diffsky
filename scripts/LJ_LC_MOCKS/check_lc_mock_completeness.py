@@ -27,12 +27,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "config_yaml",
         help="Name of the config file."
-        "Determines drn_mock unless overrided by drn_out or infer_drn_mock",
+        "Automatically determines drn_mock unless overrided by drn_out or infer_drn_mock",
     )
 
-    parser.add_argument("-drn_out", help="Location of mock.", default="")
     parser.add_argument(
-        "-infer_drn_mock", help="Location of mock.", action="store_true"
+        "-drn_out", help="Absolute path to directory of mock.", default=""
+    )
+    parser.add_argument(
+        "-infer_drn_mock",
+        help="Location of mock determined by appending mock_version_name to config['drn_out']",
+        action="store_true",
     )
     parser.add_argument(
         "-z_min",
