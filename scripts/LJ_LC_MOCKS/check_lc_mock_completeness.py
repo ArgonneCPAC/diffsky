@@ -50,10 +50,17 @@ if __name__ == "__main__":
 
     if cl_args.drn_mock == "":
         drn_mock = config["drn_mock"]
+    else:
+        drn_mock = cl_args.drn_mock
+
     if cl_args.z_min == -1:
         z_min = config["z_min"]
+    else:
+        z_min = cl_args.z_min
     if cl_args.z_max == -1:
         z_max = config["z_max"]
+    else:
+        z_max = cl_args.z_max
 
     # Check completeness of simulated halos
     fn_pat = os.path.join(drn_mock, BN_PAT_REAL_HALOS.format("*", "*"))
