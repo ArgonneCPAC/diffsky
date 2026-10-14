@@ -140,7 +140,7 @@ if __name__ == "__main__":
             msg += f"Example: {unmatched_bn_list[0]} has no synthetic_halos counterpart"
             print(msg)
         else:
-            print("\nEach lc_cores file has a synthetic_halos matching counterpart")
+            print("\nEach real halos file has a synthetic_halos matching counterpart")
 
     # Check each mock file finished writing
     fnpat = os.path.join(drn_out, BN_PAT_REAL_OR_SYNTHETIC.format("*", "*"))
