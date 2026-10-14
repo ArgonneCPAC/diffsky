@@ -1,6 +1,5 @@
 from collections import namedtuple
 from pathlib import Path
-from typing import Optional
 
 import h5py
 import numpy as np
@@ -18,7 +17,7 @@ from .versions import check_versions
 def load_diffsky_mock(
     path: str | Path,
     synth_cores: bool = False,
-    version_check: Optional[str] = None,
+    version_check: str | None = None,
 ) -> tuple[oc.Lightcone, dict | None]:
     """
     Load a diffsky mock catalog stored in the given directory in opencosmo format.
@@ -45,7 +44,7 @@ def load_diffsky_mock(
     )  # Not super robust, should come up with something better
 
     if not data_files:
-        raise FileNotFoundError(f"Found no data files in directory {str(path)}")
+        raise FileNotFoundError(f"Found no data files in directory {path!s}")
 
     with h5py.File(data_files[0]) as f:
         mock_name = f["header"]["catalog_info"].attrs[

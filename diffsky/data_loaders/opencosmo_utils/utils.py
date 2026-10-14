@@ -1,8 +1,11 @@
+import functools
+import inspect
 from collections import namedtuple
 
 import numpy as np
 import opencosmo as oc
 from dsps.cosmology import age_at_z
+from jax import numpy as jnp
 
 
 def get_z_phot_tables(catalog: oc.Lightcone):
@@ -71,12 +74,65 @@ def validate_batch_size(batch_size):
         )
 
 
-def split_central_indices(catalog: oc.Lightcone, batch_size: int):
-    central_indices = np.where(catalog.select("central").get_data("numpy"))[0]
-    if batch_size == -1:
-        return [central_indices]
-    split_indices = np.arange(batch_size, len(central_indices), batch_size)
-    return np.split(central_indices, split_indices)
+def determine_split_points(catalog, batch_size):
+    """
+    Split the catalog into batches of complete host+satellite groups, each
+    containing roughly batch_size galaxies. Returns the top host indices for
+    each batch, and the size of the largest batch (which all batches should be
+    padded to so the kernels only compile once).
+    """
+    top_host_idx = catalog.select("top_host_idx").get_data("numpy")
+    unique_top_host, counts = np.unique(top_host_idx, return_counts=True)
+
+    if batch_size == -1 or len(catalog) <= batch_size:
+        return [unique_top_host], len(catalog)
+
+    cs = np.cumsum(counts)
+    n_chunks = max(1, round(cs[-1] / batch_size))
+    boundaries = cs[-1] / n_chunks * np.arange(1, n_chunks)
+    split_points = np.unique(np.searchsorted(cs, boundaries) + 1)
+    split_points = split_points[split_points < len(unique_top_host)]
+
+    top_host_idx_splits = np.array_split(unique_top_host, split_points)
+    split_counts = np.add.reduceat(counts, np.insert(split_points, 0, 0))
+    pad_size = int(np.max(split_counts))
+    return top_host_idx_splits, pad_size
+
+
+def pad_galaxy_inputs(func, static_kwargs, pad_size: int):
+    """
+    Wrap func so that every per-galaxy column it receives is padded to pad_size
+    before the call, and every output is trimmed back afterwards. Anything in
+    static_kwargs (lookup tables, parameters, etc.) is passed through untouched.
+
+    Padded galaxies are copies of the last galaxy, but are made into isolated
+    centrals that host themselves so they do not merge with any real galaxy.
+    """
+
+    accepted = inspect.signature(func).parameters
+
+    @functools.wraps(func)
+    def wrapper(**kwargs):
+        n_gal = len(kwargs["gal_id"])
+        padded = {
+            name: value if name in static_kwargs else _pad_first_axis(value, pad_size)
+            for name, value in kwargs.items()
+            if name in accepted
+        }
+        padded["central"] = padded["central"].at[n_gal:].set(1)
+        padded["top_host_idx"] = (
+            padded["top_host_idx"].at[n_gal:].set(jnp.arange(n_gal, pad_size))
+        )
+        result = func(**padded)
+        return {name: value[:n_gal] for name, value in result.items()}
+
+    return wrapper
+
+
+def _pad_first_axis(arr, pad_size):
+    arr = jnp.asarray(arr)
+    pad_width = [(0, pad_size - arr.shape[0])] + [(0, 0)] * (arr.ndim - 1)
+    return jnp.pad(arr, pad_width, mode="edge")
 
 
 def prep_cosmology_parameters(cosmology):

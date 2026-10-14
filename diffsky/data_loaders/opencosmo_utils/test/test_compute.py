@@ -55,7 +55,7 @@ def test_compute_photometry(opencosmo_data_path, version_checking, synth_cores):
         opencosmo_data_path, version_check=version_checking, synth_cores=synth_cores
     )
     results = compute_phot_from_diffsky_mock(
-        catalog, aux_data, bands, insert=False, batch_size=-1
+        catalog, aux_data, bands, insert=False, batch_size=1000
     )
 
     original_data = catalog.select(bands).get_data("numpy")
@@ -63,6 +63,30 @@ def test_compute_photometry(opencosmo_data_path, version_checking, synth_cores):
         assert np.all(
             np.isclose(results[f"{band}_new"], original_data[band], atol=1e-2)
         )
+
+
+def test_compute_photometry_compiles_once(opencosmo_data_path, version_checking):
+    """
+    Batches are padded to a common size, so the photometry kernel should only
+    be compiled once no matter how many batches (or lightcone slices) there are.
+    """
+    from diffsky.data_loaders.opencosmo_utils import utils
+    from diffsky.experimental.kernels import phot_kernels
+
+    bands = ("lsst_u", "lsst_g")
+    batch_size = 1000
+    catalog, aux_data = load_diffsky_mock(
+        opencosmo_data_path, version_check=version_checking, synth_cores=False
+    )
+    batches, _ = utils.determine_split_points(catalog, batch_size)
+    assert len(batches) > 1
+
+    kernel = phot_kernels._phot_kern_merging
+    kernel.clear_cache()
+    compute_phot_from_diffsky_mock(
+        catalog, aux_data, bands, insert=False, batch_size=batch_size
+    )
+    assert kernel._cache_size() == 1
 
 
 def test_compute_photometry_custom_bands(

@@ -1,7 +1,6 @@
 from collections import namedtuple
 from collections.abc import Callable
 
-import jax
 import jax.numpy as jnp
 import numpy as np
 import opencosmo as oc
@@ -310,12 +309,10 @@ def __run_photometry(
     else:
         to_compute = __compute_photometry_managed
 
-    batches = utils.split_central_indices(catalog, batch_size)
+    batches, pad_size = utils.determine_split_points(catalog, batch_size)
 
     chunked_output = []
     for row_batch in batches:
-        jax.clear_caches()
-
         batch_catalog = catalog.take_rows(row_batch)
         batch_ssp_mag_table = {
             k: v
@@ -328,24 +325,26 @@ def __run_photometry(
         batch_z_phot_table = {
             k: v for k, v in z_phot_tables.items() if k in batch_catalog.keys()
         }
-        batch_output = catalog.take_rows(row_batch).evaluate(
-            to_compute,
-            to_compute=function,
-            unpack_func=unpack_func,
-            band_names=band_names,
-            cosmology=cosmology_parameters,
-            ssp_data=aux_data["ssp_data"],
-            precomputed_ssp_mag_table=batch_ssp_mag_table,
-            wave_eff_table=batch_wave_eff_table,
-            param_collection=aux_data["param_collection"],
-            z_phot_table=batch_z_phot_table,
-            Ob0=catalog.cosmology.Ob0,
-            include_extras=include_extras,
-            suffix=suffix,
+        static_kwargs = {
+            "to_compute": function,
+            "unpack_func": unpack_func,
+            "band_names": band_names,
+            "cosmology": cosmology_parameters,
+            "ssp_data": aux_data["ssp_data"],
+            "precomputed_ssp_mag_table": batch_ssp_mag_table,
+            "wave_eff_table": batch_wave_eff_table,
+            "param_collection": aux_data["param_collection"],
+            "z_phot_table": batch_z_phot_table,
+            "Ob0": catalog.cosmology.Ob0,
+            "include_extras": include_extras,
+            "suffix": suffix,
+        }
+        batch_output = batch_catalog.evaluate(
+            utils.pad_galaxy_inputs(to_compute, static_kwargs, pad_size),
+            **static_kwargs,
             insert=insert,
             vectorize=True,
             format="jax",
-            # batch_size=batch_size,
         )
         chunked_output.append(batch_output)
     all_bands = chunked_output[0].keys()
@@ -375,17 +374,19 @@ def __run_sed_computation(
         format="jax",
     )
 
-    batches = utils.split_central_indices(catalog, batch_size)
+    batches, pad_size = utils.determine_split_points(catalog, batch_size)
 
     chunked_output = []
     for row_batch in batches:
-        jax.clear_caches()
+        static_kwargs = {
+            "ssp_data": aux_data["ssp_data"],
+            "param_collection": aux_data["param_collection"],
+            "cosmology": cosmology_parameters,
+            "Ob0": catalog.cosmology.Ob0,
+        }
         batch_output = catalog.take_rows(row_batch).evaluate(
-            to_compute,
-            ssp_data=aux_data["ssp_data"],
-            param_collection=aux_data["param_collection"],
-            cosmology=cosmology_parameters,
-            Ob0=catalog.cosmology.Ob0,
+            utils.pad_galaxy_inputs(to_compute, static_kwargs, pad_size),
+            **static_kwargs,
             insert=False,
             vectorize=True,
             format="jax",
