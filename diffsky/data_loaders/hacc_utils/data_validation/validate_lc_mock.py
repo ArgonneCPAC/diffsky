@@ -989,12 +989,12 @@ def check_consistency_of_ra_dec_synth_vs_real(
 
     msg = []
     for coord in coords:
-        min1 = real[coord].min()
-        max1 = real[coord].max()
+        min1 = np.percentile(real[coord], 1)
+        max1 = np.percentile(real[coord], 99)
         dx1 = max1 - min1
 
-        min2 = synth[coord].min()
-        max2 = synth[coord].max()
+        min2 = np.percentile(synth[coord], 1)
+        max2 = np.percentile(synth[coord], 99)
         dx2 = max2 - min2
 
         mean1 = real[coord].mean()
