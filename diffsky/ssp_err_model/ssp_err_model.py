@@ -66,7 +66,6 @@ def _delta_mag_x_kern(delta_mag_r, logsm, x0, ylo, yhi):
 
 @jjit
 def compute_delta_mags_all_bands(logsm, z_obs, ssperr_params):
-
     delta_mag_r_z0p0 = _delta_mag_r_kern(
         logsm,
         ssperr_params.z0p0_dr_logsm0,
@@ -266,6 +265,15 @@ def frac_ssp_err_at_z_obs_singlegal(ssperr_params, logsm, z_obs, wave_obs):
 
 
 @jjit
+def frac_ssp_err_singleline(ssperr_params, logsm, z_obs, line_wave):
+    delta_mags_rest = compute_delta_mags_all_bands(logsm, z_obs, ssperr_params)
+    frac_ssp_err_singleline = _tw_wave_interp_kern(
+        line_wave, 10 ** (-0.4 * delta_mags_rest), x_table=LAMBDA_REST
+    )
+    return frac_ssp_err_singleline
+
+
+@jjit
 def get_noisy_frac_ssp_err_singlegal(
     ssperr_params, logsm, z_obs, wave_obs, delta_rest_mags_scatter
 ):
@@ -297,6 +305,12 @@ _G = (None, 0, 0, 0)
 _B = (None, None, None, 0)
 frac_ssp_err_at_z_obs_galpop = jjit(
     vmap(vmap(frac_ssp_err_at_z_obs_singlegal, in_axes=_B), in_axes=_G)
+)
+
+_H = (None, 0, 0, 0)
+_C = (None, None, None, 0)
+frac_ssp_err_multline_galpop = jjit(
+    vmap(vmap(frac_ssp_err_singleline, in_axes=_C), in_axes=_H)
 )
 
 _G2 = (None, 0, 0, 0, 0)
