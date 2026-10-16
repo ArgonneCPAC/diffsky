@@ -7,8 +7,8 @@ from jax import jit as jjit
 from jax import random as jran
 
 from ....morphology_models.dbk_model import disk_knots
-from ....ssp_err_model import ssp_err_model
 from .. import mc_diffstarpop_wrappers as mcdw
+from ..ssp_err_model import ssp_err_model
 from . import ssp_weight_kernels as sspwk
 
 PHOT_RAN_KEYS = (
