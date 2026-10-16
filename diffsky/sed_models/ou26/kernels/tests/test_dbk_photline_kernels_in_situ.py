@@ -5,7 +5,7 @@ from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
 from .....experimental.tests import test_lightcone_generators as tlcg
-from ....param_utils import diffsky_param_wrapper_merging as dpwm
+from ... import diffsky_param_wrapper_merging as dpwm
 from .. import dbk_photline_kernels_in_situ as gd_dbkspk
 
 
