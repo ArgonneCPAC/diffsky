@@ -13,8 +13,8 @@ from diffstar.diffstarpop import (
 from dsps.metallicity import umzr
 from jax import jit as jjit
 
-from ...merging import merging_model
 from . import spspop_param_utils as spspu
+from .merging import merging_model
 from .scatter import (
     DEFAULT_SCATTER_PARAMS,
     DEFAULT_SCATTER_U_PARAMS,

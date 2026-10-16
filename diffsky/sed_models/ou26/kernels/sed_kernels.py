@@ -6,8 +6,8 @@ from functools import partial
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from ....merging import merging_kernels
 from .. import mc_diffstarpop_wrappers as mcdw
+from ..merging import merging_kernels
 from . import sed_kernels_in_situ
 
 
