@@ -5,8 +5,8 @@ import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
+from .....experimental.tests import test_lightcone_generators as tlcg
 from ... import diffsky_param_wrapper_merging as dpwm
-from ...tests import test_lightcone_generators as tlcg
 from .. import phot_kernels as gd_pkm
 
 TOL = 1e-8

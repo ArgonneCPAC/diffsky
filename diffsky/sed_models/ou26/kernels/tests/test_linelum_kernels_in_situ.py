@@ -5,8 +5,8 @@ from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.data_loaders import load_emline_info as lemi
 from jax import random as jran
 
+from .....experimental.tests import test_lightcone_generators as tlcg
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
-from ...tests import test_lightcone_generators as tlcg
 from .. import linelum_kernels_in_situ, phot_kernels_in_situ
 
 
