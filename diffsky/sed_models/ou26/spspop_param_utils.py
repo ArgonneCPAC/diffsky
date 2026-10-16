@@ -9,25 +9,6 @@ from collections import namedtuple
 
 from jax import jit as jjit
 
-from ...dustpop.avpop_mono import (
-    AVPOP_PBOUNDS,
-    DEFAULT_AVPOP_PARAMS,
-    get_bounded_avpop_params,
-    get_unbounded_avpop_params,
-)
-from ...dustpop.deltapop import (
-    DEFAULT_DELTAPOP_PARAMS,
-    DELTAPOP_PBOUNDS,
-    get_bounded_deltapop_params,
-    get_unbounded_deltapop_params,
-)
-from ...dustpop.funopop_ssfr import (
-    DEFAULT_FUNOPOP_PARAMS,
-    FUNOPOP_PBOUNDS,
-    get_bounded_funopop_params,
-    get_unbounded_funopop_params,
-)
-from ...dustpop.tw_dustpop_new import DustPopParams, DustPopUParams
 from .burstpop.diffqburstpop_mono import DiffburstPopParams, DiffburstPopUParams
 from .burstpop.fburstpop_mono import (
     DEFAULT_FBURSTPOP_PARAMS,
@@ -49,6 +30,30 @@ from .burstpop.tburstpop import (
     get_bounded_tburstpop_params,
     get_unbounded_tburstpop_params,
 )
+from .dustpop.avpop_mono import (
+    AVPOP_PBOUNDS,
+    DEFAULT_AVPOP_PARAMS,
+    get_bounded_avpop_params,
+    get_unbounded_avpop_params,
+)
+from .dustpop.deltapop import (
+    DEFAULT_DELTAPOP_PARAMS,
+    DELTAPOP_PBOUNDS,
+    get_bounded_deltapop_params,
+    get_unbounded_deltapop_params,
+)
+from .dustpop.funopop_ssfr import (
+    DEFAULT_FUNOPOP_PARAMS,
+    FUNOPOP_PBOUNDS,
+    get_bounded_funopop_params,
+    get_unbounded_funopop_params,
+)
+
+DustPopParams = namedtuple(
+    "DustPopParams", ("avpop_params", "deltapop_params", "funopop_params")
+)
+_DUSTPOP_UPNAMES = [key.replace("params", "u_params") for key in DustPopParams._fields]
+DustPopUParams = namedtuple("DustPopUParams", _DUSTPOP_UPNAMES)
 
 DEFAULT_DIFFBURSTPOP_PARAMS = DiffburstPopParams(
     DEFAULT_FREQBURST_PARAMS, DEFAULT_FBURSTPOP_PARAMS, DEFAULT_TBURSTPOP_PARAMS
