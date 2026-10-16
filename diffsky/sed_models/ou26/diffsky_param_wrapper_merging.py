@@ -14,7 +14,6 @@ from dsps.metallicity import umzr
 from jax import jit as jjit
 
 from ...merging import merging_model
-from ...ssp_err_model import ssp_err_model
 from . import spspop_param_utils as spspu
 from .scatter import (
     DEFAULT_SCATTER_PARAMS,
@@ -23,6 +22,7 @@ from .scatter import (
     get_bounded_scatter_params,
     get_unbounded_scatter_params,
 )
+from .ssp_err_model import ssp_err_model
 
 ParamCollection = namedtuple(
     "ParamCollection",
