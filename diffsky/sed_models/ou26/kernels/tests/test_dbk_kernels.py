@@ -5,10 +5,10 @@ from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import random as jran
 
+from .....experimental.disk_bulge_modeling import dbpop
 from .....experimental.tests import test_lightcone_generators as tlcg
-from ....merging import merging_model
-from ....param_utils import diffsky_param_wrapper_merging as dpwm
-from ...disk_bulge_modeling import dbpop
+from .....merging import merging_model
+from ... import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_mc_phot
 from .. import dbk_kernels
 from .. import dbk_photline_kernels_in_situ as gd_dbkspk
