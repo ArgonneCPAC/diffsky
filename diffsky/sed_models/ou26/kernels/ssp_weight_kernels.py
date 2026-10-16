@@ -14,9 +14,9 @@ from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
-from ....burstpop import diffqburstpop_mono, freqburst_mono
 from ....dustpop import tw_dustpop_mono_noise
 from ....dustpop.tw_dust import DEFAULT_DUST_PARAMS
+from ..burstpop import diffqburstpop_mono, freqburst_mono
 
 _M = (0, None, None)
 _calc_lgmet_weights_galpop = jjit(
