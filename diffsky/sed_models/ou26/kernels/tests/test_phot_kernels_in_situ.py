@@ -7,11 +7,11 @@ from jax import random as jran
 from .....experimental.tests import test_lightcone_generators as tlcg
 from .....merging import merging_model
 from ... import diffsky_param_wrapper_merging as dpwm
-from ...tests import test_mc_phot
+from ...tests import test_lc_phot
 from .. import phot_kernels_in_situ
 
 
-def test_mc_phot_kern(num_halos=75):
+def test_lc_phot_kern(num_halos=75):
     ran_key = jran.key(0)
     # lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
@@ -48,7 +48,7 @@ def test_mc_phot_kern(num_halos=75):
     )
     mc_gd_phot_kern_results, mc_gd_phot_randoms, diffstarpop_results = _res
 
-    test_mc_phot.check_phot_kern_results(mc_gd_phot_kern_results)
+    test_lc_phot.check_phot_kern_results(mc_gd_phot_kern_results)
 
     # return mc_gd_phot_kern_results
 
@@ -114,7 +114,7 @@ def test_mc_phot_kern(num_halos=75):
             assert np.allclose(x, x2)
 
 
-def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
+def test_lc_phot_kern_satellite_specific_effects(num_halos=75):
     ran_key = jran.key(0)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
@@ -150,7 +150,7 @@ def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
     )
     mc_gd_phot_kern_results_all_cens = _res[0]
 
-    test_mc_phot.check_phot_kern_results(mc_gd_phot_kern_results_all_cens)
+    test_lc_phot.check_phot_kern_results(mc_gd_phot_kern_results_all_cens)
 
     upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
     gyr_since_infall = lc_data.t_obs - lc_data.t_infall
@@ -174,7 +174,7 @@ def test_mc_phot_kern_satellite_specific_effects(num_halos=75):
         fb,
     )
     mc_gd_phot_kern_results_with_sats = _res[0]
-    test_mc_phot.check_phot_kern_results(mc_gd_phot_kern_results_with_sats)
+    test_lc_phot.check_phot_kern_results(mc_gd_phot_kern_results_with_sats)
 
     assert not np.allclose(
         mc_gd_phot_kern_results_with_sats.obs_mags,
