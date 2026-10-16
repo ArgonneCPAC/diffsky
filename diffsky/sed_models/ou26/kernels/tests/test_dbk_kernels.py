@@ -9,7 +9,7 @@ from .....experimental.tests import test_lightcone_generators as tlcg
 from .....merging import merging_model
 from .....morphology_models.dbk_model import dbpop
 from ... import diffsky_param_wrapper_merging as dpwm
-from ...tests import test_mc_phot
+from ...tests import test_lc_phot
 from .. import dbk_kernels
 from .. import dbk_photline_kernels_in_situ as gd_dbkspk
 from .. import mc_randoms, phot_kernels_in_situ
@@ -49,7 +49,7 @@ def test_mc_dbk_kern(num_halos=50):
         )
     )
 
-    test_mc_phot.check_phot_kern_results(phot_kern_results)
+    test_lc_phot.check_phot_kern_results(phot_kern_results)
 
     ran_key, dbk_key = jran.split(ran_key, 2)
     burst_params = DEFAULT_BURST_PARAMS._replace(
