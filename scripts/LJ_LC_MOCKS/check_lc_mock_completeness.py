@@ -82,9 +82,9 @@ if __name__ == "__main__":
 
     # Check completeness of simulated halos
     fn_pat = os.path.join(drn_out, BN_PAT_REAL_HALOS.format("*", "*"))
-    fn_list = glob(fn_pat)
-    assert len(fn_list) > 0, f"Zero files matching {fn_pat}"
-    bn_list = [os.path.basename(fn) for fn in fn_list]
+    fn_list_real = glob(fn_pat)
+    assert len(fn_list_real) > 0, f"Zero files matching {fn_pat}"
+    bn_list = [os.path.basename(fn) for fn in fn_list_real]
 
     step_collector = np.unique([get_stepnum_and_patch(bn)[0] for bn in bn_list])
     patch_collector = np.unique([get_stepnum_and_patch(bn)[1] for bn in bn_list])
@@ -122,13 +122,12 @@ if __name__ == "__main__":
     else:
         print(msg_success)
 
+    unmatched_bn_list = []
     if cl_args.ignore_synthetics:
         print("\nIgnoring synthetic halos in completeness check")
-        unmatched_bn_list = []
     else:
         # Check each lightcone file has a matching synthetic_halos file
-        unmatched_bn_list = []
-        for fn in fn_list:
+        for fn in fn_list_real:
             bn = os.path.basename(fn)
             bn_synthetic = bn.replace(".hdf5", ".synthetic_halos.hdf5")
             fn_synthetic = os.path.join(drn_out, bn_synthetic)
@@ -149,7 +148,13 @@ if __name__ == "__main__":
     assert n_files > 0, f"{fnpat} is an incorrect path to mock dataset"
 
     incomplete_files = []
-    for fn in fn_list_all:
+    if cl_args.ignore_synthetics:
+        fn_list_to_check = fn_list_real
+    else:
+        fn_list_to_check = fn_list_all
+    n_files_to_check = len(fn_list_to_check)
+
+    for fn in fn_list_to_check:
         fn_exists, fn_is_complete = lc_mock.check_mock_data_file_is_complete(fn)
         if not fn_is_complete:
             incomplete_files.append(fn)
@@ -162,5 +167,19 @@ if __name__ == "__main__":
             print(f"{fn}")
     else:
         print(
-            f"\nEach of the {n_files} mock files has the `write_complete` metadata attribute\n"
+            f"\nEach of the {n_files_to_check} mock files has the `write_complete` metadata attribute\n"
         )
+
+    n_missing_files = len(missing_files)
+    n_unmatched_bn_list = len(unmatched_bn_list)
+    n_incomplete_files = len(incomplete_files)
+
+    print(f"\nReal halos: {n_missing_files} missing files")
+    if cl_args.ignore_synthetics:
+        print(f"Synthetic halos: {n_unmatched_bn_list} missing files")
+    else:
+        print("Ignored synthetic halos")
+
+    print(
+        f"{n_incomplete_files} files missing the `write_complete` metadata attribute\n"
+    )
