@@ -6,8 +6,8 @@ from functools import partial
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from ....merging import merging_model
 from .. import mc_diffstarpop_wrappers as mcdw
+from ..merging import merging_model
 from ..ssp_err_model import ssp_err_model
 from . import rapid_quenching as rq
 from . import ssp_weight_kernels as sspwk

@@ -6,8 +6,8 @@ from dsps.sfh.diffburst import DEFAULT_BURST_PARAMS
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from ....merging import merging_model
 from ....morphology_models.dbk_model import disk_bulge_kernels as dbk
+from ..merging import merging_model
 from . import dbk_kernels, linelum_kernels_in_situ, mc_randoms, phot_kernels_in_situ
 
 

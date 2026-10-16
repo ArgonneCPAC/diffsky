@@ -5,7 +5,7 @@ from collections import namedtuple
 from jax import jit as jjit
 from jax import numpy as jnp
 
-from ....merging import merging_model
+from ..merging import merging_model
 from . import dbk_photline_kernels_in_situ as gd_dbkspk
 from . import mc_randoms
 from . import phot_kernels as gd_pkm
