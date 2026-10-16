@@ -7,8 +7,8 @@ from dsps.data_loaders import load_emline_info as lemi
 from jax import random as jran
 
 from .....experimental.tests import test_lightcone_generators as tlcg
-from ....merging import merging_model
-from ....param_utils import diffsky_param_wrapper as dpw
+from .....merging import merging_model
+from ... import diffsky_param_wrapper_merging as dpwm
 from .. import photline_kernels as sppkm
 from .helpers import check_phot_kern_merging_results, check_spec_kern_merging_results
 
@@ -40,8 +40,7 @@ def test_mc_photline_kern_merging(mc_merge, num_halos=141):
             lc_data.z_phot_table,
             lc_data.wave_eff_table,
             line_wave_table,
-            *dpw.DEFAULT_PARAM_COLLECTION,
-            merging_model.DEFAULT_MERGE_PARAMS,
+            *dpwm.DEFAULT_PARAM_COLLECTION,
             DEFAULT_COSMOLOGY,
             fb,
             lc_data.logmp_infall,
