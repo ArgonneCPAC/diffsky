@@ -1,3 +1,8 @@
+0.3.10 (2026-10-16)
+-------------------
+- Add forgotten model nickname sdss_feniks_hizels_261013 calibration (https://github.com/ArgonneCPAC/diffsky/pull/516)
+- Fix bugs in check_lc_mock_completeness.py
+
 0.3.9 (2026-10-13)
 -------------------
 - Improve performance of all photometry/SED kernels by using jnp.einsum (https://github.com/ArgonneCPAC/diffsky/pull/496)
