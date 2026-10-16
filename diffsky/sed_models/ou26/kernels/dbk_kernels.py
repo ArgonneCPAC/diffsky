@@ -7,7 +7,7 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
 
-from ....experimental.disk_bulge_modeling import dbpop
+from ....morphology_models.dbk_model import dbpop
 from . import rapid_quenching as rq
 from . import ssp_weight_kernels as sspwk
 
