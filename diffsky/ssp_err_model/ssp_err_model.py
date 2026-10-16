@@ -265,15 +265,6 @@ def frac_ssp_err_at_z_obs_singlegal(ssperr_params, logsm, z_obs, wave_obs):
 
 
 @jjit
-def frac_ssp_err_singleline(ssperr_params, logsm, z_obs, line_wave):
-    delta_mags_rest = compute_delta_mags_all_bands(logsm, z_obs, ssperr_params)
-    frac_ssp_err_singleline = _tw_wave_interp_kern(
-        line_wave, 10 ** (-0.4 * delta_mags_rest), x_table=LAMBDA_REST
-    )
-    return frac_ssp_err_singleline
-
-
-@jjit
 def get_noisy_frac_ssp_err_singlegal(
     ssperr_params, logsm, z_obs, wave_obs, delta_rest_mags_scatter
 ):
@@ -286,6 +277,42 @@ def get_noisy_frac_ssp_err_singlegal(
         wave_obs, 10 ** (-0.4 * delta_mags_rest_nonoise), x_table=LAMBDA_REST
     )
     return frac_ssp_err_z_obs, frac_ssp_err_z_obs_no_noise
+
+
+@jjit
+def frac_ssp_err_singleline(ssperr_params, logsm, z_obs, line_wave):
+    delta_mags_rest = compute_delta_mags_all_bands(logsm, z_obs, ssperr_params)
+    frac_ssp_err_singleline = _tw_wave_interp_kern(
+        line_wave, 10 ** (-0.4 * delta_mags_rest), x_table=LAMBDA_REST
+    )
+    return frac_ssp_err_singleline
+
+
+_G = (None, 0, 0, 0)
+_L = (None, None, None, 0)
+frac_ssp_err_multline_galpop = jjit(
+    vmap(vmap(frac_ssp_err_singleline, in_axes=_L), in_axes=_G)
+)
+
+# @jjit
+# def get_noisy_frac_ssp_err_singleline(
+#     ssperr_params, logsm, z_obs, line_wave, delta_rest_mags_scatter
+# ):
+#     delta_mags_rest_nonoise = compute_delta_mags_all_bands(logsm, z_obs, ssperr_params)
+#     delta_mags_rest = delta_mags_rest_nonoise + delta_rest_mags_scatter
+#     frac_ssp_err_singleline = _tw_wave_interp_kern(
+#         line_wave, 10 ** (-0.4 * delta_mags_rest), x_table=LAMBDA_REST
+#     )
+#     frac_ssp_err_singleline_no_noise = _tw_wave_interp_kern(
+#         line_wave, 10 ** (-0.4 * delta_mags_rest_nonoise), x_table=LAMBDA_REST
+#     )
+#     return frac_ssp_err_singleline, frac_ssp_err_singleline_no_noise
+
+# _G2 = (None, 0, 0, 0, 0)
+# _L2 = (None, None, None, 0, None)
+# get_noisy_frac_ssp_err_multline_galpop = jjit(
+#     vmap(vmap(get_noisy_frac_ssp_err_singleline, in_axes=_L2), in_axes=_G2)
+# )
 
 
 @jjit
@@ -305,12 +332,6 @@ _G = (None, 0, 0, 0)
 _B = (None, None, None, 0)
 frac_ssp_err_at_z_obs_galpop = jjit(
     vmap(vmap(frac_ssp_err_at_z_obs_singlegal, in_axes=_B), in_axes=_G)
-)
-
-_H = (None, 0, 0, 0)
-_C = (None, None, None, 0)
-frac_ssp_err_multline_galpop = jjit(
-    vmap(vmap(frac_ssp_err_singleline, in_axes=_C), in_axes=_H)
 )
 
 _G2 = (None, 0, 0, 0, 0)
