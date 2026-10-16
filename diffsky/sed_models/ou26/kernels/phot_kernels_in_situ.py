@@ -9,10 +9,10 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
 
-from ....dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ....merging import merging_model
 from .. import mc_diffstarpop_wrappers as mcdw
 from .. import photometry_interpolation as photerp
+from ..dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ..ssp_err_model import ssp_err_model
 from . import constants, mc_randoms
 from . import rapid_quenching as rq
