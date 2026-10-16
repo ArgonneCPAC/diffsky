@@ -6,8 +6,8 @@ from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
 from jax import vmap
 
-from .....experimental.tests import test_lightcone_generators as tlcg
 from ... import diffsky_param_wrapper_merging as dpwm
+from ...tests import test_lightcone_generators as tlcg
 from .. import phot_kernels_in_situ, sed_kernels_in_situ
 
 _A = [None, 0, None, None, 0, *[None] * 4]

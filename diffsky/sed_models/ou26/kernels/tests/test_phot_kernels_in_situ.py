@@ -4,10 +4,10 @@ import numpy as np
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import random as jran
 
-from .....experimental.tests import test_lightcone_generators as tlcg
 from .....merging import merging_model
 from ... import diffsky_param_wrapper_merging as dpwm
 from ...tests import test_lc_phot
+from ...tests import test_lightcone_generators as tlcg
 from .. import phot_kernels_in_situ
 
 
