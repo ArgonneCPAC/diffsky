@@ -336,6 +336,7 @@ def _compute_obs_flux_from_weights(
 def _compute_linelum_from_weights(
     logsm_obs,
     frac_trans,
+    frac_ssp_err,
     ssp_data,
     ssp_weights,
 ):
@@ -346,9 +347,9 @@ def _compute_linelum_from_weights(
 
     n_gal = logsm_obs.size
     mstar = 10 ** logsm_obs.reshape((n_gal, 1))
-    s = "mal,gma,gla->gl"
+    s = "mal,gma,gla,gl->gl"
     linelum_galpop_cgs = mstar * jnp.einsum(
-        s, ssp_data.ssp_emline_luminosity, ssp_weights, frac_trans
+        s, ssp_data.ssp_emline_luminosity, ssp_weights, frac_trans, frac_ssp_err
     )
 
     return linelum_galpop_cgs
