@@ -9,7 +9,7 @@ from jax import random as jran
 from jax import vmap
 
 from .....experimental.tests import test_lightcone_generators as tlcg
-from ....param_utils import diffsky_param_wrapper_merging as dpwm
+from ... import diffsky_param_wrapper_merging as dpwm
 from .. import phot_kernels as gd_pkm
 from .. import sed_kernels as gd_sedkm
 
