@@ -9,7 +9,7 @@ from jax import jit as jjit
 from jax import numpy as jnp
 from jax import vmap
 
-from ....burstpop import freqburst_mono
+from ..burstpop import freqburst_mono
 from . import ssp_weight_kernels as sspwk
 
 RapidQParams = namedtuple("RapidQParams", ("rq_p_merge_x0", "rq_lg_age_gyr_max"))

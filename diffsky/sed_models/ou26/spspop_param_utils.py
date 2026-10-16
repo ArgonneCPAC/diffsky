@@ -9,27 +9,6 @@ from collections import namedtuple
 
 from jax import jit as jjit
 
-from ...burstpop.diffqburstpop_mono import DiffburstPopParams, DiffburstPopUParams
-from ...burstpop.fburstpop_mono import (
-    DEFAULT_FBURSTPOP_PARAMS,
-    FBURSTPOP_PBOUNDS,
-    ZEROBURST_FBURSTPOP_PARAMS,
-    get_bounded_fburstpop_params,
-    get_unbounded_fburstpop_params,
-)
-from ...burstpop.freqburst_mono import (
-    DEFAULT_FREQBURST_PARAMS,
-    FREQBURST_PBOUNDS,
-    ZEROBURST_FREQBURST_PARAMS,
-    get_bounded_freqburst_params,
-    get_unbounded_freqburst_params,
-)
-from ...burstpop.tburstpop import (
-    DEFAULT_TBURSTPOP_PARAMS,
-    TBURSTPOP_PBOUNDS,
-    get_bounded_tburstpop_params,
-    get_unbounded_tburstpop_params,
-)
 from ...dustpop.avpop_mono import (
     AVPOP_PBOUNDS,
     DEFAULT_AVPOP_PARAMS,
@@ -49,6 +28,27 @@ from ...dustpop.funopop_ssfr import (
     get_unbounded_funopop_params,
 )
 from ...dustpop.tw_dustpop_new import DustPopParams, DustPopUParams
+from .burstpop.diffqburstpop_mono import DiffburstPopParams, DiffburstPopUParams
+from .burstpop.fburstpop_mono import (
+    DEFAULT_FBURSTPOP_PARAMS,
+    FBURSTPOP_PBOUNDS,
+    ZEROBURST_FBURSTPOP_PARAMS,
+    get_bounded_fburstpop_params,
+    get_unbounded_fburstpop_params,
+)
+from .burstpop.freqburst_mono import (
+    DEFAULT_FREQBURST_PARAMS,
+    FREQBURST_PBOUNDS,
+    ZEROBURST_FREQBURST_PARAMS,
+    get_bounded_freqburst_params,
+    get_unbounded_freqburst_params,
+)
+from .burstpop.tburstpop import (
+    DEFAULT_TBURSTPOP_PARAMS,
+    TBURSTPOP_PBOUNDS,
+    get_bounded_tburstpop_params,
+    get_unbounded_tburstpop_params,
+)
 
 DEFAULT_DIFFBURSTPOP_PARAMS = DiffburstPopParams(
     DEFAULT_FREQBURST_PARAMS, DEFAULT_FBURSTPOP_PARAMS, DEFAULT_TBURSTPOP_PARAMS
