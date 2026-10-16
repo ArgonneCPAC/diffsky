@@ -176,9 +176,9 @@ if __name__ == "__main__":
 
     print(f"\nReal halos: {n_missing_files} missing files")
     if cl_args.ignore_synthetics:
-        print(f"Synthetic halos: {n_unmatched_bn_list} missing files")
-    else:
         print("Ignored synthetic halos")
+    else:
+        print(f"Synthetic halos: {n_unmatched_bn_list} missing files")
 
     print(
         f"{n_incomplete_files} files missing the `write_complete` metadata attribute\n"
