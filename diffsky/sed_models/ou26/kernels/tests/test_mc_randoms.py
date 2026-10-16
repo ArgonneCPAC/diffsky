@@ -5,7 +5,7 @@ from diffmah import DEFAULT_MAH_PARAMS
 from dsps.cosmology.defaults import DEFAULT_COSMOLOGY
 from jax import random as jran
 
-from .....experimental.disk_bulge_modeling import disk_knots
+from .....morphology_models.dbk_model import disk_knots
 from ... import diffsky_param_wrapper_merging as dpwm
 from .. import mc_randoms
 
