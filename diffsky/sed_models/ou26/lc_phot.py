@@ -20,8 +20,8 @@ from diffstar.defaults import FB
 from dsps.cosmology import DEFAULT_COSMOLOGY
 from jax import jit as jjit
 
-from ...param_utils import diffsky_param_wrapper_merging as dpwm
-from ..kernels import (
+from . import diffsky_param_wrapper_merging as dpwm
+from .kernels import (
     _dbk_sed_kern,
     _mc_dbk_photline_kern_merging,
     _mc_phot_kern_merging,
