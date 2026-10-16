@@ -7,8 +7,8 @@ from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
 from jax import vmap
 
+from .....experimental.tests import test_lightcone_generators as tlcg
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
-from ...tests import test_lightcone_generators as tlcg
 from .. import (
     dbk_sed_kernels_in_situ,
     mc_randoms,

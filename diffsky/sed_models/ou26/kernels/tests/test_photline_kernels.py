@@ -6,9 +6,9 @@ from dsps.cosmology import DEFAULT_COSMOLOGY
 from dsps.data_loaders import load_emline_info as lemi
 from jax import random as jran
 
+from .....experimental.tests import test_lightcone_generators as tlcg
 from ....merging import merging_model
 from ....param_utils import diffsky_param_wrapper as dpw
-from ...tests import test_lightcone_generators as tlcg
 from .. import photline_kernels as sppkm
 from .helpers import check_phot_kern_merging_results, check_spec_kern_merging_results
 

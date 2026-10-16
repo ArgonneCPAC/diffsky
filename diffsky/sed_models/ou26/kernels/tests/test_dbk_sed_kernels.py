@@ -8,12 +8,12 @@ from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
 from jax import vmap
 
+from .....experimental.tests import test_lightcone_generators as tlcg
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
-from ...tests import test_lightcone_generators as tlcg
-from .. import dbk_sed_kernels as gd_dbk_sedkm
 from .. import dbk_photline_kernels
-from .. import sed_kernels as gd_sedkm
+from .. import dbk_sed_kernels as gd_dbk_sedkm
 from .. import mc_randoms
+from .. import sed_kernels as gd_sedkm
 
 _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
