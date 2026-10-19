@@ -1,7 +1,13 @@
+0.3.11 (unreleased)
+-------------------
+- Add [NII] lines to emlines_info_grs_pit.dat (https://github.com/ArgonneCPAC/diffsky/pull/520)
+
+
 0.3.10 (2026-10-16)
 -------------------
 - Add forgotten model nickname sdss_feniks_hizels_261013 calibration (https://github.com/ArgonneCPAC/diffsky/pull/516)
 - Fix bugs in check_lc_mock_completeness.py (https://github.com/ArgonneCPAC/diffsky/pull/518)
+
 
 0.3.9 (2026-10-13)
 -------------------
@@ -22,6 +28,7 @@
 - Fix bug in ra, dec of synthetic halos due to outdated LastJourney file (https://github.com/ArgonneCPAC/diffsky/pull/481)
 - Fix bug in abundance of low-redshift synthetic halos due to incorrect downsampling factor (https://github.com/ArgonneCPAC/diffsky/pull/482)
 - Include `redshift_obs` column in diffsky mocks (https://github.com/ArgonneCPAC/diffsky/pull/484)
+
 
 0.3.7 (2026-08-05)
 -------------------
