@@ -132,6 +132,8 @@ jobs:
           mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
           mpiexec -n 1 python scripts/LJ_LC_MOCKS/make_lj_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml -synthetic_cores 1
 
+          mpiexec -n 1 python scripts/LJ_LC_MOCKS/add_galaxy_id_to_mock.py scripts/LJ_LC_MOCKS/testing_lj_mock_config.yaml
+
           cp LastJourney/core-lc-9/lc_cores-decomposition.txt ci_test_output/dummy_version_name/
 
       - name: verify script completed
