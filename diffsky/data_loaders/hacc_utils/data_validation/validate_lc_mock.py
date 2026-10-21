@@ -74,6 +74,10 @@ def get_lc_mock_data_report(
     if len(msg) > 0:
         report["consistency_of_ra_dec_synth_vs_real"] = msg
 
+    msg = check_has_gal_id(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["has_gal_id"] = msg
+
     msg = check_xyz_littleh(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["xyz_littleh"] = msg
@@ -588,6 +592,18 @@ def check_column_shapes(fn_lc_mock, data=None):
                 s = f"`{key}` column has unexpected shape={shape}"
                 msg.append(s)
 
+    return msg
+
+
+def check_has_gal_id(fn_lc_mock, data=None):
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    try:
+        assert "gal_id" in data.keys()
+        msg = []
+    except AssertionError:
+        msg = [f"{fn_lc_mock} is missing `gal_id` column"]
     return msg
 
 
