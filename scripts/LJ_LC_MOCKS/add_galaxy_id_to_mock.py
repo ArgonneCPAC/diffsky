@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     mock_version_name_in = config.get("mock_version_name", "")
     if cl_args.infer_mockname:
-        fnpat = os.path.join(config["drn_out"], mock_nickname + "_*")
+        fnpat = os.path.join(config["drn_mock"], mock_nickname + "_*")
         fn_list = glob(fnpat)
         try:
             drn_mock = fn_list[0]
@@ -52,7 +52,7 @@ if __name__ == "__main__":
             mock_version_name = mock_version_name_in
 
     if cl_args.drn_mock == "":
-        drn_mock = os.path.join(config["drn_out"], mock_version_name)
+        drn_mock = os.path.join(config["drn_mock"], mock_version_name)
     else:
         drn_mock = cl_args.drn_mock
 
