@@ -9,7 +9,7 @@ from dsps.data_loaders.defaults import TransmissionCurve
 from jax import random as jran
 
 from ....data_loaders import load_ssp_data
-from .. import lc_data_phot
+from ....lc_generators import lc_data_phot
 from .. import lc_phot
 from . import test_lc_phot as tlcp
 
