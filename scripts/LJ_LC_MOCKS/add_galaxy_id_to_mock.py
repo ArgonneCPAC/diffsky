@@ -19,6 +19,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("config_yaml", help="YAML configuration file")
     parser.add_argument(
+        "-drn_mock", help="Directory of mock overrides config_yaml", default=""
+    )
+    parser.add_argument(
         "-infer_mockname",
         help="Infer mock_version_name from directory",
         action="store_true",
@@ -31,20 +34,31 @@ if __name__ == "__main__":
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    drn_out = config["drn_out"]
     mock_nickname = config["mock_nickname"]
 
+    mock_version_name_in = config.get("mock_version_name", "")
     if cl_args.infer_mockname:
-        fn_list = glob(os.path.join(drn_out, mock_nickname + "_*"))
-        drn_mock = fn_list[0]
+        fnpat = os.path.join(config["drn_out"], mock_nickname + "_*")
+        fn_list = glob(fnpat)
+        try:
+            drn_mock = fn_list[0]
+        except IndexError:
+            raise ValueError(f"No files detected in {fnpat}")
         mock_version_name = os.path.basename(drn_mock)
     else:
-        mock_version_name = get_mock_version_name(mock_nickname)
+        if mock_version_name_in == "":
+            mock_version_name = get_mock_version_name(mock_nickname)
+        else:
+            mock_version_name = mock_version_name_in
 
-    drn = os.path.join(drn_out, mock_version_name)
+    if cl_args.drn_mock == "":
+        drn_mock = os.path.join(config["drn_out"], mock_version_name)
+    else:
+        drn_mock = cl_args.drn_mock
 
-    fn_list = glob(os.path.join(drn, "lc_cores-*.hdf5"))
+    fn_list = glob(os.path.join(drn_mock, "lc_cores-*.hdf5"))
     bn_list = [os.path.basename(fn) for fn in fn_list]
+    assert len(bn_list) > 0, f"No mock files detected in {drn_mock}"
 
     def sort_key(bn):
         bn_parse = bn.split("-")[1].split(".")
@@ -59,7 +73,7 @@ if __name__ == "__main__":
     start = time()
     counter = 0
     for bn in bn_list_sorted:
-        fn = os.path.join(drn, bn)
+        fn = os.path.join(drn_mock, bn)
         with h5py.File(fn, "r") as hdf:
             n_fn = hdf["data/central"].size
 
