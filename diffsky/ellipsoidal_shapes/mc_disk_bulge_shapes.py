@@ -102,6 +102,8 @@ def mc_disk_bulge_ellipsoids(
     psi_noise_rad = jnp.deg2rad(psi_noise_deg)
     delta_psi_rad = jran.normal(ran_key, shape=n) * psi_noise_rad
     new_bulge_psi = bulge_ellipse.psi + delta_psi_rad
+    # psi is an axial angle (period pi): wrap back into [-π/2, π/2) like disk psi
+    new_bulge_psi = jnp.mod(new_bulge_psi + jnp.pi / 2, jnp.pi) - jnp.pi / 2
     new_bulge_e_alpha, new_bulge_e_beta = epk._get_xy_coords_of_projected_semi_axes(new_bulge_psi)
     bulge_ellipse = bulge_ellipse._replace(
         psi=new_bulge_psi,
