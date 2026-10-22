@@ -1,18 +1,11 @@
 """"""
 
-from collections import namedtuple
-
 from jax import numpy as jnp
 from jax import random as jran
-from jax import jit as jjit
 
 from . import bulge_shapes, disk_shapes
 from . import ellipse_proj_kernels as epk
 
-Ellipse2DParams = namedtuple(
-    "Ellipse2DParams",
-    ("alpha", "beta", "psi", "ellipticity", "e_alpha", "e_beta", "A", "B", "C"),
-)
 
 def mc_disk_bulge_ellipsoids(
     ran_key,
@@ -38,9 +31,9 @@ def mc_disk_bulge_ellipsoids(
     Therefore, the coordinates of the galaxy are required to properly project the galaxy shape onto
     the west-north plane. We assume the standard mapping between RA/Dec and the comoving x/y/z coordinates
     in the simulation frame:
-        (x, y, z) = (-cos δ * cos α, -cos δ * sin α, sin δ) * chi,
+        (x, y, z) = (cos δ * cos α, cos δ * sin α, sin δ) * chi,
     where δ is declination and α is right ascension, chi is the looking back comoving distance. This means that
-    the -x direction is where RA = 0 and Dec = 0, and +z direction is the north celestial pole.
+    the +x direction is where RA = 0 and Dec = 0, and +z direction is the north celestial pole.
 
     Under the special case of no intrinsic alignment, the (mu, phi, omega) expressed in the body frame are
     uniformly random. The rigorous projection can be skipped under this scenario. However, we still follow the
@@ -77,10 +70,10 @@ def mc_disk_bulge_ellipsoids(
     """
     # Draw random 3D orthonormal vectors A, B, C in the simulation frame
     # to be replaced by A, B, C = central_alignment/satellite_alignment in future
-    A, B, C = epk.mc_orthonormal_vectors(ran_key, n)
+    A, B, C = epk.mc_orthonormal_vectors(los_key, n)
 
     # Build the West-North-LoS coordinate system in the simulation frame
-    obs_x, obs_y, obs_z = epk.observer_frame_axes_from_xyz(pos_x, pos_y, pos_z)
+    obs_x, obs_y, _ = epk.observer_frame_axes_from_pos_3D(pos_x, pos_y, pos_z)
 
     # Use encapsulated function to compute the Ellipse2DParams
     a_disk = r50_disk
@@ -93,14 +86,14 @@ def mc_disk_bulge_ellipsoids(
 
     disk_ellipse = epk.compute_ellipse2d_in_sim_frame(
         A, B, C, a_disk, b_disk, c_disk,
-        obs_x, obs_y, obs_z,
+        obs_x, obs_y,
         envelop=envelop,
         ellipticity_type=ellipticity_type,
     )
 
     bulge_ellipse = epk.compute_ellipse2d_in_sim_frame(
         A, B, C, a_bulge, b_bulge, c_bulge,
-        obs_x, obs_y, obs_z,
+        obs_x, obs_y,
         envelop=envelop,
         ellipticity_type=ellipticity_type,
     )
@@ -108,8 +101,12 @@ def mc_disk_bulge_ellipsoids(
     # inject a random misalignment between the disk and bulge position angles
     psi_noise_rad = jnp.deg2rad(psi_noise_deg)
     delta_psi_rad = jran.normal(ran_key, shape=n) * psi_noise_rad
+    new_bulge_psi = bulge_ellipse.psi + delta_psi_rad
+    new_bulge_e_alpha, new_bulge_e_beta = epk._get_xy_coords_of_projected_semi_axes(new_bulge_psi)
     bulge_ellipse = bulge_ellipse._replace(
-        psi=bulge_ellipse.psi + delta_psi_rad
+        psi=new_bulge_psi,
+        e_alpha=new_bulge_e_alpha,
+        e_beta=new_bulge_e_beta,
     )
 
     return disk_ellipse, bulge_ellipse

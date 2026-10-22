@@ -11,15 +11,16 @@ from jax import random as jran
 from jax import lax
 from diffsky.ellipsoidal_shapes import ellipse_proj_kernels as eproj
 
+
 def align_to_halo(key, halo_axisA_x, halo_axisA_y, halo_axisA_z,
-                    alignment_strength, prim_gal_axis='A'):
+                  alignment_strength, prim_gal_axis='A'):
     """ Aligns the galaxy axes to the halo axes with a given alignment strength.
     Parameters
     ----------
     halo_axisA_x, halo_axisA_y, halo_axisA_z : array_like, shape (N,)
         The x, y, and z components of the halo's major axis (A-axis)
     alignment_strength : float or array_like, shape (N,)
-        The strength of the alignment, defined for the DW distribution. If a float, it is applied to all galaxies. 
+        The strength of the alignment, defined for the DW distribution. If a float, it is applied to all galaxies.
         If an array, it must have the same length as the number of galaxies.
     prim_gal_axis : str, optional
         The primary axis of the galaxy to align. Can be 'A', 'B', or 'C'. Default is 'A'.
@@ -30,18 +31,17 @@ def align_to_halo(key, halo_axisA_x, halo_axisA_y, halo_axisA_z,
     aligned_galaxy_axes : (array_like, array_like, array_like), shape (N, 3) each
         The aligned galaxy axes after applying the alignment transformation.
     """
-    # type check for alignment_strength
-    assert( ( isinstance(alignment_strength, float) ) or ( isinstance(alignment_strength, jnp.ndarray) ) )
-    if isinstance( alignment_strength, float ):
-        alignment_strength = alignment_strength * jnp.ones( len(halo_axisA_x) )
-    
+    alignment_strength = _broadcast_alignment_strength(
+        alignment_strength, len(halo_axisA_x)
+    )
+
     # set prim_gal_axis orientation
     major_input_vectors = jnp.stack((halo_axisA_x, halo_axisA_y, halo_axisA_z), axis=-1)
-    
+
     return align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis)
 
 
-def align_radially(key, halo_x, halo_y, halo_z, 
+def align_radially(key, halo_x, halo_y, halo_z,
                    x, y, z, alignment_strength, Lbox, prim_gal_axis='A'):
     """ Aligns the galaxy axes radially to the halo center with a given alignment strength.
     Parameters
@@ -53,7 +53,7 @@ def align_radially(key, halo_x, halo_y, halo_z,
     Lbox : array_like, shape (3,)
         The size of the simulation box (for periodic boundary conditions).
     alignment_strength : float or array_like, shape (N,)
-        The strength of the alignment, defined for the DW distribution. If a float, it is applied to all galaxies. 
+        The strength of the alignment, defined for the DW distribution. If a float, it is applied to all galaxies.
         If an array, it must have the same length as the number of galaxies.
     prim_gal_axis : str, optional
         The primary axis of the galaxy to align. Can be 'A', 'B', or 'C'. Default is 'A'.
@@ -64,11 +64,8 @@ def align_radially(key, halo_x, halo_y, halo_z,
     aligned_galaxy_axes : (array_like, array_like, array_like), shape (N, 3) each
         The aligned galaxy axes after applying the radial alignment transformation.
     """
-    # type check for alignment_strength
-    assert( ( isinstance(alignment_strength, float) ) or ( isinstance(alignment_strength, jnp.ndarray) ) )
-    if isinstance( alignment_strength, float ):
-        alignment_strength = alignment_strength * jnp.ones( len(halo_x) )
-    
+    alignment_strength = _broadcast_alignment_strength(alignment_strength, len(halo_x))
+
     # set prim_gal_axis orientation
     major_input_vectors, r = get_radial_vector(halo_x, halo_y, halo_z, x, y, z, Lbox)
     # check for length 0 radial vectors
@@ -79,8 +76,25 @@ def align_radially(key, halo_x, halo_y, halo_z,
         major_input_vectors = major_input_vectors.at[mask, :].set(
             eproj.random_unit_vectors_3d(subkey, N_bad_axes)
         )
-    
+
     return align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis)
+
+
+def _broadcast_alignment_strength(alignment_strength, n):
+    """ Broadcast a scalar or per-galaxy alignment strength to shape (n,).
+    Accepts Python/numpy scalars and numpy/jax arrays; only the shape is checked,
+    so this also works on traced values inside jitted functions.
+    """
+    alignment_strength = jnp.asarray(alignment_strength)
+    if alignment_strength.ndim == 0:
+        return jnp.full((n,), alignment_strength)
+    if alignment_strength.shape != (n,):
+        raise ValueError(
+            f"alignment_strength must be a scalar or have shape ({n},), "
+            f"got shape {alignment_strength.shape}"
+        )
+    return alignment_strength
+
 
 @partial(jjit, static_argnums=(3,))
 def align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis="A"):
@@ -90,7 +104,7 @@ def align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis="A
     major_input_vectors : array_like, shape (N, 3)
         The input vectors to which the galaxy axes will be aligned.
     alignment_strength : float or array_like, shape (N,)
-        The strength of the alignment, defined for the DW distribution. If a float, it is applied to all galaxies. 
+        The strength of the alignment, defined for the DW distribution. If a float, it is applied to all galaxies.
         If an array, it must have the same length as the number of galaxies.
     prim_gal_axis : str, optional
         The primary axis of the galaxy to align. Can be 'A', 'B', or 'C'. Default is 'A'.
@@ -101,14 +115,19 @@ def align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis="A
     major_v, inter_v, minor_v : array_like, shape (N, 3)
         The aligned galaxy axes after applying the alignment transformation. The axes are returned in the order of major, intermediate, and minor axes.
     """
-    # type check for alignment_strength
-    assert( ( isinstance(alignment_strength, float) ) or ( isinstance(alignment_strength, jnp.ndarray) ) )
-    if isinstance( alignment_strength, float ):
-        alignment_strength = alignment_strength * jnp.ones( len(major_input_vectors) )
+    # prim_gal_axis is a static argument, so it is a plain Python str at trace
+    # time and can be validated with an ordinary raise (once per compilation)
+    if prim_gal_axis not in ("A", "B", "C"):
+        raise ValueError(
+            f"Invalid prim_gal_axis: {prim_gal_axis!r}. Must be 'A', 'B', or 'C'."
+        )
+    alignment_strength = _broadcast_alignment_strength(
+        alignment_strength, major_input_vectors.shape[0]
+    )
 
-    key_A, key_B = jran.split(key)
+    key_A, key_B, key_Arand = jran.split(key, 3)
 
-    #A_v = axes_correlated_with_input_vector(major_input_vectors, p=alignment_strength)
+    # A_v = axes_correlated_with_input_vector(major_input_vectors, p=alignment_strength)
     A_v = sample_watson_orientations(key_A, major_input_vectors, alignment_strength)
 
     # check for bad vectors: not finite (nan/inf), or not unit-length -- the
@@ -121,7 +140,7 @@ def align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis="A
     a_norm = jnp.linalg.norm(A_v, axis=-1)
     mask = (~jnp.isfinite(a_norm)) | (jnp.abs(a_norm - 1.0) > 1e-3)
     n_bad_axes = jnp.sum(mask)
-    A_v_random = eproj.random_unit_vectors_3d(key_A, A_v.shape[0])
+    A_v_random = eproj.random_unit_vectors_3d(key_Arand, A_v.shape[0])
     A_v = jnp.where(mask[:, None], A_v_random, A_v)
     lax.cond(
         n_bad_axes > 0,
@@ -150,12 +169,13 @@ def align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis="A
         major_v = C_v
         inter_v = A_v
         minor_v = B_v
-    elif prim_gal_axis == 'C':
+    else:  # prim_gal_axis == 'C', validated above
         major_v = B_v
         inter_v = C_v
         minor_v = A_v
-        
+
     return major_v, inter_v, minor_v
+
 
 @jjit
 def get_radial_vector(halo_x, halo_y, halo_z, x, y, z, Lbox):
@@ -178,11 +198,12 @@ def get_radial_vector(halo_x, halo_y, halo_z, x, y, z, Lbox):
     """
     # define halo-center - satellite vector
     # accounting for PBCs
-    r_vec = jnp.stack((x-halo_x, y-halo_y, z-halo_z), axis=-1)
+    r_vec = jnp.stack((x - halo_x, y - halo_y, z - halo_z), axis=-1)
     r_vec = modular_vector(r_vec, Lbox)
-    r = jnp.sqrt(jnp.sum(r_vec*r_vec, axis=-1))
+    r = jnp.sqrt(jnp.sum(r_vec * r_vec, axis=-1))
 
     return r_vec, r
+
 
 @jjit
 def modular_vector(v, Lbox):
@@ -206,20 +227,19 @@ def modular_vector(v, Lbox):
     return jnp.where(is_periodic, v_wrapped, v)
 
 
-
-### ===========================================================================
-### Dimroth-Watson Distribution Sampling (editted based on diffHOD-IA)
-### Convention: sample the polar angle theta and azimuthal angle phi from D-W
-### P(theta, phi) = B(kappa)/(2pi) * exp(-kappa*cos^2(theta))sin(theta),
-### where the norm factor (Nick's eqn 17 has typo)
-###   B(kappa) = 2pi / (\int_{-1}^{1} exp(-kappa*t^2) * dt)
-### The alignment strength is usually defined as
-### mu = -2/pi * tan^-1(kappa), which is in [-1, 1].
-###   mu = 0 means random orientation
-###   mu = -1 means perfect anti-alignment (orthogonal to ref axis)
-###   mu = 1 means perfect alignment (parallel to ref axis)
-### See https://arxiv.org/abs/2311.07374 and https://arxiv.org/abs/2602.04977
-### ===========================================================================
+# ===========================================================================
+# Dimroth-Watson Distribution Sampling (editted based on diffHOD-IA)
+# Convention: sample the polar angle theta and azimuthal angle phi from D-W
+# P(theta, phi) = B(kappa)/(2pi) * exp(-kappa*cos^2(theta))sin(theta),
+# where the norm factor (Nick's eqn 17 has typo)
+# B(kappa) = 2pi / (\int_{-1}^{1} exp(-kappa*t^2) * dt)
+# The alignment strength is usually defined as
+# mu = -2/pi * tan^-1(kappa), which is in [-1, 1].
+# mu = 0 means random orientation
+# mu = -1 means perfect anti-alignment (orthogonal to ref axis)
+# mu = 1 means perfect alignment (parallel to ref axis)
+# See https://arxiv.org/abs/2311.07374 and https://arxiv.org/abs/2602.04977
+# ===========================================================================
 
 @jjit
 def _erfi_real(x: jnp.ndarray) -> jnp.ndarray:
@@ -260,8 +280,9 @@ def _erfi_real(x: jnp.ndarray) -> jnp.ndarray:
     y = jnp.where(jnp.abs(x) <= 3.0, y_small, y_large)
     return y.astype(x.dtype)
 
+
 @partial(jjit, static_argnums=(2,))
-def _sample_t_watson(key, kappa, n_newton = 6):
+def _sample_t_watson(key, kappa, n_newton=6):
     """
     Sample t = cos(theta) from the Dimroth-Watson distribution using Newton's method.
     (Newton's method is used to solve the inverse CDF of the kappa<0 parallel-alignment branch)
@@ -373,13 +394,14 @@ def _sample_t_watson(key, kappa, n_newton = 6):
             lambda _: lax.cond(k_i > 1e-12, pos_branch, zer_branch, operand=None),
             operand=None,
         )
-    
+
     N = kappa.shape[0]
     u_uni = jnp.clip(
         jran.uniform(key, (N,), minval=0.0, maxval=1.0), 1e-7, 1 - 1e-7
     )
     t = jax.vmap(one)(kappa, u_uni)
     return jnp.clip(t, -1.0 + 2e-7, 1.0 - 2e-7)
+
 
 @partial(jjit, static_argnums=(3,))  # n_newton is the 4th argument (index 3)
 def sample_watson_orientations(key, ref_dirs, mu, n_newton=6):

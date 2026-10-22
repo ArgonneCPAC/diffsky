@@ -64,7 +64,8 @@ def mc_ellipsoid_params(r50, b_over_a, c_over_a, ran_key, sample_omega=True):
     c = c_over_a * a
     return compute_ellipse2d(a, b, c, mu_ran, phi_ran, omega_ran)
 
-@jjit
+
+@partial(jjit, static_argnums=(1,))
 def mc_orthonormal_vectors(ran_key, n):
     """Monte Carlo realization of 3D orthonormal vectors A, B, C
 
@@ -77,11 +78,12 @@ def mc_orthonormal_vectors(ran_key, n):
 
     return A, B, C
 
+
 @partial(jjit, static_argnums=(8, 9))
 def compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop=True, ellipticity_type=0):
     """
     Calculate the observed 2D ellipse parameters of a 3D triaxial ellipsoid in the simulation frame,
-    given the ellipsoid's axes lengths (a, b, c) and the observed x and y axes in the simulation 
+    given the ellipsoid's axes lengths (a, b, c) and the observed x and y axes in the simulation
     frame (obs_x, obs_y).
     Parameters:
     -----------
@@ -495,6 +497,7 @@ def random_unit_vectors_3d(key, N):
     x = jran.normal(key, shape=(N, 3))
     return _unitize(x)
 
+
 @jjit
 def random_perpendicular_directions(v, key):
     """
@@ -538,12 +541,13 @@ def random_perpendicular_directions(v, key):
     v_perp = v_perp - jnp.sum(v_perp * v, axis=-1, keepdims=True) * v
     return _unitize(v_perp)
 
+
 @partial(jjit, static_argnames=['ascending_ra_deg'])
 def observer_frame_axes_from_ra_dec(ra_deg, dec_deg, ascending_ra_deg=0.0):
     """
     Calculate observer frame unit vectors (West, North, -LOS) in the simulation frame from RA and Dec,
-    assuming the standard mapping: r̂ = (cos δ cos (α-ascending_ra_deg), cos δ sin (α-ascending_ra_deg), sin δ), where 
-    δ is declination and α is right ascension. 
+    assuming the standard mapping: r̂ = (cos δ cos (α-ascending_ra_deg), cos δ sin (α-ascending_ra_deg), sin δ), where
+    δ is declination and α is right ascension.
 
     Parameters
     ----------
@@ -567,26 +571,27 @@ def observer_frame_axes_from_ra_dec(ra_deg, dec_deg, ascending_ra_deg=0.0):
     y_prime : ndarray (N, 3)  North = direction of increasing Dec
     z_prime : ndarray (N, 3)  -LOS = toward observer, z' = x' × y'
     """
-    alpha  = jnp.asarray((ra_deg - ascending_ra_deg)/180*jnp.pi)
-    delta  = jnp.asarray(dec_deg/180*jnp.pi)
-    ca, sa = jnp.cos(alpha),  jnp.sin(alpha)
+    alpha = jnp.asarray((ra_deg - ascending_ra_deg) / 180 * jnp.pi)
+    delta = jnp.asarray(dec_deg / 180 * jnp.pi)
+    ca, sa = jnp.cos(alpha), jnp.sin(alpha)
     cd, sd = jnp.cos(delta), jnp.sin(delta)
-    zeros  = jnp.zeros_like(alpha)
+    zeros = jnp.zeros_like(alpha)
 
-    x_prime = jnp.stack([ sa,       -ca,        zeros], axis=-1)   # West
-    y_prime = jnp.stack([-sd*ca,    -sd*sa,     cd   ], axis=-1)   # North
-    z_prime = jnp.stack([-cd*ca,    -cd*sa,    -sd   ], axis=-1)   # -LOS
+    x_prime = jnp.stack([sa, -ca, zeros], axis=-1)  # West
+    y_prime = jnp.stack([-sd * ca, -sd * sa, cd], axis=-1)  # North
+    z_prime = jnp.stack([-cd * ca, -cd * sa, -sd], axis=-1)  # -LOS
 
     assert_orthonormality(x_prime, y_prime, z_prime)
 
     return x_prime, y_prime, z_prime
 
+
 @jjit
 def observer_frame_axes_from_pos_3D(pos_x, pos_y, pos_z):
     """
     Calculate observer frame unit vectors (West, North, -LOS) in the simulation frame from 3D position,
-    assuming the standard mapping: r̂ = (x, y, z)/|r|, where 
-    r is the 3D position vector. 
+    assuming the standard mapping: r̂ = (x, y, z)/|r|, where
+    r is the 3D position vector.
 
     Parameters
     ----------
@@ -617,6 +622,7 @@ def observer_frame_axes_from_pos_3D(pos_x, pos_y, pos_z):
     assert_orthonormality(obs_x, obs_y, obs_z)
 
     return obs_x, obs_y, obs_z
+
 
 @jjit
 def assert_orthonormality(x_prime, y_prime, z_prime, atol=1e-6):
@@ -654,6 +660,7 @@ def assert_orthonormality(x_prime, y_prime, z_prime, atol=1e-6):
             atol=atol),
         operand=None,
     )
+
 
 @jjit
 def _unitize(v: jnp.ndarray, eps: float = 1e-12) -> jnp.ndarray:

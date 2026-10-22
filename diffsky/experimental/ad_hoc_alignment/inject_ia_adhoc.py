@@ -1,7 +1,7 @@
 """
-Inject IA into DiffSky Mock Catalog 
+Inject IA into DiffSky Mock Catalog
 Author: Jiachuan Xu
-This script is a standalone script that injects IA into the DiffSky Mock Catalog ad hoc with native DiffSky format. 
+This script is a standalone script that injects IA into the DiffSky Mock Catalog ad hoc with native DiffSky format.
 IA strategy:
 - resolved central galaxies: align with the host halo shape
 - unresolved central galaxies: random orientation
@@ -20,37 +20,38 @@ The HDF5 file strcture is flat table. Example structure is shown below:
 """
 import jax.numpy as jnp
 import jax.random as jran
-from ad_hoc_alignment.intrinsic_alignment import align_to_halo, align_radially
+from diffsky.experimental.ad_hoc_alignment.intrinsic_alignment import align_to_halo, align_radially
 from diffsky.ellipsoidal_shapes import ellipse_proj_kernels as eproj
+
 
 def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_mask,
                      box_size_in_Mpc=jnp.inf, envelope=True, ellipticity_type=0, seed=514):
     """
-    Worker function to align the galaxies in the dataset according to the 
+    Worker function to align the galaxies in the dataset according to the
     specified alignment parameters.
 
     The alignment is done in the following way:
-    - Central galaxies: 
+    - Central galaxies:
         - Resolved: align to the host halo shape (central_alignment)
         - Unresolved: random orientation
-    - Satellite galaxies: 
+    - Satellite galaxies:
         - Resolved and unresolved: align towards halo center (satellite_alignment)
 
-    All the galaxies have both disk and bulge components sharing the same 
-    alignment method. 
+    All the galaxies have both disk and bulge components sharing the same
+    alignment method.
 
     Parameters
     ----------
     dataset : HDF5 table
         The dataset containing the galaxy information.
     mu_central : float or jax.numpy.ndarray
-        The alignment strength mu for central galaxies. If float, the same alignment strength 
-        is applied to all central galaxies. If array, it should have the same length as the 
-        number of galaxies, and each galaxy has individual alignment strength. 
+        The alignment strength mu for central galaxies. If float, the same alignment strength
+        is applied to all central galaxies. If array, it should have the same length as the
+        number of galaxies, and each galaxy has individual alignment strength.
         Unresolved (synthetic) centrals are set to mu=0 in this function.
     mu_satellite : float or jax.numpy.ndarray
-        The alignment strength mu for satellite galaxies. If float, the same alignment strength 
-        is applied to all satellite galaxies. If array, it should have the same length as the 
+        The alignment strength mu for satellite galaxies. If float, the same alignment strength
+        is applied to all satellite galaxies. If array, it should have the same length as the
         number of galaxies, and each galaxy has individual alignment strength.
     central_mask : array-like
         Boolean mask, 1 = central galaxies, 0 = satellite galaxies.
@@ -74,7 +75,7 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
         The projected 2D ellipse parameters for the bulge component of each galaxy.
     """
     key_central, key_satellite = jran.split(jran.PRNGKey(seed))
-    # Get the axes in the observed RA/Dec frame for each galaxy, for shape projection. 
+    # Get the axes in the observed RA/Dec frame for each galaxy, for shape projection.
     # x_prime = west, y_prime = north, z_prime = -LOS (toward observer)
     x_prime, y_prime, z_prime = eproj.observer_frame_axes_from_ra_dec(dataset["ra_nfw"], dataset["dec_nfw"])
 
@@ -102,6 +103,7 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
     # central_alignment call via a per-galaxy mu of 0 (random orientation)
     # instead of a separate branch.
     mu_central_arr = jnp.where(synthetic_mask, 0.0, mu_central)
+    assert_eigS3_is_major_axis(dataset)
     print("Central alignment ...")
     central_axes = central_alignment(
         dataset['top_host_infall_fof_halo_eigS3X'],
@@ -124,7 +126,7 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
     gals_B = jnp.where(cmask, central_axes[1], satellite_axes[1])
     gals_C = jnp.where(cmask, central_axes[2], satellite_axes[2])
 
-    ### Measure the galaxy shapes in RA/Dec frame (disk+bulge and central+satellite)
+    # Measure the galaxy shapes in RA/Dec frame (disk+bulge and central+satellite)
     Ellipse2D_disk = eproj.compute_ellipse2d_in_sim_frame(
         gals_A, gals_B, gals_C,
         disk_3D_sizes[:, 0],
@@ -146,6 +148,34 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
     )
 
     return Ellipse2D_disk, Ellipse2D_bulge, {"gal_A": gals_A, "gal_B": gals_B, "gal_C": gals_C}
+
+
+def assert_eigS3_is_major_axis(dataset):
+    """ Check that eigS3 is the host halo's major axis for every galaxy.
+    The halo shape eigenvectors are scaled by their axis lengths (units of Mpc),
+    so the major axis is the one with the largest magnitude. Ties are allowed,
+    e.g. unresolved halos whose three eigenvectors are all zero.
+    Parameters
+    ----------
+    dataset : dict
+        The galaxy catalog, with columns top_host_infall_fof_halo_eigS{1,2,3}{X,Y,Z}.
+    """
+    prefix = "top_host_infall_fof_halo_eig"
+    norm_S1, norm_S2, norm_S3 = (
+        jnp.sqrt(
+            dataset[f"{prefix}S{i}X"] ** 2
+            + dataset[f"{prefix}S{i}Y"] ** 2
+            + dataset[f"{prefix}S{i}Z"] ** 2
+        )
+        for i in (1, 2, 3)
+    )
+    is_major = (norm_S3 >= norm_S1) & (norm_S3 >= norm_S2)
+    n_bad = int(jnp.sum(~is_major))
+    assert n_bad == 0, (
+        f"eigS3 is not the largest halo eigenvector for {n_bad} of "
+        f"{is_major.size} galaxies, so it cannot be used as the halo major axis"
+    )
+
 
 def central_alignment(gal_axisA_x, gal_axisA_y, gal_axisA_z, mu, key):
     """ Intrinsic alignment for central galaxies
@@ -174,6 +204,7 @@ def central_alignment(gal_axisA_x, gal_axisA_y, gal_axisA_z, mu, key):
         key, gal_axisA_x, gal_axisA_y, gal_axisA_z, mu, prim_gal_axis='A',
     )
     return gal_A, gal_B, gal_C
+
 
 def satellite_alignment(halo_x, halo_y, halo_z, x, y, z, mu, key, box_size_in_cMpc=jnp.inf):
     """ Intrinsic alignment for satellite galaxies
@@ -270,7 +301,22 @@ def main():
         # dataset["gal_Cy"] = axes_disk["gal_C"][:, 1]
         # dataset["gal_Cz"] = axes_disk["gal_C"][:, 2]
 
-        with h5py.File(args.output_file, "w") as f:
-            grp = f.create_group("data")
+        with h5py.File(args.output_file, "w") as f_out:
+            # carry over everything besides the per-galaxy columns unchanged,
+            # e.g. the "metadata" group (cosmology, Lbox, software versions)
+            f_out.attrs.update(f.attrs)
+            for name in f.keys():
+                if name != "data":
+                    f.copy(f[name], f_out, name=name)
+
+            grp = f_out.create_group("data")
+            grp.attrs.update(f["data"].attrs)
             for key, val in dataset.items():
                 grp.create_dataset(key, data=np.asarray(val))
+                # keep the per-column "unit"/"description" attributes
+                if key in f["data"]:
+                    grp[key].attrs.update(f["data"][key].attrs)
+
+
+if __name__ == "__main__":
+    main()
