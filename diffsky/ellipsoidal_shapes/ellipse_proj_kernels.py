@@ -52,7 +52,7 @@ def mc_mu_phi_omega(n, ran_key):
     return mu_ran, phi_ran, omega_ran
 
 
-def mc_ellipsoid_params(r50, b_over_a, c_over_a, ran_key, sample_omega=True):
+def mc_ellipse2d(r50, b_over_a, c_over_a, ran_key, sample_omega=True):
     """Monte Carlo realization of 2d ellipse with random projection angles mu, phi, omega"""
     if sample_omega:
         mu_ran, phi_ran, omega_ran = mc_mu_phi_omega(r50.size, ran_key)
@@ -663,8 +663,11 @@ def assert_orthonormality(x_prime, y_prime, z_prime, atol=1e-6):
 
 
 @jjit
-def _unitize(v: jnp.ndarray, eps: float = 1e-12) -> jnp.ndarray:
+def _unitize(v: jnp.ndarray) -> jnp.ndarray:
     """
-    Normalize a tensor to have unit length.
+    Normalize a tensor to have unit length. The zero vector is returned as zero.
     """
-    return v / (jnp.linalg.norm(v, axis=-1, keepdims=True) + eps)
+    # divide by the exact norm: an additive epsilon would shorten short vectors
+    # (|v| = 1e-9 would come out with length 0.999)
+    norm = jnp.linalg.norm(v, axis=-1, keepdims=True)
+    return v / jnp.where(norm > 0, norm, 1.0)
