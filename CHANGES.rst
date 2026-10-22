@@ -1,7 +1,14 @@
+0.3.11 (2026-10-22)
+-------------------
+- Improve mock validation scripts https://github.com/ArgonneCPAC/diffsky/pull/521
+- Add COSMOS+SDSS calibration `cs261020` (https://github.com/ArgonneCPAC/diffsky/pull/522)
+
+
 0.3.10 (2026-10-16)
 -------------------
 - Add forgotten model nickname sdss_feniks_hizels_261013 calibration (https://github.com/ArgonneCPAC/diffsky/pull/516)
 - Fix bugs in check_lc_mock_completeness.py (https://github.com/ArgonneCPAC/diffsky/pull/518)
+
 
 0.3.9 (2026-10-13)
 -------------------
