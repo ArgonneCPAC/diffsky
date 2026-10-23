@@ -10,7 +10,7 @@ from ..hmf_calibrations.smdpl_hmf_fitting_helpers import get_loss_data
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 TESTING_DATA_DRN = os.path.join(
-    _THIS_DRNAME, "hmf_calibrations", "tests", "testing_data"
+    os.path.dirname(_THIS_DRNAME), "hmf_calibrations", "tests", "testing_data"
 )
 
 
