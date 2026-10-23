@@ -214,9 +214,12 @@ def _ks_distance(samples, cdf):
     return max(np.max(i / n - model), np.max(model - (i - 1) / n))
 
 
-def _ks_bound(n):
-    """Kolmogorov-Smirnov critical distance at 99.9% confidence for n samples"""
-    return 1.95 / np.sqrt(n)
+def _ks_bound(n, n_comparisons=1):
+    """Kolmogorov-Smirnov critical distance at 99.9% confidence for n samples,
+    Bonferroni-corrected so that n_comparisons tests together keep a 0.1% false
+    failure rate (coefficient sqrt(-ln(α/2)/2) = 1.95 for a single test)"""
+    alpha = 1e-3 / n_comparisons
+    return np.sqrt(-np.log(alpha / 2) / 2) / np.sqrt(n)
 
 
 def _uniform_cdf(lo, hi):
@@ -297,8 +300,19 @@ def test_unitize_returns_unit_vectors_and_preserves_direction():
     assert np.allclose(np.linalg.norm(vhat, axis=-1), 1.0, rtol=0, atol=1e-12)
     assert np.allclose(vhat, v / np.linalg.norm(v, axis=-1, keepdims=True), atol=1e-12)
 
-    # the zero vector has no direction: it is mapped to zero rather than to nan
+    # the zero vector has no direction: it is mapped to zero rather than to nan,
+    # with a zero (not nan) gradient
+    import jax
+
     assert np.all(np.asarray(eproj._unitize(np.zeros((3, 3)))) == 0.0)
+    grad0 = np.asarray(jax.grad(lambda u: jnp.sum(eproj._unitize(u)))(jnp.zeros(3)))
+    assert np.all(grad0 == 0.0)
+
+    # away from zero the Jacobian is the analytic (I - v̂v̂ᵀ)/|v|
+    u = jnp.array([0.3, -1.2, 2.0])
+    uhat = np.asarray(u) / np.linalg.norm(u)
+    jac = np.asarray(jax.jacobian(eproj._unitize)(u))
+    assert np.allclose(jac, (np.eye(3) - np.outer(uhat, uhat)) / np.linalg.norm(u), atol=1e-12)
 
 
 def test_random_unit_vectors_3d_are_isotropic():
@@ -685,3 +699,96 @@ def test_assert_orthonormality_warns_only_for_bad_axes(capfd):
         eproj.assert_orthonormality(*args)
         jax.effects_barrier()
         assert "assert_orthonormality" in capfd.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# Analytic expectations for random projections
+# ---------------------------------------------------------------------------
+
+
+def _oblate_q_cdf(gamma):
+    """P(q <= Q) for the silhouette of a randomly oriented oblate spheroid
+    a = b > c = γa: q² = cos²θ + γ² sin²θ with cos θ uniform in [0, 1]"""
+    return lambda q: np.sqrt(np.clip((q**2 - gamma**2) / (1 - gamma**2), 0.0, 1.0))
+
+
+def _prolate_q_cdf(gamma):
+    """P(q <= Q) for the silhouette of a randomly oriented prolate spheroid
+    a > b = c = γa (also the central cross-section of an oblate spheroid):
+    q² = γ² / (sin²θ + γ² cos²θ) with cos θ uniform in [0, 1]"""
+    return lambda q: np.sqrt(np.clip((1 - gamma**2 / q**2) / (1 - gamma**2), 0.0, 1.0))
+
+
+def _ellipsoid_surface_area(a, b, c):
+    """Closed-form surface area of an ellipsoid with a > b > c"""
+    from scipy.special import ellipeinc, ellipkinc
+
+    phi = np.arccos(c / a)
+    m = a**2 * (b**2 - c**2) / (b**2 * (a**2 - c**2))
+    elliptic = ellipeinc(phi, m) * np.sin(phi) ** 2 + ellipkinc(phi, m) * np.cos(phi) ** 2
+    return 2 * np.pi * c**2 + 2 * np.pi * a * b / np.sin(phi) * elliptic
+
+
+def test_random_projections_of_spheroids_match_analytic_distributions():
+    """Randomly oriented spheroids have exact projected axis-ratio distributions:
+    the oblate silhouette always has α = a, the prolate silhouette always has
+    β = b, and the oblate central cross-section always has α = a; the
+    distributions of q = β/α are given by _oblate_q_cdf and _prolate_q_cdf.
+    Both projection routines are checked: compute_ellipse2d_in_sim_frame with
+    random body axes, and mc_ellipse2d with random (μ, φ, ω)"""
+    n = 100_000
+    gammas = (0.1, 0.4, 0.8)
+    n_ks = 5 * len(gammas)
+    body = eproj.mc_orthonormal_vectors(jran.key(0), n)
+    obs_x, obs_y, _ = (np.tile(v, (n, 1)) for v in eproj.mc_orthonormal_vectors(jran.key(1), 1))
+    one = np.ones(n)
+
+    def _check(e2d, cdf, label):
+        q = np.asarray(e2d.beta / e2d.alpha)
+        assert np.all(np.isfinite(q)) & np.all(q <= 1.0), label
+        dist = _ks_distance(q, cdf)
+        assert dist < _ks_bound(n, n_ks), (label, dist)
+
+    for i, gamma in enumerate(gammas):
+        g = gamma * one
+
+        oblate = eproj.compute_ellipse2d_in_sim_frame(*body, one, one, g, obs_x, obs_y)
+        assert np.allclose(oblate.alpha, 1.0, rtol=1e-7)
+        _check(oblate, _oblate_q_cdf(gamma), ("oblate", gamma))
+
+        cut = eproj.compute_ellipse2d_in_sim_frame(*body, one, one, g, obs_x, obs_y, envelop=False)
+        assert np.allclose(cut.alpha, 1.0, rtol=1e-7)
+        _check(cut, _prolate_q_cdf(gamma), ("oblate cross-section", gamma))
+
+        prolate = eproj.compute_ellipse2d_in_sim_frame(*body, one, g, g, obs_x, obs_y)
+        assert np.allclose(prolate.beta, gamma, rtol=1e-7)
+        _check(prolate, _prolate_q_cdf(gamma), ("prolate", gamma))
+
+        key = jran.key(10 + i)
+        _check(eproj.mc_ellipse2d(one, one, g, key), _oblate_q_cdf(gamma), ("mc_ellipse2d oblate", gamma))
+        _check(eproj.mc_ellipse2d(one, g, g, key), _prolate_q_cdf(gamma), ("mc_ellipse2d prolate", gamma))
+
+
+def test_projected_area_of_triaxial_ellipsoids():
+    """The silhouette area πab of a triaxial ellipsoid along a line of sight with
+    body-frame components n is π sqrt(b²c² n_A² + a²c² n_B² + a²b² n_C²) for
+    every object; and by Cauchy's theorem the mean projected area over random
+    orientations equals a quarter of the surface area"""
+    n = 50_000
+    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(jran.key(0), n)
+    e2d = eproj.compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_x, obs_y)
+    los = np.cross(obs_x, obs_y)
+    nA, nB, nC = (np.sum(los * v, axis=-1) for v in (A_v, B_v, C_v))
+    area = np.sqrt((b * c * nA) ** 2 + (a * c * nB) ** 2 + (a * b * nC) ** 2)
+    assert np.allclose(e2d.alpha * e2d.beta, area, rtol=1e-8)
+
+    n = 400_000
+    body = eproj.mc_orthonormal_vectors(jran.key(2), n)
+    obs_x, obs_y, _ = (np.tile(v, (n, 1)) for v in eproj.mc_orthonormal_vectors(jran.key(3), 1))
+    for abc in ((3.0, 2.0, 0.5), (1.0, 0.9, 0.2), (2.0, 1.0, 0.99)):
+        a, b, c = (np.full(n, x) for x in abc)
+        e2d = eproj.compute_ellipse2d_in_sim_frame(*body, a, b, c, obs_x, obs_y)
+        proj_area = np.pi * np.asarray(e2d.alpha * e2d.beta)
+        expected = _ellipsoid_surface_area(*abc) / 4
+        sigma = np.std(proj_area) / np.sqrt(n)
+        assert abs(np.mean(proj_area) - expected) < 4 * sigma, (abc, np.mean(proj_area), expected, sigma)

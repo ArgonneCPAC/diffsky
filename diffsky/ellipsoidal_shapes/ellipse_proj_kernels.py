@@ -668,6 +668,10 @@ def _unitize(v: jnp.ndarray) -> jnp.ndarray:
     Normalize a tensor to have unit length. The zero vector is returned as zero.
     """
     # divide by the exact norm: an additive epsilon would shorten short vectors
-    # (|v| = 1e-9 would come out with length 0.999)
-    norm = jnp.linalg.norm(v, axis=-1, keepdims=True)
-    return v / jnp.where(norm > 0, norm, 1.0)
+    # (|v| = 1e-9 would come out with length 0.999). Zero vectors are swapped for
+    # a safe vector *before* the norm is taken ("double where"), so the gradient
+    # is zero there rather than the 0/0 nan of d|v|/dv = v/|v|
+    is_zero = jnp.all(v == 0, axis=-1, keepdims=True)
+    v_safe = jnp.where(is_zero, 1.0, v)
+    norm = jnp.linalg.norm(v_safe, axis=-1, keepdims=True)
+    return jnp.where(is_zero, 0.0, v_safe / norm)
