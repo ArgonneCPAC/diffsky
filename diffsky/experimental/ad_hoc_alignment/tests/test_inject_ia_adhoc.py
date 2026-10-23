@@ -31,7 +31,7 @@ def _make_catalog(n, seed=0, b_over_a=None, c_over_a=None, frac_synthetic=0.2):
     host = rng.normal(size=(n, 3)) * 400.0
     central = rng.random(n) < 0.5
     pos = np.where(central[:, None], host, host + rng.normal(size=(n, 3)))
-    data = {"central": central.astype(int)}
+    data = {"central": central.astype(int), "core_tag": np.arange(1, n + 1)}
     for i, c in enumerate("xyz"):
         data[f"{c}_host"] = host[:, i]
         data[f"{c}_nfw"] = pos[:, i]
@@ -85,6 +85,103 @@ def test_assert_eigS3_is_major_axis():
         data[f"{EIG}S1{c}"][10:13] *= 100.0
     with pytest.raises(AssertionError, match="for 3 of 1000 galaxies"):
         inj.assert_eigS3_is_major_axis(data)
+
+
+def test_get_unresolved_central_mask():
+    """Centrals are unresolved when diffsky flags them as synthetic (core_tag -1,
+    or the placeholder that sets all nine eigenvector components to the same
+    value: -1 on disk, rescaled by unit conversions) or their eigS3 has zero
+    length; satellites and centrals with a measured halo shape never are"""
+    n = 1_000
+    data, central, synthetic = _make_catalog(n, frac_synthetic=0.0)
+    assert not np.any(inj.get_unresolved_central_mask(data))
+
+    cen = np.flatnonzero(central)
+    sat = np.flatnonzero(~central)
+    data["core_tag"][cen[:10]] = -1  # synthetic flag only
+    for i in (1, 2, 3):
+        for c in "XYZ":
+            data[f"{EIG}S{i}{c}"][cen[10:20]] = -1.0  # placeholder only
+            data[f"{EIG}S{i}{c}"][sat[:5]] = -1.0  # satellites are not affected
+    for c in "XYZ":
+        data[f"{EIG}S3{c}"][cen[20:30]] = 0.0  # zero-length major axis
+    # the placeholder after unit conversions: -1/h, and -1/(1+z) per galaxy
+    rescaled = np.concatenate([np.full(5, -1 / 0.6766), -1 / (1 + np.linspace(0.1, 2.0, 5))])
+    for i in (1, 2, 3):
+        for c in "XYZ":
+            data[f"{EIG}S{i}{c}"][cen[30:40]] = rescaled
+    data["core_tag"][sat[5:10]] = -1
+    expected = np.zeros(n, dtype=bool)
+    expected[cen[:40]] = True
+    assert np.array_equal(inj.get_unresolved_central_mask(data), expected)
+
+    # catalogs without a core_tag column still catch the placeholder
+    del data["core_tag"]
+    expected[cen[:10]] = False
+    assert np.array_equal(inj.get_unresolved_central_mask(data), expected)
+
+
+def test_main_randomizes_synthetic_cores(tmp_path, monkeypatch):
+    """In a synthetic-core catalog (all centrals, core_tag -1, every eigenvector
+    component -1), strong alignment must not align the galaxies to the
+    placeholder direction (-1, -1, -1): their position angles relative to its
+    projection, and their inclinations, stay uniform"""
+    n = 5_000
+    data, _, _ = _make_catalog(n, frac_synthetic=0.0)
+    data["central"][:] = 1
+    data["core_tag"][:] = -1
+    for i in (1, 2, 3):
+        for c in "XYZ":
+            data[f"{EIG}S{i}{c}"][:] = -1.0
+    for c in "xyz":  # synthetic galaxies sit at their own (host) position
+        data[f"{c}_nfw"] = data[f"{c}_host"].copy()
+    fn_in, fn_out = tmp_path / "in.hdf5", tmp_path / "out.hdf5"
+    _write_catalog(fn_in, data)
+    _run_main(monkeypatch, fn_in, fn_out, "--mu_central", "0.9", "--mu_satellite", "0.9")
+
+    with h5py.File(fn_out, "r") as f:
+        psi = f["data/psi_disk"][:]
+        mu_incl = f["data/mu_inclination_disk"][:]
+    west, north, _ = (np.asarray(v) for v in eproj.observer_frame_axes_from_ra_dec(data["ra_nfw"], data["dec_nfw"]))
+    placeholder = np.ones(3)
+    placeholder_pa = np.arctan2(north @ placeholder, west @ placeholder)
+    offset = np.mod(psi - placeholder_pa + np.pi / 2, np.pi) - np.pi / 2
+    assert _ks_distance(offset, _uniform_cdf(-np.pi / 2, np.pi / 2)) < _ks_bound(n)
+    assert _ks_distance(mu_incl, _uniform_cdf(0.0, 1.0)) < _ks_bound(n)
+
+
+def test_alignment_worker_reports_galaxies_without_alignment_direction(capfd):
+    """Satellites exactly at their host center (no radial direction) and
+    unresolved centrals (no halo shape) are counted and reported before
+    aligning, get random orientations, and never reach the alignment functions
+    as degenerate vectors (whose internal message would be confusing)"""
+    import jax
+
+    n = 20_000
+    data, central, synthetic = _make_catalog(n, seed=3)
+    sat = np.flatnonzero(~central)
+    at_center = sat[:3_000]
+    for c in "xyz":
+        data[f"{c}_nfw"][at_center] = data[f"{c}_host"][at_center]
+    capfd.readouterr()
+    _, _, axes = inj.alignment_worker(data, 0.9, 0.9, central, synthetic)
+    jax.effects_barrier()
+    out = capfd.readouterr().out
+    assert f"Warning: {at_center.size} satellite(s) sit exactly at their host halo center" in out
+    assert f"Note: {synthetic.sum()} central(s) have no measured host halo shape" in out
+    assert "degenerate" not in out
+
+    major = np.asarray(axes["gal_A"])
+    _assert_right_handed_orthonormal(axes["gal_A"], axes["gal_B"], axes["gal_C"])
+    assert _ks_distance(major[at_center, 2], _uniform_cdf(-1, 1)) < _ks_bound(at_center.size)
+
+    # without such galaxies, nothing is reported
+    data, central, synthetic = _make_catalog(n, seed=3, frac_synthetic=0.0)
+    capfd.readouterr()
+    inj.alignment_worker(data, 0.9, 0.9, central, synthetic)
+    jax.effects_barrier()
+    out = capfd.readouterr().out
+    assert "Warning" not in out and "Note" not in out and "degenerate" not in out
 
 
 def test_central_and_satellite_alignment_wrap_the_alignment_functions():

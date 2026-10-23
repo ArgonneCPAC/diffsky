@@ -20,7 +20,11 @@ The HDF5 file strcture is flat table. Example structure is shown below:
 """
 import jax.numpy as jnp
 import jax.random as jran
-from diffsky.experimental.ad_hoc_alignment.intrinsic_alignment import align_to_halo, align_radially
+from diffsky.experimental.ad_hoc_alignment.intrinsic_alignment import (
+    align_radially,
+    align_to_halo,
+    get_radial_vector,
+)
 from diffsky.ellipsoidal_shapes import ellipse_proj_kernels as eproj
 from diffsky.ellipsoidal_shapes import mc_disk_bulge_shapes as mcdbs
 
@@ -37,6 +41,8 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
         - Unresolved: random orientation
     - Satellite galaxies:
         - Resolved and unresolved: align towards halo center (satellite_alignment)
+        - Exactly at the host center (no radial direction): random orientation
+    Galaxies given a random orientation are counted and reported before aligning.
 
     All the galaxies have both disk and bulge components sharing the same
     alignment method.
@@ -101,24 +107,61 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
     # Every galaxy is run through both strategies at full length (rather than
     # boolean-mask subsetting, which has data-dependent shape and isn't
     # jit-compatible), and the unused branch is discarded below with
-    # jnp.where. Unresolved (synthetic) centrals are folded into the same
-    # central_alignment call via a per-galaxy mu of 0 (random orientation)
-    # instead of a separate branch.
-    mu_central_arr = jnp.where(synthetic_mask, 0.0, mu_central)
+    # jnp.where.
     assert_eigS3_is_major_axis(dataset)
-    print("Central alignment ...")
-    central_axes = central_alignment(
-        dataset['top_host_infall_fof_halo_eigS3X'],
-        dataset['top_host_infall_fof_halo_eigS3Y'],
-        dataset['top_host_infall_fof_halo_eigS3Z'],
-        mu_central_arr,
-        key_central,
+    central_mask = jnp.asarray(central_mask, dtype=bool)
+    synthetic_mask = jnp.asarray(synthetic_mask, dtype=bool)
+
+    # Galaxies without an alignment direction -- unresolved (e.g. synthetic)
+    # centrals with no halo shape, and satellites exactly at their host center
+    # with no radial direction -- get a random orientation (mu = 0), and are
+    # reported here, before aligning. Every row that has no direction in a
+    # strategy (including the rows whose result is discarded, e.g. centrals in
+    # the satellite strategy) is given a placeholder reference direction: with
+    # mu = 0 its value is irrelevant, and it keeps degenerate (zero-length)
+    # vectors out of the alignment functions.
+    Lbox = jnp.full(3, box_size_in_Mpc)
+    _, r_sat = get_radial_vector(
+        dataset['x_host'], dataset['y_host'], dataset['z_host'],
+        dataset['x_nfw'], dataset['y_nfw'], dataset['z_nfw'], Lbox,
     )
+    zero_offset_satellites = ~central_mask & ~(r_sat > 0)
+    n_zero_offset = int(jnp.sum(zero_offset_satellites))
+    if n_zero_offset > 0:
+        print(
+            f"Warning: {n_zero_offset} satellite(s) sit exactly at their host halo "
+            "center, so they have no radial direction; they are given random "
+            "orientations."
+        )
+    n_unresolved = int(jnp.sum(synthetic_mask))
+    if n_unresolved > 0:
+        print(
+            f"Note: {n_unresolved} central(s) have no measured host halo shape "
+            "(e.g. synthetic cores); they are given random orientations."
+        )
+
+    resolved_central = central_mask & ~synthetic_mask
+    has_radial_dir = ~central_mask & ~zero_offset_satellites
+    placeholder = jnp.array([1.0, 0.0, 0.0])
+
+    halo_axis = [
+        jnp.where(resolved_central, dataset[f'top_host_infall_fof_halo_eigS3{c}'], placeholder[i])
+        for i, c in enumerate("XYZ")
+    ]
+    mu_central_arr = jnp.where(resolved_central, mu_central, 0.0)
+    print("Central alignment ...")
+    central_axes = central_alignment(*halo_axis, mu_central_arr, key_central)
+
+    sat_pos = [
+        jnp.where(has_radial_dir, dataset[f'{c}_nfw'], dataset[f'{c}_host'] + placeholder[i])
+        for i, c in enumerate("xyz")
+    ]
+    mu_satellite_arr = jnp.where(has_radial_dir, mu_satellite, 0.0)
     print("Satellite alignment ...")
     satellite_axes = satellite_alignment(
         dataset['x_host'], dataset['y_host'], dataset['z_host'],
-        dataset['x_nfw'], dataset['y_nfw'], dataset['z_nfw'],
-        mu_satellite,
+        *sat_pos,
+        mu_satellite_arr,
         key_satellite,
         box_size_in_cMpc=box_size_in_Mpc,
     )
@@ -173,7 +216,8 @@ def assert_eigS3_is_major_axis(dataset):
     """ Check that eigS3 is the host halo's major axis for every galaxy.
     The halo shape eigenvectors are scaled by their axis lengths (units of Mpc),
     so the major axis is the one with the largest magnitude. Ties are allowed,
-    e.g. unresolved halos whose three eigenvectors are all zero.
+    e.g. unresolved halos whose three eigenvectors are all zero, or synthetic
+    cores whose eigenvector components are all set to -1.
     Parameters
     ----------
     dataset : dict
@@ -194,6 +238,40 @@ def assert_eigS3_is_major_axis(dataset):
         f"eigS3 is not the largest halo eigenvector for {n_bad} of "
         f"{is_major.size} galaxies, so it cannot be used as the halo major axis"
     )
+
+
+def get_unresolved_central_mask(dataset):
+    """ Central galaxies without a measured host halo shape, which must get a
+    random orientation instead of being aligned to their halo.
+    Synthetic galaxies (mocks made with -synthetic_cores 1, written to
+    *.synthetic_halos.hdf5 files) are flagged by diffsky with core_tag = -1, and
+    all nine of their top-host eigenvector components are set to the same
+    placeholder value: -1 on disk (see load_lc_cf_synthetic.py), but rescaled
+    by unit conversions when read through a reader such as opencosmo, e.g. to
+    -1/(1+z) in physical units, or -1/h when converting from Mpc/h. So instead
+    of testing for -1, any row whose nine components are all equal is treated
+    as a placeholder: genuine eigenvectors are mutually orthogonal, so they can
+    never all have identical x, y and z components (unless they are all zero,
+    which has no direction either). Aligning to a placeholder would align every
+    such galaxy to the same direction. A zero-length eigS3 has no direction
+    either.
+    Parameters
+    ----------
+    dataset : dict
+        The galaxy catalog, with columns central and
+        top_host_infall_fof_halo_eigS{1,2,3}{X,Y,Z}, and optionally core_tag.
+    Returns
+    -------
+    unresolved_central_mask : jax.numpy.ndarray of bool, shape (N,)
+    """
+    prefix = "top_host_infall_fof_halo_eig"
+    eig = jnp.stack(
+        [jnp.asarray(dataset[f"{prefix}S{i}{c}"]) for i in (1, 2, 3) for c in "XYZ"]
+    )
+    no_shape = jnp.all(eig == eig[0], axis=0) | jnp.all(eig[6:] == 0, axis=0)
+    if "core_tag" in dataset:
+        no_shape = no_shape | (jnp.asarray(dataset["core_tag"]) == -1)
+    return (jnp.asarray(dataset["central"]) == 1) & no_shape
 
 
 def central_alignment(gal_axisA_x, gal_axisA_y, gal_axisA_z, mu, key):
@@ -277,14 +355,9 @@ def main():
         # compound-dtype Dataset, so it can't be read with f["data"][:]
         dataset = {k: f["data"][k][:] for k in f["data"].keys()}
         central_mask = dataset["central"] == 1
-        # A central galaxy is "unresolved" when its host halo shape wasn't
-        # measured, which shows up as an exactly-zero eigenvector
-        eig_norm = np.sqrt(
-            dataset["top_host_infall_fof_halo_eigS3X"] ** 2
-            + dataset["top_host_infall_fof_halo_eigS3Y"] ** 2
-            + dataset["top_host_infall_fof_halo_eigS3Z"] ** 2
-        )
-        synthetic_mask = central_mask & (eig_norm == 0)
+        # centrals without a measured host halo shape (e.g. synthetic cores) are
+        # given random orientations rather than aligned to a placeholder axis
+        synthetic_mask = get_unresolved_central_mask(dataset)
 
         # Calculate the aligned disk and bulge shapes
         # axis_disk is for debug and code comparison purpose, not saved.
