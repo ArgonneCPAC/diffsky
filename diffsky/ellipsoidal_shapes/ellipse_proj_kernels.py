@@ -386,11 +386,19 @@ def _get_eulerzxz_angle_from_basis(x_prime, y_prime):
     y_ = y_ / jnp.linalg.norm(y_, axis=-1, keepdims=True)
     z_ = jnp.cross(x_, y_)  # Ensure z' is orthogonal to x' and y'
 
-    cos_beta = jnp.clip(z_[..., 2], -1.0, 1.0)
-    beta = jnp.arccos(cos_beta)
-    sin_beta = jnp.sin(beta)
+    # sin(beta) is the length of z' projected on the x-y plane. Computing beta
+    # with arctan2 keeps it accurate near beta = 0 and pi, where arccos(z'_z)
+    # turns a 1-ulp rounding error in z'_z into a spurious beta of ~1e-8: that
+    # would miss the gimbal lock below and take arctan2(0, 0) in the general
+    # case. The lock threshold ~sqrt(machine eps) balances the error of the
+    # lock approximation (~sin_beta) against that of the general formulas
+    # (~eps / sin_beta). The safe square root keeps gradients finite at lock.
+    sin2_beta = z_[..., 0] ** 2 + z_[..., 1] ** 2
+    is_aligned = sin2_beta == 0
+    sin_beta = jnp.where(is_aligned, 0.0, jnp.sqrt(jnp.where(is_aligned, 1.0, sin2_beta)))
+    beta = jnp.arctan2(sin_beta, z_[..., 2])
 
-    no_lock = jnp.abs(sin_beta) > 1e-10
+    no_lock = sin_beta > 1e-8
 
     # General case: invert the analytic expressions above.
     # Gimbal lock fallback: alpha absorbs the free angle, gamma = 0.

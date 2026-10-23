@@ -511,8 +511,10 @@ def test_compute_ellipse2d_in_sim_frame_symmetries():
 
 def test_compute_ellipse2d_in_sim_frame_axis_aligned_views():
     """Corner case of Euler gimbal lock: viewing exactly along a principal axis
-    shows the other two axes at their full lengths and orientations"""
-    n = 100
+    shows the other two axes at their full lengths and orientations. Many
+    rotations are used because whether rounding lands exactly on z'_z = +-1
+    varies from row to row and from machine to machine"""
+    n = 20_000
     a, b, c, _, _, _ = generate_test_ellipse_params(jran.key(0), n, 5.0, 5.0)
     gamma = np.asarray(jran.uniform(jran.key(1), minval=-np.pi, maxval=np.pi, shape=(n, 1)))
     xhat, yhat, zhat = (np.tile(e, (n, 1)) for e in np.eye(3))
