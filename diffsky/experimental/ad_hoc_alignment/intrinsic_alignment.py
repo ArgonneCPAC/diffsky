@@ -67,16 +67,12 @@ def align_radially(key, halo_x, halo_y, halo_z,
     """
     alignment_strength = _broadcast_alignment_strength(alignment_strength, len(halo_x))
 
-    # set prim_gal_axis orientation
-    major_input_vectors, r = get_radial_vector(halo_x, halo_y, halo_z, x, y, z, Lbox)
-    # check for length 0 radial vectors
-    mask = (r <= 0.0) | (~jnp.isfinite(r))
-    N_bad_axes = int(jnp.sum(mask))
-    if N_bad_axes > 0:
-        key, subkey = jran.split(key)
-        major_input_vectors = major_input_vectors.at[mask, :].set(
-            eproj.random_unit_vectors_3d(subkey, N_bad_axes)
-        )
+    # set prim_gal_axis orientation. Galaxies at the host center have a zero
+    # radial vector; align_to_axis gives those rows an isotropic orientation with
+    # a fixed-shape, per-row selection, so the random draws never depend on how
+    # many such galaxies there are (keeps this jit-compatible, and every other
+    # galaxy's realization independent of them)
+    major_input_vectors, _ = get_radial_vector(halo_x, halo_y, halo_z, x, y, z, Lbox)
 
     return align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis)
 
