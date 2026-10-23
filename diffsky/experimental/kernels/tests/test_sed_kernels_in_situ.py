@@ -26,22 +26,24 @@ def test_sed_kern(num_halos=5):
     upid = np.where(lc_data.is_central == 1, -1, lc_data.halo_indx)
     lgmu_infall = lc_data.logmp_infall - lc_data.logmhost_infall
     gyr_since_infall = lc_data.t_obs - lc_data.t_infall
-    phot_kern_results, phot_randoms, diffstarpop_results = phot_kernels_in_situ._mc_phot_kern(
-        ran_key,
-        lc_data.z_obs,
-        lc_data.t_obs,
-        lc_data.mah_params,
-        upid,
-        lgmu_infall,
-        lc_data.logmhost_infall,
-        gyr_since_infall,
-        lc_data.ssp_data,
-        lc_data.precomputed_ssp_mag_table,
-        lc_data.z_phot_table,
-        lc_data.wave_eff_table,
-        *dpwm.DEFAULT_PARAM_COLLECTION,
-        DEFAULT_COSMOLOGY,
-        fb,
+    phot_kern_results, phot_randoms, diffstarpop_results = (
+        phot_kernels_in_situ._mc_phot_kern(
+            ran_key,
+            lc_data.z_obs,
+            lc_data.t_obs,
+            lc_data.mah_params,
+            upid,
+            lgmu_infall,
+            lc_data.logmhost_infall,
+            gyr_since_infall,
+            lc_data.ssp_data,
+            lc_data.precomputed_ssp_mag_table,
+            lc_data.z_phot_table,
+            lc_data.wave_eff_table,
+            *dpwm.DEFAULT_PARAM_COLLECTION,
+            DEFAULT_COSMOLOGY,
+            fb,
+        )
     )
 
     sed_kern_results = sed_kernels_in_situ._sed_kern(

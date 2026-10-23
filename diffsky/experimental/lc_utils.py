@@ -84,9 +84,13 @@ def mc_lightcone_random_theta_phi(
 ):
     """Generate random theta, phi in the input patch of sky"""
     theta_key, phi_key = jran.split(ran_key, 2)
-    # Sample uniformly in phi
-    phi = jran.uniform(phi_key, (npts,), minval=phi_min, maxval=phi_max)
-    # Sample uniformly in cos(theta)
+
+    # Uniform random 0<Φ<2π, accounting for possible wrapping by 2π
+    delta_phi = phi_max - phi_min
+    uran = jran.uniform(phi_key, shape=(npts,), minval=0.0, maxval=delta_phi)
+    phi = jnp.mod(uran + phi_min, 2 * jnp.pi)
+
+    # Sample uniformly in cos(θ)
     cos_lo = jnp.cos(theta_max)
     cos_hi = jnp.cos(theta_min)
     cos_theta = jran.uniform(theta_key, (npts,), minval=cos_lo, maxval=cos_hi)

@@ -22,6 +22,7 @@ import jax.numpy as jnp
 import jax.random as jran
 from diffsky.experimental.ad_hoc_alignment.intrinsic_alignment import align_to_halo, align_radially
 from diffsky.ellipsoidal_shapes import ellipse_proj_kernels as eproj
+from diffsky.ellipsoidal_shapes import mc_disk_bulge_shapes as mcdbs
 
 
 def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_mask,
@@ -69,10 +70,11 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
     -------
     galaxy_axes : dict
         Dictionary containing the aligned galaxy axes for each galaxy.
-    Ellipse2D_disk : array-like
-        The projected 2D ellipse parameters for the disk component of each galaxy.
-    Ellipse2D_bulge : array-like
-        The projected 2D ellipse parameters for the bulge component of each galaxy.
+    Ellipse2D_disk : mc_disk_bulge_shapes.Ellipse2DParams
+        The projected 2D ellipse parameters for the disk component of each galaxy,
+        with its inclination mu_inclination and 3D axis ratios.
+    Ellipse2D_bulge : mc_disk_bulge_shapes.Ellipse2DParams
+        The same for the bulge component of each galaxy.
     """
     key_central, key_satellite = jran.split(jran.PRNGKey(seed))
     # Get the axes in the observed RA/Dec frame for each galaxy, for shape projection.
@@ -145,6 +147,23 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
         x_prime, y_prime,
         envelop=envelope,
         ellipticity_type=ellipticity_type,
+    )
+
+    # Return the same Ellipse2DParams as mc_disk_bulge_ellipsoids, including the
+    # inclinations μ = cos(i), which change with the new orientations: the disk's
+    # is between its normal (minor axis C) and the LoS, the bulge's between its
+    # major axis (A) and the LoS
+    Ellipse2D_disk = mcdbs.Ellipse2DParams(
+        **Ellipse2D_disk._asdict(),
+        mu_inclination=jnp.abs(jnp.sum(gals_C * z_prime, axis=-1)),
+        b_over_a=jnp.asarray(dataset["b_over_a_disk"]),
+        c_over_a=jnp.asarray(dataset["c_over_a_disk"]),
+    )
+    Ellipse2D_bulge = mcdbs.Ellipse2DParams(
+        **Ellipse2D_bulge._asdict(),
+        mu_inclination=jnp.abs(jnp.sum(gals_A * z_prime, axis=-1)),
+        b_over_a=jnp.asarray(dataset["b_over_a_bulge"]),
+        c_over_a=jnp.asarray(dataset["c_over_a_bulge"]),
     )
 
     return Ellipse2D_disk, Ellipse2D_bulge, {"gal_A": gals_A, "gal_B": gals_B, "gal_C": gals_C}
@@ -279,17 +298,20 @@ def main():
         )
 
         # overwrite the original dataset with the new shapes
-        # involved properties: ("alpha", "beta", "psi", "ellipticity", "r50"),
+        # involved properties: ("alpha", "beta", "psi", "ellipticity", "r50",
+        # "mu_inclination"); the 3D axis ratios are unchanged
         dataset["alpha_disk"] = Ellipse2D_disk.alpha
         dataset["beta_disk"] = Ellipse2D_disk.beta
         dataset["psi_disk"] = Ellipse2D_disk.psi
         dataset["ellipticity_disk"] = Ellipse2D_disk.ellipticity
         dataset["r50_disk_2d"] = Ellipse2D_disk.alpha * 0.765
+        dataset["mu_inclination_disk"] = Ellipse2D_disk.mu_inclination
         dataset["alpha_bulge"] = Ellipse2D_bulge.alpha
         dataset["beta_bulge"] = Ellipse2D_bulge.beta
         dataset["psi_bulge"] = Ellipse2D_bulge.psi
         dataset["ellipticity_bulge"] = Ellipse2D_bulge.ellipticity
         dataset["r50_bulge_2d"] = Ellipse2D_bulge.alpha * 0.765
+        dataset["mu_inclination_bulge"] = Ellipse2D_bulge.mu_inclination
         # columns for debug: the axes of the 3D galaxy ellipsoid after alignment
         # dataset["gal_Ax"] = axes_disk["gal_A"][:, 0]
         # dataset["gal_Ay"] = axes_disk["gal_A"][:, 1]

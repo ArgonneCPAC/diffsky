@@ -178,8 +178,7 @@ def generate_fake_mah_params(ran_key, t_obs, lgmp_obs, is_central, lgt0):
 
 
 def load_lc_cf_chunk(
-    fn_lc_cf,
-    drn_lc_cores,
+    fn_lc_cores,
     *,
     nchunks,
     chunknum,
@@ -188,9 +187,13 @@ def load_lc_cf_chunk(
     lc_cores_keys=None,
     convert_vcom_to_vphys=True,
 ):
-    bn_lc_cf = os.path.basename(fn_lc_cf)
-    bn_lc_cores = os.path.basename(bn_lc_cf).replace(".diffsky_data.hdf5", ".hdf5")
-    fn_lc_cores = os.path.join(drn_lc_cores, bn_lc_cores)
+    """"""
+    # Determine which columns to read into lc_cores
+    with h5py.File(fn_lc_cores, "r") as hdf:
+        if lc_cores_keys is None:
+            lc_cores_keys = list(hdf["data"].keys())
+
+    assert len(lc_cores_keys) > 0, f"Error in column names of {fn_lc_cores}"
 
     with h5py.File(fn_lc_cores, "r") as hdf:
         if lc_cores_keys is None:
@@ -200,7 +203,13 @@ def load_lc_cf_chunk(
             hdf, nchunks, chunknum, lc_cores_keys
         )
 
-    diffsky_data = load_flat_hdf5(fn_lc_cf, istart=istart, iend=iend)
+        diffsky_data = dict()
+        keys_diffsky_data = haccsims.LC_CF_COLNAMES + [
+            "top_host_idx_chunk",
+            "secondary_top_host_idx_chunk",
+        ]
+        for key in keys_diffsky_data:
+            diffsky_data[key] = lc_data[key]
 
     if convert_vcom_to_vphys:
         diffsky_data["vx"] = lc_data["scale_factor"] * diffsky_data["vx"]

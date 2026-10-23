@@ -1,3 +1,27 @@
+0.3.11 (2026-10-22)
+-------------------
+- Improve mock validation scripts https://github.com/ArgonneCPAC/diffsky/pull/521
+- Add COSMOS+SDSS calibration `cs261020` (https://github.com/ArgonneCPAC/diffsky/pull/522)
+
+
+0.3.10 (2026-10-16)
+-------------------
+- Add forgotten model nickname sdss_feniks_hizels_261013 calibration (https://github.com/ArgonneCPAC/diffsky/pull/516)
+- Fix bugs in check_lc_mock_completeness.py (https://github.com/ArgonneCPAC/diffsky/pull/518)
+
+
+0.3.9 (2026-10-13)
+-------------------
+- Improve performance of all photometry/SED kernels by using jnp.einsum (https://github.com/ArgonneCPAC/diffsky/pull/496)
+- Fix bug in 2d shapes of mock galaxies (https://github.com/ArgonneCPAC/diffsky/pull/494)
+- Restore readthedocs builds (https://github.com/ArgonneCPAC/diffsky/pull/500)
+- Update Last Journey mocks to be based on core-lc-9 (https://github.com/ArgonneCPAC/diffsky/pull/503)
+- Improve script validating mock (https://github.com/ArgonneCPAC/diffsky/pull/509)
+- Begin using actual HACC core lightcones in CI testing workflows (https://github.com/ArgonneCPAC/diffsky/pull/510)
+- Fix bug in redshift-dependence of satellite NFW positions (https://github.com/ArgonneCPAC/diffsky/pull/511)
+- Add checkpointing feature to mock-production script (https://github.com/ArgonneCPAC/diffsky/pull/512)
+
+
 0.3.8 (2026-08-25)
 -------------------
 - Add HLTDS fields for image simulation: ELIAS-N1, EDFS_a, EDFS_b

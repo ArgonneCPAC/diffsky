@@ -1,10 +1,30 @@
 """"""
 
+from collections import namedtuple
+
 from jax import numpy as jnp
 from jax import random as jran
 
 from . import bulge_shapes, disk_shapes
 from . import ellipse_proj_kernels as epk
+
+Ellipse2DParams = namedtuple(
+    "Ellipse2DParams",
+    (
+        "alpha",
+        "beta",
+        "psi",
+        "ellipticity",
+        "e_alpha",
+        "e_beta",
+        "A",
+        "B",
+        "C",
+        "mu_inclination",
+        "b_over_a",
+        "c_over_a",
+    ),
+)
 
 
 def mc_disk_bulge_ellipsoids(
@@ -73,7 +93,7 @@ def mc_disk_bulge_ellipsoids(
     A, B, C = epk.mc_orthonormal_vectors(los_key, n)
 
     # Build the West-North-LoS coordinate system in the simulation frame
-    obs_x, obs_y, _ = epk.observer_frame_axes_from_pos_3D(pos_x, pos_y, pos_z)
+    obs_x, obs_y, obs_z = epk.observer_frame_axes_from_pos_3D(pos_x, pos_y, pos_z)
 
     # Use encapsulated function to compute the Ellipse2DParams
     a_disk = r50_disk
@@ -109,6 +129,25 @@ def mc_disk_bulge_ellipsoids(
         psi=new_bulge_psi,
         e_alpha=new_bulge_e_alpha,
         e_beta=new_bulge_e_beta,
+    )
+
+    # Inclination angles, as μ = cos(i): for the disk, the angle between its
+    # normal (minor axis C) and the LoS; for the bulge, between its major axis
+    # (A) and the LoS. The sign of the LoS does not matter, hence the abs.
+    mu_inclination_disk = jnp.abs(jnp.sum(C * obs_z, axis=-1))
+    mu_inclination_bulge = jnp.abs(jnp.sum(A * obs_z, axis=-1))
+
+    disk_ellipse = Ellipse2DParams(
+        **disk_ellipse._asdict(),
+        mu_inclination=mu_inclination_disk,
+        b_over_a=disk_axis_ratios.b_over_a,
+        c_over_a=disk_axis_ratios.c_over_a,
+    )
+    bulge_ellipse = Ellipse2DParams(
+        **bulge_ellipse._asdict(),
+        mu_inclination=mu_inclination_bulge,
+        b_over_a=bulge_axis_ratios.b_over_a,
+        c_over_a=bulge_axis_ratios.c_over_a,
     )
 
     return disk_ellipse, bulge_ellipse

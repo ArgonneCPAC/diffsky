@@ -87,6 +87,8 @@ def _sed_kern(
         spspop_params.dustpop_params,
         scatter_params,
     )
+    dust_frac_trans = dust_frac_trans.swapaxes(1, 2)  # (n_gals, n_age, n_wave)
+
     dust_params = dust_params._replace(
         av=dust_params.av[:, 0, -1],
         delta=dust_params.delta[:, 0],
@@ -102,15 +104,20 @@ def _sed_kern(
         wave_eff_galpop, frac_ssp_errors, phot_randoms.delta_mag_ssp_scatter
     )
 
-    n_met, n_age, n_wave = ssp_data.ssp_flux.shape
-    dust_frac_trans = dust_frac_trans.swapaxes(1, 2)  # (n_gals, n_age, n_wave)
+    # dust_frac_trans: (n_gals, n_age, n_wave)
+    # ssp_weights_mc: (n_gals, n_met, n_age)
+    # ssp_flux: (n_met, n_age, n_wave)
+    # frac_ssp_errors: (n_gals, n_wave)
+    rest_sed = jnp.einsum(
+        "gal,gma,mal,gl->gl",
+        dust_frac_trans,
+        burstiness_info.ssp_weights_mc,
+        ssp_data.ssp_flux,
+        frac_ssp_errors,
+    )
 
-    a = dust_frac_trans.reshape((n_gals, 1, n_age, n_wave))
-    b = frac_ssp_errors.reshape((n_gals, 1, 1, n_wave))
-    c = burstiness_info.ssp_weights_mc.reshape((n_gals, n_met, n_age, 1))
-    d = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
     mstar = 10 ** logsm_obs.reshape((n_gals, 1))
-    rest_sed = jnp.sum(a * b * c * d, axis=(1, 2)) * mstar
+    rest_sed = rest_sed * mstar
 
     lgmet_weights = jnp.sum(burstiness_info.ssp_weights_mc, axis=2)
 

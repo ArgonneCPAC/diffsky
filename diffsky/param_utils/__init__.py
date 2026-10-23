@@ -9,6 +9,10 @@ COSMOS_FIT_PARAMS["c260710"] = get_calib_params(
     calibration_dir=os.path.join("cosmos_calibrations", "data"),
     calibration_name="c260710",
 )
+COSMOS_FIT_PARAMS["cs261020"] = get_calib_params(
+    calibration_dir=os.path.join("cosmos_calibrations", "data"),
+    calibration_name="cs261020",
+)
 
 FENIKS_FIT_PARAMS = dict()
 FENIKS_FIT_PARAMS["feniks_260617"] = get_calib_params(
@@ -23,6 +27,11 @@ FENIKS_FIT_PARAMS["sdss_feniks_260701"] = get_calib_params(
 FENIKS_FIT_PARAMS["sdss_feniks_hizels_260710"] = get_calib_params(
     calibration_dir=os.path.join("sdss_feniks_hizels_calibrations"),
     calibration_name="sdss_feniks_hizels_260710",
+)
+
+FENIKS_FIT_PARAMS["sdss_feniks_hizels_261013"] = get_calib_params(
+    calibration_dir=os.path.join("sdss_feniks_hizels_calibrations"),
+    calibration_name="sdss_feniks_hizels_261013",
 )
 
 

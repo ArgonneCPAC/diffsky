@@ -38,7 +38,17 @@ _A = [None, 0, None, None, 0, *[None] * 4]
 calc_obs_mags_galpop = vmap(phk.calc_obs_mag, in_axes=_A)
 
 
-def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
+def get_lc_mock_data_report(
+    fn_lc_mock,
+    *,
+    no_dbk,
+    no_sed,
+    skip_slow_checks=False,
+    ignore_real=False,
+    ignore_synth=False,
+):
+    incl_slow_checks = not skip_slow_checks
+
     report = dict()
     data = load_flat_hdf5(fn_lc_mock, dataset="data")
 
@@ -53,6 +63,20 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     msg = check_all_columns_have_expected_shapes(fn_lc_mock, data=data)
     if len(msg) > 0:
         report["column_sizes"] = msg
+
+    msg = check_write_complete(fn_lc_mock)
+    if len(msg) > 0:
+        report["write_complete"] = msg
+
+    msg = check_consistency_of_ra_dec_synth_vs_real(
+        fn_lc_mock, ignore_real=ignore_real, ignore_synth=ignore_synth
+    )
+    if len(msg) > 0:
+        report["consistency_of_ra_dec_synth_vs_real"] = msg
+
+    msg = check_has_gal_id(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["has_gal_id"] = msg
 
     msg = check_xyz_littleh(fn_lc_mock, data=data)
     if len(msg) > 0:
@@ -86,6 +110,10 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if len(msg) > 0:
         report["reasonable_merging"] = msg
 
+    msg = check_2d_3d_shapes_consistent(fn_lc_mock, data=data)
+    if len(msg) > 0:
+        report["2d_3d_shapes"] = msg
+
     nchunks = load_lc_mock.estimate_nchunks(fn_lc_mock, BATCH_SIZE)
     chunknum_test = int(nchunks // 2)
 
@@ -103,26 +131,32 @@ def get_lc_mock_data_report(fn_lc_mock, *, no_dbk, no_sed):
     if no_sed:
         pass
     else:
-        msg = check_recomputed_photometry(
-            fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
-        )
-        if len(msg) > 0:
-            report["recomputed_photometry"] = msg
+        if incl_slow_checks:
+            msg = check_recomputed_photometry(
+                fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
+            )
+            if len(msg) > 0:
+                report["recomputed_photometry"] = msg
 
     if no_dbk is False:
-        msg = check_recomputed_dbk_photometry(
+        if incl_slow_checks:
+            msg = check_recomputed_dbk_photometry(
+                fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
+            )
+            if len(msg) > 0:
+                report["recomputed_dbk_photometry"] = msg
+
+    if incl_slow_checks:
+        msg = check_recomputed_sed(fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test)
+        if len(msg) > 0:
+            report["recomputed_sed"] = msg
+
+    if incl_slow_checks:
+        msg = check_recomputed_dbk_sed(
             fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test
         )
         if len(msg) > 0:
-            report["recomputed_dbk_photometry"] = msg
-
-    msg = check_recomputed_sed(fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test)
-    if len(msg) > 0:
-        report["recomputed_sed"] = msg
-
-    msg = check_recomputed_dbk_sed(fn_lc_mock, nchunks=nchunks, chunknum=chunknum_test)
-    if len(msg) > 0:
-        report["recomputed_dbk_sed"] = msg
+            report["recomputed_dbk_sed"] = msg
 
     return report
 
@@ -264,6 +298,21 @@ def check_all_data_columns_have_metadata(fn_lc_mock):
     return msg
 
 
+def check_write_complete(fn_lc_mock):
+    with h5py.File(os.path.join(fn_lc_mock), "r") as hdf:
+        try:
+            write_complete = hdf.attrs["write_complete"]
+        except KeyError:
+            write_complete = False
+
+    if write_complete:
+        msg = []
+    else:
+        msg = [f"write_complete={write_complete} in metadata"]
+
+    return msg
+
+
 def check_metadata(fn_lc_mock):
     msg = []
 
@@ -354,8 +403,15 @@ def check_expected_number_of_synthetic_galaxies(fn_lc_mock, data=None):
     z_max = np.percentile(data["redshift_true"], 99)
 
     drn_mock = os.path.dirname(fn_lc_mock)
-    fn_list_yamls = glob(os.path.join(drn_mock, "*.yaml"))
-    fn_yaml = fn_list_yamls[0]
+    yaml_pat = os.path.join(drn_mock, "*.yaml")
+    fn_list_yamls = glob(yaml_pat)
+    if len(fn_list_yamls) == 0:
+        raise ValueError(f"yaml_pat={yaml_pat} has no files")
+    elif len(fn_list_yamls) > 1:
+        raise ValueError(f"yaml_pat={yaml_pat} has more than one match")
+    else:
+        fn_yaml = fn_list_yamls[0]
+
     with open(fn_yaml, "r") as fobj:
         config = yaml.safe_load(fobj)
 
@@ -536,6 +592,18 @@ def check_column_shapes(fn_lc_mock, data=None):
                 s = f"`{key}` column has unexpected shape={shape}"
                 msg.append(s)
 
+    return msg
+
+
+def check_has_gal_id(fn_lc_mock, data=None):
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    try:
+        assert "gal_id" in data.keys()
+        msg = []
+    except AssertionError:
+        msg = [f"{fn_lc_mock} is missing `gal_id` column"]
     return msg
 
 
@@ -816,5 +884,148 @@ def check_xyz_littleh(fn_lc_mock, data=None):
         assert np.allclose(rcom_from_xyz, rcom_from_redshift, rtol=0.02)
     except AssertionError:
         msg.append(s)
+
+    return msg
+
+
+def check_2d_3d_shapes_consistent(fn_lc_mock, data=None):
+    """Projected 2D axis ratios must be consistent with 3D axis ratios."""
+    if data is None:
+        data = load_flat_hdf5(fn_lc_mock, dataset="data")
+
+    q_2d_bulge = data["beta_bulge"] / data["alpha_bulge"]
+    q_2d_disk = data["beta_disk"] / data["alpha_disk"]
+
+    c_over_b_bulge = data["c_over_a_bulge"] / data["b_over_a_bulge"]
+    c_over_b_disk = data["c_over_a_disk"] / data["b_over_a_disk"]
+    min_3D_axrat_bulge = np.minimum.reduce(
+        [data["c_over_a_bulge"], data["b_over_a_bulge"], c_over_b_bulge]
+    )
+    min_3D_axrat_disk = np.minimum.reduce(
+        [data["c_over_a_disk"], data["b_over_a_disk"], c_over_b_disk]
+    )
+    valid_2D_projection_bulge = (q_2d_bulge >= min_3D_axrat_bulge) & (q_2d_bulge <= 1.0)
+    valid_2D_projection_disk = (q_2d_disk >= min_3D_axrat_disk) & (q_2d_disk <= 1.0)
+
+    msg = []
+    try:
+        s = "Invalid 2D projection for disk shapes"
+        assert np.all(valid_2D_projection_disk)
+    except AssertionError:
+        msg.append(s)
+
+    try:
+        s = "Invalid 2D projection for bulge shapes"
+        assert np.all(valid_2D_projection_bulge)
+    except AssertionError:
+        msg.append(s)
+
+    return msg
+
+
+def check_for_missing_mock_patches(
+    fn_list_all_mocks, bnpat, ignore_synth=False, ignore_real=False
+):
+    drn_mock = os.path.dirname(fn_list_all_mocks[0])
+
+    step_collector = []
+    lc_patch_collector = []
+    for fn in fn_list_all_mocks:
+        bn = os.path.basename(fn)
+        stepnum, lc_patch = lightcone_utils.get_stepnum_and_skypatch_from_lc_bname(bn)
+        step_collector.append(stepnum)
+        lc_patch_collector.append(lc_patch)
+
+    all_stepnums = np.unique(step_collector)
+    all_lc_patches = np.unique(lc_patch_collector)
+
+    missing_mock_files = []
+    missing_synth_files = []
+    for stepnum in all_stepnums:
+        for lc_patch in all_lc_patches:
+            bn_mock = bnpat.format(stepnum, lc_patch)
+
+            if ignore_real:
+                pass
+            else:
+                if os.path.isfile(os.path.join(drn_mock, bn_mock)):
+                    pass
+                else:
+                    missing_mock_files.append(bn_mock)
+
+            if ignore_synth:
+                pass
+            else:
+                bn_synth = bn_mock.replace(".hdf5", ".synthetic_halos.hdf5")
+                if os.path.isfile(os.path.join(drn_mock, bn_synth)):
+                    pass
+                else:
+                    missing_synth_files.append(bn_synth)
+
+    results = dict()
+    results["missing_mock_files"] = missing_mock_files
+    results["missing_synth_files"] = missing_synth_files
+    results["all_stepnums"] = all_stepnums
+    results["all_lc_patches"] = all_lc_patches
+    return results
+
+
+def check_consistency_of_ra_dec_synth_vs_real(
+    fn_mock_real_halos, *, ignore_real=False, ignore_synth=False, n_min=100
+):
+    if ignore_real | ignore_synth:
+        return []
+
+    coords = (
+        "ra",
+        "dec",
+        "ra_nfw",
+        "dec_nfw",
+        "x",
+        "y",
+        "z",
+        "x_nfw",
+        "y_nfw",
+        "z_nfw",
+    )
+
+    # Only run the check on real halos so that we don't duplicate the check
+    if "synthetic_halos" in fn_mock_real_halos:
+        return []
+    else:
+        real = load_flat_hdf5(fn_mock_real_halos, dataset="data", keys=coords)
+        if real[coords[0]].size < n_min:
+            return []
+
+    fn_mock_synth_halos = fn_mock_real_halos.replace(".hdf5", ".synthetic_halos.hdf5")
+    synth = load_flat_hdf5(fn_mock_synth_halos, dataset="data", keys=coords)
+
+    bn_mock = os.path.basename(fn_mock_real_halos)
+    bn_synth = os.path.basename(fn_mock_synth_halos)
+
+    msg = []
+    for coord in coords:
+        min1 = np.percentile(real[coord], 1)
+        max1 = np.percentile(real[coord], 99)
+        dx1 = max1 - min1
+
+        min2 = np.percentile(synth[coord], 1)
+        max2 = np.percentile(synth[coord], 99)
+        dx2 = max2 - min2
+
+        mean1 = real[coord].mean()
+        mean2 = synth[coord].mean()
+
+        s = f"Mean {coord} of {bn_synth} falls outside min/max of {coord} in {bn_mock}"
+        try:
+            assert min1 + dx1 / 10 < mean2 < max1 - dx1 / 10
+        except AssertionError:
+            msg.append(s)
+
+        s = f"Mean {coord} of {bn_mock} falls outside min/max of {coord} in {bn_synth}"
+        try:
+            assert min2 + dx2 / 10 < mean1 < max2 - dx2 / 10
+        except AssertionError:
+            msg.append(s)
 
     return msg

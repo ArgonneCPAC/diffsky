@@ -49,7 +49,7 @@ def _make_catalog(n, seed=0, b_over_a=None, c_over_a=None, frac_synthetic=0.2):
         ba = rng.uniform(0.4, 1.0, n) if b_over_a is None else np.full(n, b_over_a)
         ca = ba * rng.uniform(0.1, 0.6, n) if c_over_a is None else np.full(n, c_over_a)
         data[f"b_over_a_{comp}"], data[f"c_over_a_{comp}"] = ba, ca
-        for col in ("alpha", "beta", "psi", "ellipticity", "r50"):
+        for col in ("alpha", "beta", "psi", "ellipticity", "r50", "mu_inclination"):
             key = f"{col}_{comp}" if col != "r50" else f"r50_{comp}_2d"
             data[key] = np.full(n, -99.0)
     return data, central, synthetic
@@ -108,20 +108,28 @@ def test_central_and_satellite_alignment_wrap_the_alignment_functions():
 
 def test_alignment_worker_outputs_are_consistent():
     """Returned shapes respect their bounds and equal an independent projection
-    of the returned 3D axes onto the (West, North) plane of each galaxy"""
+    of the returned 3D axes onto the (West, North) plane of each galaxy; the
+    inclinations are the cosine of the angle between the line of sight and the
+    disk normal (minor axis) or bulge major axis; the 3D axis ratios are the
+    catalog's"""
     n = 20_000
     data, central, synthetic = _make_catalog(n)
     disk, bulge, axes = inj.alignment_worker(data, 0.6, 0.6, central, synthetic)
     _assert_right_handed_orthonormal(axes["gal_A"], axes["gal_B"], axes["gal_C"])
 
     west, north, _ = eproj.observer_frame_axes_from_pos_3D(data["x_nfw"], data["y_nfw"], data["z_nfw"])
-    for comp, e2d in (("disk", disk), ("bulge", bulge)):
+    los = np.cross(np.asarray(west), np.asarray(north))
+    for comp, e2d, axis in (("disk", disk, axes["gal_C"]), ("bulge", bulge, axes["gal_A"])):
         for p, pname in zip(e2d, e2d._fields):
             assert np.all(np.isfinite(p)), pname
             assert len(p) == n
         assert np.all(e2d.psi >= -np.pi / 2) & np.all(e2d.psi < np.pi / 2)
         assert np.all(e2d.ellipticity >= 0) & np.all(e2d.ellipticity < 1)
         assert np.all(e2d.beta <= e2d.alpha)
+        assert np.all(e2d.mu_inclination >= 0) & np.all(e2d.mu_inclination <= 1)
+        assert np.allclose(e2d.mu_inclination, np.abs(np.sum(np.asarray(axis) * los, axis=-1)), atol=1e-12)
+        assert np.array_equal(e2d.b_over_a, data[f"b_over_a_{comp}"])
+        assert np.array_equal(e2d.c_over_a, data[f"c_over_a_{comp}"])
 
         a = data[f"r50_{comp}_3d"]
         expected = eproj.compute_ellipse2d_in_sim_frame(
@@ -205,7 +213,11 @@ def test_main_writes_a_complete_catalog(tmp_path, monkeypatch):
     _write_catalog(fn_in, data)
     _run_main(monkeypatch, fn_in, fn_out, "--seed", "7")
 
-    shape_cols = {f"{col}_{comp}" for col in ("alpha", "beta", "psi", "ellipticity") for comp in ("disk", "bulge")}
+    shape_cols = {
+        f"{col}_{comp}"
+        for col in ("alpha", "beta", "psi", "ellipticity", "mu_inclination")
+        for comp in ("disk", "bulge")
+    }
     shape_cols |= {"r50_disk_2d", "r50_bulge_2d"}
     with h5py.File(fn_in, "r") as fi, h5py.File(fn_out, "r") as fo:
         assert set(fo["data"].keys()) == set(fi["data"].keys())

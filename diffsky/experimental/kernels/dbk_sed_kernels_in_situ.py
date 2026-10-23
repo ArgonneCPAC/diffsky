@@ -80,24 +80,27 @@ def _dbk_sed_kern(
     )
     dbk_weights, disk_bulge_history = dbk_kernels._dbk_kern(*args)
 
-    n_gals = z_obs.size
-    n_met, n_age, n_wave = ssp_data.ssp_flux.shape
-
-    a = sed_info.dust_frac_trans.reshape((n_gals, 1, n_age, n_wave))
-    b = sed_info.frac_ssp_errors.reshape((n_gals, 1, 1, n_wave))
-    d = ssp_data.ssp_flux.reshape((1, n_met, n_age, n_wave))
-
-    c_b = dbk_weights.ssp_weights_bulge.reshape((n_gals, n_met, n_age, 1))
-    mb = dbk_weights.mstar_bulge.reshape((n_gals, 1))
-    sed_bulge = jnp.sum(a * b * c_b * d, axis=(1, 2)) * mb
-
-    c_dd = dbk_weights.ssp_weights_disk.reshape((n_gals, n_met, n_age, 1))
-    mdd = dbk_weights.mstar_disk.reshape((n_gals, 1))
-    sed_disk = jnp.sum(a * b * c_dd * d, axis=(1, 2)) * mdd
-
-    c_k = dbk_weights.ssp_weights_knots.reshape((n_gals, n_met, n_age, 1))
-    mk = dbk_weights.mstar_knots.reshape((n_gals, 1))
-    sed_knots = jnp.sum(a * b * c_k * d, axis=(1, 2)) * mk
+    sed_bulge = _sed_kern_helper(
+        ssp_data.ssp_flux,
+        dbk_weights.ssp_weights_bulge,
+        sed_info.dust_frac_trans,
+        sed_info.frac_ssp_errors,
+        dbk_weights.mstar_bulge,
+    )
+    sed_disk = _sed_kern_helper(
+        ssp_data.ssp_flux,
+        dbk_weights.ssp_weights_disk,
+        sed_info.dust_frac_trans,
+        sed_info.frac_ssp_errors,
+        dbk_weights.mstar_disk,
+    )
+    sed_knots = _sed_kern_helper(
+        ssp_data.ssp_flux,
+        dbk_weights.ssp_weights_knots,
+        sed_info.dust_frac_trans,
+        sed_info.frac_ssp_errors,
+        dbk_weights.mstar_knots,
+    )
 
     sed_info = DBKSEDInfo(
         **sed_info._asdict(),
@@ -109,6 +112,28 @@ def _dbk_sed_kern(
         mstar_knots=dbk_weights.mstar_knots,
     )
     return sed_info
+
+
+@jjit
+def _sed_kern_helper(ssp_flux, ssp_weights, dust_ftrans, frac_ssp_err, mstar):
+    """
+    # ssp_flux: (n_met, n_age, n_wave)
+    # ssp_weights: (n_gals, n_met, n_age)
+    # dust_ftrans: (n_gals, n_age, n_wave)
+    # frac_ssp_errors: (n_gals, n_wave)
+    # mstar: (n_gals, )
+    """
+    sed = (
+        jnp.einsum(
+            "gal,gl,gma,mal->gl",
+            dust_ftrans,
+            frac_ssp_err,
+            ssp_weights,
+            ssp_flux,
+        )
+        * mstar[:, None]
+    )
+    return sed
 
 
 _DBK_SED_EXTRA_FIELDS = [

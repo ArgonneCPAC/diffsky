@@ -35,3 +35,15 @@ def test_mc_disk_bulge_ellipsoids():
         assert np.all(ellipse.ellipticity >= 0.0)
         assert np.allclose(np.sum(ellipse.e_alpha * np.array([1, 0])[np.newaxis, :], axis=-1), np.cos(ellipse.psi))
         assert np.allclose(np.sum(ellipse.e_beta * np.array([1, 0])[np.newaxis, :], axis=-1), np.cos(ellipse.psi + np.pi / 2.0))
+        assert np.all(ellipse.mu_inclination >= 0)
+        assert np.all(ellipse.mu_inclination <= 1)
+        assert np.all(ellipse.b_over_a <= 1) & np.all(ellipse.c_over_a > 0)
+        assert np.all(ellipse.c_over_a <= ellipse.b_over_a)
+
+        # without intrinsic alignment the orientations are isotropic, so
+        # μ = cos(i) is uniform in [0, 1] (Kolmogorov-Smirnov test, 99.9%
+        # confidence with a Bonferroni correction for the two components)
+        mu = np.sort(np.asarray(ellipse.mu_inclination))
+        ecdf = np.arange(1, n + 1) / n
+        ks_distance = max(np.max(ecdf - mu), np.max(mu - (ecdf - 1 / n)))
+        assert ks_distance < np.sqrt(-np.log(1e-3 / 2 / 2) / 2) / np.sqrt(n)

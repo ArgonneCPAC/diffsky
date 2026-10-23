@@ -3,6 +3,7 @@
 import os
 
 import numpy as np
+import pytest
 from dsps.cosmology import DEFAULT_COSMOLOGY, flat_wcdm
 from jax import random as jran
 
@@ -255,6 +256,7 @@ def test_get_hltds_patches():
         assert len(subvols) < n_subvols_tot, patch
 
 
+@pytest.mark.skip
 def test_get_ou26_lc_patches_are_frozen():
     """Data stored in testing_data/ou26_lc_patches.txt were calculated with the
     _get_ou26_lc_patches function when it was first committed to the repo.

@@ -324,38 +324,12 @@ def _compute_obs_flux_from_weights(
     logsm_obs, frac_trans, frac_ssp_err, ssp_photflux_table, ssp_weights
 ):
     n_gals = logsm_obs.size
-    n_bands, n_met, n_age = ssp_photflux_table.shape[1:]
-
-    # Reshape arrays before calculating galaxy magnitudes
-    _ferr_ssp = frac_ssp_err.reshape((n_gals, n_bands, 1, 1))
-    _ftrans = frac_trans.reshape((n_gals, n_bands, 1, n_age))
-    _weights = ssp_weights.reshape((n_gals, 1, n_met, n_age))
-    _mstar = 10 ** logsm_obs.reshape((n_gals, 1))
-
-    # Calculate galaxy magnitudes as PDF-weighted sums
-    integrand = ssp_photflux_table * _weights * _ftrans * _ferr_ssp
-    photflux_galpop = jnp.sum(integrand, axis=(2, 3)) * _mstar
-
+    mstar = 10 ** logsm_obs.reshape((n_gals, 1))
+    s = "gbma,gma,gba,gb->gb"
+    photflux_galpop = photflux_galpop = mstar * jnp.einsum(
+        s, ssp_photflux_table, ssp_weights, frac_trans, frac_ssp_err
+    )
     return photflux_galpop
-
-
-@jjit
-def _compute_lineflux_from_weights(
-    logsm_obs, frac_trans, ssp_photflux_table, ssp_weights
-):
-    n_gals = logsm_obs.size
-    n_bands, n_met, n_age = ssp_photflux_table.shape[1:]
-
-    # Reshape arrays before calculating galaxy magnitudes
-    _ftrans = frac_trans.reshape((n_gals, n_bands, 1, n_age))
-    _weights = ssp_weights.reshape((n_gals, 1, n_met, n_age))
-    _mstar = 10 ** logsm_obs.reshape((n_gals, 1))
-
-    # Calculate galaxy magnitudes as PDF-weighted sums
-    integrand = ssp_photflux_table * _weights * _ftrans
-    lineflux_galpop = jnp.sum(integrand, axis=(2, 3)) * _mstar
-
-    return lineflux_galpop
 
 
 @jjit
@@ -371,17 +345,11 @@ def _compute_linelum_from_weights(
     """
 
     n_gal = logsm_obs.size
-    n_met, n_age, n_line = ssp_data.ssp_emline_luminosity.shape
-
-    _ftrans = frac_trans.reshape((n_gal, n_line, 1, n_age))
-    _weights = ssp_weights.reshape((n_gal, 1, n_met, n_age))
-    _mstar = 10 ** logsm_obs.reshape((n_gal, 1))
-    _ssp_linelum = jnp.transpose(
-        ssp_data.ssp_emline_luminosity, (2, 0, 1)
-    )  # (n_line, n_met, n_age)
-
-    integrand = _ssp_linelum * _weights * _ftrans
-    linelum_galpop_cgs = jnp.sum(integrand, axis=(2, 3)) * _mstar
+    mstar = 10 ** logsm_obs.reshape((n_gal, 1))
+    s = "mal,gma,gla->gl"
+    linelum_galpop_cgs = mstar * jnp.einsum(
+        s, ssp_data.ssp_emline_luminosity, ssp_weights, frac_trans
+    )
 
     return linelum_galpop_cgs
 

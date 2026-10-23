@@ -48,6 +48,7 @@ from . import load_lc_cf
 
 N_T_TABLE = 100
 
+LC_CORES_BNPAT = "lc_cores-{0}.{1}.hdf5"
 LC_CF_BNPAT = "lc_cores-{0}.{1}.diffsky_data.hdf5"
 LC_MOCK_BNPAT = LC_CF_BNPAT.replace("diffsky_data", "diffsky_gals")
 
@@ -92,6 +93,7 @@ _ORIEN_PATS = (
     "alpha_{}",
     "ellipticity_{}",
     "psi_{}",
+    "mu_inclination_{}",
 )
 ORIENTATION_KEYS = [pat.format("disk") for pat in _ORIEN_PATS]
 ORIENTATION_KEYS.extend([pat.format("bulge") for pat in _ORIEN_PATS])
@@ -153,6 +155,19 @@ interp_vmap = jjit(vmap(jnp.interp, in_axes=(0, None, 0)))
 BNPAT_TCURVES = "diffsky_{0}_transmission_curves.hdf5"
 BNPAT_SSP_DATA = "diffsky_{0}_ssp_data.hdf5"
 BNPAT_PARAM_COLLECTION = "diffsky_{0}_param_collection.hdf5"
+
+
+def check_mock_data_file_is_complete(fn_lc_mock):
+    """Read metadata to determine whether fn_lc_mock finished writing"""
+    fn_exists = os.path.exists(fn_lc_mock)
+
+    try:
+        with h5py.File(fn_lc_mock, "r") as hdf:
+            fn_is_complete = bool(hdf.attrs.get("write_complete", False))
+    except OSError:
+        fn_is_complete = False
+
+    return fn_exists, fn_is_complete
 
 
 def get_output_mock_columns(no_dbk, no_sed):
@@ -659,19 +674,8 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["zscore_r50_disk"] = zscore_disk
     diffsky_data["zscore_r50_bulge"] = zscore_bulge
 
-    orientation_key, disk_shape_key, bulge_shape_key = jran.split(morph_key, 3)
-    n = diffsky_data["r50_disk_3d"].size
-    disk_axis_ratios = disk_shapes.sample_disk_axis_ratios(disk_shape_key, n)
-    bulge_axis_ratios = bulge_shapes.sample_bulge_axis_ratios(bulge_shape_key, n)
-
-    diffsky_data["b_over_a_disk"] = disk_axis_ratios.b_over_a
-    diffsky_data["c_over_a_disk"] = disk_axis_ratios.c_over_a
-
-    diffsky_data["b_over_a_bulge"] = bulge_axis_ratios.b_over_a
-    diffsky_data["c_over_a_bulge"] = bulge_axis_ratios.c_over_a
-
     ellipse2d_disk, ellipse2d_bulge = mcdbs.mc_disk_bulge_ellipsoids(
-        orientation_key,
+        morph_key,
         diffsky_data["r50_disk_3d"],
         diffsky_data["r50_bulge_3d"],
         lc_data["x_nfw"],
@@ -685,11 +689,17 @@ def add_morphology_quantities_to_diffsky_data(
     diffsky_data["alpha_disk"] = ellipse2d_disk.alpha
     diffsky_data["ellipticity_disk"] = ellipse2d_disk.ellipticity
     diffsky_data["psi_disk"] = ellipse2d_disk.psi
+    diffsky_data["mu_inclination_disk"] = ellipse2d_disk.mu_inclination
+    diffsky_data["b_over_a_disk"] = ellipse2d_disk.b_over_a
+    diffsky_data["c_over_a_disk"] = ellipse2d_disk.c_over_a
 
     diffsky_data["beta_bulge"] = ellipse2d_bulge.beta
     diffsky_data["alpha_bulge"] = ellipse2d_bulge.alpha
     diffsky_data["ellipticity_bulge"] = ellipse2d_bulge.ellipticity
     diffsky_data["psi_bulge"] = ellipse2d_bulge.psi
+    diffsky_data["mu_inclination_bulge"] = ellipse2d_bulge.mu_inclination
+    diffsky_data["b_over_a_bulge"] = ellipse2d_bulge.b_over_a
+    diffsky_data["c_over_a_bulge"] = ellipse2d_bulge.c_over_a
 
     # Jiachuan Xu:
     # Assuming a Gaussian profile, the 2D half-light radius would be 0.765*alpha
@@ -731,7 +741,9 @@ def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5
         lc_data["redshift_true"],
         "200m",
     )
-    host_radius_mpc = hbf.halo_mass_to_halo_radius(*args) / 1000.0
+    host_radius_mpc_phys = hbf.halo_mass_to_halo_radius(*args) / 1000.0
+    # xyz coords of host halos are in comoving units, so convert Rhalo to comoving
+    host_radius_mpc_com = host_radius_mpc_phys * (1 + lc_data["redshift_true"])
 
     n_cores = host_logmp_obs.shape[0]
     axis_key, nfw_key = jran.split(ran_key, 2)
@@ -740,7 +752,7 @@ def reposition_satellites(sim_info, lc_data, diffsky_data, ran_key, fixed_conc=5
     c_to_a = np.ones(n_cores)
     conc = np.zeros(n_cores) + fixed_conc
 
-    args = (nfw_key, host_radius_mpc, conc, major_axes, b_to_a, c_to_a)
+    args = (nfw_key, host_radius_mpc_com, conc, major_axes, b_to_a, c_to_a)
     host_centric_pos = nfwcs.mc_ellipsoidal_positions(*args)
 
     new_pos = host_centric_pos + host_pos
