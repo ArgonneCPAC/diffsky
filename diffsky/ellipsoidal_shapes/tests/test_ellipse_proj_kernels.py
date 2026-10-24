@@ -551,11 +551,9 @@ def test_compute_ellipse2d_in_sim_frame_sphere_and_ellipticity_types():
         e2d = eproj.compute_ellipse2d_in_sim_frame(
             A_v, B_v, C_v, r, r, r, obs_x, obs_y, ellipticity_type=ellipticity_type
         )
-        # for degenerate eigenvalues the closed-form 2x2 eigen solver loses
-        # sqrt(machine eps) ~ 1e-8 of relative precision, hence the tolerance
-        assert np.allclose(e2d.alpha, r, rtol=1e-7)
-        assert np.allclose(e2d.beta, r, rtol=1e-7)
-        assert np.allclose(e2d.ellipticity, 0.0, atol=1e-7)
+        assert np.allclose(e2d.alpha, r, rtol=1e-12)
+        assert np.allclose(e2d.beta, r, rtol=1e-12)
+        assert np.allclose(e2d.ellipticity, 0.0, atol=1e-12)
         assert np.all(np.isfinite(e2d.psi))
 
     (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(jran.key(1), n)
@@ -583,6 +581,69 @@ def test_compute_ellipse2d_in_sim_frame_sphere_and_ellipticity_types():
         pass
     else:
         raise AssertionError("ellipticity_type=4 should raise ValueError")
+
+
+def test_calculate_ellipse2d_axes_precision_from_elongated_to_round():
+    """The semi-axes recovered from the quadratic-form coefficients keep full
+    precision from elongated to almost perfectly round ellipses, so that a tiny
+    ellipticity 1 - q is still resolved (a trace**2 - 4*det discriminant
+    cancels for round shapes and loses it)"""
+    n = 5_000
+    theta = np.asarray(jran.uniform(jran.key(0), minval=0, maxval=np.pi, shape=(n,)))
+    cs, sn = np.cos(theta), np.sin(theta)
+    for q in (1e-2, 0.3, 0.9, 1 - 1e-4, 1 - 1e-6, 1 - 1e-8, 1 - 1e-12):
+        alpha, beta = 1.3, 1.3 * q
+        lam_a, lam_b = alpha**-2, beta**-2
+        A = cs * cs * lam_a + sn * sn * lam_b
+        C = sn * sn * lam_a + cs * cs * lam_b
+        B = 2 * cs * sn * (lam_a - lam_b)
+        al, be = (np.asarray(x) for x in eproj._calculate_ellipse2d_axes(A, B, C))
+        assert np.allclose(al, alpha, rtol=1e-11, atol=0), q
+        assert np.allclose(be, beta, rtol=1e-11, atol=0), q
+        assert np.allclose(1 - be / al, 1 - q, rtol=0, atol=1e-13), q
+
+    # the semi-axes are not differentiable at an exactly round image (the two
+    # eigenvalues cross), but their gradient must stay finite rather than nan
+    import jax
+
+    grad = jax.grad(lambda x: jnp.sum(jnp.stack(eproj._calculate_ellipse2d_axes(*x))))(jnp.array([0.7, 0.0, 0.7]))
+    assert np.all(np.isfinite(np.asarray(grad)))
+
+
+def test_compute_ellipse2d_in_sim_frame_gradients_near_alignment():
+    """Gradients with respect to the viewing direction are finite and match
+    central finite differences for every orientation, including exactly along a
+    principal axis (Euler-angle gimbal lock), from either side"""
+    import jax
+
+    a, b, c = 2.0, 1.0, 0.5
+    eye = jnp.eye(3)
+
+    def outputs(p, los_sign):
+        tx, ty, g = p
+        los = jnp.array([tx, ty, los_sign]) / jnp.sqrt(tx**2 + ty**2 + 1.0)
+        e1 = jnp.cross(los, jnp.array([jnp.cos(g), jnp.sin(g), 0.0]))
+        e1 = e1 / jnp.linalg.norm(e1)
+        e2d = eproj.compute_ellipse2d_in_sim_frame(
+            eye[0:1], eye[1:2], eye[2:3], jnp.array([a]), jnp.array([b]), jnp.array([c]),
+            e1[None], jnp.cross(los, e1)[None],
+        )
+        # cos/sin of 2 psi are smooth where psi itself wraps
+        return jnp.stack([e2d.alpha[0], e2d.beta[0], jnp.cos(2 * e2d.psi[0]), jnp.sin(2 * e2d.psi[0])])
+
+    h = 1e-6
+    for tilt in (0.0, 1e-12, 1e-9, 1e-6, 1e-3):
+        for los_sign in (1.0, -1.0):
+            p = jnp.array([tilt, 0.7 * tilt, 0.4])
+            jac_fwd = np.asarray(jax.jacfwd(lambda q: outputs(q, los_sign))(p))
+            jac_rev = np.asarray(jax.jacrev(lambda q: outputs(q, los_sign))(p))
+            assert np.all(np.isfinite(jac_fwd)) & np.all(np.isfinite(jac_rev)), tilt
+            finite_diff = np.stack([
+                (np.asarray(outputs(p.at[i].add(h), los_sign)) - np.asarray(outputs(p.at[i].add(-h), los_sign))) / (2 * h)
+                for i in range(3)
+            ], axis=-1)
+            assert np.allclose(jac_fwd, finite_diff, atol=1e-8), tilt
+            assert np.allclose(jac_rev, jac_fwd, atol=1e-12), tilt
 
 
 def test_silhouette_encloses_cross_section():
@@ -662,25 +723,30 @@ def test_observer_frame_axes_from_pos_3D_agrees_with_ra_dec():
 
 
 def test_observer_frame_axes_at_and_near_the_poles():
-    """At the celestial poles West is undefined: the xyz-based frame falls back to
-    a fixed West=(1,0,0) and stays orthonormal; just off the pole it is the
-    continuous limit of the RA/Dec-based frame"""
+    """At the celestial poles West is undefined: the xyz-based frame uses the
+    RA = 0 that get_ra_dec assigns there, so it equals the RA/Dec-based frame
+    of the same position, and stays orthonormal; arbitrarily close to the pole
+    it follows the RA/Dec-based frame of each galaxy's own RA"""
+    from ...data_loaders.hacc_utils import lightcone_utils as hlu
+
     pos = np.array([[0.0, 0.0, 1.0], [0.0, 0.0, -3.0]])
-    x, y, z = (np.asarray(v) for v in eproj.observer_frame_axes_from_pos_3D(*pos.T))
-    _assert_right_handed_orthonormal(x, y, z)
-    assert np.allclose(z, -pos / np.linalg.norm(pos, axis=-1, keepdims=True))
-    assert np.allclose(x, [[1.0, 0, 0], [1.0, 0, 0]])
+    from_pos = [np.asarray(v) for v in eproj.observer_frame_axes_from_pos_3D(*pos.T)]
+    _assert_right_handed_orthonormal(*from_pos)
+    assert np.allclose(from_pos[2], -pos / np.linalg.norm(pos, axis=-1, keepdims=True))
+    ra, dec = (np.asarray(v) for v in hlu.get_ra_dec(*pos.T))
+    for v1, v2 in zip(from_pos, eproj.observer_frame_axes_from_ra_dec(ra, dec)):
+        assert np.allclose(v1, v2, atol=1e-12)
 
     # just off the pole, at RA = 0, 90, 200 degrees
-    for offset in (1e-9, 1e-6, 1e-3):
+    for offset in (1e-13, 1e-11, 1e-9, 1e-6, 1e-3):
         ra = np.array([0.0, 90.0, 200.0])
         dec = np.full(3, 90.0 - np.rad2deg(offset))
         pos = _r_hat(ra, dec)
         from_pos = [np.asarray(v) for v in eproj.observer_frame_axes_from_pos_3D(*pos.T)]
-        _assert_right_handed_orthonormal(*from_pos, atol=1e-9)
+        _assert_right_handed_orthonormal(*from_pos, atol=1e-12)
         from_radec = [np.asarray(v) for v in eproj.observer_frame_axes_from_ra_dec(ra, dec)]
         for v1, v2 in zip(from_pos, from_radec):
-            assert np.allclose(v1, v2, atol=1e-6)
+            assert np.allclose(v1, v2, atol=1e-12)
 
     # the RA/Dec frame is well defined exactly at the poles, for any RA
     ra = np.array([0.0, 45.0, 300.0])

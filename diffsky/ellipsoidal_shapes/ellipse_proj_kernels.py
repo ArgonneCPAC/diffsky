@@ -103,27 +103,15 @@ def compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop
         The 2D ellipse parameters in the observed frame.
     """
     # Transform the West-North-LoS coordinate system into the ellipsoid body frame
-    u = _transform_axes_to_frame(obs_x, A_v, B_v, C_v)
-    v = _transform_axes_to_frame(obs_y, A_v, B_v, C_v)
+    u = _unitize(_transform_axes_to_frame(obs_x, A_v, B_v, C_v))
+    v = _unitize(_transform_axes_to_frame(obs_y, A_v, B_v, C_v))
 
-    # Get the projection angles in the ellipsoid body frame,
-    # which are the Euler angles of the ZXZ rotation from the body frame
-    # to the west-north-los frame
-    z1, x2, z3 = _get_eulerzxz_angle_from_basis(u, v)
-    mu_proj = jnp.cos(x2)
-    phi_proj = z1 - jnp.pi / 2.0
-    omega_proj = z3
+    # Build the rotation (columns u, v, LoS in the body frame) directly: Euler
+    # angles are singular along principal axes, giving nan or wrong gradients there.
+    R = jnp.stack([u, v, jnp.cross(u, v)], axis=-1)
 
     # Get the coefficients of the projected ellipse quadratic form in the u-v plane
-    A_coeff, B_coeff, C_coeff = _compute_2d_ellipse_params(
-        a,
-        b,
-        c,
-        mu_proj,
-        phi_proj,
-        omega_proj,
-        envelop=envelop,
-    )
+    A_coeff, B_coeff, C_coeff = _project_shape_matrix(a, b, c, R, envelop)
     # Get the semi-major, semi-minor axes, and ellipticity of the projected ellipse
     alpha, beta = _calculate_ellipse2d_axes(A_coeff, B_coeff, C_coeff)
     q = beta / alpha
@@ -287,15 +275,23 @@ def _compute_2d_ellipse_params(a, b, c, mu, phi, omega, envelop=True):
     2. Rotate around the new x-axis by theta = arccos(mu)
     3. Rotate around the new z-axis (LoS) by omega.
     """
-    # ── Shape matrix diagonal ───────────────────────────────────────────────
-    d = jnp.stack([1.0 / a**2, 1.0 / b**2, 1.0 / c**2], axis=-1)  # (..., 3)
-
     # -- Rotation matrix that maps x-y-z to u-v-LoS (Euler ZXZ convention) ---
     theta = jnp.arccos(mu)  # polar angle from z-axis to LoS
     # passive rotation: R @ [x,y,z] = [u,v,LoS]
     R = _get_eulerxzx_matrix_from_angles(
         phi + jnp.pi / 2.0, theta, omega
     )  # (..., 3, 3)
+
+    return _project_shape_matrix(a, b, c, R, envelop)
+
+
+@partial(jjit, static_argnums=(4,))
+def _project_shape_matrix(a, b, c, R, envelop=True):
+    """Coefficients A, B, C of the projected ellipse Au² + Buv + Cv² = 1, given the
+    rotation R whose columns are the u, v and LoS axes expressed in the ellipsoid
+    body frame (x along a, y along b, z along c)."""
+    # ── Shape matrix diagonal ───────────────────────────────────────────────
+    d = jnp.stack([1.0 / a**2, 1.0 / b**2, 1.0 / c**2], axis=-1)  # (..., 3)
 
     # -- Quadratic form in the u-v-LoS frame: S_rotated = R^T @ S @ R --------
     S_rotated = jnp.swapaxes(R, -1, -2) @ (d[..., :, None] * R)
@@ -386,13 +382,9 @@ def _get_eulerzxz_angle_from_basis(x_prime, y_prime):
     y_ = y_ / jnp.linalg.norm(y_, axis=-1, keepdims=True)
     z_ = jnp.cross(x_, y_)  # Ensure z' is orthogonal to x' and y'
 
-    # sin(beta) is the length of z' projected on the x-y plane. Computing beta
-    # with arctan2 keeps it accurate near beta = 0 and pi, where arccos(z'_z)
-    # turns a 1-ulp rounding error in z'_z into a spurious beta of ~1e-8: that
-    # would miss the gimbal lock below and take arctan2(0, 0) in the general
-    # case. The lock threshold ~sqrt(machine eps) balances the error of the
-    # lock approximation (~sin_beta) against that of the general formulas
-    # (~eps / sin_beta). The safe square root keeps gradients finite at lock.
+    # arctan2 keeps beta accurate near 0 and pi, where arccos(z'_z) turns 1-ulp
+    # rounding into beta ~ 1e-8 and misses the lock test. Lock threshold
+    # ~sqrt(eps) balances lock-approximation and general-formula errors.
     sin2_beta = z_[..., 0] ** 2 + z_[..., 1] ** 2
     is_aligned = sin2_beta == 0
     sin_beta = jnp.where(is_aligned, 0.0, jnp.sqrt(jnp.where(is_aligned, 1.0, sin2_beta)))
@@ -421,13 +413,9 @@ def _calculate_ellipse2d_axes(A, B, C):
     trace = A + C
     trace = jnp.maximum(trace, 0.0)
 
-    det = A * C - 0.25 * B**2
-    det = jnp.maximum(det, 0.0)
-
-    discriminant = trace**2 - 4 * det
-    discriminant = jnp.maximum(discriminant, 0.0)
-
-    sqrt_discriminant = jnp.sqrt(discriminant)
+    # sqrt(trace**2 - 4*det) == hypot(A - C, B), without the cancellation that loses
+    # precision (and gives nan gradients) for nearly round ellipses
+    sqrt_discriminant = jnp.hypot(A - C, B)
 
     # Eigenvalues {λ_1, λ_2} (λ = 1/semi-axis²)
     lambda1 = 0.5 * (trace + sqrt_discriminant)  # Larger eigenvalue
@@ -589,8 +577,6 @@ def observer_frame_axes_from_ra_dec(ra_deg, dec_deg, ascending_ra_deg=0.0):
     y_prime = jnp.stack([-sd * ca, -sd * sa, cd], axis=-1)  # North
     z_prime = jnp.stack([-cd * ca, -cd * sa, -sd], axis=-1)  # -LOS
 
-    assert_orthonormality(x_prime, y_prime, z_prime)
-
     return x_prime, y_prime, z_prime
 
 
@@ -623,11 +609,12 @@ def observer_frame_axes_from_pos_3D(pos_x, pos_y, pos_z):
     # would be a 0/0 NaN there, and jnp.where can't rescue a NaN already computed on the
     # discarded branch. This keeps the whole thing jit-safe with well-defined gradients.
     obs_x_raw = jnp.cross(NCP, obs_z)
-    at_pole = jnp.linalg.norm(obs_x_raw, axis=-1, keepdims=True) < 1e-10
-    obs_x_default = jnp.array([1.0, 0.0, 0.0])
+    # NCP x obs_z vanishes only exactly at a pole; there, use the West of RA = 0,
+    # the RA that get_ra_dec assigns at the poles
+    at_pole = jnp.all(obs_x_raw == 0, axis=-1, keepdims=True)
+    obs_x_default = jnp.array([0.0, -1.0, 0.0])
     obs_x = _unitize(jnp.where(at_pole, obs_x_default, obs_x_raw))
     obs_y = jnp.cross(obs_z, obs_x)
-    assert_orthonormality(obs_x, obs_y, obs_z)
 
     return obs_x, obs_y, obs_z
 
@@ -637,10 +624,9 @@ def assert_orthonormality(x_prime, y_prime, z_prime, atol=1e-6):
     """
     Warn if the provided axes are not orthonormal.
 
-    This is called from jitted functions, so the check can't be a Python-level
-    `assert` (the outcome is data-dependent, and a traced bool can't go through
-    Python's `assert`/`bool()`); instead it prints a runtime warning via a
-    `lax.cond`-gated `jax.debug.print`, without interrupting the computation.
+    A debugging helper: it is not called in the computation paths, where it would
+    nearly double the cost of building observer frames. It works inside jitted
+    code by printing via a `lax.cond`-gated `jax.debug.print` instead of raising.
 
     Parameters
     ----------
@@ -675,10 +661,8 @@ def _unitize(v: jnp.ndarray) -> jnp.ndarray:
     """
     Normalize a tensor to have unit length. The zero vector is returned as zero.
     """
-    # divide by the exact norm: an additive epsilon would shorten short vectors
-    # (|v| = 1e-9 would come out with length 0.999). Zero vectors are swapped for
-    # a safe vector *before* the norm is taken ("double where"), so the gradient
-    # is zero there rather than the 0/0 nan of d|v|/dv = v/|v|
+    # exact norm (an additive epsilon shortens short vectors); zero vectors are
+    # swapped out before the norm so the gradient there is 0, not nan
     is_zero = jnp.all(v == 0, axis=-1, keepdims=True)
     v_safe = jnp.where(is_zero, 1.0, v)
     norm = jnp.linalg.norm(v_safe, axis=-1, keepdims=True)

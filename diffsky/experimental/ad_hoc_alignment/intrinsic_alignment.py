@@ -122,40 +122,30 @@ def align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis="A
         alignment_strength, major_input_vectors.shape[0]
     )
 
-    key_A, key_B, key_Arand = jran.split(key, 3)
-
-    # A_v = axes_correlated_with_input_vector(major_input_vectors, p=alignment_strength)
-    A_v = sample_watson_orientations(key_A, major_input_vectors, alignment_strength)
-
-    # check for bad vectors: not finite (nan/inf), or not unit-length -- the
-    # latter also catches a degenerate all-zero reference axis (e.g. an
-    # unmeasured/unresolved halo shape), which _unitize maps to 0 (finite,
-    # so it would slip past a finite-only check) rather than nan.
-    # N_bad_axes is a traced value here (align_to_axis is jitted), so we
-    # can't branch on it or assign into A_v by count; instead always draw N
-    # replacements and select per-row with jnp.where.
-    a_norm = jnp.linalg.norm(A_v, axis=-1)
-    mask = (~jnp.isfinite(a_norm)) | (jnp.abs(a_norm - 1.0) > 1e-3)
-    n_bad_axes = jnp.sum(mask)
-    A_v_random = eproj.random_unit_vectors_3d(key_Arand, A_v.shape[0])
-    A_v = jnp.where(mask[:, None], A_v_random, A_v)
+    # Degenerate input vectors (zero, nan or inf, e.g. an unmeasured halo shape)
+    # get a random orientation: mu = 0 about a placeholder axis. Flagging them from
+    # the input keeps every other row's random draws unchanged.
+    ref_norm = jnp.linalg.norm(major_input_vectors, axis=-1)
+    is_bad = ~(jnp.isfinite(ref_norm) & (ref_norm > 0))
+    ref = jnp.where(is_bad[:, None], jnp.array([1.0, 0.0, 0.0]), major_input_vectors)
+    alignment_strength = jnp.where(is_bad, 0.0, alignment_strength)
+    n_bad = jnp.sum(is_bad)
     lax.cond(
-        n_bad_axes > 0,
+        n_bad > 0,
         lambda _: jax.debug.print(
-            '{n} correlated alignment axis(axes) were found to be degenerate '
-            '(not finite or not unit-length). These were re-assigned random '
-            'vectors.', n=n_bad_axes),
+            "{n} input alignment axis(axes) are degenerate (zero or not finite); "
+            "those galaxies are given random orientations.", n=n_bad),
         lambda _: None,
         operand=None,
     )
 
-    # randomly set secondary axis orientation
-    B_v = eproj.random_perpendicular_directions(A_v, key_B)
-
-    # the tertiary axis is determined
+    # B is spun about A by a fixed random angle within the smooth Watson frame,
+    # so the whole triad varies smoothly with mu (needed for gradient-based fits)
+    key_frame, key_spin = jran.split(key)
+    A_v, B0, W = _sample_watson_frame(key_frame, ref, alignment_strength)
+    spin = 2.0 * jnp.pi * jran.uniform(key_spin, (A_v.shape[0], 1))
+    B_v = jnp.cos(spin) * B0 + jnp.sin(spin) * W
     C_v = jnp.cross(A_v, B_v)
-
-    eproj.assert_orthonormality(A_v, B_v, C_v)
 
     # depending on the prim_gal_axis, assign correlated axes
     if prim_gal_axis == 'A':
@@ -280,30 +270,37 @@ def _sample_t_watson(key, kappa, n_newton=10):
     t : jnp.ndarray
         Sampled values of t = cos(theta) from the Dimroth-Watson distribution
     """
-    eps = 1e-12
-
     def one(k_i, u_i):
         """
         Sample t = cos(theta) for a single kappa and uniform random number u.
         Depending on the sign of kappa, different branches of the inverse CDF are used.
         1. For kappa > 0 (anti-alignment), use
             CDF(x) = 0.5*[1 + erf(sqrt(kappa)*x)/erf(sqrt(kappa)) ]
-        2. For kappa = 0 (random), use
-            CDF(x) = 0.5*(1 + x)
+        2. For |kappa| < KAPPA_SMALL (nearly random), use the first-order expansion
+            of the inverse of CDF(x) = 0.5*(1 + x) + kappa*(x - x^3)/6, i.e.
+            t = t0 - kappa*t0*(1 - t0^2)/3 with t0 = 2u - 1
         3. For kappa < 0 (alignment), use Newton's method to solve
             CDF(x) = 0.5*[1 + erfi(sqrt(-kappa)*x)/erfi(sqrt(-kappa)) ]
         """
+        # Below KAPPA_SMALL the expansion is used: it gives the correct nonzero
+        # dt/dkappa at kappa = 0, and 1e-7 balances its error against the closed
+        # forms' derivative error (~eps/|kappa|)
+        KAPPA_SMALL = 1e-7
+
         def pos_branch(_):
-            km = jnp.sqrt(k_i)
+            # km >= 3e-4 here, so no epsilon; the safe argument only keeps the
+            # discarded (kappa <= 0) evaluation finite
+            km = jnp.sqrt(jnp.where(k_i > 0, k_i, 1.0))
             den = jax.scipy.special.erf(km)
             arg = jnp.clip((2.0 * u_i - 1.0) * den, -1.0 + 1e-7, 1.0 - 1e-7)
-            return jax.scipy.special.erfinv(arg) / (km + eps)
+            return jax.scipy.special.erfinv(arg) / km
 
         def zer_branch(_):
-            return 2.0 * u_i - 1.0
+            t0 = 2.0 * u_i - 1.0
+            return t0 - k_i * t0 * (1.0 - t0 * t0) / 3.0
 
         def neg_branch(_):
-            sp = jnp.sqrt(-k_i)
+            sp = jnp.sqrt(jnp.where(k_i < 0, -k_i, 1.0))
             sp2 = sp * sp
             tp0 = 2.0 * u_i - 1.0
             den = _erfi_real(sp) + 1e-30
@@ -370,9 +367,9 @@ def _sample_t_watson(key, kappa, n_newton=10):
             return lax.fori_loop(0, n_newton, body, tp0)
 
         return lax.cond(
-            k_i < -1e-12,
+            k_i < -KAPPA_SMALL,
             neg_branch,
-            lambda _: lax.cond(k_i > 1e-12, pos_branch, zer_branch, operand=None),
+            lambda _: lax.cond(k_i > KAPPA_SMALL, pos_branch, zer_branch, operand=None),
             operand=None,
         )
 
@@ -408,7 +405,17 @@ def sample_watson_orientations(key, ref_dirs, mu, n_newton=10):
         Array of sampled unit vectors (orientations) from the Dimroth–Watson distribution
         about the reference directions `ref_dirs`, with the specified alignment strength `mu`.
     """
+    return _sample_watson_frame(key, ref_dirs, mu, n_newton)[0]
 
+
+@partial(jjit, static_argnums=(3,))
+def _sample_watson_frame(key, ref_dirs, mu, n_newton=10):
+    """Dimroth-Watson axis A about ref_dirs, plus unit vectors B0 and W that
+    complete a right-handed orthonormal frame (A, B0, W).
+    For fixed key and ref_dirs, all three vary smoothly with mu: B0 is A rotated
+    by 90 degrees towards the reference axis and W = ref x perp is fixed. (A
+    perpendicular chosen from A alone cannot be smooth over the whole sphere.)
+    """
     u_axis = eproj._unitize(ref_dirs)
     N = u_axis.shape[0]
 
@@ -431,6 +438,8 @@ def sample_watson_orientations(key, ref_dirs, mu, n_newton=10):
     costh = t.reshape(N, 1)
     perp = eproj.random_perpendicular_directions(u_axis, key_phi)
 
-    # compute the sampled orientations in the orthonormal basis
-    n = eproj._unitize(costh * u_axis + sinth * perp)
-    return n
+    # rotate the fixed frame (u_axis, perp, u_axis x perp) by theta about its third axis
+    axis_a = eproj._unitize(costh * u_axis + sinth * perp)
+    axis_b0 = -sinth * u_axis + costh * perp
+    axis_w = jnp.cross(u_axis, perp)
+    return axis_a, axis_b0, axis_w
