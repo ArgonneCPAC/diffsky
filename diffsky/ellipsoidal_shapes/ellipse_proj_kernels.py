@@ -415,7 +415,15 @@ def _calculate_ellipse2d_axes(A, B, C):
 
     # sqrt(trace**2 - 4*det) == hypot(A - C, B), without the cancellation that loses
     # precision (and gives nan gradients) for nearly round ellipses
-    sqrt_discriminant = jnp.hypot(A - C, B)
+    A_minus_C = A - C
+    # Exactly round: hypot's gradient is 0/0 = nan in some jax versions, so feed it a
+    # safe input there (double where)
+    is_round = (A_minus_C == 0) & (B == 0)
+    sqrt_discriminant = jnp.where(
+        is_round,
+        0.0,
+        jnp.hypot(jnp.where(is_round, 1.0, A_minus_C), jnp.where(is_round, 1.0, B)),
+    )
 
     # Eigenvalues {λ_1, λ_2} (λ = 1/semi-axis²)
     lambda1 = 0.5 * (trace + sqrt_discriminant)  # Larger eigenvalue
