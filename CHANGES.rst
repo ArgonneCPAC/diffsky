@@ -1,3 +1,8 @@
+0.3.12 (unreleased)
+-------------------
+- Add new sub-package diffsky/sed_models and diffsky/morphology_models (https://github.com/ArgonneCPAC/diffsky/pull/519)
+
+
 0.3.11 (2026-10-22)
 -------------------
 - Improve mock validation scripts https://github.com/ArgonneCPAC/diffsky/pull/521
