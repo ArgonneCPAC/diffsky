@@ -2,9 +2,11 @@
 
 from collections import namedtuple
 
+import jax.numpy as jnp
 from jax import jit as jjit
 
 from ...merging import merging_model
+from ...ssp_err_model import ssp_err_model
 from . import mc_randoms, phot_kernels_in_situ
 from . import ssp_weight_kernels as sspwk
 
@@ -125,9 +127,44 @@ def _photline_kern(
     )
     dust_ftrans_lines_mc = _dust_res_mc[0]
 
-    linelum_gal = sspwk._compute_linelum_from_weights(
+    # Calculate mean fractional change to the SSP line luminosities for each galaxy
+    # L'_SSP(λ_eff) = L_SSP(λ_eff) & F_SSP(λ_eff)
+
+    (n_gal,) = z_obs.shape
+    (n_line,) = line_wave_table.shape
+    line_wave_galpop = jnp.broadcast_to(line_wave_table, (n_gal, n_line))
+
+    frac_ssp_errors_nonoise_mc = ssp_err_model.frac_ssp_err_multline_galpop(
+        ssperr_params, phot_kern_results.logsm_obs, z_obs, line_wave_galpop
+    )
+    frac_ssp_errors_mc = ssp_err_model.get_noisy_frac_ssp_errors(
+        line_wave_galpop, frac_ssp_errors_nonoise_mc, phot_randoms.delta_mag_ssp_scatter
+    )
+
+    frac_ssp_errors_nonoise_ms = ssp_err_model.frac_ssp_err_multline_galpop(
+        ssperr_params,
+        phot_kern_results.diffstar_info_ms.logsm_obs,
+        z_obs,
+        line_wave_galpop,
+    )
+    frac_ssp_errors_ms = ssp_err_model.get_noisy_frac_ssp_errors(
+        line_wave_galpop, frac_ssp_errors_nonoise_ms, phot_randoms.delta_mag_ssp_scatter
+    )
+
+    frac_ssp_errors_nonoise_q = ssp_err_model.frac_ssp_err_multline_galpop(
+        ssperr_params,
+        phot_kern_results.diffstar_info_q.logsm_obs,
+        z_obs,
+        line_wave_galpop,
+    )
+    frac_ssp_errors_q = ssp_err_model.get_noisy_frac_ssp_errors(
+        line_wave_galpop, frac_ssp_errors_nonoise_q, phot_randoms.delta_mag_ssp_scatter
+    )
+
+    linelum_gal_mc = sspwk._compute_linelum_from_weights(
         phot_kern_results.logsm_obs,
         dust_ftrans_lines_mc,
+        frac_ssp_errors_mc,
         ssp_data,
         phot_kern_results.ssp_weights,
     )
@@ -149,6 +186,7 @@ def _photline_kern(
     linelum_q = sspwk._compute_linelum_from_weights(
         phot_kern_results.diffstar_info_q.logsm_obs,
         dust_ftrans_lines_q,
+        frac_ssp_errors_q,
         ssp_data,
         phot_kern_results.burstiness_info_q.ssp_weights_smooth,
     )
@@ -170,6 +208,7 @@ def _photline_kern(
     linelum_ms = sspwk._compute_linelum_from_weights(
         phot_kern_results.diffstar_info_ms.logsm_obs,
         dust_ftrans_lines_ms,
+        frac_ssp_errors_ms,
         ssp_data,
         phot_kern_results.burstiness_info_ms.ssp_weights_smooth,
     )
@@ -177,6 +216,7 @@ def _photline_kern(
     linelum_bursty = sspwk._compute_linelum_from_weights(
         phot_kern_results.diffstar_info_ms.logsm_obs,
         dust_ftrans_lines_ms,
+        frac_ssp_errors_ms,
         ssp_data,
         phot_kern_results.burstiness_info_ms.ssp_weights_bursty,
     )
@@ -194,7 +234,7 @@ def _photline_kern(
     )
 
     spec_kern_results = SpecKernResults(
-        linelum_gal,
+        linelum_gal_mc,
         linelum_weighted,
         dust_ftrans_lines_mc,
         linelum_ms,
