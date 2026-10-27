@@ -9,7 +9,7 @@ from dsps.photometry import photometry_kernels as phk
 from jax import random as jran
 from jax import vmap
 
-from ....param_utils import diffsky_param_wrapper_merging as dpwm
+from .. import diffsky_param_wrapper_merging as dpwm
 from .. import lc_phot
 from . import test_lc_data_phot
 
