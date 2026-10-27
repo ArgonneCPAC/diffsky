@@ -22,8 +22,11 @@ def _get_mc_lc_data_phot_for_unit_testing(
     sky_area_degsq=1.0,
     n_z_phot_table=15,
     ssp_data=None,
+    ran_key=None,
 ):
-    ran_key = jran.key(0)
+    if ran_key is None:
+        ran_key = jran.key(0)
+
     n_lines = 3
 
     if ssp_data is None:
@@ -73,8 +76,10 @@ def _get_weighted_lc_data_phot_for_unit_testing(
     sky_area_degsq=100.0,
     n_z_phot_table=15,
     ssp_data=None,
+    ran_key=None,
 ):
-    ran_key = jran.key(0)
+    if ran_key is None:
+        ran_key = jran.key(0)
     n_lines = 3
 
     if ssp_data is None:

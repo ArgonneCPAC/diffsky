@@ -28,8 +28,10 @@ def check_phot_kern_results(phot_kern_results):
     assert np.all(phot_kern_results.frac_ssp_errors < 5)
 
 
-def test_mc_lc_phot_changes_with_diffstarpop(num_halos=20):
-    ran_key = jran.key(0)
+def test_mc_lc_phot_changes_with_diffstarpop(num_halos=20, ran_key=None):
+    if ran_key is None:
+        ran_key = jran.key(0)
+
     lc_data, tcurves = test_lc_data_phot._get_weighted_lc_data_phot_for_unit_testing(
         num_halos=num_halos
     )
