@@ -63,14 +63,6 @@ def test_mc_lc_phot_changes_with_diffstarpop(num_halos=20, ran_key=None):
         phot_kern_results.logsm_obs, phot_kern_results.logsm_obs_in_situ
     )
 
-    # Enforce weighted photometry is not the same as unweighted
-    assert not np.allclose(
-        phot_kern_results.obs_mags_weighted, phot_kern_results.obs_mags
-    )
-    assert not np.allclose(
-        phot_kern_results.obs_mags_weighted, phot_kern_results.obs_mags
-    )
-
 
 def test_mc_lc_phot_agrees_with_mc_lc_photline(num_halos=20):
     ran_key = jran.key(0)

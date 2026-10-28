@@ -310,7 +310,6 @@ def _dbk_photline_kern(
         obs_mags_disk=obs_mags_disk,
         obs_mags_knots=obs_mags_knots,
         linelum_gal=spec_kern_results.linelum_gal,
-        linelum_weighted=spec_kern_results.linelum_weighted,
         linelum_bulge=linelum_bulge,
         linelum_disk=linelum_disk,
         linelum_knots=linelum_knots,
@@ -340,13 +339,7 @@ MCDBKPhotInfo = namedtuple(
 
 _dbk_photline_keys = (
     *MCDBKPhotInfo._fields,
-    *(
-        "linelum_gal",
-        "linelum_weighted",
-        "linelum_bulge",
-        "linelum_disk",
-        "linelum_knots",
-    ),
+    *("linelum_gal", "linelum_bulge", "linelum_disk", "linelum_knots"),
 )
 MCDBKSpecPhotInfo = namedtuple("MCDBKSpecPhotInfo", _dbk_photline_keys)
 

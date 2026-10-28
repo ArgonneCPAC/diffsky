@@ -309,12 +309,6 @@ def _phot_kern(
     weights_ms = (1 - fq) * (1 - burstiness_info_ms.p_burst)
     weights_bursty = (1 - fq) * burstiness_info_ms.p_burst
 
-    obs_mags_weighted = (
-        (weights_q.reshape((n_gals, 1)) * obs_mags_q)
-        + (weights_ms.reshape((n_gals, 1)) * obs_mags_ms)
-        + (weights_bursty.reshape((n_gals, 1)) * obs_mags_bursty)
-    )
-
     phot_kern_results = PhotKernResults(
         obs_mags_mc,
         diffstar_info_mc.t_table,
@@ -335,7 +329,6 @@ def _phot_kern(
         obs_mags_q,
         obs_mags_bursty,
         diffstarpop_results.frac_q,
-        obs_mags_weighted,
         diffstar_info_ms,
         diffstar_info_q,
         burstiness_info_ms,
@@ -364,7 +357,6 @@ PHOT_KERN_KEYS = (
     "obs_mags_q",
     "obs_mags_bursty",
     "frac_q",
-    "obs_mags_weighted",
     "diffstar_info_ms",
     "diffstar_info_q",
     "burstiness_info_ms",

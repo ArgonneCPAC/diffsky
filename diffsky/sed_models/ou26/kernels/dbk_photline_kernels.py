@@ -148,7 +148,7 @@ def _dbk_photline_kern_merging(
         halo_indx,
         mc_merge,
     )
-    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, flux_obs_weighted, p_merge = _res
+    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge = _res
 
     args = (
         dbk_photline_info,
@@ -156,7 +156,6 @@ def _dbk_photline_kern_merging(
         mstar_obs,
         flux_in_situ,
         flux_obs,
-        flux_obs_weighted,
         p_merge,
         merging_randoms.uran_pmerge,
     )
@@ -165,14 +164,10 @@ def _dbk_photline_kern_merging(
 
     args = dbk_photline_info, dbk_photline_info, sat_weights, halo_indx
     _res = gd_spkm._get_linelum_kern_merging_quantities(*args)
-    linelums_obs, linelum_in_situ_mc, linelum_weighted, linelum_in_situ_weighted = _res
+    linelums_obs, linelum_in_situ_mc = _res
 
     dbk_photline_info = gd_spkm._update_linelum_results_with_merging(
-        dbk_photline_info,
-        linelums_obs,
-        linelum_in_situ_mc,
-        linelum_weighted,
-        linelum_in_situ_weighted,
+        dbk_photline_info, linelums_obs, linelum_in_situ_mc
     )
 
     dbk_photline_info, dbk_weights = _update_dbk_photline_info_with_merging(
