@@ -69,48 +69,45 @@ def check_dbk_photline_kern_merging_results(dbk_photline_info, dbk_weights, lc_d
     obs_mags_sum = -2.5 * np.log10(obs_flux_sum)
     assert np.allclose(obs_mags_sum, dbk_photline_info.obs_mags, atol=0.01)
 
-    # Enforce centrals can only get more massive and satellites less massive
+    # Enforce centrals can only get more massive and satellites are unchanged
     name = "logsm_obs"
     x = getattr(dbk_photline_info, name)
     y = getattr(dbk_photline_info, name + "_in_situ")
     assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
-    assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
+    assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
     # Separately enforce for DBK decomposition
     for k in component_names:
         kname = name.replace("_obs", k)
         x = getattr(dbk_photline_info, kname)
         y = getattr(dbk_photline_info, kname + "_in_situ")
         assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
-        assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
+        assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
         # Enforce merging is nontrivial
         assert np.any(x[msk_cen] > y[msk_cen])
-        assert np.any(x[msk_sat] < y[msk_sat])
 
-    # Enforce centrals can only get brighter and satellites can only get dimmer
+    # Enforce centrals can only get brighter and satellites are unchanged
     name = "obs_mags"
     x = getattr(dbk_photline_info, name)
     y = getattr(dbk_photline_info, name + "_in_situ")
     assert np.all(x[msk_cen] <= y[msk_cen] + TOL)
-    assert np.all(x[msk_sat] >= y[msk_sat] - TOL)
+    assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
     # Enforce merging is nontrivial
     assert np.any(x[msk_cen] < y[msk_cen])
-    assert np.any(x[msk_sat] > y[msk_sat])
     # Separately enforce for DBK decomposition
     for k in component_names:
         x = getattr(dbk_photline_info, name + k)
         y = getattr(dbk_photline_info, name + k + "_in_situ")
         assert np.all(x[msk_cen] <= y[msk_cen] + TOL)
-        assert np.all(x[msk_sat] >= y[msk_sat] - TOL)
+        assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
         # Enforce merging is nontrivial
         assert np.any(x[msk_cen] < y[msk_cen])
-        assert np.any(x[msk_sat] > y[msk_sat])
 
-    # Enforce centrals can only get brighter lines and satellites less bright
+    # Enforce centrals can only get brighter lines and satellites are unchanged
     name = "linelum_gal"
     x = getattr(dbk_photline_info, name)
     y = getattr(dbk_photline_info, name + "_in_situ")
     assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
-    assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
+    assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
     # Separately enforce for DBK decomposition
     for k in component_names:
         kname = name.replace("_gal", k)
@@ -119,10 +116,9 @@ def check_dbk_photline_kern_merging_results(dbk_photline_info, dbk_weights, lc_d
         assert np.all(np.isfinite(x))
         assert np.all(np.isfinite(y))
         assert np.all(x[msk_cen] >= y[msk_cen] - TOL), k
-        assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
+        assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
         # Enforce merging is nontrivial
         assert np.any(x[msk_cen] > y[msk_cen])
-        assert np.any(x[msk_sat] < y[msk_sat])
 
 
 @pytest.mark.parametrize("mc_merge", [0, 1])

@@ -46,27 +46,27 @@ def check_phot_kern_merging_results(phot_kern_results, lc_data):
 
     msk_cen = lc_data.is_central == 1
     msk_sat = ~msk_cen
+    assert msk_sat.sum() > 0
 
-    # Enforce centrals can only get brighter and satellites can only get dimmer
+    # Enforce centrals can only get brighter and satellites are unchanged
     name = "obs_mags"
     x = getattr(phot_kern_results, name)
     y = getattr(phot_kern_results, name + "_in_situ")
     assert np.all(x[msk_cen] <= y[msk_cen] + TOL)
-    assert np.all(x[msk_sat] >= y[msk_sat] - TOL)
+    assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
 
     # Enforce merging is nontrivial
     assert np.any(x[msk_cen] < y[msk_cen])
-    assert np.any(x[msk_sat] > y[msk_sat])
 
-    # Enforce centrals can only get more massive and satellites less massive
+    # Enforce centrals can only get more massive and satellites are unchanged
     name = "logsm_obs"
     x = getattr(phot_kern_results, name)
     y = getattr(phot_kern_results, name + "_in_situ")
     assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
-    assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
+    assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
     # Enforce merging is nontrivial
     assert np.any(x[msk_cen] > y[msk_cen])
-    assert np.any(x[msk_sat] < y[msk_sat])
+    assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
 
     # Enforce sensible photometry weights
     phot_weights = (
@@ -115,3 +115,4 @@ def test_mc_phot_kern_merging(mc_merge, num_halos=250):
     )
 
     check_phot_kern_merging_results(phot_kern_results, lc_data)
+    return phot_kern_results, lc_data
