@@ -33,7 +33,16 @@ def test_lc_phot_is_equivalent_to_mc_phot(param_collection):
         ran_key, lc_data, MC_MERGE, param_collection=param_collection
     )[0]
 
+    # Only enforce equivalence for centrals due to change in merging convention for sats
     cols_to_check = ("obs_mags", "obs_mags_q", "obs_mags_ms", "obs_mags_bursty")
+    msk_cen = lc_data.is_central == 1
+    for col in cols_to_check:
+        x_new = getattr(pknew, col)
+        x_old = getattr(pkold, col)
+        assert np.allclose(x_new[msk_cen], x_old[msk_cen], rtol=1e-3)
+
+    # Equivalence applies to all in-situ quantities
+    cols_to_check = ("obs_mags_in_situ",)
     for col in cols_to_check:
         x_new = getattr(pknew, col)
         x_old = getattr(pkold, col)

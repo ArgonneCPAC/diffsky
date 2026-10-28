@@ -46,27 +46,43 @@ def check_phot_kern_merging_results(phot_kern_results, lc_data):
 
     msk_cen = lc_data.is_central == 1
     msk_sat = ~msk_cen
+    assert msk_sat.sum() > 0
 
-    # Enforce centrals can only get brighter and satellites can only get dimmer
+    # Enforce centrals can only get brighter and satellites are unchanged
     name = "obs_mags"
     x = getattr(phot_kern_results, name)
     y = getattr(phot_kern_results, name + "_in_situ")
     assert np.all(x[msk_cen] <= y[msk_cen] + TOL)
-    assert np.all(x[msk_sat] >= y[msk_sat] - TOL)
+    assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
 
     # Enforce merging is nontrivial
     assert np.any(x[msk_cen] < y[msk_cen])
-    assert np.any(x[msk_sat] > y[msk_sat])
 
-    # Enforce centrals can only get more massive and satellites less massive
+    # Enforce centrals can only get more massive and satellites are unchanged
     name = "logsm_obs"
     x = getattr(phot_kern_results, name)
     y = getattr(phot_kern_results, name + "_in_situ")
     assert np.all(x[msk_cen] >= y[msk_cen] - TOL)
-    assert np.all(x[msk_sat] <= y[msk_sat] + TOL)
+    assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
     # Enforce merging is nontrivial
     assert np.any(x[msk_cen] > y[msk_cen])
-    assert np.any(x[msk_sat] < y[msk_sat])
+    assert np.allclose(x[msk_sat], y[msk_sat], rtol=1e-4)
+
+    # Enforce sensible photometry weights
+    phot_weights = (
+        phot_kern_results.weights_ms
+        + phot_kern_results.weights_q
+        + phot_kern_results.weights_bursty
+    )
+    assert np.all(phot_weights >= 0.0)
+
+    # Weights should sum to unity for all centrals and objects with p_merge=0
+    assert np.allclose(phot_weights[lc_data.is_central == 1], 1.0, rtol=1e-4)
+    assert np.allclose(phot_weights[phot_kern_results.p_merge == 0], 1.0, rtol=1e-4)
+
+    # Merged satellite weights should be less than unity
+    assert np.any(phot_weights[lc_data.is_central == 0] < 1.0)
+    assert np.all(phot_weights[phot_kern_results.p_merge > 0] < 1.0)
 
 
 @pytest.mark.parametrize("mc_merge", [0, 1])

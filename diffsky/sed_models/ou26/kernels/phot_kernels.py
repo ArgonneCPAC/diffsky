@@ -220,4 +220,13 @@ def _update_phot_kern_results_with_merging(
         uran_pmerge=uran_pmerge,
     )
 
+    weights_ms = phot_kern_results.weights_ms * (1.0 - p_merge)
+    weights_q = phot_kern_results.weights_q * (1.0 - p_merge)
+    weights_bursty = phot_kern_results.weights_bursty * (1.0 - p_merge)
+    phot_kern_results = phot_kern_results._replace(
+        weights_ms=weights_ms,
+        weights_q=weights_q,
+        weights_bursty=weights_bursty,
+    )
+
     return phot_kern_results
