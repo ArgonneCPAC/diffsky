@@ -181,11 +181,11 @@ def _photline_kern(
         phot_kern_results.burstiness_info_ms.ssp_weights_bursty,
     )
 
-    n_gals = linelum_q.shape[0]
-    fq = diffstarpop_results.frac_q
-    weights_q = fq
-    weights_ms = (1 - fq) * (1 - phot_kern_results.burstiness_info_ms.p_burst)
-    weights_bursty = (1 - fq) * phot_kern_results.burstiness_info_ms.p_burst
+    # n_gals = linelum_q.shape[0]
+    # fq = diffstarpop_results.frac_q
+    # weights_q = fq
+    # weights_ms = (1 - fq) * (1 - phot_kern_results.burstiness_info_ms.p_burst)
+    # weights_bursty = (1 - fq) * phot_kern_results.burstiness_info_ms.p_burst
 
     spec_kern_results = SpecKernResults(
         linelum_gal,

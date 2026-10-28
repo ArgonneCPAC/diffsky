@@ -303,11 +303,11 @@ def _phot_kern(
         burstiness_info_ms.ssp_weights_bursty,
     )
 
-    n_gals = obs_mags_q.shape[0]
-    fq = diffstarpop_results.frac_q
-    weights_q = fq
-    weights_ms = (1 - fq) * (1 - burstiness_info_ms.p_burst)
-    weights_bursty = (1 - fq) * burstiness_info_ms.p_burst
+    # n_gals = obs_mags_q.shape[0]
+    # fq = diffstarpop_results.frac_q
+    # weights_q = fq
+    # weights_ms = (1 - fq) * (1 - burstiness_info_ms.p_burst)
+    # weights_bursty = (1 - fq) * burstiness_info_ms.p_burst
 
     phot_kern_results = PhotKernResults(
         obs_mags_mc,
