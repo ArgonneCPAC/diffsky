@@ -13,7 +13,6 @@ from .. import phot_kernels_in_situ
 
 def test_lc_phot_kern(num_halos=75):
     ran_key = jran.key(0)
-    # lc_data, tcurves = tmclh._get_weighted_lc_data_for_unit_testing(num_halos=num_halos)
     lc_data, tcurves = tlcg._get_weighted_lc_photdata_for_unit_testing(
         num_halos=num_halos
     )

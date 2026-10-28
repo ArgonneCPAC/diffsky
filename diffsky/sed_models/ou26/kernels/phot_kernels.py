@@ -147,14 +147,13 @@ def _phot_kern_merging(
         halo_indx,
         mc_merge,
     )
-    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, flux_obs_weighted, p_merge = _res
+    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge = _res
     phot_kern_results = _update_phot_kern_results_with_merging(
         phot_kern_results,
         mstar_in_situ,
         mstar_obs,
         flux_in_situ,
         flux_obs,
-        flux_obs_weighted,
         p_merge,
         merging_randoms.uran_pmerge,
     )
@@ -186,15 +185,8 @@ def _get_phot_kern_merging_quantities(
     flux_obs = compute_x_tot_from_x_in_situ(
         flux_in_situ, p_merge[:, jnp.newaxis], sat_weights[:, jnp.newaxis], halo_indx
     )
-    weighted_flux_in_situ = 10 ** (-0.4 * phot_kern_results.obs_mags_weighted)
-    flux_obs_weighted = compute_x_tot_from_x_in_situ(
-        weighted_flux_in_situ,
-        p_merge[:, jnp.newaxis],
-        sat_weights[:, jnp.newaxis],
-        halo_indx,
-    )
 
-    return mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, flux_obs_weighted, p_merge
+    return mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge
 
 
 @jjit
@@ -204,14 +196,12 @@ def _update_phot_kern_results_with_merging(
     mstar_obs,
     flux_in_situ,
     flux_obs,
-    flux_obs_weighted,
     p_merge,
     uran_pmerge,
 ):
     ex_situ_dict = dict()
     ex_situ_dict["logsm_obs"] = jnp.log10(mstar_obs)
     ex_situ_dict["obs_mags"] = -2.5 * jnp.log10(flux_obs)
-    ex_situ_dict["obs_mags_weighted"] = -2.5 * jnp.log10(flux_obs_weighted)
 
     phot_kern_results = phot_kern_results._replace(**ex_situ_dict)
 

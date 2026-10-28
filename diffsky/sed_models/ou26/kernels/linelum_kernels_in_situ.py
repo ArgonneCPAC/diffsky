@@ -181,21 +181,14 @@ def _photline_kern(
         phot_kern_results.burstiness_info_ms.ssp_weights_bursty,
     )
 
-    n_gals = linelum_q.shape[0]
-    fq = diffstarpop_results.frac_q
-    weights_q = fq
-    weights_ms = (1 - fq) * (1 - phot_kern_results.burstiness_info_ms.p_burst)
-    weights_bursty = (1 - fq) * phot_kern_results.burstiness_info_ms.p_burst
-
-    linelum_weighted = (
-        (weights_q.reshape((n_gals, 1)) * linelum_q)
-        + (weights_ms.reshape((n_gals, 1)) * linelum_ms)
-        + (weights_bursty.reshape((n_gals, 1)) * linelum_bursty)
-    )
+    # n_gals = linelum_q.shape[0]
+    # fq = diffstarpop_results.frac_q
+    # weights_q = fq
+    # weights_ms = (1 - fq) * (1 - phot_kern_results.burstiness_info_ms.p_burst)
+    # weights_bursty = (1 - fq) * phot_kern_results.burstiness_info_ms.p_burst
 
     spec_kern_results = SpecKernResults(
         linelum_gal,
-        linelum_weighted,
         dust_ftrans_lines_mc,
         linelum_ms,
         linelum_q,
@@ -207,12 +200,5 @@ def _photline_kern(
 
 SpecKernResults = namedtuple(
     "SpecKernResults",
-    (
-        "linelum_gal",
-        "linelum_weighted",
-        "dust_ftrans_lines",
-        "linelum_ms",
-        "linelum_q",
-        "linelum_bursty",
-    ),
+    ("linelum_gal", "dust_ftrans_lines", "linelum_ms", "linelum_q", "linelum_bursty"),
 )
