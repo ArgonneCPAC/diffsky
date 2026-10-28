@@ -49,7 +49,12 @@ def test_lc_phot_kern(num_halos=75):
 
     test_lc_phot.check_phot_kern_results(mc_gd_phot_kern_results)
 
-    # return mc_gd_phot_kern_results
+    phot_weights = (
+        mc_gd_phot_kern_results.weights_ms
+        + mc_gd_phot_kern_results.weights_q
+        + mc_gd_phot_kern_results.weights_bursty
+    )
+    assert np.allclose(phot_weights[lc_data.is_central == 1], 1.0, rtol=1e-4)
 
     n_gals, n_bands = mc_gd_phot_kern_results.obs_mags.shape
     obs_mags_mc = np.zeros((n_gals, n_bands))
