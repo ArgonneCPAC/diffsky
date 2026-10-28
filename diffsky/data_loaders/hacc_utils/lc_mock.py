@@ -36,7 +36,6 @@ from ...experimental.size_modeling import smzr_bulge, smzr_disk
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...fake_sats import vector_utilities as vecu
-from ...param_utils import diffsky_param_wrapper as dpw
 from ...param_utils import diffsky_param_wrapper_merging as dpwm
 from ...utils import cosmo_utils
 from .. import io_utils as iou
@@ -229,7 +228,7 @@ def load_diffsky_param_collection(drn_mock, mock_version_name):
     bn = BNPAT_PARAM_COLLECTION.format(mock_version_name)
     fn = os.path.join(drn_mock, bn)
     flat_diffsky_params = iou.load_namedtuple_from_hdf5(fn)
-    param_collection = dpw.get_param_collection_from_flat_array(flat_diffsky_params)
+    param_collection = dpwm.get_param_collection_from_flat_array(flat_diffsky_params)
     return param_collection
 
 
@@ -251,8 +250,10 @@ def write_diffsky_param_collection(drn_mock, mock_version_name, param_collection
     """"""
     bn = BNPAT_PARAM_COLLECTION.format(mock_version_name)
     fn_out = os.path.join(drn_mock, bn)
-    flat_diffsky_params = dpw.unroll_param_collection_into_flat_array(*param_collection)
-    DiffskyParams = namedtuple("DiffskyParams", dpw.get_flat_param_names())
+    flat_diffsky_params = dpwm.unroll_param_collection_into_flat_array(
+        *param_collection
+    )
+    DiffskyParams = namedtuple("DiffskyParams", dpwm.get_flat_param_names())
     flat_diffsky_params = DiffskyParams(*flat_diffsky_params)
 
     iou.write_namedtuple_to_hdf5(flat_diffsky_params, fn_out)
