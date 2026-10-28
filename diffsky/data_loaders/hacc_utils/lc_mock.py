@@ -22,10 +22,7 @@ from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
-from diffsky.data_loaders import load_ssp_data
-
 from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
-from ...ellipsoidal_shapes import bulge_shapes, disk_shapes
 from ...ellipsoidal_shapes import mc_disk_bulge_shapes as mcdbs
 from ...experimental.black_hole_modeling import black_hole_mass as bhm
 from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
@@ -43,6 +40,7 @@ from ...param_utils import diffsky_param_wrapper as dpw
 from ...param_utils import diffsky_param_wrapper_merging as dpwm
 from ...utils import cosmo_utils
 from .. import io_utils as iou
+from .. import load_ssp_data
 from . import lightcone_utils as hlu
 from . import load_lc_cf
 
