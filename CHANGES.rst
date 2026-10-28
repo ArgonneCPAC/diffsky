@@ -1,6 +1,8 @@
-0.3.12 (unreleased)
+0.3.12 (2026-10-28)
 -------------------
 - Add new sub-package diffsky/sed_models and diffsky/morphology_models (https://github.com/ArgonneCPAC/diffsky/pull/519)
+- Update conventions for ex-situ properties of satellites in new kernels in sed_models (https://github.com/ArgonneCPAC/diffsky/pull/526)
+- make OU26 mocks using new kernels in diffsky/sed_models/ou26 (https://github.com/ArgonneCPAC/diffsky/pull/527)
 
 
 0.3.11 (2026-10-22)
