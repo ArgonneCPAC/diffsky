@@ -22,7 +22,6 @@ from jax import numpy as jnp
 from jax import random as jran
 from jax import vmap
 
-from ...dustpop.tw_dust import DEFAULT_DUST_PARAMS
 from ...ellipsoidal_shapes import mc_disk_bulge_shapes as mcdbs
 from ...experimental.black_hole_modeling import black_hole_mass as bhm
 from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
@@ -30,13 +29,14 @@ from ...experimental.black_hole_modeling.black_hole_accretion_rate import (
 )
 from ...experimental.black_hole_modeling.utils import approximate_ssfr_percentile
 from ...experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
-from ...experimental.kernels import dbk_photline_kernels as gd_dbkspkm
-from ...experimental.kernels import phot_kernels_in_situ as gd_phkern
 from ...experimental.size_modeling import smzr_bulge, smzr_disk
 from ...fake_sats import halo_boundary_functions as hbf
 from ...fake_sats import nfw_config_space as nfwcs
 from ...fake_sats import vector_utilities as vecu
-from ...param_utils import diffsky_param_wrapper_merging as dpwm
+from ...sed_models.ou26 import diffsky_param_wrapper_merging as dpwm
+from ...sed_models.ou26.dustpop.tw_dust import DEFAULT_DUST_PARAMS
+from ...sed_models.ou26.kernels import dbk_photline_kernels as gd_dbkspkm
+from ...sed_models.ou26.kernels import phot_kernels_in_situ as gd_phkern
 from ...utils import cosmo_utils
 from .. import io_utils as iou
 from .. import load_ssp_data
