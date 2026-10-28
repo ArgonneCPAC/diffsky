@@ -40,18 +40,9 @@ def compute_x_tot_from_x_in_situ(
     x_tot : array, shape (n, )
 
     """
-    ngals = x_in_situ.shape[0]
-    indx_to_keep = jnp.arange(ngals).astype("i8")
-
     merge_weight = p_merge * sat_weights
-
-    x_to_keep = x_in_situ * (1 - p_merge)
     x_to_receive = x_in_situ * merge_weight * frac_receive
-
-    x_tot = jnp.zeros_like(x_in_situ)
-    x_tot = x_tot.at[halo_indx].add(x_to_receive)
-    x_tot = x_tot.at[indx_to_keep].add(x_to_keep)
-
+    x_tot = x_in_situ.at[halo_indx].add(x_to_receive)
     return x_tot
 
 
