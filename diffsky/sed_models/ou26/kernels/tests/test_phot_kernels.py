@@ -115,4 +115,3 @@ def test_mc_phot_kern_merging(mc_merge, num_halos=250):
     )
 
     check_phot_kern_merging_results(phot_kern_results, lc_data)
-    return phot_kern_results, lc_data
