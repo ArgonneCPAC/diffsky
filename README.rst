@@ -36,7 +36,8 @@ Latest version of Diffsky mocks
 
 For information about specific Diffsky mocks, including data location,
 software version compatibilities, intended use-cases and known issues and limitations,
-see the :doc:`Info about specific Diffsky mocks <mocks>` section of the online documentation.
+see the `Info about specific Diffsky mocks <https://diffsky.readthedocs.io/en/latest/mocks.html>`_
+section of the online documentation.
 
 See `this OpenCosmo tutorial <https://argonnecpac.github.io/opencosmo-examples/demo-diffsky-nersc/>`_
 for information about how to access and query Diffsky mocks with OpenCosmo.
