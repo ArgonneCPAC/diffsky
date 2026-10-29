@@ -6,7 +6,9 @@ This section of the docs provides info about specific releases of Diffsky mocks
 LSST DESC mocks
 ---------------
 
-Some comments
+The list below points to a few selected mocks made for the DESC.
+For a comprehensive list of Diffsky DESC mocks and value-added data products,
+you can use the `DESC dataregistry tool <https://lsstdesc.org/dataregistry/>`_.
 
 .. toctree::
     :maxdepth: 1
