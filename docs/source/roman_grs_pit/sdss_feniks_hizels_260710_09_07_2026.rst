@@ -1,9 +1,15 @@
 sdss_feniks_hizels_260710_09_07_2026
 ====================================
+This page gives some more info about the ``sdss_feniks_hizels_260710_09_07_2026`` mock.
 
-* Galaxies in the ``sdss_feniks_hizels_260710_09_07_2026`` mock populate the `Last Journey <https://arxiv.org/abs/2006.01697>`_ cosmological N-body simulation.
-* Mock galaxies span a contiguous sky area of 2578.27 deg\ :sup:`2` across $0 < z < 4$, complete to $i < 25$.
-* Columns include emission line strengths for Hα, Hβ, [OII], [OIII], and [SIII], plus photometry in all Roman and Rubin bands.
+- Galaxies in the ``sdss_feniks_hizels_260710_09_07_2026`` mock populate the `Last Journey <https://arxiv.org/abs/2006.01697>`_ cosmological N-body simulation.
+    - The mass function in Last Journey simulation is complete to $M_{\rm halo} \gtrsim 10^{11.6}M_{\odot}$.
+    - One Diffsky galaxy is painted onto every resolved subhalo core in the lightcone.
+    - This mock has ``lgmp_min=11.0``, which sets the faint-end completeness limit via the lowest mass halo included in the mock $10^{\text{lgmp\_min}} M_{\odot} < M_{\rm halo} < 10^{11.6}M_{\odot}$
+- Mock galaxies span a contiguous sky area of 2578.27 deg\ :sup:`2` across $0 < z < 4$, complete to $i < 25$.
+- Columns include emission line strengths for Hα, Hβ, [OII], [OIII], and [SIII], plus photometry in all Roman and Rubin bands.
+- The diffsky model parameters used to produce this mock were calibrated by Kumail Zaidi to a compilation of optical-NIR photometry from `SDSS <https://ui.adsabs.harvard.edu/abs/2009ApJS..182..543A/abstract>`_, `FENIKS <https://ui.adsabs.harvard.edu/abs/2024ApJ...969...84Z/abstract>`_, and Hα in `HiZELS <https://ui.adsabs.harvard.edu/abs/2013MNRAS.428.1128S/abstract>`_.
+    - The loss function in this calibration targeted SDSS ugriz for $0 < z < 0.2$, FENIKS ugrizyJHK for $0.4 < z < 2.5$, and the Hα LF for $0.8 < z < 2.5.$
 
 Documentation and software
 ---------------------------
