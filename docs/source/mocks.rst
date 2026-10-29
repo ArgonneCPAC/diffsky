@@ -21,11 +21,11 @@ Roman Galaxy Redshift Survey PIT mocks
 This section of the docs describes Diffsky mock galaxy catalogs generated for the
 NASA Roman Galaxy Redshift Survey (GRS) Project Infrastructure Team (PIT).
 
-* **Pre-data Mock:** :doc:`roman_grs_pit/sdss_feniks_hizels_260710_09_07_2026`
+* **Pre-data mock:** :doc:`roman_grs_pit/sdss_feniks_hizels_261013_10_14_2026`
 
 .. toctree::
    :maxdepth: 1
    :hidden:
 
-   roman_grs_pit/sdss_feniks_hizels_260710_09_07_2026
+   roman_grs_pit/sdss_feniks_hizels_261013_10_14_2026
 
