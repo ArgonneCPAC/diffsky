@@ -2,6 +2,13 @@ sdss_feniks_hizels_260710_09_07_2026
 ====================================
 This page gives some more info about the ``sdss_feniks_hizels_260710_09_07_2026`` mock.
 
+Disk location
+-------------
+OpenCosmo-formatted data for this mock can be found here on NERSC:
+``/global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/sdss_feniks_hizels_260710_09_07_2026``
+
+Model and simulation specs
+--------------------------
 - Galaxies in the ``sdss_feniks_hizels_260710_09_07_2026`` mock populate the `Last Journey <https://arxiv.org/abs/2006.01697>`_ cosmological N-body simulation.
     - The mass function in Last Journey simulation is complete to :math:`M_{\mathrm{halo}} \gtrsim 10^{11.6} M_{\odot}`.
     - One Diffsky galaxy is painted onto every resolved subhalo core in the lightcone.
@@ -22,8 +29,3 @@ the documentation of the ``v0.3.11`` version of Diffsky.
 The metadata of each file in the mock contains information
 about the software versions in the diffsky stack.
 See the tutorials for information about inspecting the metadata of the mock.
-
-Disk location
--------------
-OpenCosmo-formatted data for this mock can be found here on NERSC:
-``/global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/sdss_feniks_hizels_260710_09_07_2026``
