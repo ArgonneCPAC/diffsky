@@ -31,13 +31,14 @@ Documentation
 Online documentation for diffsky is available at
 `diffsky.readthedocs.io <https://diffsky.readthedocs.io/en/latest/>`_.
 
-Latest version of diffsky mocks
+Latest version of Diffsky mocks
 -------------------------------
 
+For information about specific Diffsky mocks, including data location,
+software version compatibilities, intended use-cases and known issues and limitations,
+see the :doc:`Info about specific Diffsky mocks <mocks>` section of the online documentation.
+
 See `this OpenCosmo tutorial <https://argonnecpac.github.io/opencosmo-examples/demo-diffsky-nersc/>`_
-for information about how to access and query the latest mock with OpenCosmo, and `this tutorial <https://argonnecpac.github.io/opencosmo-examples/demo-diffmah-diffstar/>`_ about how to compute mass accretion and star formation histories.
-The latest release of the mocks can be downloaded at these URLs:
-
-    /global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/c260710_09_02_2026
-
-See  `this PR <https://github.com/ArgonneCPAC/diffsky/pull/493/>`_ for further information about the latest mock.
+for information about how to access and query Diffsky mocks with OpenCosmo.
+See `this tutorial <https://argonnecpac.github.io/opencosmo-examples/demo-diffmah-diffstar/>`_
+for a demonstration of how to compute mass accretion and star formation histories.
