@@ -5,10 +5,17 @@ sdss_feniks_hizels_260710_09_07_2026
 * Mock galaxies span a contiguous sky area of 2578.27 deg\ :sup:`2` across $0 < z < 4$, complete to $i < 25$.
 * Columns include emission line strengths for Hα, Hβ, [OII], [OIII], and [SIII], plus photometry in all Roman and Rubin bands.
 
-Documentation
--------------
-The version of the documentation that pertains to this mock is
-`diffsky.readthedocs.io v0.3.11 <https://diffsky.readthedocs.io/en/v0.3.11>`_.
+Documentation and software
+---------------------------
+This mock should be used with Diffsky version ``v0.3.11`` installed.
+Diffsky is an evolving library and later versions of the code may not be
+compatible with this mock.
+See `diffsky.readthedocs.io v0.3.11 <https://diffsky.readthedocs.io/en/v0.3.11>`_ for
+the documentation of the ``v0.3.11`` version of Diffsky.
+
+The metadata of each file in the mock contains information
+about the software versions in the diffsky stack.
+See the tutorials for information about inspecting the metadata of the mock.
 
 Disk location
 -------------
