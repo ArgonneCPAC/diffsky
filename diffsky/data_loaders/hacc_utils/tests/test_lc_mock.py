@@ -16,7 +16,6 @@ from ....experimental import precompute_ssp_phot as psspp
 from ....experimental.disk_bulge_modeling import dbpop
 from ....experimental.disk_bulge_modeling import disk_bulge_kernels as dbk
 from ....experimental.tests import test_mc_lightcone_halos as tmclh
-from ....param_utils import diffsky_param_wrapper as dpw
 from ....param_utils import diffsky_param_wrapper_merging as dpwm
 from ....utils.phot_utils import get_wave_eff_table
 from ... import io_utils as iou
@@ -43,10 +42,10 @@ _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 
 
 def test_load_diffsky_param_collection(tmp_path):
-    all_params_flat = dpw.unroll_param_collection_into_flat_array(
-        *dpw.DEFAULT_PARAM_COLLECTION
+    all_params_flat = dpwm.unroll_param_collection_into_flat_array(
+        *dpwm.DEFAULT_PARAM_COLLECTION
     )
-    all_pnames = dpw.get_flat_param_names()
+    all_pnames = dpwm.get_flat_param_names()
 
     Params = namedtuple("Params", all_pnames)
     all_named_params = Params(*all_params_flat)
@@ -62,7 +61,7 @@ def test_load_diffsky_param_collection(tmp_path):
     for params in param_collection:
         pnames = list(params._fields)  # enforce each params is actually a namedtuple
         assert len(pnames) == len(params)
-    all_params_flat2 = dpw.unroll_param_collection_into_flat_array(*param_collection)
+    all_params_flat2 = dpwm.unroll_param_collection_into_flat_array(*param_collection)
 
     assert np.allclose(all_params_flat, all_params_flat2, rtol=1e-5)
 
@@ -129,7 +128,7 @@ def test_write_ancillary_data():
         drn_mock,
         mock_version_name,
         sim_info,
-        dpw.DEFAULT_PARAM_COLLECTION,
+        dpwm.DEFAULT_PARAM_COLLECTION,
         tcurves,
         ssp_data,
     )
@@ -152,7 +151,7 @@ def test_write_ancillary_data():
         drn_mock, mock_version_name
     )
     assert np.allclose(
-        dpw.DEFAULT_PARAM_COLLECTION.mzr_params, param_collection2.mzr_params
+        dpwm.DEFAULT_PARAM_COLLECTION.mzr_params, param_collection2.mzr_params
     )
 
 
