@@ -22,6 +22,7 @@ of a population of galaxies and their co-evolving dark matter halos.
 
    installation.rst
    demos.rst
+   mocks.rst
    background.rst
 
 .. toctree::
