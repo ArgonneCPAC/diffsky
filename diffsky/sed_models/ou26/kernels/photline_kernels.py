@@ -145,7 +145,16 @@ def _photline_kern_merging(
         halo_indx,
         mc_merge,
     )
-    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge = _res
+    (
+        mstar_in_situ,
+        mstar_obs,
+        flux_in_situ,
+        flux_obs,
+        flux_obs_ms,
+        flux_obs_q,
+        flux_obs_bursty,
+        p_merge,
+    ) = _res
 
     args = (
         phot_kern_results,
@@ -153,6 +162,9 @@ def _photline_kern_merging(
         mstar_obs,
         flux_in_situ,
         flux_obs,
+        flux_obs_ms,
+        flux_obs_q,
+        flux_obs_bursty,
         p_merge,
         merging_randoms.uran_pmerge,
     )
@@ -161,10 +173,15 @@ def _photline_kern_merging(
 
     args = phot_kern_results, spec_kern_results, sat_weights, halo_indx
     _res = _get_linelum_kern_merging_quantities(*args)
-    linelums_obs, linelum_in_situ_mc = _res
+    linelums_obs, linelum_in_situ_mc, linelum_ms, linelum_q, linelum_bursty = _res
 
     spec_kern_results = _update_linelum_results_with_merging(
-        spec_kern_results, linelums_obs, linelum_in_situ_mc
+        spec_kern_results,
+        linelums_obs,
+        linelum_in_situ_mc,
+        linelum_ms,
+        linelum_q,
+        linelum_bursty,
     )
 
     return phot_kern_results, spec_kern_results
@@ -181,8 +198,29 @@ def _get_linelum_kern_merging_quantities(
         sat_weights[:, jnp.newaxis],
         halo_indx,
     )
+    linelum_in_situ_ms = spec_kern_results.linelum_ms
+    linelum_ms = compute_x_tot_from_x_in_situ(
+        linelum_in_situ_ms,
+        phot_kern_results.p_merge[:, jnp.newaxis],
+        sat_weights[:, jnp.newaxis],
+        halo_indx,
+    )
+    linelum_in_situ_q = spec_kern_results.linelum_q
+    linelum_q = compute_x_tot_from_x_in_situ(
+        linelum_in_situ_q,
+        phot_kern_results.p_merge[:, jnp.newaxis],
+        sat_weights[:, jnp.newaxis],
+        halo_indx,
+    )
+    linelum_in_situ_bursty = spec_kern_results.linelum_bursty
+    linelum_bursty = compute_x_tot_from_x_in_situ(
+        linelum_in_situ_bursty,
+        phot_kern_results.p_merge[:, jnp.newaxis],
+        sat_weights[:, jnp.newaxis],
+        halo_indx,
+    )
 
-    return linelums_obs, linelum_in_situ_mc
+    return linelums_obs, linelum_in_situ_mc, linelum_ms, linelum_q, linelum_bursty
 
 
 @jjit
@@ -190,8 +228,16 @@ def _update_linelum_results_with_merging(
     spec_kern_results,
     linelums_obs,
     linelum_in_situ,
+    linelum_ms,
+    linelum_q,
+    linelum_bursty,
 ):
-    spec_kern_results = spec_kern_results._replace(linelum_gal=linelums_obs)
+    spec_kern_results = spec_kern_results._replace(
+        linelum_gal=linelums_obs,
+        linelum_ms=linelum_ms,
+        linelum_q=linelum_q,
+        linelum_bursty=linelum_bursty,
+    )
 
     new_keys = ["linelum_gal_in_situ"]
     fields = list(spec_kern_results._fields) + new_keys
