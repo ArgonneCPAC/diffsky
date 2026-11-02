@@ -157,7 +157,9 @@ BNPAT_SSP_DATA = "diffsky_{0}_ssp_data.hdf5"
 BNPAT_PARAM_COLLECTION = "diffsky_{0}_param_collection.hdf5"
 
 
-def check_mock_data_file_is_complete(fn_lc_mock):
+def check_mock_data_file_is_complete(
+    fn_lc_mock, cols_to_check=("x_nfw", "dec_nfw", "core_tag")
+):
     """Read metadata to determine whether fn_lc_mock finished writing"""
     fn_exists = os.path.exists(fn_lc_mock)
 
@@ -166,6 +168,18 @@ def check_mock_data_file_is_complete(fn_lc_mock):
             fn_is_complete = bool(hdf.attrs.get("write_complete", False))
     except OSError:
         fn_is_complete = False
+
+    # Check a few columns for correct shapes
+    if fn_exists and fn_is_complete:
+        with h5py.File(fn_lc_mock, "r") as hdf:
+            try:
+                shapes = [hdf["data"][col].shape for col in cols_to_check]
+            except:
+                fn_is_complete = False
+        if len(set(shapes)) == 1:
+            fn_is_complete = True
+        else:
+            fn_is_complete = False
 
     return fn_exists, fn_is_complete
 
