@@ -23,7 +23,9 @@ Credits:
 from collections import namedtuple
 from functools import partial
 
+import jax
 from jax import jit as jjit
+from jax import lax
 from jax import numpy as jnp
 from jax import random as jran
 
@@ -50,7 +52,7 @@ def mc_mu_phi_omega(n, ran_key):
     return mu_ran, phi_ran, omega_ran
 
 
-def mc_ellipsoid_params(r50, b_over_a, c_over_a, ran_key, sample_omega=True):
+def mc_ellipse2d(r50, b_over_a, c_over_a, ran_key, sample_omega=True):
     """Monte Carlo realization of 2d ellipse with random projection angles mu, phi, omega"""
     if sample_omega:
         mu_ran, phi_ran, omega_ran = mc_mu_phi_omega(r50.size, ran_key)
@@ -61,6 +63,86 @@ def mc_ellipsoid_params(r50, b_over_a, c_over_a, ran_key, sample_omega=True):
     b = b_over_a * a
     c = c_over_a * a
     return compute_ellipse2d(a, b, c, mu_ran, phi_ran, omega_ran)
+
+
+@partial(jjit, static_argnums=(1,))
+def mc_orthonormal_vectors(ran_key, n):
+    """Monte Carlo realization of 3D orthonormal vectors A, B, C
+
+    The vectors are uniformly random on the unit sphere, and are orthonormal to each other.
+    """
+    ran_key, key_A, key_B = jran.split(ran_key, 3)
+    A = random_unit_vectors_3d(key_A, n)
+    B = random_perpendicular_directions(A, key_B)
+    C = jnp.cross(A, B)
+
+    return A, B, C
+
+
+@partial(jjit, static_argnums=(8, 9))
+def compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop=True, ellipticity_type=0):
+    """
+    Calculate the observed 2D ellipse parameters of a 3D triaxial ellipsoid in the simulation frame,
+    given the ellipsoid's axes lengths (a, b, c) and the observed x and y axes in the simulation
+    frame (obs_x, obs_y).
+    Parameters:
+    -----------
+    A_v, B_v, C_v : jax.numpy.ndarray, shape (N, 3)
+        The 3D unit axes (major/inter/minor) of the ellipsoid in the simulation frame.
+    a, b, c : jax.numpy.ndarray, shape (N,)
+        The lengths of the major, intermediate, and minor axes of the ellipsoid.
+    obs_x, obs_y : jax.numpy.ndarray, shape (N, 3)
+        The observed unit x and unit y axes in the simulation frame.
+    envelop : bool, optional
+        Whether to apply the envelope correction to the 2D ellipse parameters.
+    ellipticity_type : int, optional
+        The type of ellipticity to compute.
+    Returns:
+    --------
+    Ellipse2DParams : namedtuple of arrays of shape (N,)
+        The 2D ellipse parameters in the observed frame.
+    """
+    # Transform the West-North-LoS coordinate system into the ellipsoid body frame
+    u = _unitize(_transform_axes_to_frame(obs_x, A_v, B_v, C_v))
+    v = _unitize(_transform_axes_to_frame(obs_y, A_v, B_v, C_v))
+
+    # Build the rotation (columns u, v, LoS in the body frame) directly: Euler
+    # angles are singular along principal axes, giving nan or wrong gradients there.
+    R = jnp.stack([u, v, jnp.cross(u, v)], axis=-1)
+
+    # Get the coefficients of the projected ellipse quadratic form in the u-v plane
+    A_coeff, B_coeff, C_coeff = _project_shape_matrix(a, b, c, R, envelop)
+    # Get the semi-major, semi-minor axes, and ellipticity of the projected ellipse
+    alpha, beta = _calculate_ellipse2d_axes(A_coeff, B_coeff, C_coeff)
+    q = beta / alpha
+    if ellipticity_type == 0:
+        ellipticity = 1.0 - q
+    elif ellipticity_type == 1:
+        ellipticity = (1.0 - q) / (1.0 + q)
+    elif ellipticity_type == 2:
+        ellipticity = (1.0 - q**2) / (1.0 + q**2)
+    elif ellipticity_type == 3:
+        ellipticity = -jnp.log(q)
+    else:
+        raise ValueError(
+            f"Invalid ellipticity_type: {ellipticity_type}. Must be 0, 1, 2, or 3."
+        )
+    # Get the angle psi between the semi-major axis and u-axis
+    psi = _calculate_ellipse2d_psi(A_coeff, B_coeff, C_coeff)
+    e_alpha, e_beta = _get_xy_coords_of_projected_semi_axes(psi)
+
+    # return the 2D ellipse parameters in the observed frame
+    return Ellipse2DParams(
+        alpha,
+        beta,
+        psi,
+        ellipticity,
+        e_alpha,
+        e_beta,
+        A_coeff,
+        B_coeff,
+        C_coeff,
+    )
 
 
 @partial(jjit, static_argnums=(6, 7))
@@ -193,15 +275,23 @@ def _compute_2d_ellipse_params(a, b, c, mu, phi, omega, envelop=True):
     2. Rotate around the new x-axis by theta = arccos(mu)
     3. Rotate around the new z-axis (LoS) by omega.
     """
-    # ── Shape matrix diagonal ───────────────────────────────────────────────
-    d = jnp.stack([1.0 / a**2, 1.0 / b**2, 1.0 / c**2], axis=-1)  # (..., 3)
-
     # -- Rotation matrix that maps x-y-z to u-v-LoS (Euler ZXZ convention) ---
     theta = jnp.arccos(mu)  # polar angle from z-axis to LoS
     # passive rotation: R @ [x,y,z] = [u,v,LoS]
     R = _get_eulerxzx_matrix_from_angles(
         phi + jnp.pi / 2.0, theta, omega
     )  # (..., 3, 3)
+
+    return _project_shape_matrix(a, b, c, R, envelop)
+
+
+@partial(jjit, static_argnums=(4,))
+def _project_shape_matrix(a, b, c, R, envelop=True):
+    """Coefficients A, B, C of the projected ellipse Au² + Buv + Cv² = 1, given the
+    rotation R whose columns are the u, v and LoS axes expressed in the ellipsoid
+    body frame (x along a, y along b, z along c)."""
+    # ── Shape matrix diagonal ───────────────────────────────────────────────
+    d = jnp.stack([1.0 / a**2, 1.0 / b**2, 1.0 / c**2], axis=-1)  # (..., 3)
 
     # -- Quadratic form in the u-v-LoS frame: S_rotated = R^T @ S @ R --------
     S_rotated = jnp.swapaxes(R, -1, -2) @ (d[..., :, None] * R)
@@ -292,11 +382,15 @@ def _get_eulerzxz_angle_from_basis(x_prime, y_prime):
     y_ = y_ / jnp.linalg.norm(y_, axis=-1, keepdims=True)
     z_ = jnp.cross(x_, y_)  # Ensure z' is orthogonal to x' and y'
 
-    cos_beta = jnp.clip(z_[..., 2], -1.0, 1.0)
-    beta = jnp.arccos(cos_beta)
-    sin_beta = jnp.sin(beta)
+    # arctan2 keeps beta accurate near 0 and pi, where arccos(z'_z) turns 1-ulp
+    # rounding into beta ~ 1e-8 and misses the lock test. Lock threshold
+    # ~sqrt(eps) balances lock-approximation and general-formula errors.
+    sin2_beta = z_[..., 0] ** 2 + z_[..., 1] ** 2
+    is_aligned = sin2_beta == 0
+    sin_beta = jnp.where(is_aligned, 0.0, jnp.sqrt(jnp.where(is_aligned, 1.0, sin2_beta)))
+    beta = jnp.arctan2(sin_beta, z_[..., 2])
 
-    no_lock = jnp.abs(sin_beta) > 1e-10
+    no_lock = sin_beta > 1e-8
 
     # General case: invert the analytic expressions above.
     # Gimbal lock fallback: alpha absorbs the free angle, gamma = 0.
@@ -319,13 +413,17 @@ def _calculate_ellipse2d_axes(A, B, C):
     trace = A + C
     trace = jnp.maximum(trace, 0.0)
 
-    det = A * C - 0.25 * B**2
-    det = jnp.maximum(det, 0.0)
-
-    discriminant = trace**2 - 4 * det
-    discriminant = jnp.maximum(discriminant, 0.0)
-
-    sqrt_discriminant = jnp.sqrt(discriminant)
+    # sqrt(trace**2 - 4*det) == hypot(A - C, B), without the cancellation that loses
+    # precision (and gives nan gradients) for nearly round ellipses
+    A_minus_C = A - C
+    # Exactly round: hypot's gradient is 0/0 = nan in some jax versions, so feed it a
+    # safe input there (double where)
+    is_round = (A_minus_C == 0) & (B == 0)
+    sqrt_discriminant = jnp.where(
+        is_round,
+        0.0,
+        jnp.hypot(jnp.where(is_round, 1.0, A_minus_C), jnp.where(is_round, 1.0, B)),
+    )
 
     # Eigenvalues {λ_1, λ_2} (λ = 1/semi-axis²)
     lambda1 = 0.5 * (trace + sqrt_discriminant)  # Larger eigenvalue
@@ -381,3 +479,199 @@ def _transform_axes_to_frame(A, x_prime, y_prime, z_prime):
         )
 
     return _to_frame(A)
+
+
+@partial(jjit, static_argnums=(1,))
+def random_unit_vectors_3d(key, N):
+    """
+    Generate random 3D unit vectors.
+
+    Parameters
+    ----------
+    N : int
+        number of vectors
+    key : jax.random.PRNGKey
+        Random key for JAX random number generation.
+
+    Returns
+    -------
+    result : numpy.array
+        Numpy array of shape (N, 3) containing random unit vectors
+    """
+    x = jran.normal(key, shape=(N, 3))
+    return _unitize(x)
+
+
+@jjit
+def random_perpendicular_directions(v, key):
+    """
+    Given an input list of 3D vectors, v, return a list of 3D vectors
+    such that each returned vector has unit-length and is
+    orthogonal to the corresponding vector in v.
+
+    Parameters
+    ----------
+    v : ndarray
+        Numpy array of shape (N, 3) storing a collection of 3d vectors
+
+    key : jax.random.PRNGKey
+        Random key for JAX random number generation.
+
+    Returns
+    -------
+    result : ndarray
+        Numpy array of shape (N, 3)
+    """
+    v = _unitize(jnp.atleast_2d(v))
+    N = v.shape[0]
+
+    # build a deterministic orthonormal basis (v, b1, b2) instead of projecting
+    # a random 3d draw out of v: that projection suffers catastrophic
+    # cancellation whenever the draw lands close to +-v, which is the source
+    # of the ~1e-5 orthogonality error this replaces. alt is always at least
+    # ~26 degrees from v, so cross(v, alt) never cancels.
+    xhat = jnp.broadcast_to(jnp.array([1.0, 0.0, 0.0], dtype=v.dtype), v.shape)
+    yhat = jnp.broadcast_to(jnp.array([0.0, 1.0, 0.0], dtype=v.dtype), v.shape)
+    alt = jnp.where(jnp.abs(v[:, 0:1]) > 0.9, yhat, xhat)
+    b1 = _unitize(jnp.cross(v, alt))
+    b2 = jnp.cross(v, b1)
+
+    # a single random azimuthal angle recovers a uniform direction around v
+    phi = 2.0 * jnp.pi * jran.uniform(key, (N, 1))
+    v_perp = jnp.cos(phi) * b1 + jnp.sin(phi) * b2
+
+    # v_perp is already orthogonal to v to ~1 ULP, so this Gram-Schmidt
+    # polish is a small, cancellation-safe correction, not a risky one
+    v_perp = v_perp - jnp.sum(v_perp * v, axis=-1, keepdims=True) * v
+    return _unitize(v_perp)
+
+
+@partial(jjit, static_argnames=['ascending_ra_deg'])
+def observer_frame_axes_from_ra_dec(ra_deg, dec_deg, ascending_ra_deg=0.0):
+    """
+    Calculate observer frame unit vectors (West, North, -LOS) in the simulation frame from RA and Dec,
+    assuming the standard mapping: r̂ = (cos δ cos (α-ascending_ra_deg), cos δ sin (α-ascending_ra_deg), sin δ), where
+    δ is declination and α is right ascension.
+
+    Parameters
+    ----------
+    ra_deg, dec_deg : array_like, shape (N,)  [degrees]
+        ra_deg in [0, 360), dec_deg in [-90, 90]
+    ascending_ra_deg : float, optional [degrees]
+        Right ascension of the ascending node (default = 0, i.e. x-axis points toward RA=0, Dec=0).
+    Returns
+    -------
+    x_prime : ndarray (N, 3)  West = direction of decreasing RA
+    y_prime : ndarray (N, 3)  North = direction of increasing Dec
+    Parameters
+    ----------
+    ra_rad, dec_rad : array_like, shape (N,)  [radians]
+        ra_rad in [0, 2Pi), dec_rad in [-Pi/2, Pi/2]
+    ascending_ra_rad : float, optional
+        Right ascension of the ascending node (default = 0, i.e. x-axis points toward RA=0, Dec=0).
+    Returns
+    -------
+    x_prime : ndarray (N, 3)  West = direction of decreasing RA
+    y_prime : ndarray (N, 3)  North = direction of increasing Dec
+    z_prime : ndarray (N, 3)  -LOS = toward observer, z' = x' × y'
+    """
+    alpha = jnp.asarray((ra_deg - ascending_ra_deg) / 180 * jnp.pi)
+    delta = jnp.asarray(dec_deg / 180 * jnp.pi)
+    ca, sa = jnp.cos(alpha), jnp.sin(alpha)
+    cd, sd = jnp.cos(delta), jnp.sin(delta)
+    zeros = jnp.zeros_like(alpha)
+
+    x_prime = jnp.stack([sa, -ca, zeros], axis=-1)  # West
+    y_prime = jnp.stack([-sd * ca, -sd * sa, cd], axis=-1)  # North
+    z_prime = jnp.stack([-cd * ca, -cd * sa, -sd], axis=-1)  # -LOS
+
+    return x_prime, y_prime, z_prime
+
+
+@jjit
+def observer_frame_axes_from_pos_3D(pos_x, pos_y, pos_z):
+    """
+    Calculate observer frame unit vectors (West, North, -LOS) in the simulation frame from 3D position,
+    assuming the standard mapping: r̂ = (x, y, z)/|r|, where
+    r is the 3D position vector.
+
+    Parameters
+    ----------
+    pos_x, pos_y, pos_z : array_like, shape (N,)
+        3D position coordinates of the observer in the simulation frame.
+
+    Returns
+    -------
+    x_prime : ndarray (N, 3)  West = direction of decreasing RA
+    y_prime : ndarray (N, 3)  North = direction of increasing Dec
+    z_prime : ndarray (N, 3)  -LOS = toward observer, z' = x' × y'
+    """
+    NCP = jnp.array([0, 0, 1])
+    # LoS points to the observer
+    obs_z = -1 * _unitize(jnp.stack([pos_x, pos_y, pos_z], axis=-1))
+
+    # obs_x = NCP x obs_z vanishes exactly at the celestial poles (obs_z || NCP), where
+    # west/east is undefined anyway; fall back to a fixed default there. The vector fed
+    # to jnp.linalg.norm is swapped in *before* the norm is taken (not the norm's output
+    # afterward), so norm() is never evaluated at the zero vector -- its gradient (v/|v|)
+    # would be a 0/0 NaN there, and jnp.where can't rescue a NaN already computed on the
+    # discarded branch. This keeps the whole thing jit-safe with well-defined gradients.
+    obs_x_raw = jnp.cross(NCP, obs_z)
+    # NCP x obs_z vanishes only exactly at a pole; there, use the West of RA = 0,
+    # the RA that get_ra_dec assigns at the poles
+    at_pole = jnp.all(obs_x_raw == 0, axis=-1, keepdims=True)
+    obs_x_default = jnp.array([0.0, -1.0, 0.0])
+    obs_x = _unitize(jnp.where(at_pole, obs_x_default, obs_x_raw))
+    obs_y = jnp.cross(obs_z, obs_x)
+
+    return obs_x, obs_y, obs_z
+
+
+@jjit
+def assert_orthonormality(x_prime, y_prime, z_prime, atol=1e-6):
+    """
+    Warn if the provided axes are not orthonormal.
+
+    A debugging helper: it is not called in the computation paths, where it would
+    nearly double the cost of building observer frames. It works inside jitted
+    code by printing via a `lax.cond`-gated `jax.debug.print` instead of raising.
+
+    Parameters
+    ----------
+    x_prime, y_prime, z_prime : array_like, shape (N, 3)
+        The axes to check for orthonormality.
+    atol : float
+        Absolute tolerance for the checks.
+    """
+    ok = (
+        jnp.allclose(jnp.sum(x_prime * y_prime, axis=-1), 0.0, atol=atol)
+        & jnp.allclose(jnp.sum(x_prime * z_prime, axis=-1), 0.0, atol=atol)
+        & jnp.allclose(jnp.sum(y_prime * z_prime, axis=-1), 0.0, atol=atol)
+        & jnp.allclose(jnp.linalg.norm(x_prime, axis=-1), 1.0, atol=atol)
+        & jnp.allclose(jnp.linalg.norm(y_prime, axis=-1), 1.0, atol=atol)
+        & jnp.allclose(jnp.linalg.norm(z_prime, axis=-1), 1.0, atol=atol)
+        & jnp.allclose(
+            jnp.linalg.norm(jnp.cross(x_prime, y_prime) - z_prime, axis=-1), 0.0, atol=atol
+        )
+    )
+    lax.cond(
+        ok,
+        lambda _: None,
+        lambda _: jax.debug.print(
+            'assert_orthonormality: axes failed an orthonormality check (atol={atol})',
+            atol=atol),
+        operand=None,
+    )
+
+
+@jjit
+def _unitize(v: jnp.ndarray) -> jnp.ndarray:
+    """
+    Normalize a tensor to have unit length. The zero vector is returned as zero.
+    """
+    # exact norm (an additive epsilon shortens short vectors); zero vectors are
+    # swapped out before the norm so the gradient there is 0, not nan
+    is_zero = jnp.all(v == 0, axis=-1, keepdims=True)
+    v_safe = jnp.where(is_zero, 1.0, v)
+    norm = jnp.linalg.norm(v_safe, axis=-1, keepdims=True)
+    return jnp.where(is_zero, 0.0, v_safe / norm)
