@@ -1,4 +1,4 @@
-0.3.12 (unreleased)
+0.3.12 (2026-11-10)
 -------------------
 - Add new sub-package diffsky/sed_models and diffsky/morphology_models (https://github.com/ArgonneCPAC/diffsky/pull/519)
 - Update readthedocs tutorials to use new sub-packages (https://github.com/ArgonneCPAC/diffsky/pull/533)
