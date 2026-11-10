@@ -1,10 +1,12 @@
 Info about specific Diffsky mocks
 ========================================
 
-This section of the docs provides info about specific releases of Diffsky mocks
+This section of the docs provides info about specific releases of Diffsky mocks.
+The landing page for each mock provides a link to the version of the documentation
+associated with the version of the code that should be used with each mock.
 
-LSST DESC mocks
----------------
+Rubin Observatory LSST DESC mocks
+---------------------------------
 
 The list below points to a few selected mocks made for the DESC.
 For a comprehensive list of Diffsky DESC mocks and value-added data products,

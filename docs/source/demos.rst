@@ -1,6 +1,13 @@
 Diffsky Code Demos
 ==================
 
+The demos in this section of the docs show how to get off the ground
+with analyzing Diffsky mocks, and with generating synthetic Diffsky data from scratch.
+
+If you are analyzing Diffsky mocks, be sure you are using the correct version of the
+source code for your mock, and also refer to the version of the Diffsky documentation
+that pertains to this version.
+
 For a pedagogical introduction to the differentiable / probabilistic
 methods used in Diffsky (soft histograms, PDF-weighted histograms, etc.),
 see the :doc:`background` section.
@@ -9,8 +16,10 @@ Reading and analyzing Diffsky mocks
 ------------------------------------
 Diffsky generates mock galaxy catalogs by populating
 simulated cosmological lightcones of halos with synthetic galaxies.
-The tutorials below show how to load Diffsky mock data using OpenCosmo (recommended),
-or alternatively using the flat hdf5 files natively produced by Diffsky.
+The tutorials below show how to load Diffsky mock data with OpenCosmo
+(the default format for most mocks),
+or alternatively using the flat hdf5 files natively produced by Diffsky
+(mostly for Diffsky developers).
 
 .. toctree::
     :maxdepth: 1
