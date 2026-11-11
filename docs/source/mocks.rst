@@ -15,7 +15,7 @@ you can use the `DESC dataregistry tool <https://lsstdesc.org/dataregistry/>`_.
 .. toctree::
     :maxdepth: 1
 
-    LSST_DP2_mocks.rst
+    lsst_desc/LSST_DP2_mocks.rst
 
 Roman Galaxy Redshift Survey PIT mocks
 --------------------------------------
