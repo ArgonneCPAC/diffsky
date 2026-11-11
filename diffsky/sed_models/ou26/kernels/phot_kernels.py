@@ -147,13 +147,25 @@ def _phot_kern_merging(
         halo_indx,
         mc_merge,
     )
-    mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge = _res
+    (
+        mstar_in_situ,
+        mstar_obs,
+        flux_in_situ,
+        flux_obs,
+        flux_obs_ms,
+        flux_obs_q,
+        flux_obs_bursty,
+        p_merge,
+    ) = _res
     phot_kern_results = _update_phot_kern_results_with_merging(
         phot_kern_results,
         mstar_in_situ,
         mstar_obs,
         flux_in_situ,
         flux_obs,
+        flux_obs_ms,
+        flux_obs_q,
+        flux_obs_bursty,
         p_merge,
         merging_randoms.uran_pmerge,
     )
@@ -186,7 +198,32 @@ def _get_phot_kern_merging_quantities(
         flux_in_situ, p_merge[:, jnp.newaxis], sat_weights[:, jnp.newaxis], halo_indx
     )
 
-    return mstar_in_situ, mstar_obs, flux_in_situ, flux_obs, p_merge
+    flux_in_situ_ms = 10 ** (-0.4 * phot_kern_results.obs_mags_ms)
+    flux_obs_ms = compute_x_tot_from_x_in_situ(
+        flux_in_situ_ms, p_merge[:, jnp.newaxis], sat_weights[:, jnp.newaxis], halo_indx
+    )
+    flux_in_situ_q = 10 ** (-0.4 * phot_kern_results.obs_mags_q)
+    flux_obs_q = compute_x_tot_from_x_in_situ(
+        flux_in_situ_q, p_merge[:, jnp.newaxis], sat_weights[:, jnp.newaxis], halo_indx
+    )
+    flux_in_situ_bursty = 10 ** (-0.4 * phot_kern_results.obs_mags_bursty)
+    flux_obs_bursty = compute_x_tot_from_x_in_situ(
+        flux_in_situ_bursty,
+        p_merge[:, jnp.newaxis],
+        sat_weights[:, jnp.newaxis],
+        halo_indx,
+    )
+
+    return (
+        mstar_in_situ,
+        mstar_obs,
+        flux_in_situ,
+        flux_obs,
+        flux_obs_ms,
+        flux_obs_q,
+        flux_obs_bursty,
+        p_merge,
+    )
 
 
 @jjit
@@ -196,12 +233,18 @@ def _update_phot_kern_results_with_merging(
     mstar_obs,
     flux_in_situ,
     flux_obs,
+    flux_obs_ms,
+    flux_obs_q,
+    flux_obs_bursty,
     p_merge,
     uran_pmerge,
 ):
     ex_situ_dict = dict()
     ex_situ_dict["logsm_obs"] = jnp.log10(mstar_obs)
     ex_situ_dict["obs_mags"] = -2.5 * jnp.log10(flux_obs)
+    ex_situ_dict["obs_mags_ms"] = -2.5 * jnp.log10(flux_obs_ms)
+    ex_situ_dict["obs_mags_q"] = -2.5 * jnp.log10(flux_obs_q)
+    ex_situ_dict["obs_mags_bursty"] = -2.5 * jnp.log10(flux_obs_bursty)
 
     phot_kern_results = phot_kern_results._replace(**ex_situ_dict)
 

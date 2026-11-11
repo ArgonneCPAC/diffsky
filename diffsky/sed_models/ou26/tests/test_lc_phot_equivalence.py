@@ -34,7 +34,8 @@ def test_lc_phot_is_equivalent_to_mc_phot(param_collection):
     )[0]
 
     # Only enforce equivalence for centrals due to change in merging convention for sats
-    cols_to_check = ("obs_mags", "obs_mags_q", "obs_mags_ms", "obs_mags_bursty")
+    # Also only enforce for obs_mags not eg obs_mags_ms, due to this bug-fix: https://github.com/ArgonneCPAC/diffsky/pull/530
+    cols_to_check = ("obs_mags",)
     msk_cen = lc_data.is_central == 1
     for col in cols_to_check:
         x_new = getattr(pknew, col)
