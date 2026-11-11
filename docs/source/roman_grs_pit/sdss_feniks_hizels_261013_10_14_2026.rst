@@ -7,8 +7,8 @@ Disk location
 OpenCosmo-formatted data for this mock can be found here on NERSC:
 ``/global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/sdss_feniks_hizels_261013_10_14_2026``
 
-To access this mock with the DESC dataregistry: `dataset_id` =` 337
-
+To access this mock with the `DESC dataregistry tool <https://lsstdesc.org/dataregistry/>`_,
+use `dataset_id`=337.
 
 Model and simulation specs
 --------------------------
@@ -24,9 +24,11 @@ Model and simulation specs
 
 Documentation and software
 ---------------------------
-This mock should be used with Diffsky version ``v0.3.11`` installed.
 Diffsky is an evolving library and later versions of the code may not be
-compatible with this mock.
+compatible with this mock, so be sure to use the appropriate version of the diffsky
+source code when analyzing this mock, and refer to the appropriate version of the diffsky docs.
+
+This mock should be used with Diffsky version ``v0.3.11`` installed.
 See `diffsky.readthedocs.io v0.3.11 <https://diffsky.readthedocs.io/en/v0.3.11>`_ for
 the documentation of the ``v0.3.11`` version of Diffsky.
 
