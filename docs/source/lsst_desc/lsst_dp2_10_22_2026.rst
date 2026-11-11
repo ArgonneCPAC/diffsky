@@ -17,7 +17,7 @@ Model and simulation specs
     - One Diffsky galaxy is painted onto every resolved subhalo core in the lightcone.
     - In addition to galaxies in resolved subhalo cores, this mock includes synthetic galaxies below the mass resolution limit of the simulation.
         - The variable ``lgmp_min=10.5`` sets the lowest mass synthetic halo included in the mock :math:`10^{\mathrm{lgmp\_min}} M_{\odot} < M_{\mathrm{halo}} < 10^{11.6} M_{\odot}`.
-- Mock galaxies span a contiguous sky area of 2578.27 deg\ :sup:`2` across :math:`0 < z < 4`, complete to :math:`i < 26`.
+- Mock galaxies span a contiguous sky area of 805.72 deg\ :sup:`2` across :math:`0 < z < 4`, complete to :math:`i < 26`.
 - Columns include emission line strengths for Hα, Hβ, [OII], [OIII], and [SIII], plus photometry in all Roman and Rubin bands.
 - The diffsky model parameters used to produce this mock were calibrated by Kaustav Mitra to a compilation of optical-NIR photometry from `SDSS <https://ui.adsabs.harvard.edu/abs/2009ApJS..182..543A/abstract>`_ and `COSMOS-20 <https://arxiv.org/abs/2110.13923>`_.
     - The loss function in this calibration targeted SDSS ugriz for :math:`0 < z < 0.2`.
