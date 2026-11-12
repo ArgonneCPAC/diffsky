@@ -7,7 +7,8 @@ Disk location
 OpenCosmo-formatted data for this mock can be found here on NERSC:
 ``/global/cfs/cdirs/hacc/OpenCosmo/LastJourney/synthetic_galaxies/lsst_dp2_10_22_2026``
 
-This mock will soon be registered with the `DESC dataregistry tool <https://lsstdesc.org/dataregistry/>`_.
+To access this mock with the `DESC dataregistry tool <https://lsstdesc.org/dataregistry/>`_,
+use `dataset_id`=354.
 
 
 Model and simulation specs
@@ -22,7 +23,7 @@ Model and simulation specs
 
 Comparison to observations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-The diffsky model parameters used to produce this mock were calibrated by **Kaustav Mitra**
+The diffsky model parameters `cs261020` used to produce this mock were calibrated by **Kaustav Mitra**
 to a compilation of optical-NIR photometry from
 `SDSS <https://ui.adsabs.harvard.edu/abs/2009ApJS..182..543A/abstract>`_ and
 `COSMOS-20 <https://arxiv.org/abs/2110.13923>`_.
