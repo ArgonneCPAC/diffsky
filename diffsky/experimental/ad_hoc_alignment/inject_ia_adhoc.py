@@ -18,19 +18,30 @@ The HDF5 file strcture is flat table. Example structure is shown below:
       |- ...
       |- central
 """
+
 import jax.numpy as jnp
 import jax.random as jran
+
+from diffsky.ellipsoidal_shapes import ellipse_proj_kernels as eproj
+from diffsky.ellipsoidal_shapes import mc_disk_bulge_shapes as mcdbs
 from diffsky.experimental.ad_hoc_alignment.intrinsic_alignment import (
     align_radially,
     align_to_halo,
     get_radial_vector,
 )
-from diffsky.ellipsoidal_shapes import ellipse_proj_kernels as eproj
-from diffsky.ellipsoidal_shapes import mc_disk_bulge_shapes as mcdbs
 
 
-def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_mask,
-                     box_size_in_Mpc=jnp.inf, envelope=True, ellipticity_type=0, seed=514):
+def alignment_worker(
+    dataset,
+    mu_central,
+    mu_satellite,
+    central_mask,
+    synthetic_mask,
+    box_size_in_Mpc=jnp.inf,
+    envelope=True,
+    ellipticity_type=0,
+    seed=514,
+):
     """
     Worker function to align the galaxies in the dataset according to the
     specified alignment parameters.
@@ -85,7 +96,9 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
     key_central, key_satellite = jran.split(jran.PRNGKey(seed))
     # Get the axes in the observed RA/Dec frame for each galaxy, for shape projection.
     # x_prime = west, y_prime = north, z_prime = -LOS (toward observer)
-    x_prime, y_prime, z_prime = eproj.observer_frame_axes_from_ra_dec(dataset["ra_nfw"], dataset["dec_nfw"])
+    x_prime, y_prime, z_prime = eproj.observer_frame_axes_from_ra_dec(
+        dataset["ra_nfw"], dataset["dec_nfw"]
+    )
 
     # Get the 3D axes size of disk and bulge for each galaxy
     disk_3D_sizes = jnp.stack(
@@ -93,14 +106,16 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
             dataset["r50_disk_3d"],
             dataset["r50_disk_3d"] * dataset["b_over_a_disk"],
             dataset["r50_disk_3d"] * dataset["c_over_a_disk"],
-        ], axis=-1
+        ],
+        axis=-1,
     )
     bulge_3D_sizes = jnp.stack(
         [
             dataset["r50_bulge_3d"],
             dataset["r50_bulge_3d"] * dataset["b_over_a_bulge"],
-            dataset["r50_bulge_3d"] * dataset["c_over_a_bulge"]
-        ], axis=-1
+            dataset["r50_bulge_3d"] * dataset["c_over_a_bulge"],
+        ],
+        axis=-1,
     )
 
     # Get the 3D axes direction of central and satellite galaxies.
@@ -122,8 +137,13 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
     # vectors out of the alignment functions.
     Lbox = jnp.full(3, box_size_in_Mpc)
     _, r_sat = get_radial_vector(
-        dataset['x_host'], dataset['y_host'], dataset['z_host'],
-        dataset['x_nfw'], dataset['y_nfw'], dataset['z_nfw'], Lbox,
+        dataset["x_host"],
+        dataset["y_host"],
+        dataset["z_host"],
+        dataset["x_nfw"],
+        dataset["y_nfw"],
+        dataset["z_nfw"],
+        Lbox,
     )
     zero_offset_satellites = ~central_mask & ~(r_sat > 0)
     n_zero_offset = int(jnp.sum(zero_offset_satellites))
@@ -145,7 +165,11 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
     placeholder = jnp.array([1.0, 0.0, 0.0])
 
     halo_axis = [
-        jnp.where(resolved_central, dataset[f'top_host_infall_fof_halo_eigS3{c}'], placeholder[i])
+        jnp.where(
+            resolved_central,
+            dataset[f"top_host_infall_fof_halo_eigS3{c}"],
+            placeholder[i],
+        )
         for i, c in enumerate("XYZ")
     ]
     mu_central_arr = jnp.where(resolved_central, mu_central, 0.0)
@@ -153,13 +177,17 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
     central_axes = central_alignment(*halo_axis, mu_central_arr, key_central)
 
     sat_pos = [
-        jnp.where(has_radial_dir, dataset[f'{c}_nfw'], dataset[f'{c}_host'] + placeholder[i])
+        jnp.where(
+            has_radial_dir, dataset[f"{c}_nfw"], dataset[f"{c}_host"] + placeholder[i]
+        )
         for i, c in enumerate("xyz")
     ]
     mu_satellite_arr = jnp.where(has_radial_dir, mu_satellite, 0.0)
     print("Satellite alignment ...")
     satellite_axes = satellite_alignment(
-        dataset['x_host'], dataset['y_host'], dataset['z_host'],
+        dataset["x_host"],
+        dataset["y_host"],
+        dataset["z_host"],
         *sat_pos,
         mu_satellite_arr,
         key_satellite,
@@ -173,21 +201,27 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
 
     # Measure the galaxy shapes in RA/Dec frame (disk+bulge and central+satellite)
     Ellipse2D_disk = eproj.compute_ellipse2d_in_sim_frame(
-        gals_A, gals_B, gals_C,
+        gals_A,
+        gals_B,
+        gals_C,
         disk_3D_sizes[:, 0],
         disk_3D_sizes[:, 1],
         disk_3D_sizes[:, 2],
-        x_prime, y_prime,
+        x_prime,
+        y_prime,
         envelop=envelope,
         ellipticity_type=ellipticity_type,
     )
 
     Ellipse2D_bulge = eproj.compute_ellipse2d_in_sim_frame(
-        gals_A, gals_B, gals_C,
+        gals_A,
+        gals_B,
+        gals_C,
         bulge_3D_sizes[:, 0],
         bulge_3D_sizes[:, 1],
         bulge_3D_sizes[:, 2],
-        x_prime, y_prime,
+        x_prime,
+        y_prime,
         envelop=envelope,
         ellipticity_type=ellipticity_type,
     )
@@ -209,11 +243,15 @@ def alignment_worker(dataset, mu_central, mu_satellite, central_mask, synthetic_
         c_over_a=jnp.asarray(dataset["c_over_a_bulge"]),
     )
 
-    return Ellipse2D_disk, Ellipse2D_bulge, {"gal_A": gals_A, "gal_B": gals_B, "gal_C": gals_C}
+    return (
+        Ellipse2D_disk,
+        Ellipse2D_bulge,
+        {"gal_A": gals_A, "gal_B": gals_B, "gal_C": gals_C},
+    )
 
 
 def assert_eigS3_is_major_axis(dataset):
-    """ Check that eigS3 is the host halo's major axis for every galaxy.
+    """Check that eigS3 is the host halo's major axis for every galaxy.
     The halo shape eigenvectors are scaled by their axis lengths (units of Mpc),
     so the major axis is the one with the largest magnitude. Ties are allowed,
     e.g. unresolved halos whose three eigenvectors are all zero, or synthetic
@@ -241,7 +279,7 @@ def assert_eigS3_is_major_axis(dataset):
 
 
 def get_unresolved_central_mask(dataset):
-    """ Central galaxies without a measured host halo shape, which must get a
+    """Central galaxies without a measured host halo shape, which must get a
     random orientation instead of being aligned to their halo.
     Synthetic galaxies (mocks made with -synthetic_cores 1, written to
     *.synthetic_halos.hdf5 files) are flagged by diffsky with core_tag = -1, and
@@ -275,7 +313,7 @@ def get_unresolved_central_mask(dataset):
 
 
 def central_alignment(gal_axisA_x, gal_axisA_y, gal_axisA_z, mu, key):
-    """ Intrinsic alignment for central galaxies
+    """Intrinsic alignment for central galaxies
     This function is designed to support multiple central galaxy alignment strategies,
     but currently only implements the "align to halo" strategy.
     Parameters
@@ -298,13 +336,20 @@ def central_alignment(gal_axisA_x, gal_axisA_y, gal_axisA_z, mu, key):
         The aligned galaxy axis C for central galaxies.
     """
     gal_A, gal_B, gal_C = align_to_halo(
-        key, gal_axisA_x, gal_axisA_y, gal_axisA_z, mu, prim_gal_axis='A',
+        key,
+        gal_axisA_x,
+        gal_axisA_y,
+        gal_axisA_z,
+        mu,
+        prim_gal_axis="A",
     )
     return gal_A, gal_B, gal_C
 
 
-def satellite_alignment(halo_x, halo_y, halo_z, x, y, z, mu, key, box_size_in_cMpc=jnp.inf):
-    """ Intrinsic alignment for satellite galaxies
+def satellite_alignment(
+    halo_x, halo_y, halo_z, x, y, z, mu, key, box_size_in_cMpc=jnp.inf
+):
+    """Intrinsic alignment for satellite galaxies
     This function is designed to support multiple satellite galaxy alignment strategies,
     but currently only implements the "radial alignment" strategy.
     Parameters
@@ -330,24 +375,44 @@ def satellite_alignment(halo_x, halo_y, halo_z, x, y, z, mu, key, box_size_in_cM
         The aligned galaxy axis C for satellite galaxies.
     """
     gal_A, gal_B, gal_C = align_radially(
-        key, halo_x, halo_y, halo_z, x, y, z, mu,
+        key,
+        halo_x,
+        halo_y,
+        halo_z,
+        x,
+        y,
+        z,
+        mu,
         jnp.array([box_size_in_cMpc, box_size_in_cMpc, box_size_in_cMpc]),
-        prim_gal_axis='A',
+        prim_gal_axis="A",
     )
     return gal_A, gal_B, gal_C
 
 
 def main():
-    import h5py
     import argparse
+
+    import h5py
     import numpy as np
 
     parser = argparse.ArgumentParser(description="Inject IA into DiffSky Mock Catalog")
     parser.add_argument("input_file", type=str, help="Input HDF5 file")
     parser.add_argument("output_file", type=str, help="Output HDF5 file")
-    parser.add_argument("--mu_central", type=float, default=0.5, help="Alignment strength for central galaxies")
-    parser.add_argument("--mu_satellite", type=float, default=0.5, help="Alignment strength for satellite galaxies")
-    parser.add_argument("--seed", type=int, default=514, help="Random seed for reproducibility")
+    parser.add_argument(
+        "--mu_central",
+        type=float,
+        default=0.5,
+        help="Alignment strength for central galaxies",
+    )
+    parser.add_argument(
+        "--mu_satellite",
+        type=float,
+        default=0.5,
+        help="Alignment strength for satellite galaxies",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=514, help="Random seed for reproducibility"
+    )
     args = parser.parse_args()
 
     with h5py.File(args.input_file, "r") as f:
@@ -367,7 +432,7 @@ def main():
             args.mu_satellite,
             central_mask,
             synthetic_mask,
-            seed=args.seed
+            seed=args.seed,
         )
 
         # overwrite the original dataset with the new shapes

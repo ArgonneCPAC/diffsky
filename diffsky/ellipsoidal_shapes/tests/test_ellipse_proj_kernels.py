@@ -42,10 +42,16 @@ def test_mc_ellipse2d_respect_mathematical_bounds():
     ellipse2d = eproj.mc_ellipse2d(a, b / a, c / a, ran_key, sample_omega=True)
     assert np.all(ellipse2d.ellipticity >= 0.0)
     assert np.all(ellipse2d.ellipticity <= 1.0)
-    assert np.all(ellipse2d.psi >= -np.pi / 2.)
-    assert np.all(ellipse2d.psi <= np.pi / 2.)
-    assert np.allclose(np.sum(ellipse2d.e_alpha * np.array([1, 0])[np.newaxis, :], axis=-1), np.cos(ellipse2d.psi))
-    assert np.allclose(np.sum(ellipse2d.e_beta * np.array([1, 0])[np.newaxis, :], axis=-1), np.cos(ellipse2d.psi + np.pi / 2.0))
+    assert np.all(ellipse2d.psi >= -np.pi / 2.0)
+    assert np.all(ellipse2d.psi <= np.pi / 2.0)
+    assert np.allclose(
+        np.sum(ellipse2d.e_alpha * np.array([1, 0])[np.newaxis, :], axis=-1),
+        np.cos(ellipse2d.psi),
+    )
+    assert np.allclose(
+        np.sum(ellipse2d.e_beta * np.array([1, 0])[np.newaxis, :], axis=-1),
+        np.cos(ellipse2d.psi + np.pi / 2.0),
+    )
 
 
 def test_mc_orthonormal_vectors():
@@ -60,9 +66,7 @@ def test_mc_orthonormal_vectors():
     assert np.allclose(np.sum(A * A, axis=-1), 1.0, atol=atol)
     assert np.allclose(np.sum(B * B, axis=-1), 1.0, atol=atol)
     assert np.allclose(np.sum(C * C, axis=-1), 1.0, atol=atol)
-    assert np.allclose(
-        np.linalg.norm(np.cross(A, B) - C, axis=-1), 0.0, atol=atol
-    )
+    assert np.allclose(np.linalg.norm(np.cross(A, B) - C, axis=-1), 0.0, atol=atol)
 
 
 def test_3d_ellipse_params():
@@ -292,7 +296,11 @@ def _random_ellipsoids_and_frames(ran_key, n):
     )
     A_v, B_v, C_v = (np.asarray(x) for x in eproj.mc_orthonormal_vectors(body_key, n))
     obs_x, obs_y, _ = (np.asarray(x) for x in eproj.mc_orthonormal_vectors(obs_key, n))
-    return (A_v, B_v, C_v), (np.asarray(a), np.asarray(b), np.asarray(c)), (obs_x, obs_y)
+    return (
+        (A_v, B_v, C_v),
+        (np.asarray(a), np.asarray(b), np.asarray(c)),
+        (obs_x, obs_y),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -325,7 +333,9 @@ def test_unitize_returns_unit_vectors_and_preserves_direction():
     u = jnp.array([0.3, -1.2, 2.0])
     uhat = np.asarray(u) / np.linalg.norm(u)
     jac = np.asarray(jax.jacobian(eproj._unitize)(u))
-    assert np.allclose(jac, (np.eye(3) - np.outer(uhat, uhat)) / np.linalg.norm(u), atol=1e-12)
+    assert np.allclose(
+        jac, (np.eye(3) - np.outer(uhat, uhat)) / np.linalg.norm(u), atol=1e-12
+    )
 
 
 def test_random_unit_vectors_3d_are_isotropic():
@@ -342,7 +352,9 @@ def test_random_unit_vectors_3d_are_isotropic():
     # Archimedes: the projection onto any fixed axis is uniform in [-1, 1]
     for axis in (np.array([1.0, 0, 0]), np.array([0, 0, 1.0]), np.ones(3) / np.sqrt(3)):
         assert _ks_distance(v @ axis, _uniform_cdf(-1, 1)) < _ks_bound(n)
-    assert _ks_distance(np.arctan2(v[:, 1], v[:, 0]), _uniform_cdf(-np.pi, np.pi)) < _ks_bound(n)
+    assert _ks_distance(
+        np.arctan2(v[:, 1], v[:, 0]), _uniform_cdf(-np.pi, np.pi)
+    ) < _ks_bound(n)
     assert np.all(np.abs(v.mean(axis=0)) < 5 / np.sqrt(3 * n))
 
     # reproducible for the same key, different for different keys
@@ -381,13 +393,26 @@ def test_random_perpendicular_directions_corner_cases():
     """Exactly axis-aligned inputs, a single (3,) input, and the zero vector"""
     ran_key = jran.key(0)
     axes = np.array(
-        [[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0], [-1.0, 0, 0], [0, 0, -1.0], [0.9, 0.1, 0]]
+        [
+            [1.0, 0, 0],
+            [0, 1.0, 0],
+            [0, 0, 1.0],
+            [-1.0, 0, 0],
+            [0, 0, -1.0],
+            [0.9, 0.1, 0],
+        ]
     )
     p = np.asarray(eproj.random_perpendicular_directions(axes, ran_key))
     assert np.allclose(np.linalg.norm(p, axis=-1), 1.0, atol=1e-12)
-    assert np.allclose(np.sum(p * axes / np.linalg.norm(axes, axis=-1, keepdims=True), axis=-1), 0.0, atol=1e-12)
+    assert np.allclose(
+        np.sum(p * axes / np.linalg.norm(axes, axis=-1, keepdims=True), axis=-1),
+        0.0,
+        atol=1e-12,
+    )
 
-    p1 = np.asarray(eproj.random_perpendicular_directions(np.array([0.0, 0.0, 2.0]), ran_key))
+    p1 = np.asarray(
+        eproj.random_perpendicular_directions(np.array([0.0, 0.0, 2.0]), ran_key)
+    )
     assert p1.shape == (1, 3)
     assert np.isclose(p1[0, 2], 0.0, atol=1e-12)
 
@@ -424,7 +449,9 @@ def test_compute_ellipse2d_in_sim_frame_matches_independent_projection():
     """Reproduce α, β, ψ and the quadratic-form coefficients with independent
     numpy linear algebra, for both the silhouette and the cross-section"""
     n = 20_000
-    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(jran.key(0), n)
+    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(
+        jran.key(0), n
+    )
     for envelop in (True, False):
         e2d = eproj.compute_ellipse2d_in_sim_frame(
             A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop=envelop
@@ -447,7 +474,9 @@ def test_compute_ellipse2d_in_sim_frame_matches_independent_projection():
         assert np.all(e2d.beta <= e2d.alpha)
         assert np.all(e2d.alpha <= a * (1 + 1e-12))
         assert np.all(e2d.beta >= c * (1 - 1e-12))
-        assert np.allclose(e2d.e_alpha, np.stack([np.cos(e2d.psi), np.sin(e2d.psi)], -1))
+        assert np.allclose(
+            e2d.e_alpha, np.stack([np.cos(e2d.psi), np.sin(e2d.psi)], -1)
+        )
         assert np.allclose(np.sum(e2d.e_alpha * e2d.e_beta, axis=-1), 0.0, atol=1e-12)
 
 
@@ -456,16 +485,22 @@ def test_compute_ellipse2d_in_sim_frame_agrees_with_compute_ellipse2d():
     (μ, φ, ω) Euler angles that compute_ellipse2d uses"""
     n = 20_000
     a, b, c, mu, phi, omega = generate_test_ellipse_params(jran.key(0), n)
-    R = np.asarray(eproj._get_eulerxzx_matrix_from_angles(phi + np.pi / 2, np.arccos(mu), omega))
+    R = np.asarray(
+        eproj._get_eulerxzx_matrix_from_angles(phi + np.pi / 2, np.arccos(mu), omega)
+    )
     obs_x, obs_y = R[:, :, 0], R[:, :, 1]
     body = [np.tile(e, (n, 1)) for e in np.eye(3)]
     for ellipticity_type in (0, 1, 2, 3):
-        ref = eproj.compute_ellipse2d(a, b, c, mu, phi, omega, ellipticity_type=ellipticity_type)
+        ref = eproj.compute_ellipse2d(
+            a, b, c, mu, phi, omega, ellipticity_type=ellipticity_type
+        )
         new = eproj.compute_ellipse2d_in_sim_frame(
             *body, a, b, c, obs_x, obs_y, ellipticity_type=ellipticity_type
         )
         for field in ("alpha", "beta", "ellipticity", "A", "B", "C"):
-            assert np.allclose(getattr(new, field), getattr(ref, field), rtol=1e-8, atol=1e-10), field
+            assert np.allclose(
+                getattr(new, field), getattr(ref, field), rtol=1e-8, atol=1e-10
+            ), field
         msk = ref.beta / ref.alpha < 0.999
         assert np.allclose(_axial_diff(new.psi, ref.psi)[msk], 0.0, atol=1e-6)
 
@@ -475,7 +510,9 @@ def test_compute_ellipse2d_in_sim_frame_symmetries():
     body axes (including a left-handed triad), rotating the observer about the
     line of sight, and viewing the mirror image from behind"""
     n = 20_000
-    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(jran.key(0), n)
+    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(
+        jran.key(0), n
+    )
     ref = eproj.compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_x, obs_y)
     good = ref.beta / ref.alpha < 0.999
 
@@ -488,25 +525,38 @@ def test_compute_ellipse2d_in_sim_frame_symmetries():
     # common rotation G of everything leaves the image unchanged
     G = np.stack(eproj.mc_orthonormal_vectors(jran.key(9), n), axis=-1)
     rot = lambda v: np.einsum("nij,nj->ni", G, v)  # noqa: E731
-    _assert_same_ellipse(eproj.compute_ellipse2d_in_sim_frame(
-        rot(A_v), rot(B_v), rot(C_v), a, b, c, rot(obs_x), rot(obs_y)))
+    _assert_same_ellipse(
+        eproj.compute_ellipse2d_in_sim_frame(
+            rot(A_v), rot(B_v), rot(C_v), a, b, c, rot(obs_x), rot(obs_y)
+        )
+    )
 
     # an ellipsoid is symmetric under reversing any of its axes
-    _assert_same_ellipse(eproj.compute_ellipse2d_in_sim_frame(
-        -A_v, -B_v, C_v, a, b, c, obs_x, obs_y))
-    _assert_same_ellipse(eproj.compute_ellipse2d_in_sim_frame(
-        A_v, B_v, -C_v, a, b, c, obs_x, obs_y))
+    _assert_same_ellipse(
+        eproj.compute_ellipse2d_in_sim_frame(-A_v, -B_v, C_v, a, b, c, obs_x, obs_y)
+    )
+    _assert_same_ellipse(
+        eproj.compute_ellipse2d_in_sim_frame(A_v, B_v, -C_v, a, b, c, obs_x, obs_y)
+    )
 
     # rotating the observer's u-v axes by γ about the LoS rotates psi by -γ
-    gamma = np.asarray(jran.uniform(jran.key(8), minval=-np.pi, maxval=np.pi, shape=(n, 1)))
+    gamma = np.asarray(
+        jran.uniform(jran.key(8), minval=-np.pi, maxval=np.pi, shape=(n, 1))
+    )
     obs_x_rot = np.cos(gamma) * obs_x + np.sin(gamma) * obs_y
     obs_y_rot = -np.sin(gamma) * obs_x + np.cos(gamma) * obs_y
-    _assert_same_ellipse(eproj.compute_ellipse2d_in_sim_frame(
-        A_v, B_v, C_v, a, b, c, obs_x_rot, obs_y_rot), dpsi=-gamma[:, 0])
+    _assert_same_ellipse(
+        eproj.compute_ellipse2d_in_sim_frame(
+            A_v, B_v, C_v, a, b, c, obs_x_rot, obs_y_rot
+        ),
+        dpsi=-gamma[:, 0],
+    )
 
     # swapping u and v views the image from behind, mirrored about the u=v line
-    _assert_same_ellipse(eproj.compute_ellipse2d_in_sim_frame(
-        A_v, B_v, C_v, a, b, c, obs_y, obs_x), mirror=True)
+    _assert_same_ellipse(
+        eproj.compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_y, obs_x),
+        mirror=True,
+    )
 
 
 def test_compute_ellipse2d_in_sim_frame_axis_aligned_views():
@@ -516,17 +566,23 @@ def test_compute_ellipse2d_in_sim_frame_axis_aligned_views():
     varies from row to row and from machine to machine"""
     n = 20_000
     a, b, c, _, _, _ = generate_test_ellipse_params(jran.key(0), n, 5.0, 5.0)
-    gamma = np.asarray(jran.uniform(jran.key(1), minval=-np.pi, maxval=np.pi, shape=(n, 1)))
+    gamma = np.asarray(
+        jran.uniform(jran.key(1), minval=-np.pi, maxval=np.pi, shape=(n, 1))
+    )
     xhat, yhat, zhat = (np.tile(e, (n, 1)) for e in np.eye(3))
 
     # viewing along C (minor axis): u rotated by γ in the A-B plane, so A sits at ψ=-γ
     u = np.cos(gamma) * xhat + np.sin(gamma) * yhat
     v = -np.sin(gamma) * xhat + np.cos(gamma) * yhat
     for los_sign in (1, -1):
-        e2d = eproj.compute_ellipse2d_in_sim_frame(xhat, yhat, zhat, a, b, c, u, los_sign * v)
+        e2d = eproj.compute_ellipse2d_in_sim_frame(
+            xhat, yhat, zhat, a, b, c, u, los_sign * v
+        )
         assert np.allclose(e2d.alpha, a, rtol=1e-10)
         assert np.allclose(e2d.beta, b, rtol=1e-10)
-        assert np.allclose(_axial_diff(e2d.psi, -los_sign * gamma[:, 0]), 0.0, atol=1e-8)
+        assert np.allclose(
+            _axial_diff(e2d.psi, -los_sign * gamma[:, 0]), 0.0, atol=1e-8
+        )
 
     # viewing along A: image is b x c with B along u
     e2d = eproj.compute_ellipse2d_in_sim_frame(xhat, yhat, zhat, a, b, c, yhat, zhat)
@@ -556,7 +612,9 @@ def test_compute_ellipse2d_in_sim_frame_sphere_and_ellipticity_types():
         assert np.allclose(e2d.ellipticity, 0.0, atol=1e-12)
         assert np.all(np.isfinite(e2d.psi))
 
-    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(jran.key(1), n)
+    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(
+        jran.key(1), n
+    )
     expected = {
         0: lambda q: 1 - q,
         1: lambda q: (1 - q) / (1 + q),
@@ -606,7 +664,9 @@ def test_calculate_ellipse2d_axes_precision_from_elongated_to_round():
     # eigenvalues cross), but their gradient must stay finite rather than nan
     import jax
 
-    grad = jax.grad(lambda x: jnp.sum(jnp.stack(eproj._calculate_ellipse2d_axes(*x))))(jnp.array([0.7, 0.0, 0.7]))
+    grad = jax.grad(lambda x: jnp.sum(jnp.stack(eproj._calculate_ellipse2d_axes(*x))))(
+        jnp.array([0.7, 0.0, 0.7])
+    )
     assert np.all(np.isfinite(np.asarray(grad)))
 
 
@@ -625,11 +685,24 @@ def test_compute_ellipse2d_in_sim_frame_gradients_near_alignment():
         e1 = jnp.cross(los, jnp.array([jnp.cos(g), jnp.sin(g), 0.0]))
         e1 = e1 / jnp.linalg.norm(e1)
         e2d = eproj.compute_ellipse2d_in_sim_frame(
-            eye[0:1], eye[1:2], eye[2:3], jnp.array([a]), jnp.array([b]), jnp.array([c]),
-            e1[None], jnp.cross(los, e1)[None],
+            eye[0:1],
+            eye[1:2],
+            eye[2:3],
+            jnp.array([a]),
+            jnp.array([b]),
+            jnp.array([c]),
+            e1[None],
+            jnp.cross(los, e1)[None],
         )
         # cos/sin of 2 psi are smooth where psi itself wraps
-        return jnp.stack([e2d.alpha[0], e2d.beta[0], jnp.cos(2 * e2d.psi[0]), jnp.sin(2 * e2d.psi[0])])
+        return jnp.stack(
+            [
+                e2d.alpha[0],
+                e2d.beta[0],
+                jnp.cos(2 * e2d.psi[0]),
+                jnp.sin(2 * e2d.psi[0]),
+            ]
+        )
 
     h = 1e-6
     for tilt in (0.0, 1e-12, 1e-9, 1e-6, 1e-3):
@@ -638,10 +711,17 @@ def test_compute_ellipse2d_in_sim_frame_gradients_near_alignment():
             jac_fwd = np.asarray(jax.jacfwd(lambda q: outputs(q, los_sign))(p))
             jac_rev = np.asarray(jax.jacrev(lambda q: outputs(q, los_sign))(p))
             assert np.all(np.isfinite(jac_fwd)) & np.all(np.isfinite(jac_rev)), tilt
-            finite_diff = np.stack([
-                (np.asarray(outputs(p.at[i].add(h), los_sign)) - np.asarray(outputs(p.at[i].add(-h), los_sign))) / (2 * h)
-                for i in range(3)
-            ], axis=-1)
+            finite_diff = np.stack(
+                [
+                    (
+                        np.asarray(outputs(p.at[i].add(h), los_sign))
+                        - np.asarray(outputs(p.at[i].add(-h), los_sign))
+                    )
+                    / (2 * h)
+                    for i in range(3)
+                ],
+                axis=-1,
+            )
             assert np.allclose(jac_fwd, finite_diff, atol=1e-8), tilt
             assert np.allclose(jac_rev, jac_fwd, atol=1e-12), tilt
 
@@ -650,9 +730,15 @@ def test_silhouette_encloses_cross_section():
     """The silhouette (envelop=True) contains the central cross-section
     (envelop=False), so both of its semi-axes are at least as long"""
     n = 20_000
-    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(jran.key(0), n)
-    env = eproj.compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop=True)
-    cut = eproj.compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop=False)
+    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(
+        jran.key(0), n
+    )
+    env = eproj.compute_ellipse2d_in_sim_frame(
+        A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop=True
+    )
+    cut = eproj.compute_ellipse2d_in_sim_frame(
+        A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop=False
+    )
     assert np.all(env.alpha >= cut.alpha * (1 - 1e-12))
     assert np.all(env.beta >= cut.beta * (1 - 1e-12))
     assert np.any(env.alpha > cut.alpha * 1.01)
@@ -665,7 +751,9 @@ def test_silhouette_encloses_cross_section():
 
 def _r_hat(ra_deg, dec_deg):
     ra, dec = np.deg2rad(ra_deg), np.deg2rad(dec_deg)
-    return np.stack([np.cos(dec) * np.cos(ra), np.cos(dec) * np.sin(ra), np.sin(dec)], -1)
+    return np.stack(
+        [np.cos(dec) * np.cos(ra), np.cos(dec) * np.sin(ra), np.sin(dec)], -1
+    )
 
 
 def _assert_right_handed_orthonormal(x, y, z, atol=1e-12):
@@ -683,7 +771,11 @@ def test_observer_frame_axes_from_ra_dec_geometry():
     n = 20_000
     ra_key, dec_key = jran.split(jran.key(0), 2)
     ra = np.asarray(jran.uniform(ra_key, minval=0, maxval=360, shape=(n,)))
-    dec = np.rad2deg(np.arcsin(np.asarray(jran.uniform(dec_key, minval=-0.999, maxval=0.999, shape=(n,)))))
+    dec = np.rad2deg(
+        np.arcsin(
+            np.asarray(jran.uniform(dec_key, minval=-0.999, maxval=0.999, shape=(n,)))
+        )
+    )
     x, y, z = (np.asarray(v) for v in eproj.observer_frame_axes_from_ra_dec(ra, dec))
     _assert_right_handed_orthonormal(x, y, z)
     assert np.allclose(z, -_r_hat(ra, dec), atol=1e-12)
@@ -693,8 +785,12 @@ def test_observer_frame_axes_from_ra_dec_geometry():
     eps = 1e-6
     west = _r_hat(ra - eps, dec) - _r_hat(ra, dec)
     north = _r_hat(ra, dec + eps) - _r_hat(ra, dec)
-    assert np.allclose(west / np.linalg.norm(west, axis=-1, keepdims=True), x, atol=1e-5)
-    assert np.allclose(north / np.linalg.norm(north, axis=-1, keepdims=True), y, atol=1e-5)
+    assert np.allclose(
+        west / np.linalg.norm(west, axis=-1, keepdims=True), x, atol=1e-5
+    )
+    assert np.allclose(
+        north / np.linalg.norm(north, axis=-1, keepdims=True), y, atol=1e-5
+    )
 
     # RA is periodic, and the ascending node only shifts the RA zero-point
     for v1, v2 in zip(eproj.observer_frame_axes_from_ra_dec(ra + 360, dec), (x, y, z)):
@@ -718,7 +814,9 @@ def test_observer_frame_axes_from_pos_3D_agrees_with_ra_dec():
     for v1, v2 in zip(from_pos, from_radec):
         assert np.allclose(v1, v2, atol=1e-10)
     for scale in (1e-3, 1e4):
-        for v1, v2 in zip(eproj.observer_frame_axes_from_pos_3D(*(scale * pos).T), from_pos):
+        for v1, v2 in zip(
+            eproj.observer_frame_axes_from_pos_3D(*(scale * pos).T), from_pos
+        ):
             assert np.allclose(v1, v2, atol=1e-12)
 
 
@@ -742,16 +840,23 @@ def test_observer_frame_axes_at_and_near_the_poles():
         ra = np.array([0.0, 90.0, 200.0])
         dec = np.full(3, 90.0 - np.rad2deg(offset))
         pos = _r_hat(ra, dec)
-        from_pos = [np.asarray(v) for v in eproj.observer_frame_axes_from_pos_3D(*pos.T)]
+        from_pos = [
+            np.asarray(v) for v in eproj.observer_frame_axes_from_pos_3D(*pos.T)
+        ]
         _assert_right_handed_orthonormal(*from_pos, atol=1e-12)
-        from_radec = [np.asarray(v) for v in eproj.observer_frame_axes_from_ra_dec(ra, dec)]
+        from_radec = [
+            np.asarray(v) for v in eproj.observer_frame_axes_from_ra_dec(ra, dec)
+        ]
         for v1, v2 in zip(from_pos, from_radec):
             assert np.allclose(v1, v2, atol=1e-12)
 
     # the RA/Dec frame is well defined exactly at the poles, for any RA
     ra = np.array([0.0, 45.0, 300.0])
     for dec in (90.0, -90.0):
-        x, y, z = (np.asarray(v) for v in eproj.observer_frame_axes_from_ra_dec(ra, np.full(3, dec)))
+        x, y, z = (
+            np.asarray(v)
+            for v in eproj.observer_frame_axes_from_ra_dec(ra, np.full(3, dec))
+        )
         _assert_right_handed_orthonormal(x, y, z)
 
 
@@ -806,7 +911,9 @@ def _ellipsoid_surface_area(a, b, c):
 
     phi = np.arccos(c / a)
     m = a**2 * (b**2 - c**2) / (b**2 * (a**2 - c**2))
-    elliptic = ellipeinc(phi, m) * np.sin(phi) ** 2 + ellipkinc(phi, m) * np.cos(phi) ** 2
+    elliptic = (
+        ellipeinc(phi, m) * np.sin(phi) ** 2 + ellipkinc(phi, m) * np.cos(phi) ** 2
+    )
     return 2 * np.pi * c**2 + 2 * np.pi * a * b / np.sin(phi) * elliptic
 
 
@@ -821,7 +928,9 @@ def test_random_projections_of_spheroids_match_analytic_distributions():
     gammas = (0.1, 0.4, 0.8)
     n_ks = 5 * len(gammas)
     body = eproj.mc_orthonormal_vectors(jran.key(0), n)
-    obs_x, obs_y, _ = (np.tile(v, (n, 1)) for v in eproj.mc_orthonormal_vectors(jran.key(1), 1))
+    obs_x, obs_y, _ = (
+        np.tile(v, (n, 1)) for v in eproj.mc_orthonormal_vectors(jran.key(1), 1)
+    )
     one = np.ones(n)
 
     def _check(e2d, cdf, label):
@@ -837,7 +946,9 @@ def test_random_projections_of_spheroids_match_analytic_distributions():
         assert np.allclose(oblate.alpha, 1.0, rtol=1e-7)
         _check(oblate, _oblate_q_cdf(gamma), ("oblate", gamma))
 
-        cut = eproj.compute_ellipse2d_in_sim_frame(*body, one, one, g, obs_x, obs_y, envelop=False)
+        cut = eproj.compute_ellipse2d_in_sim_frame(
+            *body, one, one, g, obs_x, obs_y, envelop=False
+        )
         assert np.allclose(cut.alpha, 1.0, rtol=1e-7)
         _check(cut, _prolate_q_cdf(gamma), ("oblate cross-section", gamma))
 
@@ -846,8 +957,16 @@ def test_random_projections_of_spheroids_match_analytic_distributions():
         _check(prolate, _prolate_q_cdf(gamma), ("prolate", gamma))
 
         key = jran.key(10 + i)
-        _check(eproj.mc_ellipse2d(one, one, g, key), _oblate_q_cdf(gamma), ("mc_ellipse2d oblate", gamma))
-        _check(eproj.mc_ellipse2d(one, g, g, key), _prolate_q_cdf(gamma), ("mc_ellipse2d prolate", gamma))
+        _check(
+            eproj.mc_ellipse2d(one, one, g, key),
+            _oblate_q_cdf(gamma),
+            ("mc_ellipse2d oblate", gamma),
+        )
+        _check(
+            eproj.mc_ellipse2d(one, g, g, key),
+            _prolate_q_cdf(gamma),
+            ("mc_ellipse2d prolate", gamma),
+        )
 
 
 def test_projected_area_of_triaxial_ellipsoids():
@@ -856,7 +975,9 @@ def test_projected_area_of_triaxial_ellipsoids():
     every object; and by Cauchy's theorem the mean projected area over random
     orientations equals a quarter of the surface area"""
     n = 50_000
-    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(jran.key(0), n)
+    (A_v, B_v, C_v), (a, b, c), (obs_x, obs_y) = _random_ellipsoids_and_frames(
+        jran.key(0), n
+    )
     e2d = eproj.compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_x, obs_y)
     los = np.cross(obs_x, obs_y)
     nA, nB, nC = (np.sum(los * v, axis=-1) for v in (A_v, B_v, C_v))
@@ -865,11 +986,18 @@ def test_projected_area_of_triaxial_ellipsoids():
 
     n = 400_000
     body = eproj.mc_orthonormal_vectors(jran.key(2), n)
-    obs_x, obs_y, _ = (np.tile(v, (n, 1)) for v in eproj.mc_orthonormal_vectors(jran.key(3), 1))
+    obs_x, obs_y, _ = (
+        np.tile(v, (n, 1)) for v in eproj.mc_orthonormal_vectors(jran.key(3), 1)
+    )
     for abc in ((3.0, 2.0, 0.5), (1.0, 0.9, 0.2), (2.0, 1.0, 0.99)):
         a, b, c = (np.full(n, x) for x in abc)
         e2d = eproj.compute_ellipse2d_in_sim_frame(*body, a, b, c, obs_x, obs_y)
         proj_area = np.pi * np.asarray(e2d.alpha * e2d.beta)
         expected = _ellipsoid_surface_area(*abc) / 4
         sigma = np.std(proj_area) / np.sqrt(n)
-        assert abs(np.mean(proj_area) - expected) < 4 * sigma, (abc, np.mean(proj_area), expected, sigma)
+        assert abs(np.mean(proj_area) - expected) < 4 * sigma, (
+            abc,
+            np.mean(proj_area),
+            expected,
+            sigma,
+        )

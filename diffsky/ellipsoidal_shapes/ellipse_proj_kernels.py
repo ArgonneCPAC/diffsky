@@ -80,7 +80,9 @@ def mc_orthonormal_vectors(ran_key, n):
 
 
 @partial(jjit, static_argnums=(8, 9))
-def compute_ellipse2d_in_sim_frame(A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop=True, ellipticity_type=0):
+def compute_ellipse2d_in_sim_frame(
+    A_v, B_v, C_v, a, b, c, obs_x, obs_y, envelop=True, ellipticity_type=0
+):
     """
     Calculate the observed 2D ellipse parameters of a 3D triaxial ellipsoid in the simulation frame,
     given the ellipsoid's axes lengths (a, b, c) and the observed x and y axes in the simulation
@@ -387,7 +389,9 @@ def _get_eulerzxz_angle_from_basis(x_prime, y_prime):
     # ~sqrt(eps) balances lock-approximation and general-formula errors.
     sin2_beta = z_[..., 0] ** 2 + z_[..., 1] ** 2
     is_aligned = sin2_beta == 0
-    sin_beta = jnp.where(is_aligned, 0.0, jnp.sqrt(jnp.where(is_aligned, 1.0, sin2_beta)))
+    sin_beta = jnp.where(
+        is_aligned, 0.0, jnp.sqrt(jnp.where(is_aligned, 1.0, sin2_beta))
+    )
     beta = jnp.arctan2(sin_beta, z_[..., 2])
 
     no_lock = sin_beta > 1e-8
@@ -546,7 +550,7 @@ def random_perpendicular_directions(v, key):
     return _unitize(v_perp)
 
 
-@partial(jjit, static_argnames=['ascending_ra_deg'])
+@partial(jjit, static_argnames=["ascending_ra_deg"])
 def observer_frame_axes_from_ra_dec(ra_deg, dec_deg, ascending_ra_deg=0.0):
     """
     Calculate observer frame unit vectors (West, North, -LOS) in the simulation frame from RA and Dec,
@@ -651,15 +655,18 @@ def assert_orthonormality(x_prime, y_prime, z_prime, atol=1e-6):
         & jnp.allclose(jnp.linalg.norm(y_prime, axis=-1), 1.0, atol=atol)
         & jnp.allclose(jnp.linalg.norm(z_prime, axis=-1), 1.0, atol=atol)
         & jnp.allclose(
-            jnp.linalg.norm(jnp.cross(x_prime, y_prime) - z_prime, axis=-1), 0.0, atol=atol
+            jnp.linalg.norm(jnp.cross(x_prime, y_prime) - z_prime, axis=-1),
+            0.0,
+            atol=atol,
         )
     )
     lax.cond(
         ok,
         lambda _: None,
         lambda _: jax.debug.print(
-            'assert_orthonormality: axes failed an orthonormality check (atol={atol})',
-            atol=atol),
+            "assert_orthonormality: axes failed an orthonormality check (atol={atol})",
+            atol=atol,
+        ),
         operand=None,
     )
 

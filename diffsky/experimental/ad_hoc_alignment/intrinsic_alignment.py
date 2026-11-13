@@ -1,21 +1,25 @@
-""" Standalone script for alignment functions.
+"""Standalone script for alignment functions.
 This script collects functions needed for a central + radial alignment strategy for IA injection from halotools.
 Original functions developed by Nick van Alfen, altered by Jiachuan Xu to be compatible with DiffSky Mock Catalog.
 """
+
 import math
 from functools import partial
+
 import jax
 import jax.numpy as jnp
 from jax import jit as jjit
-from jax import random as jran
 from jax import lax
+from jax import random as jran
 from jax.scipy.special import dawsn
+
 from diffsky.ellipsoidal_shapes import ellipse_proj_kernels as eproj
 
 
-def align_to_halo(key, halo_axisA_x, halo_axisA_y, halo_axisA_z,
-                  alignment_strength, prim_gal_axis='A'):
-    """ Aligns the galaxy axes to the halo axes with a given alignment strength.
+def align_to_halo(
+    key, halo_axisA_x, halo_axisA_y, halo_axisA_z, alignment_strength, prim_gal_axis="A"
+):
+    """Aligns the galaxy axes to the halo axes with a given alignment strength.
     Parameters
     ----------
     halo_axisA_x, halo_axisA_y, halo_axisA_z : array_like, shape (N,)
@@ -42,9 +46,10 @@ def align_to_halo(key, halo_axisA_x, halo_axisA_y, halo_axisA_z,
     return align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis)
 
 
-def align_radially(key, halo_x, halo_y, halo_z,
-                   x, y, z, alignment_strength, Lbox, prim_gal_axis='A'):
-    """ Aligns the galaxy axes radially to the halo center with a given alignment strength.
+def align_radially(
+    key, halo_x, halo_y, halo_z, x, y, z, alignment_strength, Lbox, prim_gal_axis="A"
+):
+    """Aligns the galaxy axes radially to the halo center with a given alignment strength.
     Parameters
     ----------
     halo_x, halo_y, halo_z : array_like, shape (N,)
@@ -78,7 +83,7 @@ def align_radially(key, halo_x, halo_y, halo_z,
 
 
 def _broadcast_alignment_strength(alignment_strength, n):
-    """ Broadcast a scalar or per-galaxy alignment strength to shape (n,).
+    """Broadcast a scalar or per-galaxy alignment strength to shape (n,).
     Accepts Python/numpy scalars and numpy/jax arrays; only the shape is checked,
     so this also works on traced values inside jitted functions.
     """
@@ -95,7 +100,7 @@ def _broadcast_alignment_strength(alignment_strength, n):
 
 @partial(jjit, static_argnums=(3,))
 def align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis="A"):
-    """ Aligns the galaxy axes to a given vector with a specified alignment strength.
+    """Aligns the galaxy axes to a given vector with a specified alignment strength.
     Parameters
     ----------
     major_input_vectors : array_like, shape (N, 3)
@@ -110,7 +115,8 @@ def align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis="A
     Returns
     -------
     major_v, inter_v, minor_v : array_like, shape (N, 3)
-        The aligned galaxy axes after applying the alignment transformation. The axes are returned in the order of major, intermediate, and minor axes.
+        The aligned galaxy axes after applying the alignment transformation.
+        The axes are returned in the order of major, intermediate, and minor axes.
     """
     # prim_gal_axis is a static argument, so it is a plain Python str at trace
     # time and can be validated with an ordinary raise (once per compilation)
@@ -134,7 +140,9 @@ def align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis="A
         n_bad > 0,
         lambda _: jax.debug.print(
             "{n} input alignment axis(axes) are degenerate (zero or not finite); "
-            "those galaxies are given random orientations.", n=n_bad),
+            "those galaxies are given random orientations.",
+            n=n_bad,
+        ),
         lambda _: None,
         operand=None,
     )
@@ -148,11 +156,11 @@ def align_to_axis(key, major_input_vectors, alignment_strength, prim_gal_axis="A
     C_v = jnp.cross(A_v, B_v)
 
     # depending on the prim_gal_axis, assign correlated axes
-    if prim_gal_axis == 'A':
+    if prim_gal_axis == "A":
         major_v = A_v
         inter_v = B_v
         minor_v = C_v
-    elif prim_gal_axis == 'B':
+    elif prim_gal_axis == "B":
         major_v = C_v
         inter_v = A_v
         minor_v = B_v
@@ -228,6 +236,7 @@ def modular_vector(v, Lbox):
 # See https://arxiv.org/abs/2311.07374 and https://arxiv.org/abs/2602.04977
 # ===========================================================================
 
+
 @jjit
 def _erfi_real(x: jnp.ndarray) -> jnp.ndarray:
     """
@@ -270,6 +279,7 @@ def _sample_t_watson(key, kappa, n_newton=10):
     t : jnp.ndarray
         Sampled values of t = cos(theta) from the Dimroth-Watson distribution
     """
+
     def one(k_i, u_i):
         """
         Sample t = cos(theta) for a single kappa and uniform random number u.
@@ -330,7 +340,8 @@ def _sample_t_watson(key, kappa, n_newton=10):
                 ratio_direct = _erfi_real(spt) / den
                 pdf_direct = (
                     (sp / math.sqrt(math.pi))
-                    * jnp.exp(-1 * k_i * tp_curr * tp_curr) / den
+                    * jnp.exp(-1 * k_i * tp_curr * tp_curr)
+                    / den
                 )
 
                 # stable path: only valid/needed when both sp and sp*t are
@@ -374,9 +385,7 @@ def _sample_t_watson(key, kappa, n_newton=10):
         )
 
     N = kappa.shape[0]
-    u_uni = jnp.clip(
-        jran.uniform(key, (N,), minval=0.0, maxval=1.0), 1e-7, 1 - 1e-7
-    )
+    u_uni = jnp.clip(jran.uniform(key, (N,), minval=0.0, maxval=1.0), 1e-7, 1 - 1e-7)
     t = jax.vmap(one)(kappa, u_uni)
     return jnp.clip(t, -1.0 + 2e-7, 1.0 - 2e-7)
 

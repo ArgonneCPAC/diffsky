@@ -29,12 +29,18 @@ def test_mc_disk_bulge_ellipsoids():
     )
 
     for ellipse in (disk_ellipse, bulge_ellipse):
-        assert np.all(ellipse.psi >= -np.pi / 2.)
-        assert np.all(ellipse.psi <= np.pi / 2.)
+        assert np.all(ellipse.psi >= -np.pi / 2.0)
+        assert np.all(ellipse.psi <= np.pi / 2.0)
         assert np.all(ellipse.ellipticity <= 1.0)
         assert np.all(ellipse.ellipticity >= 0.0)
-        assert np.allclose(np.sum(ellipse.e_alpha * np.array([1, 0])[np.newaxis, :], axis=-1), np.cos(ellipse.psi))
-        assert np.allclose(np.sum(ellipse.e_beta * np.array([1, 0])[np.newaxis, :], axis=-1), np.cos(ellipse.psi + np.pi / 2.0))
+        assert np.allclose(
+            np.sum(ellipse.e_alpha * np.array([1, 0])[np.newaxis, :], axis=-1),
+            np.cos(ellipse.psi),
+        )
+        assert np.allclose(
+            np.sum(ellipse.e_beta * np.array([1, 0])[np.newaxis, :], axis=-1),
+            np.cos(ellipse.psi + np.pi / 2.0),
+        )
         assert np.all(ellipse.mu_inclination >= 0)
         assert np.all(ellipse.mu_inclination <= 1)
         assert np.all(ellipse.b_over_a <= 1) & np.all(ellipse.c_over_a > 0)

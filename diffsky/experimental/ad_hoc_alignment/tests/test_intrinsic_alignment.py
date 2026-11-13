@@ -53,10 +53,14 @@ def _watson_abs_t_cdf(kappa):
     """CDF of |t| = |cos θ| for the Dimroth-Watson density p(t) ∝ exp(-κ t²),
     by direct numerical integration (independent of the erf/erfi inversion);
     the grid is refined near |t| = 1 where strongly aligned samples pile up"""
-    s = np.unique(np.concatenate([
-        np.linspace(0.0, 1.0, 400_001),
-        1.0 - np.geomspace(1e-12, 1e-2, 20_001),
-    ]))
+    s = np.unique(
+        np.concatenate(
+            [
+                np.linspace(0.0, 1.0, 400_001),
+                1.0 - np.geomspace(1e-12, 1e-2, 20_001),
+            ]
+        )
+    )
     logp = -kappa * s**2
     p = np.exp(logp - logp.max())
     cdf = np.concatenate([[0.0], np.cumsum(0.5 * (p[1:] + p[:-1]) * np.diff(s))])
@@ -122,7 +126,11 @@ def test_modular_vector_wraps_into_the_box():
     assert np.allclose(n_boxes, np.round(n_boxes), atol=1e-9)
     for k in (-3, -1, 1, 4):
         assert np.allclose(ia.modular_vector(v + k * Lbox, Lbox), w, atol=1e-9)
-    short = 0.49 * Lbox * np.asarray(jran.uniform(jran.key(1), minval=-1, maxval=1, shape=(n, 3)))
+    short = (
+        0.49
+        * Lbox
+        * np.asarray(jran.uniform(jran.key(1), minval=-1, maxval=1, shape=(n, 3)))
+    )
     assert np.allclose(ia.modular_vector(short, Lbox), short, atol=1e-12)
     assert np.array_equal(ia.modular_vector(v, np.full(3, np.inf)), v)
 
@@ -135,7 +143,9 @@ def test_get_radial_vector():
     halo = np.asarray(jran.uniform(key1, minval=0, maxval=100, shape=(n, 3)))
     gal = np.asarray(jran.uniform(key2, minval=0, maxval=100, shape=(n, 3)))
 
-    r_vec, r = (np.asarray(x) for x in ia.get_radial_vector(*halo.T, *gal.T, np.full(3, np.inf)))
+    r_vec, r = (
+        np.asarray(x) for x in ia.get_radial_vector(*halo.T, *gal.T, np.full(3, np.inf))
+    )
     assert np.allclose(r_vec, gal - halo)
     assert np.allclose(r, np.linalg.norm(gal - halo, axis=-1))
 
@@ -147,8 +157,13 @@ def test_get_radial_vector():
 
     # a satellite just across the x-boundary of the box from its host
     r_vec, r = ia.get_radial_vector(
-        np.array([1.0]), np.array([5.0]), np.array([5.0]),
-        np.array([99.0]), np.array([5.0]), np.array([7.0]), Lbox,
+        np.array([1.0]),
+        np.array([5.0]),
+        np.array([5.0]),
+        np.array([99.0]),
+        np.array([5.0]),
+        np.array([7.0]),
+        Lbox,
     )
     assert np.allclose(r_vec, [[-2.0, 0.0, 2.0]])
     assert np.allclose(r, [np.sqrt(8.0)])
@@ -164,7 +179,9 @@ def test_erfi_real_matches_scipy():
     overflows (|x| ≈ 26.6); it is odd, vanishes at 0, and is increasing"""
     from scipy.special import erfi
 
-    x = np.concatenate([np.linspace(-26.0, 26.0, 52_001), [-6.000001, 5.999999, 6.000001]])
+    x = np.concatenate(
+        [np.linspace(-26.0, 26.0, 52_001), [-6.000001, 5.999999, 6.000001]]
+    )
     x = np.sort(x)
     y = np.asarray(ia._erfi_real(jnp.asarray(x)))
     assert np.all(np.isfinite(y))
@@ -174,8 +191,24 @@ def test_erfi_real_matches_scipy():
     assert np.all(np.diff(y) > 0)
 
 
-@pytest.mark.parametrize("kappa", [-5000.0, -200.0, -81.0, -79.0, -20.0, -2.0, -0.2,
-                                   0.0, 0.2, 2.0, 20.0, 200.0, 5000.0])
+@pytest.mark.parametrize(
+    "kappa",
+    [
+        -5000.0,
+        -200.0,
+        -81.0,
+        -79.0,
+        -20.0,
+        -2.0,
+        -0.2,
+        0.0,
+        0.2,
+        2.0,
+        20.0,
+        200.0,
+        5000.0,
+    ],
+)
 def test_sample_t_watson_matches_analytic_cdf(kappa):
     """t = cos θ follows p(t) ∝ exp(-κ t²) on [-1, 1]: the empirical CDF of |t|
     matches the analytic one, and t is symmetric about 0. Uses the default
@@ -223,7 +256,9 @@ def test_sample_t_watson_gradient_matches_implicit_derivative():
     from scipy import integrate
 
     def exact_dt_dkappa(t, kappa):
-        quad = lambda f, hi: integrate.quad(f, -1, hi, epsabs=1e-15, epsrel=1e-13)[0]  # noqa: E731
+        quad = lambda f, hi: integrate.quad(f, -1, hi, epsabs=1e-15, epsrel=1e-13)[
+            0
+        ]  # noqa: E731
         num = quad(lambda s: np.exp(-kappa * s * s), t)
         norm = quad(lambda s: np.exp(-kappa * s * s), 1)
         d_num = -quad(lambda s: s * s * np.exp(-kappa * s * s), t)
@@ -233,9 +268,23 @@ def test_sample_t_watson_gradient_matches_implicit_derivative():
 
     n = 30
     key = jran.key(0)
-    for kappa in (0.0, 1e-12, -1e-12, 9.9e-8, 1.01e-7, -9.9e-8, -1.01e-7, 1e-2, -1e-2, 1.0, -1.0):
+    for kappa in (
+        0.0,
+        1e-12,
+        -1e-12,
+        9.9e-8,
+        1.01e-7,
+        -9.9e-8,
+        -1.01e-7,
+        1e-2,
+        -1e-2,
+        1.0,
+        -1.0,
+    ):
         t = np.asarray(ia._sample_t_watson(key, jnp.full(n, kappa)))
-        dt = np.asarray(jax.jacfwd(lambda k: ia._sample_t_watson(key, jnp.full(n, k)))(kappa))
+        dt = np.asarray(
+            jax.jacfwd(lambda k: ia._sample_t_watson(key, jnp.full(n, k)))(kappa)
+        )
         expected = np.array([exact_dt_dkappa(ti, kappa) for ti in t])
         assert np.all(np.isfinite(dt)), kappa
         assert np.allclose(dt, expected, rtol=0, atol=1e-7), kappa
@@ -319,7 +368,9 @@ def test_sample_watson_orientations_conventions():
 
     a = ia.sample_watson_orientations(key, ref, 0.7)
     assert np.allclose(a, ia.sample_watson_orientations(key, ref, np.full(n, 0.7)))
-    assert np.allclose(a, ia.sample_watson_orientations(key, 1e5 * ref, 0.7), atol=1e-12)
+    assert np.allclose(
+        a, ia.sample_watson_orientations(key, 1e5 * ref, 0.7), atol=1e-12
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -336,11 +387,15 @@ def test_align_to_axis_distribution(prim_gal_axis):
     mu = 0.8
     ref = np.asarray(jran.normal(jran.key(1), shape=(n, 3)))
     rhat = ref / np.linalg.norm(ref, axis=-1, keepdims=True)
-    major, inter, minor = (np.asarray(v) for v in ia.align_to_axis(jran.key(0), ref, mu, prim_gal_axis))
+    major, inter, minor = (
+        np.asarray(v) for v in ia.align_to_axis(jran.key(0), ref, mu, prim_gal_axis)
+    )
     _assert_right_handed_orthonormal(major, inter, minor)
 
     aligned = {"A": major, "B": inter, "C": minor}[prim_gal_axis]
-    others = {"A": (inter, minor), "B": (minor, major), "C": (major, inter)}[prim_gal_axis]
+    others = {"A": (inter, minor), "B": (minor, major), "C": (major, inter)}[
+        prim_gal_axis
+    ]
     t = np.sum(aligned * rhat, axis=-1)
     assert _ks_distance(np.abs(t), _watson_abs_t_cdf(_kappa_from_mu(mu))) < _ks_bound(n)
     phi = _azimuth_about(others[0], aligned)
@@ -446,7 +501,9 @@ def test_align_to_halo_is_jittable_and_differentiable(prim_gal_axis):
     d_halo = jran.normal(jran.key(4), shape=(n, 3)).at[:n_zero].set(0.0)
     d_mu = jran.normal(jran.key(5), shape=(n,))
     h = 1e-6
-    finite_diff = (loss(halo + h * d_halo, mu + h * d_mu) - loss(halo - h * d_halo, mu - h * d_mu)) / (2 * h)
+    finite_diff = (
+        loss(halo + h * d_halo, mu + h * d_mu) - loss(halo - h * d_halo, mu - h * d_mu)
+    ) / (2 * h)
     autodiff = np.sum(g_halo * np.asarray(d_halo)) + np.sum(g_mu * np.asarray(d_mu))
     assert np.isclose(finite_diff, autodiff, rtol=1e-6)
 
@@ -472,7 +529,9 @@ def test_align_radially():
     major = np.asarray(ia.align_radially(jran.key(0), *halo.T, *gal.T, mu, Lbox)[0])
     rhat = offset / np.linalg.norm(offset, axis=-1, keepdims=True)
     abs_t = np.abs(np.sum(major * rhat, axis=-1))
-    assert np.isclose(np.median(1 - abs_t), np.log(2) / (2 * abs(_kappa_from_mu(mu))), rtol=0.05)
+    assert np.isclose(
+        np.median(1 - abs_t), np.log(2) / (2 * abs(_kappa_from_mu(mu))), rtol=0.05
+    )
     # satellites across the box edge (~1200 expected; the guard keeps the next
     # check from being vacuous) follow the wrapped separation: aligning to the
     # unwrapped one would give a median |cos θ| of only ~0.73
@@ -490,19 +549,30 @@ def test_align_radially_galaxies_at_the_host_center():
     Lbox = np.full(3, 100.0)
     halo = np.asarray(jran.uniform(key1, minval=0, maxval=100, shape=(n, 3)))
     gal = np.mod(halo + np.asarray(jran.normal(key2, shape=(n, 3))), 100.0)
-    ref = [np.asarray(v) for v in ia.align_radially(jran.key(0), *halo.T, *gal.T, 0.9, Lbox)]
+    ref = [
+        np.asarray(v)
+        for v in ia.align_radially(jran.key(0), *halo.T, *gal.T, 0.9, Lbox)
+    ]
 
     # if some of the galaxies are assigned to zero offset, the alignment results for the other galaxies should remain unchanged
     gal[:n_center] = halo[:n_center]
-    out = [np.asarray(v) for v in ia.align_radially(jran.key(0), *halo.T, *gal.T, 0.9, Lbox)]
+    out = [
+        np.asarray(v)
+        for v in ia.align_radially(jran.key(0), *halo.T, *gal.T, 0.9, Lbox)
+    ]
     _assert_right_handed_orthonormal(*out)
     for v_ref, v_out in zip(ref, out):
         assert np.array_equal(v_ref[n_center:], v_out[n_center:])
     for v in out:
-        assert _ks_distance(v[:n_center, 2], _uniform_cdf(-1, 1)) < _ks_bound(n_center, 3)
+        assert _ks_distance(v[:n_center, 2], _uniform_cdf(-1, 1)) < _ks_bound(
+            n_center, 3
+        )
 
     # every galaxy at its host center
-    out = [np.asarray(v) for v in ia.align_radially(jran.key(0), *halo.T, *halo.T, 0.9, Lbox)]
+    out = [
+        np.asarray(v)
+        for v in ia.align_radially(jran.key(0), *halo.T, *halo.T, 0.9, Lbox)
+    ]
     _assert_right_handed_orthonormal(*out)
     assert _ks_distance(out[0][:, 2], _uniform_cdf(-1, 1)) < _ks_bound(n)
 
@@ -517,7 +587,9 @@ def test_align_radially_is_jittable_and_differentiable(box):
     key1, key2 = jran.split(jran.key(1), 2)
     Lbox = jnp.full(3, box)
     halo = jran.uniform(key1, minval=0, maxval=100, shape=(n, 3))
-    gal = jnp.mod(halo + jran.normal(key2, shape=(n, 3)), 100.0).at[:100].set(halo[:100])
+    gal = (
+        jnp.mod(halo + jran.normal(key2, shape=(n, 3)), 100.0).at[:100].set(halo[:100])
+    )
 
     def major_x(gal):
         return ia.align_radially(jran.key(0), *halo.T, *gal.T, 0.6, Lbox)[0][:, 0]
@@ -540,7 +612,9 @@ def test_align_radially_is_jittable_and_differentiable(box):
     [(1.0, 2.0, 3.0), (1.0, 0.0, 0.0), (0.0, 0.01, 1.0)],
     ids=["generic", "x-axis", "near-pole"],
 )
-def test_population_shapes_do_not_depend_on_alignment_strength(prim_gal_axis, line_of_sight):
+def test_population_shapes_do_not_depend_on_alignment_strength(
+    prim_gal_axis, line_of_sight
+):
     """With isotropically oriented host halos, aligning galaxies to their hosts
     leaves each galaxy's own orientation isotropic, whatever the strength μ: the
     Dimroth-Watson draw is symmetric about a host axis that has no preferred
@@ -566,7 +640,9 @@ def test_population_shapes_do_not_depend_on_alignment_strength(prim_gal_axis, li
     halo /= np.linalg.norm(halo, axis=-1, keepdims=True)
     los = np.asarray(line_of_sight) / np.linalg.norm(line_of_sight)
     pos = 1000.0 * los + 10.0 * rng.normal(size=(n, 3))
-    west, north, _ = (np.asarray(v) for v in eproj.observer_frame_axes_from_pos_3D(*pos.T))
+    west, north, _ = (
+        np.asarray(v) for v in eproj.observer_frame_axes_from_pos_3D(*pos.T)
+    )
     # Reference angle for the positive control below: the position angle of the
     # halo major-axis *direction* projected on the sky (dropping its line-of-sight
     # component is the exact projection of a direction). align_to_halo only uses
@@ -585,7 +661,9 @@ def test_population_shapes_do_not_depend_on_alignment_strength(prim_gal_axis, li
     n_ks = 4 * len(mus)  # KS comparisons in this test, for the Bonferroni correction
     median_offset_deg = []
     for i, mu in enumerate(mus):
-        aligned = ia.align_to_halo(jran.key(i), *halo.T, mu, prim_gal_axis=prim_gal_axis)
+        aligned = ia.align_to_halo(
+            jran.key(i), *halo.T, mu, prim_gal_axis=prim_gal_axis
+        )
         e2d = _project(aligned)
 
         dist = _ks_distance(e2d.psi, _uniform_cdf(-np.pi / 2, np.pi / 2))

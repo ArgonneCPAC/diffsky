@@ -105,15 +105,27 @@ def mc_disk_bulge_ellipsoids(
     c_bulge = bulge_axis_ratios.c_over_a * a_bulge
 
     disk_ellipse = epk.compute_ellipse2d_in_sim_frame(
-        A, B, C, a_disk, b_disk, c_disk,
-        obs_x, obs_y,
+        A,
+        B,
+        C,
+        a_disk,
+        b_disk,
+        c_disk,
+        obs_x,
+        obs_y,
         envelop=envelop,
         ellipticity_type=ellipticity_type,
     )
 
     bulge_ellipse = epk.compute_ellipse2d_in_sim_frame(
-        A, B, C, a_bulge, b_bulge, c_bulge,
-        obs_x, obs_y,
+        A,
+        B,
+        C,
+        a_bulge,
+        b_bulge,
+        c_bulge,
+        obs_x,
+        obs_y,
         envelop=envelop,
         ellipticity_type=ellipticity_type,
     )
@@ -124,7 +136,9 @@ def mc_disk_bulge_ellipsoids(
     new_bulge_psi = bulge_ellipse.psi + delta_psi_rad
     # psi is an axial angle (period pi): wrap back into [-π/2, π/2) like disk psi
     new_bulge_psi = jnp.mod(new_bulge_psi + jnp.pi / 2, jnp.pi) - jnp.pi / 2
-    new_bulge_e_alpha, new_bulge_e_beta = epk._get_xy_coords_of_projected_semi_axes(new_bulge_psi)
+    new_bulge_e_alpha, new_bulge_e_beta = epk._get_xy_coords_of_projected_semi_axes(
+        new_bulge_psi
+    )
     bulge_ellipse = bulge_ellipse._replace(
         psi=new_bulge_psi,
         e_alpha=new_bulge_e_alpha,

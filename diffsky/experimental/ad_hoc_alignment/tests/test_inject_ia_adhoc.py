@@ -66,7 +66,9 @@ def _halo_major_axis(data):
 
 
 def _radial_unit_vector(data):
-    return _unit(np.stack([data[f"{c}_nfw"] - data[f"{c}_host"] for c in "xyz"], axis=-1))
+    return _unit(
+        np.stack([data[f"{c}_nfw"] - data[f"{c}_host"] for c in "xyz"], axis=-1)
+    )
 
 
 def test_assert_eigS3_is_major_axis():
@@ -106,7 +108,9 @@ def test_get_unresolved_central_mask():
     for c in "XYZ":
         data[f"{EIG}S3{c}"][cen[20:30]] = 0.0  # zero-length major axis
     # the placeholder after unit conversions: -1/h, and -1/(1+z) per galaxy
-    rescaled = np.concatenate([np.full(5, -1 / 0.6766), -1 / (1 + np.linspace(0.1, 2.0, 5))])
+    rescaled = np.concatenate(
+        [np.full(5, -1 / 0.6766), -1 / (1 + np.linspace(0.1, 2.0, 5))]
+    )
     for i in (1, 2, 3):
         for c in "XYZ":
             data[f"{EIG}S{i}{c}"][cen[30:40]] = rescaled
@@ -137,12 +141,17 @@ def test_main_randomizes_synthetic_cores(tmp_path, monkeypatch):
         data[f"{c}_nfw"] = data[f"{c}_host"].copy()
     fn_in, fn_out = tmp_path / "in.hdf5", tmp_path / "out.hdf5"
     _write_catalog(fn_in, data)
-    _run_main(monkeypatch, fn_in, fn_out, "--mu_central", "0.9", "--mu_satellite", "0.9")
+    _run_main(
+        monkeypatch, fn_in, fn_out, "--mu_central", "0.9", "--mu_satellite", "0.9"
+    )
 
     with h5py.File(fn_out, "r") as f:
         psi = f["data/psi_disk"][:]
         mu_incl = f["data/mu_inclination_disk"][:]
-    west, north, _ = (np.asarray(v) for v in eproj.observer_frame_axes_from_ra_dec(data["ra_nfw"], data["dec_nfw"]))
+    west, north, _ = (
+        np.asarray(v)
+        for v in eproj.observer_frame_axes_from_ra_dec(data["ra_nfw"], data["dec_nfw"])
+    )
     placeholder = np.ones(3)
     placeholder_pa = np.arctan2(north @ placeholder, west @ placeholder)
     offset = np.mod(psi - placeholder_pa + np.pi / 2, np.pi) - np.pi / 2
@@ -167,13 +176,18 @@ def test_alignment_worker_reports_galaxies_without_alignment_direction(capfd):
     _, _, axes = inj.alignment_worker(data, 0.9, 0.9, central, synthetic)
     jax.effects_barrier()
     out = capfd.readouterr().out
-    assert f"Warning: {at_center.size} satellite(s) sit exactly at their host halo center" in out
+    assert (
+        f"Warning: {at_center.size} satellite(s) sit exactly at their host halo center"
+        in out
+    )
     assert f"Note: {synthetic.sum()} central(s) have no measured host halo shape" in out
     assert "degenerate" not in out
 
     major = np.asarray(axes["gal_A"])
     _assert_right_handed_orthonormal(axes["gal_A"], axes["gal_B"], axes["gal_C"])
-    assert _ks_distance(major[at_center, 2], _uniform_cdf(-1, 1)) < _ks_bound(at_center.size)
+    assert _ks_distance(major[at_center, 2], _uniform_cdf(-1, 1)) < _ks_bound(
+        at_center.size
+    )
 
     # without such galaxies, nothing is reported
     data, central, synthetic = _make_catalog(n, seed=3, frac_synthetic=0.0)
@@ -191,7 +205,9 @@ def test_central_and_satellite_alignment_wrap_the_alignment_functions():
     key = jran.key(3)
     mu = np.linspace(-0.9, 0.9, 5_000)
     eig3 = [data[f"{EIG}S3{c}"] for c in "XYZ"]
-    for u, v in zip(inj.central_alignment(*eig3, mu, key), ia.align_to_halo(key, *eig3, mu)):
+    for u, v in zip(
+        inj.central_alignment(*eig3, mu, key), ia.align_to_halo(key, *eig3, mu)
+    ):
         assert np.array_equal(u, v)
 
     hxyz = [data[f"{c}_host"] for c in "xyz"]
@@ -214,9 +230,14 @@ def test_alignment_worker_outputs_are_consistent():
     disk, bulge, axes = inj.alignment_worker(data, 0.6, 0.6, central, synthetic)
     _assert_right_handed_orthonormal(axes["gal_A"], axes["gal_B"], axes["gal_C"])
 
-    west, north, _ = eproj.observer_frame_axes_from_pos_3D(data["x_nfw"], data["y_nfw"], data["z_nfw"])
+    west, north, _ = eproj.observer_frame_axes_from_pos_3D(
+        data["x_nfw"], data["y_nfw"], data["z_nfw"]
+    )
     los = np.cross(np.asarray(west), np.asarray(north))
-    for comp, e2d, axis in (("disk", disk, axes["gal_C"]), ("bulge", bulge, axes["gal_A"])):
+    for comp, e2d, axis in (
+        ("disk", disk, axes["gal_C"]),
+        ("bulge", bulge, axes["gal_A"]),
+    ):
         for p, pname in zip(e2d, e2d._fields):
             assert np.all(np.isfinite(p)), pname
             assert len(p) == n
@@ -224,18 +245,29 @@ def test_alignment_worker_outputs_are_consistent():
         assert np.all(e2d.ellipticity >= 0) & np.all(e2d.ellipticity < 1)
         assert np.all(e2d.beta <= e2d.alpha)
         assert np.all(e2d.mu_inclination >= 0) & np.all(e2d.mu_inclination <= 1)
-        assert np.allclose(e2d.mu_inclination, np.abs(np.sum(np.asarray(axis) * los, axis=-1)), atol=1e-12)
+        assert np.allclose(
+            e2d.mu_inclination,
+            np.abs(np.sum(np.asarray(axis) * los, axis=-1)),
+            atol=1e-12,
+        )
         assert np.array_equal(e2d.b_over_a, data[f"b_over_a_{comp}"])
         assert np.array_equal(e2d.c_over_a, data[f"c_over_a_{comp}"])
 
         a = data[f"r50_{comp}_3d"]
         expected = eproj.compute_ellipse2d_in_sim_frame(
-            axes["gal_A"], axes["gal_B"], axes["gal_C"],
-            a, a * data[f"b_over_a_{comp}"], a * data[f"c_over_a_{comp}"],
-            west, north,
+            axes["gal_A"],
+            axes["gal_B"],
+            axes["gal_C"],
+            a,
+            a * data[f"b_over_a_{comp}"],
+            a * data[f"c_over_a_{comp}"],
+            west,
+            north,
         )
         for field in ("alpha", "beta", "ellipticity", "A", "B", "C"):
-            assert np.allclose(getattr(e2d, field), getattr(expected, field), rtol=1e-8, atol=1e-10)
+            assert np.allclose(
+                getattr(e2d, field), getattr(expected, field), rtol=1e-8, atol=1e-10
+            )
 
 
 @pytest.mark.parametrize("mu", [0.0, 0.9])
@@ -255,7 +287,9 @@ def test_alignment_worker_alignment_statistics(mu):
     t_sat = np.abs(np.sum(major * _radial_unit_vector(data), axis=-1))[~central]
     assert _ks_distance(t_sat, cdf) < _ks_bound(t_sat.size)
 
-    assert _ks_distance(major[synthetic, 2], _uniform_cdf(-1, 1)) < _ks_bound(synthetic.sum())
+    assert _ks_distance(major[synthetic, 2], _uniform_cdf(-1, 1)) < _ks_bound(
+        synthetic.sum()
+    )
 
 
 def test_alignment_worker_position_angles_on_the_sky():
@@ -264,7 +298,10 @@ def test_alignment_worker_position_angles_on_the_sky():
     angles are uniform and unrelated to the halo"""
     n = 40_000
     data, central, synthetic = _make_catalog(n, seed=2, b_over_a=0.3, c_over_a=0.25)
-    west, north, _ = (np.asarray(v) for v in eproj.observer_frame_axes_from_ra_dec(data["ra_nfw"], data["dec_nfw"]))
+    west, north, _ = (
+        np.asarray(v)
+        for v in eproj.observer_frame_axes_from_ra_dec(data["ra_nfw"], data["dec_nfw"])
+    )
     h = _halo_major_axis(data)
     halo_pa = np.arctan2(np.sum(h * north, axis=-1), np.sum(h * west, axis=-1))
     resolved = central & ~synthetic
@@ -277,7 +314,9 @@ def test_alignment_worker_position_angles_on_the_sky():
 
     disk, _, _ = inj.alignment_worker(data, 0.0, 0.0, central, synthetic)
     uniform = _uniform_cdf(-np.pi / 2, np.pi / 2)
-    assert _ks_distance(_offset(disk.psi)[resolved], uniform) < _ks_bound(resolved.sum())
+    assert _ks_distance(_offset(disk.psi)[resolved], uniform) < _ks_bound(
+        resolved.sum()
+    )
     assert _ks_distance(disk.psi, uniform) < _ks_bound(n)
 
 
@@ -296,7 +335,9 @@ def _write_catalog(fn, data):
 
 
 def _run_main(monkeypatch, fn_in, fn_out, *extra):
-    monkeypatch.setattr(sys, "argv", ["inject_ia_adhoc", str(fn_in), str(fn_out), *extra])
+    monkeypatch.setattr(
+        sys, "argv", ["inject_ia_adhoc", str(fn_in), str(fn_out), *extra]
+    )
     inj.main()
 
 
@@ -332,18 +373,26 @@ def test_main_writes_a_complete_catalog(tmp_path, monkeypatch):
 
         assert dict(fo.attrs) == dict(fi.attrs)
         assert dict(fo["metadata"].attrs) == dict(fi["metadata"].attrs)
-        assert np.array_equal(fo["metadata/z_phot_table"][:], fi["metadata/z_phot_table"][:])
+        assert np.array_equal(
+            fo["metadata/z_phot_table"][:], fi["metadata/z_phot_table"][:]
+        )
         assert fo["metadata/cosmology"].attrs["Om0"] == 0.31
 
     fn_again, fn_other = tmp_path / "again.hdf5", tmp_path / "other.hdf5"
     _run_main(monkeypatch, fn_in, fn_again, "--seed", "7")
     _run_main(monkeypatch, fn_in, fn_other, "--seed", "8")
-    with h5py.File(fn_out, "r") as f1, h5py.File(fn_again, "r") as f2, h5py.File(fn_other, "r") as f3:
+    with (
+        h5py.File(fn_out, "r") as f1,
+        h5py.File(fn_again, "r") as f2,
+        h5py.File(fn_other, "r") as f3,
+    ):
         assert np.array_equal(f1["data/psi_disk"][:], f2["data/psi_disk"][:])
         assert not np.allclose(f1["data/psi_disk"][:], f3["data/psi_disk"][:])
 
 
-def test_main_refuses_a_catalog_whose_eigS3_is_not_the_major_axis(tmp_path, monkeypatch):
+def test_main_refuses_a_catalog_whose_eigS3_is_not_the_major_axis(
+    tmp_path, monkeypatch
+):
     data, _, _ = _make_catalog(500)
     for c in "XYZ":
         data[f"{EIG}S1{c}"][:4] *= 100.0
