@@ -7,7 +7,7 @@ They were taken from diffsky's docs tutorial:
 import jax
 import jax.numpy as jnp
 
-from diffsky.soft_histograms.signdhist_lomem import nnsig_ndhist
+from diffsky.soft_histograms.signdhist_lomem import nnsig_ndhist, nnsig_ndhist_weighted
 
 
 @jax.jit
@@ -44,4 +44,18 @@ def soft_xhist(xdata, xbins):
     ndsig = jnp.zeros_like(xbins_lo) + dx / 2
     xdata = xdata.reshape((-1, 1))
     xhist = nnsig_ndhist(xdata, ndsig, xbins_lo, xbins_hi)
+    return xhist
+
+
+@jax.jit
+def soft_xhist_weighted(xdata, xbins, weight):
+    """Soft histogram function
+    This is a wrapper around diffsky.nnsig_ndhist for 1d data"""
+    nbins = xbins.shape[0]
+    xbins_lo = xbins[:-1].reshape((nbins - 1, 1))
+    xbins_hi = xbins[1:].reshape((nbins - 1, 1))
+    dx = jnp.diff(xbins).mean()
+    ndsig = jnp.zeros_like(xbins_lo) + dx / 2
+    xdata = xdata.reshape((-1, 1))
+    xhist = nnsig_ndhist_weighted(xdata, ndsig, weight, xbins_lo, xbins_hi)
     return xhist
