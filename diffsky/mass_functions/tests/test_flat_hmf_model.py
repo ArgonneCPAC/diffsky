@@ -10,7 +10,7 @@ from ..hmf_calibrations.smdpl_hmf_fitting_helpers import get_loss_data
 
 _THIS_DRNAME = os.path.dirname(os.path.abspath(__file__))
 TESTING_DATA_DRN = os.path.join(
-    _THIS_DRNAME, "hmf_calibrations", "tests", "testing_data"
+    os.path.dirname(_THIS_DRNAME), "hmf_calibrations", "tests", "testing_data"
 )
 
 
@@ -64,5 +64,6 @@ def test_predict_hmf_accurately_approximates_simulation_data():
     and compares the simulation results to the predict_hmf function"""
 
     loss_data = get_loss_data(TESTING_DATA_DRN, "hosthalos")
+    assert len(loss_data) > 0, f"no HMF testing data found in {TESTING_DATA_DRN}"
     loss = fit_flat_hmf_model._loss_func_multi_z(FLAT_HMF_PARAMS, loss_data)
     assert loss < 0.01
