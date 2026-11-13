@@ -96,3 +96,90 @@ def plot_diffstarpop_insitu_smhm(
 
     plt.close()
     return fig
+
+
+def plot_diffstarpop_insitu_smhm_multi(
+    diffstarpop_params_list,
+    diffstarpop_params_ref=DEFAULT_DIFFSTARPOP_PARAMS,
+    fname="diffstarpop_insitu_smhm_multi.png",
+):
+    """Make plots comparing the SMHM of multiple diffstarpop models against a reference.
+
+    Parameters
+    ----------
+    diffstarpop_params_list : list
+        List of diffstarpop_params dicts to compare.
+    diffstarpop_params_ref : dict, optional
+        Reference diffstarpop_params plotted as a dashed black line.
+    fname : str, optional
+        Output filename.
+    """
+    assert HAS_MATPLOTLIB, MATPLOTLIB_MSG
+    assert HAS_SCIPY
+
+    ran_key = jran.key(0)
+    lgmp_min = 11.0
+    sky_area_degsq_list = [100.0]
+
+    logmp_bins = np.linspace(lgmp_min, 14, 30)
+    logmp_bin_mids = 0.5 * (logmp_bins[:-1] + logmp_bins[1:])
+
+    z_list = (0.1,)
+    collector = []
+    for z, sky_area_degsq in zip(z_list, sky_area_degsq_list):
+        ran_key, z_key = jran.split(ran_key, 2)
+        z_min, z_max = z - 0.01, z + 0.01
+
+        args = (z_key, lgmp_min, z_min, z_max, sky_area_degsq)
+
+        cenpop_ref = mclh.mc_lightcone_diffstar_cens(
+            *args, diffstarpop_params=diffstarpop_params_ref
+        )
+        mean_logsm_ref, __, __ = binned_statistic(
+            cenpop_ref["logmp_obs"],
+            cenpop_ref["logsm_obs"],
+            bins=logmp_bins,
+            statistic="mean",
+        )
+
+        mean_logsm_list = []
+        for params in diffstarpop_params_list:
+            cenpop = mclh.mc_lightcone_diffstar_cens(*args, diffstarpop_params=params)
+            mean_logsm, __, __ = binned_statistic(
+                cenpop["logmp_obs"],
+                cenpop["logsm_obs"],
+                bins=logmp_bins,
+                statistic="mean",
+            )
+            mean_logsm_list.append(mean_logsm)
+
+        collector.append((mean_logsm_ref, mean_logsm_list))
+
+    fig, ax = plt.subplots(1, 1)
+    ax.set_ylim(8, 12)
+    xlabel = ax.set_xlabel(r"${\log_{10}M_{\rm h}}$")
+    ylabel = ax.set_ylabel(r"${\log_{10}M_{\star}}$")
+
+    sample_line_color = MBLUE
+    for i, plot_data in enumerate(collector):
+        mean_logsm_ref, mean_logsm_list = plot_data
+
+        for mean_logsm in mean_logsm_list:
+            ax.plot(
+                logmp_bin_mids,
+                mean_logsm,
+                color=sample_line_color,
+                alpha=0.5,
+            )
+        ax.plot([], [], color=sample_line_color, alpha=0.5, label="samples")
+
+        ax.plot(logmp_bin_mids, mean_logsm_ref, "k--", linewidth=1.5, label="reference")
+
+    ax.legend(loc="lower right", fontsize="small")
+
+    fig.savefig(
+        fname, bbox_extra_artists=[xlabel, ylabel], bbox_inches="tight", dpi=200
+    )
+
+    plt.close()
+    return fig
