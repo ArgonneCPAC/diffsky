@@ -256,13 +256,13 @@ def test_sample_t_watson_gradient_matches_implicit_derivative():
     from scipy import integrate
 
     def exact_dt_dkappa(t, kappa):
-        quad = lambda f, hi: integrate.quad(f, -1, hi, epsabs=1e-15, epsrel=1e-13)[
-            0
-        ]  # noqa: E731
-        num = quad(lambda s: np.exp(-kappa * s * s), t)
-        norm = quad(lambda s: np.exp(-kappa * s * s), 1)
-        d_num = -quad(lambda s: s * s * np.exp(-kappa * s * s), t)
-        d_norm = -quad(lambda s: s * s * np.exp(-kappa * s * s), 1)
+        def _quad(f, hi):
+            return integrate.quad(f, -1, hi, epsabs=1e-15, epsrel=1e-13)[0]
+
+        num = _quad(lambda s: np.exp(-kappa * s * s), t)
+        norm = _quad(lambda s: np.exp(-kappa * s * s), 1)
+        d_num = -_quad(lambda s: s * s * np.exp(-kappa * s * s), t)
+        d_norm = -_quad(lambda s: s * s * np.exp(-kappa * s * s), 1)
         dF_dkappa = (d_num * norm - num * d_norm) / norm**2
         return -dF_dkappa / (np.exp(-kappa * t * t) / norm)
 
