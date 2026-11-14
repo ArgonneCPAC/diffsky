@@ -46,6 +46,7 @@ jobs:
             "setuptools_scm>=7,<8" \
             matplotlib \
             scipy \
+            blackjax \
             python-build
           pip uninstall diffmah --yes
           pip uninstall diffstar --yes
