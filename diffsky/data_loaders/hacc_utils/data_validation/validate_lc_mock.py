@@ -11,7 +11,7 @@ from dsps.photometry import photometry_kernels as phk
 from jax import vmap
 
 from ....experimental import mc_lightcone_halos as mclh
-from ....param_utils import diffsky_param_wrapper as dpw
+from ....sed_models.ou26 import diffsky_param_wrapper_merging as dpwm
 from .. import lc_mock as lcmp
 from .. import lightcone_utils, load_flat_hdf5, load_lc_cf, load_lc_mock, sed_from_mock
 
@@ -536,8 +536,8 @@ def check_has_t_table(fn_lc_mock):
 def check_has_param_collection(drn_mock, mock_version_name):
     param_collection = lcmp.load_diffsky_param_collection(drn_mock, mock_version_name)
     assert len(param_collection) > 0
-    param_arr = dpw.unroll_param_collection_into_flat_array(*param_collection)
-    pnames = dpw.get_flat_param_names()
+    param_arr = dpwm.unroll_param_collection_into_flat_array(*param_collection)
+    pnames = dpwm.get_flat_param_names()
     assert len(pnames) == len(param_arr)
 
 
