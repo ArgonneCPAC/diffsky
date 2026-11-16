@@ -160,7 +160,7 @@ def mc_lc_photline(
     SpecPhotResults = namedtuple("SpecPhotResults", fields)
     spec_phot_results = SpecPhotResults(*phot_kern_results, *lines)
 
-    return spec_phot_results
+    return spec_phot_results, phot_randoms
 
 
 @jjit
