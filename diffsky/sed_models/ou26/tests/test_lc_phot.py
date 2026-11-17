@@ -77,7 +77,7 @@ def test_mc_lc_phot_agrees_with_mc_lc_photline(num_halos=20):
     )[0]
     spec_phot_results = lc_phot.mc_lc_photline(
         ran_key, lc_data, mc_merge, param_collection=pc1
-    )
+    )[0]
     check_phot_kern_results(phot_kern_results)
     check_phot_kern_results(spec_phot_results)
     assert np.allclose(phot_kern_results.obs_mags, spec_phot_results.obs_mags)
