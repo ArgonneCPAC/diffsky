@@ -62,6 +62,7 @@ def test_predict_ccshmf_accurately_approximates_simulation_data():
     """This test loads some pretabulated CCSHMF data computed from SMPDL
     and compares the simulation results to the predict_ccshmf function"""
     fname_list = glob(os.path.join(TESTING_DATA_DRN, "smdpl_cshmf_*.txt"))
+    assert len(fname_list) > 0, f"no CCSHMF testing data found in {TESTING_DATA_DRN}"
     bname_list = [os.path.basename(fn) for fn in fname_list]
 
     zlist = np.unique([infer_redshift_from_bname(bn) for bn in bname_list])

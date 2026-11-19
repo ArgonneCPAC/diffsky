@@ -22,6 +22,7 @@ DRN_TESTING_DATA = os.path.join(ROOT_DRN, "hmf_calibrations", "tests", "testing_
 @pytest.mark.skipif("not HAS_MATPLOTLIB")
 def test_make_hmf_fit_plot(tmp_path):
     loss_data = smdpl_hmf_fitting_helpers.get_loss_data(DRN_TESTING_DATA, "hosthalos")
+    assert len(loss_data) > 0, f"no HMF testing data found in {DRN_TESTING_DATA}"
     p_best = smdpl_hmf.HMF_PARAMS
     fname = os.path.join(tmp_path, "hmf_diagnostic.png")
     hmf_fit_diagnostics.make_hmf_fit_plot(loss_data, p_best, fname=fname)
