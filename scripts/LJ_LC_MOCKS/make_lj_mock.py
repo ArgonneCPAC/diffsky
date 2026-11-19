@@ -37,9 +37,9 @@ from diffsky.data_loaders.hacc_utils import load_lc_cf_synthetic as llcs
 from diffsky.data_loaders.hacc_utils import metadata_mock
 from diffsky.data_loaders.mock_utils import get_mock_version_name
 from diffsky.experimental import mc_lightcone_halos as mclh
-from diffsky.experimental import precompute_ssp_phot as psspp
 from diffsky.param_utils import DIFFSKY_FIT_PARAMS
-from diffsky.param_utils import diffsky_param_wrapper_merging as dpwm
+from diffsky.sed_models.ou26 import diffsky_param_wrapper_merging as dpwm
+from diffsky.sed_models.ou26 import precompute_ssp_phot as psspp
 
 DRN_LJ_CF_LCRC = "/lcrc/group/cosmodata/simulations/LastJourney/coretrees/forest"
 DRN_LJ_CF_POBOY = "/Users/aphearin/work/DATA/LastJourney/coretrees"

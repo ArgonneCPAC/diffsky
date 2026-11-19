@@ -9,16 +9,14 @@ from dsps.cosmology.flat_wcdm import age_at_z
 from jax import numpy as jnp
 
 from ... import phot_utils
-from ...experimental import mc_diffstarpop_wrappers as mcdw
-from ...experimental import precompute_ssp_phot as psspp
-from ...experimental.kernels import (
+from ...sed_models.ou26 import mc_diffstarpop_wrappers as mcdw
+from ...sed_models.ou26 import precompute_ssp_phot as psspp
+from ...sed_models.ou26.kernels import dbk_photline_kernels as gd_dbkspkm
+from ...sed_models.ou26.kernels import (
     dbk_sed_kernels,
-)
-from ...experimental.kernels import dbk_photline_kernels as gd_dbkspkm
-from ...experimental.kernels import (
+    mc_randoms,
     phot_kernels,
     sed_kernels,
-    mc_randoms,
 )
 
 DiffstarPopResultsMock = namedtuple(
@@ -301,8 +299,6 @@ def compute_dbk_sed_from_mock(mock_chunk, metadata):
         halo_indx,
         mc_merge,
     )
-    dbk_sed_info = dbk_sed_kernels._dbk_sed_kern(
-        *args, n_t_table=mcdw.N_T_TABLE
-    )
+    dbk_sed_info = dbk_sed_kernels._dbk_sed_kern(*args, n_t_table=mcdw.N_T_TABLE)
     dbk_sed_info = dbk_sed_info._asdict()
     return dbk_sed_info
